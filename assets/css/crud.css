@@ -1,0 +1,747 @@
+/* Definir la fuente Roboto Regular */
+@font-face {
+    font-family: 'Roboto';
+    src: url('../fonts/Roboto/static/Roboto-Regular.ttf') format('truetype'),
+         url('../fonts/Roboto/static/Roboto-Regular.woff2') format('woff2'),
+         url('../fonts/Roboto/static/Roboto-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Definir la fuente Roboto Bold */
+@font-face {
+    font-family: 'Roboto';
+    src: url('../fonts/Roboto/static/Roboto-Bold.ttf') format('truetype'),
+         url('../fonts/Roboto/static/Roboto-Bold.woff2') format('woff2'),
+         url('../fonts/Roboto/static/Roboto-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+/* Definir la fuente Roboto Italic */
+@font-face {
+    font-family: 'Roboto';
+    src: url('../fonts/Roboto/static/Roboto-Italic.ttf') format('truetype'),
+         url('../fonts/Roboto/static/Roboto-Italic.woff2') format('woff2'),
+         url('../fonts/Roboto/static/Roboto-Italic.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+}
+
+/* Definir la fuente Roboto Bold Italic */
+@font-face {
+    font-family: 'Roboto';
+    src: url('../fonts/Roboto/static/Roboto-BoldItalic.ttf') format('truetype'),
+         url('../fonts/Roboto/static/Roboto-BoldItalic.woff2') format('woff2'),
+         url('../fonts/Roboto/static/Roboto-BoldItalic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+
+/* Configuración Global */
+* {
+    font-family: "Roboto", sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #020d19;
+    --secondary-color: #0a1a2d;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --box-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   RESET COMPLETO PARA TABLA
+   ============================================ */
+#tabla-participantes,
+#tabla-participantes * {
+    color: #333333 !important;
+    background-color: transparent !important;
+    border-color: #dee2e6 !important;
+}
+
+#tabla-participantes {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin-bottom: 0 !important;
+    background-color: white !important;
+}
+
+/* ============================================
+   ENCABEZADO DE TABLA (DEBE SER BLANCO)
+   ============================================ */
+#tabla-participantes thead {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+#tabla-participantes thead tr {
+    background: transparent !important;
+}
+
+#tabla-participantes thead th {
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 16px 12px !important;
+    border: none !important;
+    text-transform: uppercase !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.5px !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    background: transparent !important;
+}
+
+#tabla-participantes thead th:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+#tabla-participantes thead th .sort-icon {
+    font-size: 0.8rem !important;
+    opacity: 0.7 !important;
+    color: white !important;
+}
+
+#tabla-participantes tbody {
+    background-color: white !important;
+}
+
+#tabla-participantes tbody tr {
+    transition: var(--transition) !important;
+    background-color: white !important;
+}
+
+#tabla-participantes tbody tr:nth-child(even) {
+    background-color: #f8f9fa !important;
+}
+
+#tabla-participantes tbody tr:hover {
+    background-color: rgba(2, 13, 25, 0.05) !important;
+    transform: translateX(4px) !important;
+}
+
+/* ESTO ES CRÍTICO: Forzar color oscuro en TODAS las celdas */
+#tabla-participantes tbody td {
+    padding: 14px 12px !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    color: #333333 !important;
+    background-color: inherit !important;
+    font-size: 0.9rem !important;
+}
+
+/* Especificar color para cada tipo de contenido */
+#tabla-participantes tbody td,
+#tabla-participantes tbody td span:not(.badge),
+#tabla-participantes tbody td div:not(.button) {
+    color: #333333 !important;
+}
+
+/* ============================================
+   BOTONES DE ACCIÓN (se mantienen como estaban)
+   ============================================ */
+#tabla-participantes .button {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 2px !important;
+    transition: var(--transition) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+#tabla-participantes .button::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: translate(-50%, -50%) !important;
+    transition: width 0.3s, height 0.3s !important;
+}
+
+#tabla-participantes .button:hover::after {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 8px !important;
+}
+
+#tabla-participantes .button:hover {
+    transform: translateY(-2px) scale(1.05) !important;
+    box-shadow: var(--box-shadow-hover) !important;
+}
+
+#tabla-participantes .button.view {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3) !important;
+}
+
+#tabla-participantes .button.curso {
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3) !important;
+}
+
+#tabla-participantes .button.edit {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3) !important;
+}
+
+#tabla-participantes .button.delete {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+}
+
+
+#modal-viewParticipante .list-group-item {
+    border: none;
+    padding: 0.8rem 1rem;
+    background-color: #f8f9fa;
+}
+
+#modal-viewParticipante .curso-card {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s;
+}
+
+#modal-viewParticipante .curso-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+#modal-viewParticipante .table th {
+    background-color: #f1f4f7;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+#modal-viewParticipante .modal-section {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+#modal-viewParticipante .modal-section:last-child {
+    border-bottom: none;
+}
+
+#modal-viewParticipante .alert {
+    border-radius: 12px;
+    background-color: #f8f9fa;
+}
+
+.badge {
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-add {
+    min-width: 200px !important;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+    border: none !important;
+    border-radius: var(--border-radius) !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    transition: var(--transition) !important;
+    box-shadow: var(--box-shadow) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    color: white !important;
+}
+
+.btn-add:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--box-shadow-hover) !important;
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)) !important;
+    color: white !important;
+}
+
+
+.btn-add:active {
+    transform: translateY(0) !important;
+}
+
+.search-bar {
+    max-width: 526px; /* Mantener el ancho que tenías */
+    position: relative;
+    display: flex; /* Asegurar flexbox */
+}
+
+.search-bar .form-control {
+    border-radius: 50px 0 0 50px !important; /* Redondear solo lado izquierdo */
+    padding: 10px 20px !important;
+    border: 2px solid #4a5568 !important;
+    border-right: none !important; /* Quitar borde derecho para unirlo con el icono */
+    background-color: #fff !important;
+    transition: var(--transition) !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: #333333 !important;
+    flex: 1; /* Tomar el espacio disponible */
+    height: auto;
+}
+
+.search-bar .input-group-text {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+    border: 2px solid #4a5568 !important;
+    border-left: none !important; /* Quitar borde izquierdo para unirlo */
+    border-radius: 0 50px 50px 0 !important; /* Redondear solo lado derecho */
+    padding: 0 20px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 50px; /* Ancho mínimo para el icono */
+}
+
+.search-bar .input-group-text svg {
+    fill: white !important;
+    width: 16px;
+    height: 16px;
+}
+
+.search-bar .form-control:focus {
+    border-color: #2d3748 !important;
+    box-shadow: none !important; /* Quitar sombra por defecto */
+    background-color: #fff !important;
+    outline: none !important;
+    color: #333333 !important;
+}
+
+.search-bar .form-control:focus + .input-group-text {
+    border-color: #2d3748 !important; /* Aplicar mismo color al icono cuando está enfocado */
+}
+
+/*=============================================
+   CONTENEDOR FLEX PARA ALINEACIÓN
+   ============================================ */
+   .d-flex.justify-content-between.align-items-center.mt-4 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 20px; /* Espacio entre búsqueda y otros elementos */
+}
+
+/* ============================================
+   FILTROS - AJUSTAR ALINEACIÓN
+   ============================================ */
+.filters-container {
+    margin: 20px 0 !important;
+    padding: 15px 0 !important;
+    border-bottom: 1px solid #e9ecef !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 15px !important;
+}
+
+.filters-container .form-select {
+    border-radius: 8px !important;
+    border: 1px solid #dee2e6 !important;
+    padding: 8px 12px !important;
+    min-width: 150px !important;
+    transition: var(--transition) !important;
+    color: #333333 !important;
+    background-color: white !important;
+}
+
+.pagination .page-link {
+    color: var(--primary-color) !important;
+}
+
+.page-item.active .page-link {
+    color: white !important;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#tabla-participantes tbody tr {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ============================================
+   RESPONSIVE (igual que docentes)
+   ============================================ */
+@media (max-width: 992px) {
+    .search-bar {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mt-4 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 15px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-bar .form-control {
+        padding: 8px 15px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .search-bar .input-group-text {
+        padding: 0 15px !important;
+        min-width: 45px !important;
+    }
+    
+    #tabla-participantes {
+        min-width: 800px !important;
+    }
+}
+
+.asignar-card {
+    height: 100%;
+    font-size: 0.95rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.asignar-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+}
+
+.asignar-card .badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.6em;
+}
+
+.asignar-card .btn {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+
+.curso-card {
+    transition: transform 0.2s;
+    border: 1px solid rgba(0,0,0,0.125);
+}
+
+.curso-card:hover {
+    transform: translateY(-2px);
+}
+
+.btn-desinscribir {
+    transition: all 0.2s ease;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-desinscribir .btn-text {
+    position: relative;
+    top: -1px;
+}
+
+.btn-desinscribir:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.2);
+}
+
+/* Versión con icono + texto (opcional) */
+.btn-desinscribir.con-icono {
+    padding: 0.2rem 0.5rem 0.2rem 0.4rem;
+}
+.btn-desinscribir.con-icono .bi {
+    font-size: 0.8rem;
+    margin-right: 0.3rem;
+}
+
+.contenedor{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.box{
+    width: 96%;
+    background-color: #fff;
+    border-radius: 4px;
+}
+
+.label{
+    font-size: 14px;
+}
+
+.btn-add{
+    background-color: #020d19;
+    font-size: 15px;
+    border-radius: 4px;
+    width: 20.5%;
+    min-width: 200px;
+    height: 40px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.btn-add:hover{
+    background-color: #EC3136;
+    transition: all 0.2s;
+}
+
+.btn-submmit{
+    background-color: #020d19;
+    font-size: 15px;
+    width: 100%;
+    height: 40px;
+    transition: all 0.2s;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-submmit:hover{
+    background-color: #EC3136;
+    transition: all 0.2s;
+}
+
+
+td{
+    font-size: 15px;
+}
+
+.button{
+    width: 34px;
+    height: 33px;
+    border: none;
+    border-radius: 4px;
+}
+
+.search-bar{
+    max-width: 732px;
+    font-size: 15px; 
+
+}
+
+.input-group-text{
+    background-color: #020d19;
+    border: solid 1px #020d19;
+}
+
+/*Filtros && btn*/
+.filter{
+    background-color: #020d19;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 5px;
+}
+
+.view{
+    background-color: #0A369D;
+}
+
+.participante{
+    background-color: #2ecc71;
+}
+
+.curso{
+    background-color: #2ecc71;
+}
+
+.edit{
+    background-color: #FFC857;
+}
+
+.delete{
+    background-color: #EC3136;
+}
+
+
+.container-textCurso{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+/*Modales*/
+.delete-modal{
+    background-color: #EC3136;
+    font-size: 15px;
+    border-radius: 4px;
+    width: 160px;
+    height: 35px;
+    border: none;
+    color: white;
+}
+
+.cancel-modal{
+    background-color: #020d19;
+    font-size: 15px;
+    border-radius: 4px;
+    width: 100px;
+    height: 35px;
+    border: none;
+    color: white;
+}
+
+
+.pdf-modal{
+    background-color: #EC3136;
+    font-size: 15px;
+    border-radius: 4px;
+    width: 100px;
+    height: 35px;
+    border: none;
+    color: white;
+}
+
+.pdf{
+    font-size: 15px;
+    border-radius: 4px;
+    background-color: #EC3136;
+    width: 90px;
+    height: 40px;
+    border: none;
+}
+
+.excel{
+    font-size: 15px;
+    border-radius: 4px;
+    background-color: #2ecc71;
+    width: 90px;
+    height:40px;
+    border: none;
+}
+
+.filters-container{
+    position: relative;
+}
+
+.doc-container{
+    position: absolute;
+    right: 280px;
+}
+
+.historial-modal{
+    background-color: #0A369D;
+    font-size: 15px;
+    border-radius: 4px;
+    width: 120px;
+    height: 35px;
+    border: none;
+    color: white;
+}
+
+
+.modal-section-title {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #6b6b6b;
+}
+
+
+#cursos-asociados .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+#cursos-asociados .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilo para el contenedor de la imagen (icon-user) */
+.icon-user {
+    width: 50px;              /* Ajusta el tamaño del contenedor */
+    height: 50px;             /* Asegura que el contenedor tenga la misma altura que el ancho */
+    border-radius: 50%;       /* Hace la imagen completamente circular */
+    overflow: hidden;         /* Esconde cualquier parte de la imagen que sobresalga del círculo */
+    display: flex;            /* Centra la imagen dentro del contenedor */
+    justify-content: center;  /* Centra la imagen horizontalmente */
+    align-items: center;      /* Centra la imagen verticalmente */
+}
+
+/* Estilo para la imagen dentro del contenedor */
+.user-avatar {
+    width: 100%;              /* La imagen ocupará todo el espacio del contenedor */
+    height: 100%;             /* La imagen ocupará todo el espacio del contenedor */
+    object-fit: cover;        /* Hace que la imagen se recorte adecuadamente para que no se deforme */
+    border-radius: 50%;       /* Asegura que la imagen también sea circular */
+}
+
+/* Estilo para la imagen con error */
+.error-image {
+    object-fit: contain;      /* En caso de error, la imagen se ajustará dentro del contenedor sin recortarse */
+    width: 100%;              /* Asegura que la imagen con error ocupe todo el espacio disponible */
+    height: 100%;             /* Asegura que la imagen con error ocupe todo el espacio disponible */
+}
+
+
+@media (max-width: 1100px) {
+    .filters-container {
+        flex-direction: column; 
+        align-items: flex-start; 
+    }
+
+    .btn-add {
+        margin-top: 20px; 
+        min-width: 280px;
+    }
+
+    .estatus-center{
+        text-align: center;
+    }
+}
+
+/* Semáforo de cumplimiento */
+.semaforo {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.03);
+}

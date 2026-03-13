@@ -1,0 +1,419 @@
+/* docente.css - SOLUCIÓN RADICAL */
+:root {
+    --primary-color: #020d19;
+    --secondary-color: #0a1a2d;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --box-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   RESET COMPLETO PARA TABLA
+   ============================================ */
+#tabla-docentes,
+#tabla-docentes * {
+    color: #333333 !important;
+    background-color: transparent !important;
+    border-color: #dee2e6 !important;
+}
+
+#tabla-docentes {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin-bottom: 0 !important;
+    background-color: white !important;
+}
+
+/* ======================
+   ENCABEZADO DE TABLA 
+   ====================== */
+#tabla-docentes thead {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+#tabla-docentes thead tr {
+    background: transparent !important;
+}
+
+#tabla-docentes thead th {
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 16px 12px !important;
+    border: none !important;
+    text-transform: uppercase !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.5px !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    background: transparent !important;
+}
+
+#tabla-docentes thead th:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+#tabla-docentes thead th .sort-icon {
+    font-size: 0.8rem !important;
+    opacity: 0.7 !important;
+    color: white !important;
+}
+
+/* ================
+   CUERPO DE TABLA
+   ================= */
+#tabla-docentes tbody {
+    background-color: white !important;
+}
+
+#tabla-docentes tbody tr {
+    transition: var(--transition) !important;
+    background-color: white !important;
+}
+
+#tabla-docentes tbody tr:nth-child(even) {
+    background-color: #f8f9fa !important;
+}
+
+#tabla-docentes tbody tr:hover {
+    background-color: rgba(2, 13, 25, 0.05) !important;
+    transform: translateX(4px) !important;
+}
+
+/* ESTO ES CRÍTICO: Forzar color oscuro en TODAS las celdas */
+#tabla-docentes tbody td {
+    padding: 14px 12px !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    color: #333333 !important;
+    background-color: inherit !important;
+    font-size: 0.9rem !important;
+}
+
+/* Especificar color para cada tipo de contenido */
+#tabla-docentes tbody td,
+#tabla-docentes tbody td span:not(.badge),
+#tabla-docentes tbody td div:not(.button) {
+    color: #333333 !important;
+}
+
+/* Excepción para badges - deben mantener sus colores */
+#tabla-docentes tbody td .badge {
+    color: white !important;
+}
+
+/* ==================
+   BOTONES DE ACCIÓN
+   ================== */
+#tabla-docentes .button {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 2px !important;
+    transition: var(--transition) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+#tabla-docentes .button::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: translate(-50%, -50%) !important;
+    transition: width 0.3s, height 0.3s !important;
+}
+
+#tabla-docentes .button:hover::after {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 8px !important;
+}
+
+#tabla-docentes .button:hover {
+    transform: translateY(-2px) scale(1.05) !important;
+    box-shadow: var(--box-shadow-hover) !important;
+}
+
+#tabla-docentes .button.view {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3) !important;
+}
+
+#tabla-docentes .button.curso {
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3) !important;
+}
+
+#tabla-docentes .button.edit {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3) !important;
+}
+
+#tabla-docentes .button.delete {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+}
+
+#tabla-docentes .button.activate {
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3) !important;
+}
+
+#tabla-docentes .button.inactivate {
+    background: linear-gradient(135deg, #911520, #701323) !important;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3) !important;
+}
+
+/* ===========
+   BADGES
+   =========== */
+.badge {
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    border: none !important;
+    color: white !important;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+}
+
+.bg-warning {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+}
+
+.bg-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+}
+
+/* ============================================
+   CONTENEDOR PRINCIPAL
+   ============================================ */
+.contenedor {
+    padding: 20px !important;
+}
+
+.box {
+    background: white !important;
+    border-radius: var(--border-radius) !important;
+    overflow: hidden !important;
+    box-shadow: var(--box-shadow) !important;
+    padding: 20px !important;
+    margin-top: 20px !important;
+}
+
+/* ============================================
+   BOTÓN AGREGAR
+   ============================================ */
+.btn-add {
+    min-width: 200px !important;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+    border: none !important;
+    border-radius: var(--border-radius) !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    transition: var(--transition) !important;
+    box-shadow: var(--box-shadow) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    color: white !important;
+}
+
+.btn-add:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--box-shadow-hover) !important;
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)) !important;
+    color: white !important;
+}
+
+.btn-add:active {
+    transform: translateY(0) !important;
+}
+
+/* ============================================
+   BARRA DE BÚSQUEDA CORREGIDA
+   ============================================ */
+.search-bar {
+    max-width: 526px; /* Mantener el ancho que tenías */
+    position: relative;
+    display: flex; /* Asegurar flexbox */
+}
+
+.search-bar .form-control {
+    border-radius: 50px 0 0 50px !important; /* Redondear solo lado izquierdo */
+    padding: 10px 20px !important;
+    border: 2px solid #4a5568 !important;
+    border-right: none !important; /* Quitar borde derecho para unirlo con el icono */
+    background-color: #fff !important;
+    transition: var(--transition) !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: #333333 !important;
+    flex: 1; /* Tomar el espacio disponible */
+    height: auto;
+}
+
+.search-bar .input-group-text {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+    border: 2px solid #4a5568 !important;
+    border-left: none !important; /* Quitar borde izquierdo para unirlo */
+    border-radius: 0 50px 50px 0 !important; /* Redondear solo lado derecho */
+    padding: 0 20px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 50px; /* Ancho mínimo para el icono */
+}
+
+.search-bar .input-group-text svg {
+    fill: white !important;
+    width: 16px;
+    height: 16px;
+}
+
+.search-bar .form-control:focus {
+    border-color: #2d3748 !important;
+    box-shadow: none !important; /* Quitar sombra por defecto */
+    background-color: #fff !important;
+    outline: none !important;
+    color: #333333 !important;
+}
+
+.search-bar .form-control:focus + .input-group-text {
+    border-color: #2d3748 !important; /* Aplicar mismo color al icono cuando está enfocado */
+}
+
+/* ============================================
+   CONTENEDOR FLEX PARA ALINEACIÓN
+   ============================================ */
+.d-flex.justify-content-between.align-items-center.mt-4 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 20px; /* Espacio entre búsqueda y otros elementos */
+}
+
+/* ============================================
+   FILTROS - AJUSTAR ALINEACIÓN
+   ============================================ */
+.filters-container {
+    margin: 20px 0 !important;
+    padding: 15px 0 !important;
+    border-bottom: 1px solid #e9ecef !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 15px !important;
+}
+
+/* ============================================
+   RESPONSIVE PARA BARRA DE BÚSQUEDA
+   ============================================ */
+@media (max-width: 992px) {
+    .search-bar {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    .d-flex.justify-content-between.align-items-center.mt-4 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 15px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-bar .form-control {
+        padding: 8px 15px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .search-bar .input-group-text {
+        padding: 0 15px !important;
+        min-width: 45px !important;
+    }
+}
+/* ============================================
+   FILTROS
+   ============================================ */
+.filters-container .form-select {
+    border-radius: 8px !important;
+    border: 1px solid #dee2e6 !important;
+    padding: 8px 12px !important;
+    min-width: 150px !important;
+    transition: var(--transition) !important;
+    color: #333333 !important;
+    background-color: white !important;
+}
+
+/* ============================================
+   PAGINACIÓN
+   ============================================ */
+.pagination .page-link {
+    color: var(--primary-color) !important;
+}
+
+.page-item.active .page-link {
+    color: white !important;
+}
+
+/* ============================================
+   ANIMACIONES
+   ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#tabla-docentes tbody tr {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    #tabla-docentes {
+        min-width: 800px !important;
+    }
+}

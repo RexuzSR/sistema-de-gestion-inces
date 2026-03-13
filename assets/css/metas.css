@@ -1,0 +1,617 @@
+/* ============================================
+   VARIABLES Y ESTILOS BASE
+   ============================================ */
+:root {
+    --primary-color: #020d19;
+    --secondary-color: #0a1a2d;
+    --success-color: #2ecc71;
+    --success-dark: #27ae60;
+    --danger-color: #e74c3c;
+    --danger-dark: #c0392b;
+    --warning-color: #f39c12;
+    --warning-dark: #e67e22;
+    --info-color: #3498db;
+    --info-dark: #2980b9;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --box-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease;
+}
+
+/* ============================================
+   CONTENEDOR PRINCIPAL Y CONTROLES
+   ============================================ */
+.metas-container {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 30px;
+}
+
+.controls-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+/* Botón agregar */
+.btn-add-meta {
+    min-width: 200px;
+    background: #000000;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 12px 24px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: var(--transition);
+    box-shadow: var(--box-shadow);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-add-meta:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow-hover);
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-add-meta:active {
+    transform: translateY(0);
+}
+
+/* Barra de búsqueda */
+.search-container {
+    flex: 1;
+    border-color: #000;
+    max-width: 600px;
+    position: relative;
+}
+
+.search-container input {
+    border-radius: 50px;
+    padding: 12px 20px 12px 45px;
+    border: 2px solid #e2e8f0;
+    background-color: #fff;
+    transition: var(--transition);
+    font-size: 0.95rem;
+    font-weight: 500;
+    width: 100%;
+}
+
+.search-container input:focus {
+    border-color: var(#000);
+    box-shadow: 0 0 0 3px rgba(19, 5, 219, 0.1);
+    background-color: #fff;
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.search-container::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    z-index: 1;
+    font-size: 1.1rem;
+}
+
+.search-container input:hover {
+    border-color: #cbd5e0;
+}
+
+/* Selector de registros */
+.records-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.records-selector select {
+    border-radius: var(--border-radius-sm);
+    border: 2px solid #e2e8f0;
+    padding: 8px 16px;
+    background-color: white;
+    transition: var(--transition-fast);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.records-selector select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(2, 13, 25, 0.1);
+}
+
+/* ============================================
+   TABLA DE METAS
+   ============================================ */
+.table-container {
+    background: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+    margin-top: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.table-metas {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+}
+
+/* ENCABEZADOS DE LA TABLA EN NEGRO SÓLIDO */
+.table-metas thead {
+    background-color: #000000; /* Negro sólido */
+}
+
+.table-metas thead th {
+    color: white;
+    font-weight: 600;
+    padding: 16px 12px;
+    border: none;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    position: relative;
+    white-space: nowrap;
+    background-color: #000000; /* Asegurar negro sólido */
+}
+
+/* Líneas divisorias entre columnas en el encabezado */
+.table-metas thead th:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3); /* Líneas más visibles */
+}
+
+.table-metas tbody tr {
+    transition: var(--transition);
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.table-metas tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.03); /* Negro más suave para hover */
+    transform: translateX(4px);
+    box-shadow: inset 4px 0 0 var(--primary-color);
+}
+
+.table-metas tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.table-metas tbody tr:nth-child(even):hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.table-metas tbody td {
+    padding: 16px 12px;
+    vertical-align: middle;
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.table-metas tbody td:first-child {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* ============================================
+   BARRA DE PROGRESO MEJORADA
+   ============================================ */
+.progress-container {
+    position: relative;
+    height: 22px; /* Un poco más alta para mejor visibilidad */
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    background-color: #edf2f7;
+    margin: 4px 0;
+    border: 1px solid #e2e8f0;
+}
+
+.progress-bar-custom {
+    height: 100%;
+    position: relative;
+    transition: width 0.6s ease;
+    min-width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Colores mejorados para la barra de progreso */
+.progress-bar-success {
+    background: linear-gradient(90deg, #27ae60, #2ecc71); /* Verde más vibrante */
+}
+
+.progress-bar-warning {
+    background: linear-gradient(90deg, #e67e22, #f39c12); /* Naranja más vibrante */
+}
+
+.progress-bar-danger {
+    background: linear-gradient(90deg, #c0392b, #e74c3c); /* Rojo más vibrante */
+}
+
+/* Texto dentro de la barra de progreso */
+.progress-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 700;
+    font-size: 0.8rem;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); /* Sombra para mejor legibilidad */
+    color: white;
+    z-index: 2;
+}
+
+/* Texto oscuro para barras claras */
+.progress-text-dark {
+    color: #000;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Indicadores de porcentaje al lado (opcional) */
+.progress-indicator {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.progress-indicator-high {
+    background-color: #27ae60;
+    color: white;
+}
+
+.progress-indicator-medium {
+    background-color: #f39c12;
+    color: white;
+}
+
+.progress-indicator-low {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* ============================================
+   BADGES DE ESTADO
+   ============================================ */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    display: inline-block;
+    min-width: 100px;
+    text-align: center;
+}
+
+.status-active {
+    background-color: #27ae60;
+    color: white;
+}
+
+.status-inactive {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.status-pending {
+    background-color: #f39c12;
+    color: white;
+}
+
+/* ============================================
+   PAGINACIÓN
+   ============================================ */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 25px;
+    padding: 15px 0;
+}
+
+.pagination-list {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-item {
+    margin: 0;
+}
+
+.pagination-link {
+    display: block;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius-sm);
+    color: var(--primary-color);
+    background-color: #fff;
+    transition: var(--transition-fast);
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+}
+
+.pagination-link:hover {
+    background-color: #f7fafc;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.pagination-item.active .pagination-link {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: var(--box-shadow);
+}
+
+.pagination-item.disabled .pagination-link {
+    color: #a0aec0;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #e2e8f0;
+}
+
+/* ============================================
+   BOTONES DE ACCIÓN EN TABLA
+   ============================================ */
+.actions-container {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.button-action {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.button-action::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.button-action:hover::after {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--border-radius-sm);
+}
+
+.button-action:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.button-action.view {
+    background: linear-gradient(135deg, var(--info-color), var(--info-dark));
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.button-action.edit {
+    background: linear-gradient(135deg, var(--warning-color), var(--warning-dark));
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
+
+.button-action.delete {
+    background: linear-gradient(135deg, var(--danger-color), var(--danger-dark));
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.button-action svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ============================================
+   FORMULARIOS DE METAS
+   ============================================ */
+.form-group-meta {
+    margin-bottom: 20px;
+}
+
+.form-label-meta {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    display: block;
+}
+
+.form-control-meta {
+    border-radius: var(--border-radius-sm);
+    border: 2px solid #e2e8f0;
+    padding: 10px 15px;
+    transition: var(--transition);
+    background-color: #fff;
+    width: 100%;
+}
+
+.form-control-meta:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(2, 13, 25, 0.1);
+    background-color: #fff;
+    outline: none;
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 992px) {
+    .controls-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-add-meta {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .search-container {
+        max-width: 100%;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .metas-container {
+        padding: 15px;
+    }
+    
+    .table-metas {
+        font-size: 0.9rem;
+    }
+    
+    .table-metas thead th,
+    .table-metas tbody td {
+        padding: 12px 8px;
+    }
+    
+    .actions-container {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .button-action {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .pagination-link {
+        padding: 6px 12px;
+        min-width: 36px;
+        font-size: 0.9rem;
+    }
+    
+    .progress-container {
+        height: 20px;
+    }
+    
+    .status-badge {
+        min-width: 80px;
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .records-selector {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pagination-list {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+.text-muted {
+    color: #718096 !important;
+}
+
+.font-weight-semibold {
+    font-weight: 600 !important;
+}
+
+.text-primary-custom {
+    color: var(--primary-color) !important;
+}
+
+.bg-light-custom {
+    background-color: #f8fafc !important;
+}
+
+.rounded-custom {
+    border-radius: var(--border-radius) !important;
+}
+
+.shadow-custom {
+    box-shadow: var(--box-shadow) !important;
+}
+
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
+.transition-all {
+    transition: var(--transition) !important;
+}
+
+/* ============================================
+   ESTILOS ESPECÍFICOS PARA COLUMNAS
+   ============================================ */
+/* Columna de cumplimiento centrada */
+.table-metas tbody td:nth-child(5) {
+    text-align: center;
+}
+
+/* Columna de ID con estilo especial */
+.table-metas tbody td:first-child {
+    font-weight: 700;
+    color: #000000;
+}
+
+/* Columna de acciones centrada */
+.table-metas tbody td:last-child {
+    text-align: center;
+}
