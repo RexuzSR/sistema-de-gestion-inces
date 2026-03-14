@@ -1,5 +1,8 @@
 <?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once '../modelo/conexion.php';
+require_once '../modelo/HistorialUtil.php';
 require_once 'managerParticipante.php';
 
 header('Content-Type: application/json');
@@ -57,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $resultado = $dao->actualizarParticipante($data);
 
         if ($resultado) {
+            if (isset($_SESSION['id_usuario'])) {
+                $nombreCompleto = $_POST['primer_nombre'] . " " . $_POST['primer_apellido'];
+                HistorialUtil::registrarEditarParticipante($_POST['id_participante'], $nombreCompleto, $_SESSION['id_usuario']);
+            }
             echo json_encode([
                 'success' => true,
                 'message' => 'Datos actualizados correctamente'

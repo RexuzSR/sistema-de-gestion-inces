@@ -1,5 +1,7 @@
-<?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once '../../modelo/conexion.php';
+require_once '../../modelo/HistorialUtil.php';
 require_once 'managerCurso.php';
 
 header('Content-Type: application/json');
@@ -80,7 +82,13 @@ try {
         throw new Exception($resCurso['message']);
     }
 
-    $nuevoIdCurso = $resCurso['id_curso'];
+    if ($resCurso['success']) {
+        $nuevoIdCurso = $resCurso['id_curso'];
+        // Registrar en historial
+        if (isset($_SESSION['id_usuario'])) {
+            HistorialUtil::registrarCrearCurso($nuevoIdCurso, $post['nombre_curso'], $_SESSION['id_usuario']);
+        }
+    }
     
     // Asignar docente si se proporcionó (manejo de errores y reversión)
     if (!empty($post['id_docente'])) {

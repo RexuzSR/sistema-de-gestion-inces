@@ -1,5 +1,8 @@
 <?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once 'managerDocente.php';
+require_once '../../modelo/HistorialUtil.php';
 
 header('Content-Type: application/json');
 ini_set('display_errors', 0);
@@ -108,9 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         $docente = new Docente();
-        $response = $docente->editar($data);
+        $resultado = $docente->editar($data);
         
-        echo json_encode($response);
+        if ($resultado['success'] && isset($_SESSION['id_usuario'])) {
+            $nombreDocente = $data['primer_nombre'] . " " . $data['primer_apellido'];
+            HistorialUtil::registrarEditarDocente($data['id_docente'], $nombreDocente, $_SESSION['id_usuario']);
+        }
+        
+        echo json_encode($resultado);
     } catch (Exception $e) {
         error_log("Error en editarDocente.php: " . $e->getMessage());
         echo json_encode([

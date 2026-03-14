@@ -1,6 +1,7 @@
 <?php
 // llamado al archivo managerUsuario.php 
 require_once 'managerUsuario.php';
+require_once '../../modelo/HistorialUtil.php';
 
 session_name('SISTEMA_CONTROL_INCES');
 if (session_status() === PHP_SESSION_NONE) {
@@ -23,8 +24,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
         }
 
         // Instanciar la clase y llamar al método eliminar
-        $participante = new usuario();
-        $response = $participante->eliminar($idParticipante);
+        $usuarioMgr = new usuario();
+        
+        // Obtener datos antes de borrar
+        $userDataJson = $usuarioMgr->obtenerUsuarioPorId($idParticipante);
+        $userData = json_decode($userDataJson, true);
+        $nombreUsuario = $userData['nombre_usuario'] ?? "ID: $idParticipante";
+
+        $response = $usuarioMgr->eliminar($idParticipante);
+
+        if ($response['success'] && isset($_SESSION['id_usuario'])) {
+            HistorialUtil::registrar('Eliminar', "Se eliminó el usuario: $nombreUsuario", 'tb_usuario', $idParticipante, $_SESSION['id_usuario']);
+        }
 
         echo json_encode($response);
     } catch (Exception $e) {

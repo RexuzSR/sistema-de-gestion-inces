@@ -1,5 +1,6 @@
 <?php
 require_once 'managerUsuario.php';
+require_once '../../modelo/HistorialUtil.php';
 header('Content-Type: application/json');
 
 session_name('SISTEMA_CONTROL_INCES');
@@ -95,6 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     try {
         $response = $usuario->editar($data);
+        
+        if ($response['success'] && isset($_SESSION['id_usuario'])) {
+            $nombreTarget = $data['nombre_usuario'] ?? 'Usuario ID: ' . $data['id_usuario'];
+            HistorialUtil::registrar('Editar', "Se editó el usuario: $nombreTarget", 'tb_usuario', $data['id_usuario'], $_SESSION['id_usuario']);
+        }
+        
         echo json_encode($response);
     } catch (Exception $e) {
         echo json_encode([

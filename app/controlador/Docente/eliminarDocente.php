@@ -1,14 +1,26 @@
 <?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 // llamado al archivo managerDocente.php 
 require_once 'managerDocente.php';
+require_once '../../modelo/HistorialUtil.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     $idParticipante = $_POST['id'];
 
     try {
         // Instanciar la clase y llamar al método eliminar
-        $participante = new docente();
-        $response = $participante->eliminar($idParticipante);
+        $docenteMgr = new docente();
+        
+        // Obtener datos antes de borrar
+        $docData = $docenteMgr->obtenerPorId($idParticipante);
+        $nombreDocente = isset($docData['primer_nombre']) ? $docData['primer_nombre'] . " " . $docData['primer_apellido'] : "ID: $idParticipante";
+
+        $response = $docenteMgr->eliminar($idParticipante);
+
+        if ($response['success'] && isset($_SESSION['id_usuario'])) {
+            HistorialUtil::registrarEliminarDocente($idParticipante, $nombreDocente, $_SESSION['id_usuario']);
+        }
 
         echo json_encode($response);
     } catch (Exception $e) {

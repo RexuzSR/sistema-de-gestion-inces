@@ -1,5 +1,8 @@
 <?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once '../Metas/managerMetas.php';
+require_once '../../modelo/HistorialUtil.php';
 
 $metasManager = new Metas();
 
@@ -52,6 +55,12 @@ if (isset($data['tipo_objetivo']) && $data['tipo_objetivo'] !== '') {
 $result = $metasManager->registrar($data);
 
 if ($result['success']) {
+    if (isset($_SESSION['id_usuario'])) {
+        $tipoObj = $data['tipo_objetivo'] ?? 'Meta';
+        $metaVal = $data['meta_objetivo'] ?? '0';
+        $descripcion = "$tipoObj ($metaVal)";
+        HistorialUtil::registrarCrearMeta($result['id'], $descripcion, $_SESSION['id_usuario']);
+    }
     echo json_encode(['success' => true, 'message' => 'Meta creada', 'id' => $result['id']]);
 } else {
     echo json_encode(['success' => false, 'message' => $result['message'] ?? 'Error al crear meta']);

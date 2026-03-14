@@ -1,6 +1,9 @@
 <?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 // Incluir el manager correcto
 require_once 'managerDocente.php';
+require_once '../../modelo/HistorialUtil.php';
 
 header('Content-Type: application/json');
 
@@ -84,6 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Registrar el docente
         $response = $docenteManager->registrar($data);
         
+        if ($response['success'] && isset($_SESSION['id_usuario'])) {
+            $nombreCompleto = $data['primer_nombre'] . " " . $data['primer_apellido'];
+            HistorialUtil::registrarCrearDocente($response['id_docente'], $nombreCompleto, $_SESSION['id_usuario']);
+        }
+
         // Devolver respuesta JSON
         echo json_encode($response);
         

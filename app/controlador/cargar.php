@@ -9,8 +9,13 @@ ob_start();
 // Headers para JSON
 header('Content-Type: application/json');
 
-// Incluir managerParticipante.php
+// Iniciar sesión
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
+// Incluir dependencias
 require_once 'managerParticipante.php';
+require_once '../modelo/HistorialUtil.php';
 
 // Verificar que sea una solicitud POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -128,6 +133,11 @@ try {
     // Intentar registrar el participante
     $resultado = $participanteManager->registrar($data);
     
+    if ($resultado['success'] && isset($_SESSION['id_usuario'])) {
+        $nombreCompleto = $data['primer_nombre'] . " " . $data['primer_apellido'];
+        HistorialUtil::registrarCrearParticipante($resultado['id'], $nombreCompleto, $_SESSION['id_usuario']);
+    }
+
     // Limpiar cualquier salida buffer antes de enviar JSON
     ob_clean();
     echo json_encode($resultado);

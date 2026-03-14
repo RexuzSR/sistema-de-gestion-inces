@@ -1,5 +1,8 @@
 <?php
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once 'managerCurso.php';
+require_once '../../modelo/HistorialUtil.php';
 
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
@@ -54,6 +57,11 @@ try {
     $resultado = $curso->editar($data);
 
     if ($resultado['success']) {
+        // Registrar en historial
+        if (isset($_SESSION['id_usuario'])) {
+            $nombreCurso = $data['nombre_curso-Edit'] ?? 'Curso ID: ' . $data['id_curso'];
+            HistorialUtil::registrarEditarCurso($data['id_curso'], $nombreCurso, $_SESSION['id_usuario']);
+        }
         echo json_encode($resultado);
     } else {
         http_response_code(400);
