@@ -138,6 +138,8 @@ $conn = null;
 <script src="../../assets/js/bootstrap.bundle.min.js"></script>
 <script src="../../assets/js/toastr/toastr.min.js"></script>
 <script src="../../assets/js/toastr/toastr-config.js"></script>
+<script src="../../assets/js/home.js"></script>
+<script src="../../assets/js/notifications.js"></script>
 
 <script>
 const ITEMS_POR_PAGINA = 50;

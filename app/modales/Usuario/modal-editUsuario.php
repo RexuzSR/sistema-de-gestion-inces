@@ -555,9 +555,6 @@
           background: linear-gradient(90deg, transparent, #0281fe, #38bdf8, #0281fe, transparent);
           filter: blur(2px);
         "></div>
-        <p style="color: #94a3b8; font-size: 0.75rem; letter-spacing: 1px; margin: 0;">
-          SISTEMA DE GESTIÓN DE USUARIOS • VERSIÓN 2.0
-        </p>
       </div>
     </div>
   </div>

@@ -1,4 +1,6 @@
-html { overflow-y: scroll; }
+html {
+    overflow-y: scroll;
+}
 
 .historial-container {
     background: #f8f9fa;
@@ -7,12 +9,12 @@ html { overflow-y: scroll; }
 }
 
 .historial-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #06b1cf 0%, #025463 100%);
     color: white;
     padding: 2rem;
     border-radius: 8px;
     margin-bottom: 2rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .historial-header h1 {
@@ -32,7 +34,7 @@ html { overflow-y: scroll; }
     padding: 1.5rem;
     border-radius: 8px;
     margin-bottom: 2rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .filtros-section h5 {
@@ -78,7 +80,8 @@ html { overflow-y: scroll; }
     flex-wrap: wrap;
 }
 
-.btn-filtrar, .btn-limpiar {
+.btn-filtrar,
+.btn-limpiar {
     padding: 0.5rem 1.5rem;
     border: none;
     border-radius: 4px;
@@ -112,7 +115,7 @@ html { overflow-y: scroll; }
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     margin-bottom: 2rem;
 }
 
@@ -194,7 +197,7 @@ html { overflow-y: scroll; }
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #667eea;
+    background: #06d2da;
     color: white;
     display: flex;
     align-items: center;
@@ -249,7 +252,7 @@ html { overflow-y: scroll; }
     background: white;
     padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     border-left: 4px solid #667eea;
 }
 
@@ -304,8 +307,13 @@ html { overflow-y: scroll; }
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .info-paginacion {
