@@ -386,7 +386,7 @@
                         border-radius: 12px 0 0 12px;
                         color: #0281fe;
                       "><i class="bi bi-person"></i></span>
-                      <input class="form-control neon-input" type="text" name="nombre_usuario" id="nombre_usuario-Edit" required placeholder="@usuario" style="
+                      <input class="form-control neon-input" type="text" name="nombre_usuario" id="nombre_usuario-Edit" required placeholder="@usuario" maxlength="64" style="
                         border: 1.5px solid #e2e8f0;
                         border-left: none;
                         border-radius: 0 12px 12px 0;
@@ -436,7 +436,7 @@
                         border-radius: 12px 0 0 12px;
                         color: #0281fe;
                       "><i class="bi bi-lock"></i></span>
-                      <input class="form-control neon-input" type="password" id="password-Edit" name="password" placeholder="••••••••" style="
+                      <input class="form-control neon-input" type="password" id="password-Edit" name="password" placeholder="••••••••" maxlength="64" style="
                         border: 1.5px solid #e2e8f0;
                         border-left: none;
                         border-radius: 0 12px 12px 0;
@@ -461,7 +461,7 @@
                         border-radius: 12px 0 0 12px;
                         color: #0281fe;
                       "><i class="bi bi-lock-fill"></i></span>
-                      <input class="form-control neon-input" type="password" id="confirm_password-Edit" name="confirm_password" placeholder="••••••••" style="
+                      <input class="form-control neon-input" type="password" id="confirm_password-Edit" name="confirm_password" placeholder="••••••••" maxlength="64" style="
                         border: 1.5px solid #e2e8f0;
                         border-left: none;
                         border-radius: 0 12px 12px 0;
@@ -1052,6 +1052,11 @@ window.validateStep2 = function() {
         }
         isValid = false;
         shakeElement(nombreUsuario);
+    } else if (nombreUsuario.value.length > 64) {
+        nombreUsuario.classList.add('is-invalid');
+        document.getElementById('error-nombre_usuario-edit').textContent = 'El nombre de usuario no puede superar los 64 caracteres';
+        isValid = false;
+        shakeElement(nombreUsuario);
     }
     
     // Validar correo electrónico
@@ -1110,10 +1115,15 @@ window.validatePasswords = function() {
         
         // Si se ingresó una nueva contraseña
         if (password.value.trim() !== '') {
-            // Validar que la contraseña tenga al menos 6 caracteres
+            // Validar que la contraseña tenga entre 6 y 64 caracteres
             if (password.value.length < 6) {
                 password.classList.add('is-invalid');
                 document.getElementById('error-password-edit').textContent = 'La contraseña debe tener al menos 6 caracteres';
+                isValid = false;
+                shakeElement(password);
+            } else if (password.value.length > 64) {
+                password.classList.add('is-invalid');
+                document.getElementById('error-password-edit').textContent = 'La contraseña no puede superar los 64 caracteres';
                 isValid = false;
                 shakeElement(password);
             }

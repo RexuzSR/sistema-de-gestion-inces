@@ -67,6 +67,21 @@
 
                         <!-- PERÍODO DE EJECUCIÓN -->
                         <div class="col-12">
+                            <!-- Periodo de Tiempo -->
+                            <div class="col-12 mb-3">
+                                <div class="form-modern">
+                                    <label class="form-label fw-semibold text-dark mb-2">
+                                        <i class="bi bi-clock-history me-1"></i>Periodo de Tiempo
+                                    </label>
+                                    <select class="form-select modern-select" id="edit_periodo_tiempo" name="periodo_tiempo" required>
+                                        <option value="">Seleccione un periodo</option>
+                                        <option value="mensual">Mensual (1 mes)</option>
+                                        <option value="trimestral">Trimestral (3 meses)</option>
+                                        <option value="semestral">Semestral (6 meses)</option>
+                                        <option value="anual">Anual (12 meses)</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="card-modern mb-3">
                                 <div class="card-body p-4">
                                     <div class="d-flex align-items-center mb-3">
@@ -100,7 +115,13 @@
                                                         <i class="bi bi-calendar"></i>
                                                     </span>
                                                     <input type="date" class="form-control modern-input" 
-                                                           id="edit_fecha_fin" name="fecha_fin" required>
+                                                           id="edit_fecha_fin" name="fecha_fin"
+                                                           readonly disabled
+                                                           style="background:#f8f9fa;cursor:not-allowed;"
+                                                           required>
+                                                </div>
+                                                <div class="form-text text-muted mt-1">
+                                                    <i class="bi bi-info-circle me-1"></i>Se calcula automáticamente según el periodo seleccionado.
                                                 </div>
                                             </div>
                                         </div>
@@ -541,28 +562,47 @@ function initEditMetaModal() {
     const form = document.getElementById('form-editMeta');
     const fechaInicio = document.getElementById('edit_fecha_inicio');
     const fechaFin = document.getElementById('edit_fecha_fin');
-    
-    // Validación de fechas
-    if (fechaInicio && fechaFin) {
-        fechaInicio.addEventListener('change', function() {
-            if (this.value) {
-                fechaFin.min = this.value;
-                
-                // Si la fecha fin es anterior a la fecha inicio, ajustarla
-                if (fechaFin.value && fechaFin.value < this.value) {
-                    fechaFin.value = this.value;
-                }
-            }
-        });
-        
-        fechaFin.addEventListener('change', function() {
-            if (fechaInicio.value && this.value && this.value < fechaInicio.value) {
-                showToast('La fecha fin debe ser posterior o igual a la fecha inicio', 'warning');
-                this.value = fechaInicio.value;
-                this.focus();
-            }
-        });
+    const periodoSelect = document.getElementById('edit_periodo_tiempo');
+
+    // Función para calcular fecha fin en edición
+    function calcularFechaFinEdit() {
+        const inicio = fechaInicio.value;
+        const periodo = periodoSelect.value;
+        if (!inicio || !periodo) { fechaFin.value = ''; return; }
+        const fecha = new Date(inicio + 'T00:00:00');
+        switch (periodo) {
+            case 'mensual':    fecha.setMonth(fecha.getMonth() + 1); break;
+            case 'trimestral': fecha.setMonth(fecha.getMonth() + 3); break;
+            case 'semestral':  fecha.setMonth(fecha.getMonth() + 6); break;
+            case 'anual':      fecha.setFullYear(fecha.getFullYear() + 1); break;
+        }
+        const y = fecha.getFullYear();
+        const m = String(fecha.getMonth() + 1).padStart(2, '0');
+        const d = String(fecha.getDate()).padStart(2, '0');
+        fechaFin.value = `${y}-${m}-${d}`;
     }
+
+    // Habilitar/deshabilitar fecha fin según periodo
+    function actualizarFechaFinEdit() {
+        if (periodoSelect.value) {
+            fechaFin.disabled = false;
+            fechaFin.style.cursor = '';
+            calcularFechaFinEdit();
+        } else {
+            fechaFin.disabled = true;
+            fechaFin.style.cursor = 'not-allowed';
+            fechaFin.value = '';
+        }
+    }
+
+    // Event listeners
+    periodoSelect.addEventListener('change', actualizarFechaFinEdit);
+    fechaInicio.addEventListener('change', function() {
+        if (periodoSelect.value) calcularFechaFinEdit();
+    });
+
+    // Inicializar estado
+    actualizarFechaFinEdit();
     
     // Mejorar la experiencia del select de ámbito
     const ambitoSelect = document.getElementById('edit_id_ambito');
@@ -661,7 +701,22 @@ function loadEditMetaData(data) {
     document.getElementById('edit_meta_objetivo').value = data.meta_objetivo || '';
     document.getElementById('edit_estudiantes_formados').value = data.estudiantes_formados || '0';
     document.getElementById('edit_fecha_inicio').value = data.fecha_inicio || '';
-    document.getElementById('edit_fecha_fin').value = data.fecha_fin || '';
+
+    // Cargar el periodo primero
+    const periodoSelect = document.getElementById('edit_periodo_tiempo');
+    const fechaFin = document.getElementById('edit_fecha_fin');
+    if (periodoSelect && data.periodo_tiempo) {
+        periodoSelect.value = data.periodo_tiempo;
+        // Habilitar fecha_fin y asignar el valor guardado
+        fechaFin.disabled = false;
+        fechaFin.style.cursor = '';
+        fechaFin.value = data.fecha_fin || '';
+    } else {
+        if (periodoSelect) periodoSelect.value = '';
+        fechaFin.disabled = true;
+        fechaFin.style.cursor = 'not-allowed';
+        fechaFin.value = '';
+    }
     
     // Configurar radio buttons de estado
     if (data.estado === 'Activa') {

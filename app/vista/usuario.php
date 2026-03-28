@@ -333,5 +333,96 @@ if (!empty($imagenUsuario)) {
     <script src="../../assets/js/Usuario/buscarUsuario.js"></script>
     <script src="../../assets/js/notifications.js"></script>
 
+
+<script>
+(function () {
+    const INACTIVIDAD_MS = 10 * 60 * 1000; // 10 minutos exactos
+    const AVISO_MS       =  1 * 60 * 1000; // aviso al minuto 9
+    const LOGOUT_URL     = '../../controlador/Usuario/cerrar_sesion.php';
+    const LOGIN_URL      = 'index.php?sesion=expirada';
+
+    let timerLogout, timerAviso;
+    let avisoActivo = false;
+
+    function resetTimer() {
+        clearTimeout(timerLogout);
+        clearTimeout(timerAviso);
+
+        if (avisoActivo) {
+            const aviso = document.getElementById('aviso-inactividad');
+            if (aviso) aviso.remove();
+            avisoActivo = false;
+        }
+
+        // Aviso al minuto 9
+        timerAviso = setTimeout(mostrarAviso, INACTIVIDAD_MS - AVISO_MS);
+
+        // Cierre al minuto 10
+        timerLogout = setTimeout(cerrarSesion, INACTIVIDAD_MS);
+    }
+
+    function mostrarAviso() {
+        if (document.getElementById('aviso-inactividad')) return;
+        avisoActivo = true;
+
+        let segundos = 60;
+
+        const div = document.createElement('div');
+        div.id = 'aviso-inactividad';
+        div.innerHTML = `
+            <div style="
+                position:fixed; bottom:24px; right:24px; z-index:99999;
+                background:#1e293b; color:#f1f5f9;
+                border-left:4px solid #f59e0b; border-radius:8px;
+                padding:16px 20px; max-width:320px;
+                box-shadow:0 4px 20px rgba(0,0,0,0.35);
+                font-family:sans-serif; font-size:14px;
+            ">
+                <strong style="color:#f59e0b; display:block; margin-bottom:6px;">
+                    ⚠️ Sesión por expirar
+                </strong>
+                <p style="margin:0 0 12px; color:#cbd5e1;">
+                    Tu sesión se cerrará en <span id="cuenta-regresiva"><strong>60</strong></span> segundos por inactividad.
+                </p>
+                <button id="btn-seguir-conectado" style="
+                    background:#3b82f6; color:#fff; border:none;
+                    border-radius:5px; padding:7px 16px;
+                    cursor:pointer; font-size:13px;
+                ">
+                    Seguir conectado
+                </button>
+            </div>
+        `;
+        document.body.appendChild(div);
+
+        // Cuenta regresiva visual
+        const intervalo = setInterval(() => {
+            segundos--;
+            const el = document.getElementById('cuenta-regresiva');
+            if (el) el.innerHTML = `<strong>${segundos}</strong>`;
+            if (segundos <= 0) clearInterval(intervalo);
+        }, 1000);
+
+        document.getElementById('btn-seguir-conectado')
+            .addEventListener('click', () => {
+                clearInterval(intervalo);
+                resetTimer();
+            });
+    }
+
+    function cerrarSesion() {
+        fetch(LOGOUT_URL, { method: 'POST', credentials: 'same-origin' })
+            .finally(() => { window.location.href = LOGIN_URL; });
+    }
+
+    // Cualquier actividad del usuario reinicia el contador
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+        .forEach(ev => document.addEventListener(ev, resetTimer, { passive: true }));
+
+    // Arrancar al cargar la página
+    resetTimer();
+})();
+</script>
+
 </body>
 </html>

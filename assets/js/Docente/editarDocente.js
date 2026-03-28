@@ -291,13 +291,21 @@ $(document).on('click', '.button.edit', function () {
             $('#cedula-Edit').val(data.cedula);
 
             // Tratar teléfono
-            if (data.telefono && data.telefono.length >= 10) {
-                const pref = data.telefono.substring(0, 4);
-                const num = data.telefono.substring(4);
-                $('#prefijo_telefono-Edit').val(pref);
-                $('#telefono_numero-Edit').val(num);
-                $('#telefono-Edit').val(data.telefono);
+            if (data.telefono) {
+                let telStr = String(data.telefono);
+                if (telStr.length === 10) telStr = '0' + telStr;
+                
+                if (telStr.length >= 11) {
+                    const pref = telStr.substring(0, 4);
+                    const num = telStr.substring(4);
+                    $('#prefijo_telefono-Edit').val(pref);
+                    $('#telefono_numero-Edit').val(num);
+                    $('#telefono-Edit').val(telStr);
+                } else {
+                    $('#telefono-Edit').val(telStr);
+                }
             } else {
+                $('#prefijo_telefono-Edit').val('');
                 $('#telefono_numero-Edit').val('');
                 $('#telefono-Edit').val('');
             }

@@ -5,9 +5,9 @@ const categoriasReportes = [
         bgColor: "rgba(13,110,253,0.9)", lightColor: "rgba(13,110,253,0.5)",
         darkColor: "rgba(0,80,200,0.95)", bodyBgColor: "rgba(13,110,253,0.06)",
         reportes: [
-            { id: 1, nombre: "Total de Participantes", funcion: 'cargarTotalParticipantes', keywords: ["participante", "inscritos", "demografia", "genero", "discapacidad", "edades", "retencion", "nuevos"] },
-            { id: 2, nombre: "Participantes Aprobados", funcion: 'cargarParticipantesAprobados', keywords: ["participante", "calificaciones", "exito", "notas", "aprobacion", "aprobado", "finalizados"] },
-            { id: 9, nombre: "Participantes por Ámbito", funcion: 'cargarParticipantesPorAmbito', keywords: ["participante", "ubicacion", "geografia", "zona", "estado", "region", "territorio"] }
+            { id: 1, nombre: "Total de Participantes",   funcion: 'cargarTotalParticipantes' },
+            { id: 2, nombre: "Participantes Aprobados",  funcion: 'cargarParticipantesAprobados' },
+            { id: 9, nombre: "Participantes por Ámbito", funcion: 'cargarParticipantesPorAmbito' }
         ]
     },
     {
@@ -16,9 +16,9 @@ const categoriasReportes = [
         bgColor: "rgba(25,135,84,0.9)", lightColor: "rgba(25,135,84,0.5)",
         darkColor: "rgba(15,100,60,0.95)", bodyBgColor: "rgba(25,135,84,0.06)",
         reportes: [
-            { id: 3, nombre: "Total de Cursos", funcion: 'cargarTotalCursos', keywords: ["curso", "formacion", "programacion", "oferta", "disponibles", "clases"] },
-            { id: 4, nombre: "Cursos con más Participantes", funcion: 'cargarCursosMasParticipantes', keywords: ["curso", "popularidad", "demanda", "concurrido", "llenos", "solicitados"] },
-            { id: 5, nombre: "Curso más Requerido", funcion: 'cargarCursoMasRequerido', keywords: ["curso", "interes", "anhelado", "peticion", "necesidad", "tendencia"] }
+            { id: 3, nombre: "Total de Cursos",              funcion: 'cargarTotalCursos' },
+            { id: 4, nombre: "Cursos con más Participantes", funcion: 'cargarCursosMasParticipantes' },
+            { id: 5, nombre: "Curso más Requerido",          funcion: 'cargarCursoMasRequerido' }
         ]
     },
     {
@@ -27,9 +27,9 @@ const categoriasReportes = [
         bgColor: "rgba(255,193,7,0.9)", lightColor: "rgba(255,193,7,0.5)",
         darkColor: "rgba(200,150,0,0.95)", bodyBgColor: "rgba(255,193,7,0.07)",
         reportes: [
-            { id: 10, nombre: "Total de Docentes", funcion: 'cargarTotalDocentes', keywords: ["docente", "profesores", "instructores", "maestros", "personal", "nomina"] },
-            { id: 6, nombre: "Docentes más Solicitados", funcion: 'cargarDocentesMasSolicitados', keywords: ["docente", "desempeño", "pedidos", "populares", "preferidos"] },
-            { id: 7, nombre: "Docentes Inactivos", funcion: 'cargarDocentesInactivos', keywords: ["docente", "suspendidos", "disponibilidad", "ausentes", "bajas"] }
+            { id: 10, nombre: "Total de Docentes",        funcion: 'cargarTotalDocentes' },
+            { id: 6,  nombre: "Docentes más Solicitados", funcion: 'cargarDocentesMasSolicitados' },
+            { id: 7,  nombre: "Docentes Inactivos",       funcion: 'cargarDocentesInactivos' }
         ]
     },
     {
@@ -38,36 +38,36 @@ const categoriasReportes = [
         bgColor: "rgba(220,53,69,0.9)", lightColor: "rgba(220,53,69,0.5)",
         darkColor: "rgba(180,35,50,0.95)", bodyBgColor: "rgba(220,53,69,0.06)",
         reportes: [
-            { id: 8, nombre: "Generar Constancias", funcion: 'cargarGenerarConstancias', keywords: ["constancia", "certificados", "diplomas", "pdf", "descarga", "validacion", "acreditacion"] },
-            { id: 11, nombre: "Meta por Ámbito", funcion: 'cargarMetaPorAmbito', keywords: ["meta", "objetivos", "cumplimiento", "alcance", "planificacion"] }
+            { id: 8,  nombre: "Generar Constancias", funcion: 'cargarGenerarConstancias' },
+            { id: 11, nombre: "Meta por Ámbito",     funcion: 'cargarMetaPorAmbito' }
         ]
     }
 ];
 
-const cardsContainer = document.getElementById('cardsContainer');
+const cardsContainer  = document.getElementById('cardsContainer');
 const reportContainer = document.getElementById('reportContainer');
-const loadingOverlay = document.getElementById('loadingOverlay');
-let tabsContainer = null;
+const loadingOverlay  = document.getElementById('loadingOverlay');
+let tabsContainer     = null;
 let currentCategoryId = null;
-let currentReportId = null;
-let chartInstances = {};
+let currentReportId   = null;
+let chartInstances    = {};
 let cleanupStickyTabs = null;
-let buscador = null;
+let buscador          = null;
 let categoriaActivaId = null;
 
 function getColorFromCategory(colorClass) {
     const map = {
         primary: '#0d6efd', success: '#198754', warning: '#ffc107',
-        danger: '#dc3545', info: '#0dcaf0', secondary: '#6c757d'
+        danger: '#dc3545',  info: '#0dcaf0',    secondary: '#6c757d'
     };
     return map[colorClass] || '#6c757d';
 }
 
 function aplicarRippleCard(element, event, colorHex) {
     element.querySelectorAll('.rp-card-ripple').forEach(r => r.remove());
-    const rect = element.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const rect    = element.getBoundingClientRect();
+    const x       = event.clientX - rect.left;
+    const y       = event.clientY - rect.top;
     const maxDist = Math.max(
         Math.hypot(x, y),
         Math.hypot(x - rect.width, y),
@@ -101,11 +101,11 @@ function validarEstructuraDatos() {
         if (!Array.isArray(categoriasReportes)) return false;
         categoriasReportes.forEach((cat, i) => {
             if (!cat.id || !cat.nombre) throw new Error(`Cat ${i}: falta id/nombre`);
-            if (!cat.icono) cat.icono = '<i class="bi bi-card-text"></i>';
-            if (!cat.color) cat.color = 'primary';
-            if (!cat.bgColor) cat.bgColor = 'rgba(13,110,253,0.9)';
-            if (!cat.lightColor) cat.lightColor = 'rgba(13,110,253,0.5)';
-            if (!cat.darkColor) cat.darkColor = 'rgba(0,80,200,0.95)';
+            if (!cat.icono)       cat.icono       = '<i class="bi bi-card-text"></i>';
+            if (!cat.color)       cat.color       = 'primary';
+            if (!cat.bgColor)     cat.bgColor     = 'rgba(13,110,253,0.9)';
+            if (!cat.lightColor)  cat.lightColor  = 'rgba(13,110,253,0.5)';
+            if (!cat.darkColor)   cat.darkColor   = 'rgba(0,80,200,0.95)';
             if (!cat.bodyBgColor) cat.bodyBgColor = 'rgba(13,110,253,0.06)';
             if (!Array.isArray(cat.reportes)) throw new Error(`Cat ${cat.nombre}: sin reportes`);
             cat.reportes.forEach((r, j) => {
@@ -152,7 +152,7 @@ function mostrarErrorInicial(msg) {
         </div>`;
 }
 
-function mostrarCategoriasForzado() { try { mostrarCategorias(); } catch (e) { } }
+function mostrarCategoriasForzado() { try { mostrarCategorias(); } catch(e){} }
 
 function crearTabsContainer() {
     if (tabsContainer) return;
@@ -170,17 +170,17 @@ function mostrarCategorias() {
         if (reportContainer) reportContainer.style.display = 'none';
         if (!cardsContainer) return;
 
-        currentReportId = null;
+        currentReportId   = null;
         currentCategoryId = null;
         categoriaActivaId = null;
 
-        cardsContainer.style.display = 'block';
-        cardsContainer.innerHTML = '';
-        cardsContainer.className = 'mt-0 pt-0';
+        cardsContainer.style.display  = 'block';
+        cardsContainer.innerHTML      = '';
+        cardsContainer.className      = 'mt-0 pt-0';
         cardsContainer.style.position = 'relative';
 
         const title = document.createElement('h1');
-        title.className = 'text-center mb-3 fw-bold text-primary rp-main-title';
+        title.className   = 'text-center mb-3 fw-bold text-primary rp-main-title';
         title.textContent = 'Reportes del Sistema';
         cardsContainer.appendChild(title);
 
@@ -191,24 +191,24 @@ function mostrarCategorias() {
         cardsContainer.appendChild(searchSection);
 
         const subtitle = document.createElement('p');
-        subtitle.className = 'text-center text-muted mb-3 rp-main-subtitle';
+        subtitle.className   = 'text-center text-muted mb-3 rp-main-subtitle';
         subtitle.textContent = 'Selecciona una categoría para explorar los reportes disponibles';
         cardsContainer.appendChild(subtitle);
 
         const row = document.createElement('div');
-        row.id = 'rp-category-grid';
+        row.id        = 'rp-category-grid';
         row.className = 'row justify-content-center g-4 mb-0 mt-2';
 
         categoriasReportes.forEach(categoria => {
             const color = getColorFromCategory(categoria.color);
 
             const col = document.createElement('div');
-            col.className = 'col-md-6 col-lg-3 report-card-container';
+            col.className     = 'col-md-6 col-lg-3 report-card-container';
             col.dataset.catId = categoria.id;
 
             const card = document.createElement('div');
-            card.className = `card card-report shadow h-100 border-0 rp-nav-card rp-nav-card--category hover-categoria-${categoria.color}`;
-            card.id = `cat-card-${categoria.id}`;
+            card.className  = `card card-report shadow h-100 border-0 rp-nav-card rp-nav-card--category hover-categoria-${categoria.color}`;
+            card.id         = `cat-card-${categoria.id}`;
             card.dataset.id = categoria.id;
 
             card.innerHTML = `
@@ -232,7 +232,7 @@ function mostrarCategorias() {
         cardsContainer.appendChild(row);
 
         const expansionArea = document.createElement('div');
-        expansionArea.id = 'rp-expansion-area';
+        expansionArea.id        = 'rp-expansion-area';
         expansionArea.className = 'rp-expansion-area';
         cardsContainer.appendChild(expansionArea);
 
@@ -266,7 +266,7 @@ function toggleCategoriaExpansion(categoriaId) {
 
     if (esCambioDirecto && area) {
         area.style.transition = 'opacity 0.15s ease';
-        area.style.opacity = '0';
+        area.style.opacity    = '0';
         setTimeout(() => mostrarExpansionReportes(categoria, true), 150);
     } else {
         mostrarExpansionReportes(categoria, false);
@@ -282,8 +282,8 @@ function cerrarExpansion() {
     const area = document.getElementById('rp-expansion-area');
     if (area) {
         area.style.transition = 'opacity 0.2s ease, max-height 0.28s ease';
-        area.style.opacity = '0';
-        area.style.maxHeight = '0';
+        area.style.opacity    = '0';
+        area.style.maxHeight  = '0';
         setTimeout(() => { area.innerHTML = ''; area.style.cssText = ''; }, 300);
     }
 }
@@ -295,18 +295,18 @@ function mostrarExpansionReportes(categoria, esSwap = false) {
     const color = getColorFromCategory(categoria.color);
 
     if (!esSwap) {
-        area.innerHTML = '';
-        area.style.cssText = '';
-        area.style.opacity = '0';
-        area.style.maxHeight = '0';
-        area.style.overflow = 'hidden';
+        area.innerHTML        = '';
+        area.style.cssText    = '';
+        area.style.opacity    = '0';
+        area.style.maxHeight  = '0';
+        area.style.overflow   = 'hidden';
         area.style.transition = 'none';
     } else {
         area.innerHTML = '';
     }
 
     const inner = document.createElement('div');
-    inner.className = 'rp-expansion-inner';
+    inner.className       = 'rp-expansion-inner';
     inner.style.borderColor = `${color}30`;
 
     const header = document.createElement('div');
@@ -324,12 +324,12 @@ function mostrarExpansionReportes(categoria, esSwap = false) {
 
     const chain = document.createElement('div');
     chain.className = 'rp-reports-chain';
-    chain.id = 'rp-reports-chain';
+    chain.id        = 'rp-reports-chain';
 
     categoria.reportes.forEach(reporte => {
         const node = document.createElement('div');
-        node.className = 'rp-report-node';
-        node.id = `report-node-${reporte.id}`;
+        node.className     = 'rp-report-node';
+        node.id            = `report-node-${reporte.id}`;
         node.style.cssText = `opacity:0; transform:translateY(18px) scale(0.92); --node-color:${color};`;
 
         node.innerHTML = `
@@ -353,14 +353,14 @@ function mostrarExpansionReportes(categoria, esSwap = false) {
     if (esSwap) {
         requestAnimationFrame(() => {
             area.style.transition = 'opacity 0.2s ease';
-            area.style.opacity = '1';
+            area.style.opacity    = '1';
             setTimeout(() => animarNodos(chain), 60);
         });
     } else {
         requestAnimationFrame(() => requestAnimationFrame(() => {
             area.style.transition = 'opacity 0.28s ease, max-height 0.35s cubic-bezier(0.4,0,0.2,1)';
-            area.style.opacity = '1';
-            area.style.maxHeight = '700px';
+            area.style.opacity    = '1';
+            area.style.maxHeight  = '700px';
             setTimeout(() => { area.style.overflow = 'visible'; }, 360);
             setTimeout(() => animarNodos(chain), 180);
         }));
@@ -371,8 +371,8 @@ function animarNodos(chain) {
     Array.from(chain.querySelectorAll('.rp-report-node')).forEach((node, idx) => {
         setTimeout(() => {
             node.style.transition = 'opacity 270ms ease, transform 290ms cubic-bezier(0.34,1.56,0.64,1)';
-            node.style.opacity = '1';
-            node.style.transform = 'translateY(0) scale(1)';
+            node.style.opacity    = '1';
+            node.style.transform  = 'translateY(0) scale(1)';
         }, idx * 65);
     });
 }
@@ -381,7 +381,7 @@ function crearBuscadorInicial() {
     if (!buscador) return null;
     return buscador.crearBuscador({
         placeholder: 'Busca un reporte, participante, curso o docente...',
-        onReporte: (repId, catId) => seleccionarReporte(repId, catId)
+        onReporte:   (repId, catId) => seleccionarReporte(repId, catId)
     });
 }
 
@@ -393,8 +393,8 @@ function crearTabs(categoriaId, reporteActivoId) {
         if (!categoria?.reportes?.length) return;
 
         tabsContainer.style.background = categoria.lightColor.replace(/[\d.]+\)$/, '0.15)');
-        tabsContainer.style.border = `2px solid ${categoria.darkColor}`;
-        tabsContainer.style.boxShadow = `0 4px 15px ${categoria.darkColor.replace(/[\d.]+\)$/, '0.2)')}`;
+        tabsContainer.style.border     = `2px solid ${categoria.darkColor}`;
+        tabsContainer.style.boxShadow  = `0 4px 15px ${categoria.darkColor.replace(/[\d.]+\)$/, '0.2)')}`;
 
         const tc = document.createElement('div');
         tc.className = 'tabs-content';
@@ -403,8 +403,8 @@ function crearTabs(categoriaId, reporteActivoId) {
         homeBtn.className = 'tab-item';
         homeBtn.innerHTML = `<span class="tab-icon"><i class="bi bi-house-fill"></i></span><span class="tab-text">Inicio</span>`;
         _aplicarColorTab(homeBtn, categoria, false);
-        homeBtn.addEventListener('mouseenter', function () { _aplicarColorTab(this, categoria, true); });
-        homeBtn.addEventListener('mouseleave', function () { _aplicarColorTab(this, categoria, false); });
+        homeBtn.addEventListener('mouseenter', function() { _aplicarColorTab(this, categoria, true); });
+        homeBtn.addEventListener('mouseleave', function() { _aplicarColorTab(this, categoria, false); });
         homeBtn.onclick = mostrarCategorias;
         tc.appendChild(homeBtn);
 
@@ -412,8 +412,8 @@ function crearTabs(categoriaId, reporteActivoId) {
         backBtn.className = 'tab-item';
         backBtn.innerHTML = `<span class="tab-icon"><i class="bi bi-arrow-left"></i></span><span class="tab-text">Salir a ${categoria.nombre}</span>`;
         _aplicarColorTab(backBtn, categoria, false);
-        backBtn.addEventListener('mouseenter', function () { _aplicarColorTab(this, categoria, true); });
-        backBtn.addEventListener('mouseleave', function () { _aplicarColorTab(this, categoria, false); });
+        backBtn.addEventListener('mouseenter', function() { _aplicarColorTab(this, categoria, true); });
+        backBtn.addEventListener('mouseleave', function() { _aplicarColorTab(this, categoria, false); });
         backBtn.onclick = volverCategorias;
         tc.appendChild(backBtn);
 
@@ -424,14 +424,14 @@ function crearTabs(categoriaId, reporteActivoId) {
 
         categoria.reportes.forEach((rep, idx) => {
             const tab = document.createElement('button');
-            tab.className = `tab-item${rep.id === reporteActivoId ? ' active' : ''}`;
-            tab.dataset.id = rep.id;
-            tab.dataset.categoriaId = categoriaId;
+            tab.className            = `tab-item${rep.id === reporteActivoId ? ' active' : ''}`;
+            tab.dataset.id           = rep.id;
+            tab.dataset.categoriaId  = categoriaId;
             tab.style.animationDelay = `${idx * 0.07}s`;
             tab.innerHTML = `${categoria.icono.replace('class="', 'class="tab-icon ')}<span class="tab-text">${rep.nombre}</span>`;
             _aplicarColorTab(tab, categoria, rep.id === reporteActivoId);
-            tab.addEventListener('mouseenter', function () { if (!this.classList.contains('active')) _aplicarColorTab(this, categoria, true); });
-            tab.addEventListener('mouseleave', function () { if (!this.classList.contains('active')) _aplicarColorTab(this, categoria, false); });
+            tab.addEventListener('mouseenter', function() { if (!this.classList.contains('active')) _aplicarColorTab(this, categoria, true); });
+            tab.addEventListener('mouseleave', function() { if (!this.classList.contains('active')) _aplicarColorTab(this, categoria, false); });
             tab.addEventListener('click', e => { e.preventDefault(); cambiarReporte(rep.id, categoriaId); });
             tc.appendChild(tab);
         });
@@ -444,10 +444,10 @@ function crearTabs(categoriaId, reporteActivoId) {
 }
 
 function _aplicarColorTab(tab, cat, activo) {
-    tab.style.background = activo ? cat.darkColor : 'white';
-    tab.style.color = activo ? 'white' : cat.darkColor;
+    tab.style.background  = activo ? cat.darkColor : 'white';
+    tab.style.color       = activo ? 'white' : cat.darkColor;
     tab.style.borderColor = activo ? cat.darkColor : cat.lightColor;
-    tab.style.fontWeight = activo ? '600' : '500';
+    tab.style.fontWeight  = activo ? '600' : '500';
 }
 
 function _crearBuscadorTab(categoria) {
@@ -466,7 +466,7 @@ function _crearBuscadorTab(categoria) {
 }
 
 function setupStickyTabs() {
-    if (!tabsContainer) return () => { };
+    if (!tabsContainer) return () => {};
     let ph = null, isSticky = false;
     try {
         ph = document.createElement('div');
@@ -493,10 +493,10 @@ function setupStickyTabs() {
             if (!isSticky) return;
             isSticky = false;
             ph.style.display = 'none';
-            ph.style.height = '0';
+            ph.style.height  = '0';
             tabsContainer.style.position = tabsContainer.style.top = tabsContainer.style.left =
-                tabsContainer.style.width = tabsContainer.style.zIndex =
-                tabsContainer.style.borderRadius = tabsContainer.style.margin = '';
+            tabsContainer.style.width = tabsContainer.style.zIndex =
+            tabsContainer.style.borderRadius = tabsContainer.style.margin = '';
             tabsContainer.classList.remove('sticky-active');
         };
 
@@ -512,7 +512,7 @@ function setupStickyTabs() {
             if (sentinel.parentNode) sentinel.remove();
             if (ph.parentNode) ph.remove();
         };
-    } catch (e) { console.error('Error sticky:', e); return () => { }; }
+    } catch (e) { console.error('Error sticky:', e); return () => {}; }
 }
 
 function seleccionarCategoria(id) { toggleCategoriaExpansion(id); }
@@ -533,10 +533,10 @@ function seleccionarReporte(reporteId, categoriaId) {
 
         setTimeout(() => {
             try {
-                cardsContainer.style.display = 'none';
+                cardsContainer.style.display  = 'none';
                 reportContainer.style.display = 'block';
-                reportContainer.innerHTML = '';
-                tabsContainer.style.display = 'block';
+                reportContainer.innerHTML     = '';
+                tabsContainer.style.display   = 'block';
                 cargarReporte(reporteId, categoriaId);
                 ocultarLoading();
             } catch (e) { console.error(e); ocultarLoading(); }
@@ -579,7 +579,7 @@ function volverCategorias() {
         const savedId = currentCategoryId;
         setTimeout(() => {
             reportContainer.style.display = 'none';
-            reportContainer.innerHTML = '';
+            reportContainer.innerHTML     = '';
             mostrarCategorias();
             if (savedId) setTimeout(() => toggleCategoriaExpansion(savedId), 480);
         }, 300);
@@ -599,17 +599,17 @@ function cargarReporte(reporteId, categoriaId) {
         const backBtn = document.createElement('button');
         backBtn.className = 'btn btn-outline-primary btn-back mb-3 d-md-none';
         backBtn.innerHTML = `<i class="bi bi-arrow-left me-2"></i>Volver a ${categoria.nombre}`;
-        backBtn.onclick = volverCategorias;
+        backBtn.onclick   = volverCategorias;
         reportContainer.appendChild(backBtn);
 
         const title = document.createElement('h2');
-        title.className = `text-${categoria.color} fw-bold mb-3 report-title`;
+        title.className        = `text-${categoria.color} fw-bold mb-3 report-title`;
         title.style.background = 'transparent';
-        title.innerHTML = `${categoria.icono} ${reporte.nombre}`;
+        title.innerHTML        = `${categoria.icono} ${reporte.nombre}`;
         reportContainer.appendChild(title);
 
         const contentDiv = document.createElement('div');
-        contentDiv.id = 'reportContent';
+        contentDiv.id        = 'reportContent';
         contentDiv.className = 'fade-in';
         contentDiv.style.marginTop = tabsContainer?.classList.contains('sticky-active') ? '80px' : '20px';
         reportContainer.appendChild(contentDiv);
@@ -628,40 +628,40 @@ function cargarReporte(reporteId, categoriaId) {
 }
 
 function destruirGraficos() {
-    try { Object.values(chartInstances).forEach(c => { if (c?.destroy) c.destroy(); }); chartInstances = {}; } catch (e) { }
+    try { Object.values(chartInstances).forEach(c => { if (c?.destroy) c.destroy(); }); chartInstances = {}; } catch(e){}
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => { try { init(); } catch (e) { mostrarErrorInicial('Error crítico'); } }, 100);
+    setTimeout(() => { try { init(); } catch(e) { mostrarErrorInicial('Error crítico'); } }, 100);
 });
 if (document.readyState === 'complete') {
-    setTimeout(() => { try { init(); } catch (e) { mostrarErrorInicial('Error crítico'); } }, 100);
+    setTimeout(() => { try { init(); } catch(e) { mostrarErrorInicial('Error crítico'); } }, 100);
 }
 
-window.obtenerAñosDisponibles = function () { const y = new Date().getFullYear(); return [y, y - 1, y - 2, y - 3]; };
+window.obtenerAñosDisponibles = function() { const y = new Date().getFullYear(); return [y, y-1, y-2, y-3]; };
 
-window.mostrarCategorias = mostrarCategorias;
-window.volverCategorias = volverCategorias;
-window.seleccionarCategoria = seleccionarCategoria;
-window.seleccionarReporte = seleccionarReporte;
+window.mostrarCategorias        = mostrarCategorias;
+window.volverCategorias         = volverCategorias;
+window.seleccionarCategoria     = seleccionarCategoria;
+window.seleccionarReporte       = seleccionarReporte;
 window.mostrarReportesCategoria = mostrarReportesCategoria;
 window.toggleCategoriaExpansion = toggleCategoriaExpansion;
-window.cerrarExpansion = cerrarExpansion;
-window.cargarReporte = cargarReporte;
-window.cambiarReporte = cambiarReporte;
-window.crearTabs = crearTabs;
-window.destruirGraficos = destruirGraficos;
-window.init = init;
-window.categoriasReportes = categoriasReportes;
-window.obtenerCategoriaPorId = obtenerCategoriaPorId;
-window.obtenerReportePorIds = obtenerReportePorIds;
+window.cerrarExpansion          = cerrarExpansion;
+window.cargarReporte            = cargarReporte;
+window.cambiarReporte           = cambiarReporte;
+window.crearTabs                = crearTabs;
+window.destruirGraficos         = destruirGraficos;
+window.init                     = init;
+window.categoriasReportes       = categoriasReportes;
+window.obtenerCategoriaPorId    = obtenerCategoriaPorId;
+window.obtenerReportePorIds     = obtenerReportePorIds;
 window.mostrarCategoriasForzado = mostrarCategoriasForzado;
-window.mostrarErrorInicial = mostrarErrorInicial;
+window.mostrarErrorInicial      = mostrarErrorInicial;
 
 function mostrarReportesCategoria(cat) {
     try {
         if (!cat?.id) { mostrarCategorias(); return; }
         mostrarCategorias();
         setTimeout(() => toggleCategoriaExpansion(cat.id), 450);
-    } catch (e) { mostrarCategorias(); }
+    } catch(e) { mostrarCategorias(); }
 }

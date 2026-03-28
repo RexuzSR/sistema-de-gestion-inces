@@ -26,6 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Manejar el resultado
     if ($resultado === true) {
+        // Registrar inicio de sesión en el historial
+        require_once '../../modelo/HistorialUtil.php';
+        HistorialUtil::registrarLogin($_SESSION['id_usuario'], $_SESSION['nombre_usuario']);
+
         // Redirigir al dashboard si es exitoso
         header('Location: ../../../app/vista/Inicio.php');
         exit;

@@ -21,6 +21,7 @@ try {
     $sort_direction = isset($_GET['sort_direction']) ? strtoupper($_GET['sort_direction']) : 'DESC';
     $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
     $per_page = isset($_GET['per_page']) ? intval($_GET['per_page']) : 8;
+    $curso_id = isset($_GET['curso_id']) && $_GET['curso_id'] !== '' ? intval($_GET['curso_id']) : null;
     
     // Validar parámetros
     $page = max(1, $page);
@@ -82,6 +83,56 @@ try {
         $params[':search'] = "%" . $search . "%";
     }
     
+    // Filtro adicional si se busca asignar a un curso en específico
+    if ($curso_id !== null) {
+        require_once '../Curso/managerCurso.php';
+        $cursoManager = new Curso();
+        $curso = $cursoManager->obtenerCursoPorId($curso_id);
+        
+        if (!isset($curso['error'])) {
+            $fechaInicio = $curso['fecha_inicio'];
+            $fechaFin = $curso['fecha_fin'];
+            $turno = $curso['turno'];
+            $horas = (float)$curso['horas_por_clase'];
+
+            // Excluir docentes con conflictos de horario
+            $conditions[] = "NOT EXISTS (
+                SELECT 1 FROM tb_docente_curso dc2
+                JOIN tb_curso c2 ON dc2.id_curso = c2.id_curso
+                WHERE dc2.id_docente = d.id_docente
+                AND c2.id_curso != :curso_id_check
+                AND c2.id_estatusCurso IN (1, 2, 3)
+                AND TRIM(LOWER(c2.turno)) = TRIM(LOWER(:turno_check))
+                AND (
+                    (:fecha_inicio_check IS NULL OR :fecha_fin_check IS NULL OR c2.fecha_inicio IS NULL OR c2.fecha_fin IS NULL)
+                    OR (c2.fecha_inicio <= :fecha_fin_check AND c2.fecha_fin >= :fecha_inicio_check)
+                )
+            )";
+            $params[':curso_id_check'] = $curso_id;
+            $params[':turno_check'] = $turno;
+            $params[':fecha_inicio_check'] = $fechaInicio;
+            $params[':fecha_fin_check'] = $fechaFin;
+
+            // Excluir docentes que excederían las 8 horas diarias
+            $conditions[] = "(:horas_check + COALESCE((
+                SELECT SUM(c3.horas_por_clase) 
+                FROM tb_docente_curso dc3
+                JOIN tb_curso c3 ON dc3.id_curso = c3.id_curso
+                WHERE dc3.id_docente = d.id_docente
+                AND c3.id_curso != :curso_id_check2
+                AND c3.id_estatusCurso IN (1, 2, 3)
+                AND (
+                    (:fecha_inicio_check2 IS NULL OR :fecha_fin_check2 IS NULL OR c3.fecha_inicio IS NULL OR c3.fecha_fin IS NULL)
+                    OR (c3.fecha_inicio <= :fecha_fin_check2 AND c3.fecha_fin >= :fecha_inicio_check2)
+                )
+            ), 0)) <= 8";
+            $params[':horas_check'] = $horas;
+            $params[':curso_id_check2'] = $curso_id;
+            $params[':fecha_inicio_check2'] = $fechaInicio;
+            $params[':fecha_fin_check2'] = $fechaFin;
+        }
+    }
+
     // Agregar condiciones a la consulta
     if (!empty($conditions)) {
         $sql .= " AND " . implode(" AND ", $conditions);
@@ -128,7 +179,7 @@ try {
     $stmt_count = $conn->prepare($sql_count);
     foreach ($params as $key => $value) {
         // Asegurar el tipo correcto de parámetro
-        if ($key === ':edad') {
+        if ($key === ':edad' || $key === ':curso_id_check' || $key === ':curso_id_check2') {
             $stmt_count->bindValue($key, $value, PDO::PARAM_INT);
         } else {
             $stmt_count->bindValue($key, $value);
@@ -151,7 +202,7 @@ try {
     
     foreach ($params as $key => $value) {
         $param_type = PDO::PARAM_STR;
-        if ($key === ':limit' || $key === ':offset' || $key === ':edad') {
+        if ($key === ':limit' || $key === ':offset' || $key === ':edad' || $key === ':curso_id_check' || $key === ':curso_id_check2') {
             $param_type = PDO::PARAM_INT;
         }
         $stmt->bindValue($key, $value, $param_type);

@@ -19,7 +19,7 @@
                 this._map.delete(this._map.keys().next().value);
             this._map.set(k, v);
         }
-        has(k) { return this._map.has(k); }
+        has(k)  { return this._map.has(k); }
         clear() { this._map.clear(); }
     }
 
@@ -37,25 +37,25 @@
             this.cats = Array.isArray(categoriasReportes) ? categoriasReportes : [];
 
             this.cfg = {
-                apiUrl: opts.apiUrl || '../controlador/Reporte/api_reportes.php',
-                debounceMs: opts.debounceMs ?? 280,
-                cacheSize: opts.cacheSize ?? 60,
-                minLength: opts.minLength ?? 2,
+                apiUrl:      opts.apiUrl      || '../controlador/Reporte/api_reportes.php',
+                debounceMs:  opts.debounceMs  ?? 280,
+                cacheSize:   opts.cacheSize   ?? 60,
+                minLength:   opts.minLength   ?? 2,
                 maxPorGrupo: opts.maxPorGrupo ?? 5,
                 rutas: {
                     participante: 'participante.php',
-                    curso: 'cursos.php',
-                    docente: 'docente.php',
+                    curso:        'cursos.php',
+                    docente:      'docente.php',
                     ...(opts.rutas || {})
                 }
             };
 
-            this._cache = new _LRU(this.cfg.cacheSize);
-            this._abort = null;
-            this._selIdx = -1;
+            this._cache     = new _LRU(this.cfg.cacheSize);
+            this._abort     = null;
+            this._selIdx    = -1;
             this._flatItems = [];
-            this._isOpen = false;
-            this._idx = this._buildIdx();
+            this._isOpen    = false;
+            this._idx       = this._buildIdx();
 
             this._debouncedSearch = _db(t => this._fetchAll(t), this.cfg.debounceMs);
 
@@ -69,9 +69,9 @@
         }
 
         _tokenize(text) {
-            const norm = this._norm(text);
+            const norm  = this._norm(text);
             const words = norm.split(' ').filter(w => w.length > 1);
-            const out = [{ token: norm, w: 12 }];
+            const out   = [{ token: norm, w: 12 }];
             words.forEach(word => {
                 out.push({ token: word, w: 8 });
                 for (let i = 3; i < word.length; i++)
@@ -84,9 +84,7 @@
             const idx = new Map();
             this.cats.forEach(cat => {
                 (cat.reportes || []).forEach(rep => {
-                    // Indexar nombre y palabras clave
-                    const termsToIndex = [rep.nombre, cat.nombre, ...(rep.keywords || [])];
-                    this._tokenize(termsToIndex.join(' '))
+                    this._tokenize(`${rep.nombre} ${cat.nombre}`)
                         .forEach(({ token, w }) => {
                             if (!idx.has(token)) idx.set(token, []);
                             idx.get(token).push({ catId: cat.id, repId: rep.id, w });
@@ -103,15 +101,15 @@
             for (let j = 0; j <= b.length; j++) dp[0][j] = j;
             for (let i = 1; i <= a.length; i++)
                 for (let j = 1; j <= b.length; j++)
-                    dp[i][j] = a[i - 1] === b[j - 1]
-                        ? dp[i - 1][j - 1]
-                        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+                    dp[i][j] = a[i-1] === b[j-1]
+                        ? dp[i-1][j-1]
+                        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
             return dp[a.length][b.length];
         }
 
         _searchReports(term) {
-            const norm = this._norm(term);
-            const words = norm.split(' ').filter(w => w.length > 1);
+            const norm   = this._norm(term);
+            const words  = norm.split(' ').filter(w => w.length > 1);
             const scores = new Map();
 
             const add = (catId, repId, pts) => {
@@ -125,7 +123,7 @@
 
                 this._idx.forEach((entries, token) => {
                     if (token !== w) {
-                        if (token.startsWith(w)) entries.forEach(e => add(e.catId, e.repId, e.w * 0.6));
+                        if (token.startsWith(w))    entries.forEach(e => add(e.catId, e.repId, e.w * 0.6));
                         else if (token.includes(w)) entries.forEach(e => add(e.catId, e.repId, e.w * 0.3));
                     }
                 });
@@ -153,50 +151,19 @@
                 .slice(0, this.cfg.maxPorGrupo * 2);
         }
 
-        _getSuggestion(word) {
-            const norm = this._norm(word);
-            if (norm.length < 3) return null;
-
-            let bestMatch = null;
-            // Umbral dinámico: aprox 30-40% del largo para palabras largas
-            let minDistance = norm.length > 7 ? Math.floor(norm.length / 3) + 1 : 2;
-
-            console.groupCollapsed(`[Buscador] Sugerencia para: "${norm}" (Umbral: ${minDistance})`);
-
-            for (const [token, entries] of this._idx.entries()) {
-                if (token.length < 3) continue;
-                if (Math.abs(token.length - norm.length) > 3) continue;
-
-                // Permitir sugerencias de términos con peso >= 4 (raíces de palabras)
-                if (!entries.some(e => e.w >= 4)) continue;
-
-                const d = this._lev(norm, token);
-                if (d === 0) { console.groupEnd(); return null; }
-
-                if (d < minDistance) {
-                    minDistance = d;
-                    bestMatch = token;
-                }
-            }
-
-            if (bestMatch) console.log(`Encontrado: "${bestMatch}" dist: ${minDistance}`);
-            console.groupEnd();
-            return bestMatch;
-        }
-
         async _fetchEntities(term) {
             const key = `api:${term.toLowerCase()}`;
             if (this._cache.has(key)) return this._cache.get(key);
 
-            if (this._abort) { try { this._abort.abort(); } catch (e) { } }
+            if (this._abort) { try { this._abort.abort(); } catch(e){} }
             this._abort = new AbortController();
 
             try {
                 const url = `${this.cfg.apiUrl}?accion=busqueda_global`
-                    + `&q=${encodeURIComponent(term)}`
-                    + `&limite=${this.cfg.maxPorGrupo}`;
+                          + `&q=${encodeURIComponent(term)}`
+                          + `&limite=${this.cfg.maxPorGrupo}`;
                 const res = await fetch(url, {
-                    signal: this._abort.signal,
+                    signal:  this._abort.signal,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -222,14 +189,14 @@
         buscarReportes(termino) {
             try {
                 return this._searchReports(termino).map(({ cat, rep }) => ({
-                    id: rep.id,
-                    nombre: rep.nombre,
-                    categoriaId: cat.id,
+                    id:              rep.id,
+                    nombre:          rep.nombre,
+                    categoriaId:     cat.id,
                     categoriaNombre: cat.nombre,
-                    categoriaColor: cat.color,
-                    icono: cat.icono
+                    categoriaColor:  cat.color,
+                    icono:           cat.icono
                 }));
-            } catch (e) {
+            } catch(e) {
                 console.warn('[BuscadorGlobal] buscarReportes:', e);
                 return [];
             }
@@ -241,15 +208,15 @@
 
         _color(cls) {
             return {
-                primary: '#0d6efd', success: '#198754', warning: '#ffc107',
-                danger: '#dc3545', info: '#0dcaf0', secondary: '#6c757d'
+                primary:'#0d6efd', success:'#198754', warning:'#ffc107',
+                danger:'#dc3545',  info:'#0dcaf0',    secondary:'#6c757d'
             }[cls] || '#6c757d';
         }
 
         _hl(text, term) {
             if (!text || !term) return text || '';
             try {
-                const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
                 return String(text).replace(re, '<mark>$1</mark>');
             } catch { return text; }
         }
@@ -263,10 +230,10 @@
         _badge(estado) {
             if (!estado) return '';
             const m = {
-                'En formación': 'success', 'Activo': 'success', 'Disponible': 'success',
-                'Asignado': 'primary', 'Inactivo': 'secondary', 'En sistema': 'info'
+                'En formación':'success', 'Activo':'success',    'Disponible':'success',
+                'Asignado':'primary',     'Inactivo':'secondary', 'En sistema':'info'
             };
-            return `<span class="badge bg-${m[estado] || 'secondary'} bg-opacity-75 fw-normal"
+            return `<span class="badge bg-${m[estado]||'secondary'} bg-opacity-75 fw-normal"
                          style="font-size:.68rem">${estado}</span>`;
         }
 
@@ -281,9 +248,9 @@
                     <span class="bg-badge">${reportes.length}</span>
                 </div>`);
                 reportes.slice(0, this.cfg.maxPorGrupo).forEach(({ cat, rep }) => {
-                    const c = this._color(cat.color);
+                    const c   = this._color(cat.color);
                     const idx = this._flatItems.length;
-                    this._flatItems.push({ tipo: 'reporte', catId: cat.id, repId: rep.id });
+                    this._flatItems.push({ tipo:'reporte', catId: cat.id, repId: rep.id });
                     html.push(`<div class="bg-item" data-idx="${idx}" tabindex="-1" role="option">
                         <span class="bg-item-icon" style="color:${c}">${cat.icono}</span>
                         <span class="bg-item-body">
@@ -303,7 +270,7 @@
                 </div>`);
                 partics.forEach(p => {
                     const idx = this._flatItems.length;
-                    this._flatItems.push({ tipo: 'participante', buscar: p.nombre, ruta: this.cfg.rutas.participante });
+                    this._flatItems.push({ tipo:'participante', buscar: p.nombre, ruta: this.cfg.rutas.participante });
                     html.push(`<div class="bg-item" data-idx="${idx}" tabindex="-1" role="option">
                         <span class="bg-item-icon" style="color:#0d6efd"><i class="bi bi-person-circle"></i></span>
                         <span class="bg-item-body">
@@ -323,7 +290,7 @@
                 </div>`);
                 cursos.forEach(c => {
                     const idx = this._flatItems.length;
-                    this._flatItems.push({ tipo: 'curso', buscar: c.nombre, ruta: this.cfg.rutas.curso });
+                    this._flatItems.push({ tipo:'curso', buscar: c.nombre, ruta: this.cfg.rutas.curso });
                     html.push(`<div class="bg-item" data-idx="${idx}" tabindex="-1" role="option">
                         <span class="bg-item-icon" style="color:#198754"><i class="bi bi-book-half"></i></span>
                         <span class="bg-item-body">
@@ -343,7 +310,7 @@
                 </div>`);
                 docs.forEach(d => {
                     const idx = this._flatItems.length;
-                    this._flatItems.push({ tipo: 'docente', buscar: d.nombre, ruta: this.cfg.rutas.docente });
+                    this._flatItems.push({ tipo:'docente', buscar: d.nombre, ruta: this.cfg.rutas.docente });
                     html.push(`<div class="bg-item" data-idx="${idx}" tabindex="-1" role="option">
                         <span class="bg-item-icon" style="color:#ffc107"><i class="bi bi-person-workspace"></i></span>
                         <span class="bg-item-body">
@@ -381,13 +348,13 @@
 
         crearBuscador(ui = {}) {
             const placeholder = ui.placeholder || 'Busca reportes, participantes, cursos, docentes...';
-            const compact = ui.compact ?? false;
-            const onReporte = typeof ui.onReporte === 'function'
+            const compact     = ui.compact ?? false;
+            const onReporte   = typeof ui.onReporte === 'function'
                 ? ui.onReporte
                 : (rId, cId) => {
                     if (typeof global.seleccionarReporte === 'function')
                         global.seleccionarReporte(rId, cId);
-                };
+                  };
 
             const wrap = document.createElement('div');
             wrap.className = compact ? 'bg-wrap bg-wrap--compact' : 'bg-wrap bg-wrap--hero';
@@ -403,23 +370,23 @@
             iconL.innerHTML = '<i class="bi bi-search"></i>';
 
             const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'bg-input';
+            input.type        = 'text';
+            input.className   = 'bg-input';
             input.placeholder = placeholder;
             input.setAttribute('autocomplete', 'off');
-            input.setAttribute('spellcheck', 'false');
-            input.setAttribute('aria-label', 'Búsqueda global');
+            input.setAttribute('spellcheck',   'false');
+            input.setAttribute('aria-label',   'Búsqueda global');
 
             const spin = document.createElement('span');
-            spin.className = 'bg-spin';
-            spin.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+            spin.className     = 'bg-spin';
+            spin.innerHTML     = '<i class="bi bi-arrow-repeat"></i>';
             spin.style.display = 'none';
 
             const btnX = document.createElement('button');
-            btnX.type = 'button';
-            btnX.className = 'bg-btn-x';
-            btnX.title = 'Limpiar';
-            btnX.innerHTML = '<i class="bi bi-x-lg"></i>';
+            btnX.type             = 'button';
+            btnX.className        = 'bg-btn-x';
+            btnX.title            = 'Limpiar';
+            btnX.innerHTML        = '<i class="bi bi-x-lg"></i>';
             btnX.style.visibility = 'hidden';
 
             group.appendChild(iconL);
@@ -429,15 +396,15 @@
             wrap.appendChild(group);
 
             const dd = document.createElement('div');
-            dd.className = 'bg-dropdown';
+            dd.className     = 'bg-dropdown';
             dd.style.display = 'none';
             dd.setAttribute('role', 'listbox');
             wrap.appendChild(dd);
 
             let isOpen = false;
 
-            const open = () => { dd.style.display = 'block'; wrap.setAttribute('aria-expanded', 'true'); isOpen = true; };
-            const close = () => { dd.style.display = 'none'; wrap.setAttribute('aria-expanded', 'false'); this._selIdx = -1; isOpen = false; };
+            const open  = () => { dd.style.display = 'block';  wrap.setAttribute('aria-expanded','true');  isOpen = true; };
+            const close = () => { dd.style.display = 'none';   wrap.setAttribute('aria-expanded','false'); this._selIdx = -1; isOpen = false; };
 
             const render = (data) => {
                 spin.style.display = 'none';
@@ -450,7 +417,7 @@
                         const item = this._flatItems[+el.dataset.idx];
                         if (!item) return;
                         close();
-                        input.value = '';
+                        input.value           = '';
                         btnX.style.visibility = 'hidden';
                         item.tipo === 'reporte'
                             ? onReporte(item.repId, item.catId)
@@ -460,13 +427,10 @@
             };
 
             input.addEventListener('input', async () => {
-                const term = input.value; // No trim() aquí para detectar el espacio al final
-                btnX.style.visibility = term.trim() ? 'visible' : 'hidden';
+                const term = input.value.trim();
+                btnX.style.visibility = term ? 'visible' : 'hidden';
 
-                // Autocorrección Automática (Spacebar) se movió a keydown para mayor control
-
-                const trimmedTerm = input.value.trim();
-                if (trimmedTerm.length < this.cfg.minLength) {
+                if (term.length < this.cfg.minLength) {
                     close();
                     spin.style.display = 'none';
                     return;
@@ -474,50 +438,20 @@
 
                 spin.style.display = 'flex';
 
-                const instant = this._searchReports(trimmedTerm);
-                if (instant.length) render({ term: trimmedTerm, reportes: instant, entidades: {} });
+                const instant = this._searchReports(term);
+                if (instant.length) render({ term, reportes: instant, entidades: {} });
 
-                const result = await this._debouncedSearch(trimmedTerm);
-                if (result && input.value.trim() === trimmedTerm) render(result);
+                const result = await this._debouncedSearch(term);
+                if (result && input.value.trim() === term) render(result);
             });
 
             input.addEventListener('keydown', e => {
-                if (e.key === ' ') {
-                    const term = input.value;
-                    const words = term.split(' ');
-                    const lastWord = words[words.length - 1];
-
-                    if (lastWord.length >= 3) {
-                        const sug = this._getSuggestion(lastWord);
-                        if (sug) {
-                            const capitalized = lastWord[0] === lastWord[0].toUpperCase();
-                            words[words.length - 1] = capitalized
-                                ? sug.charAt(0).toUpperCase() + sug.slice(1)
-                                : sug;
-
-                            input.value = words.join(' ') + ' ';
-                            e.preventDefault();
-
-                            input.classList.add('bg-input--corrected');
-                            setTimeout(() => input.classList.remove('bg-input--corrected'), 800);
-
-                            // Re-lanzar búsqueda instantánea
-                            const trimmed = input.value.trim();
-                            if (trimmed.length >= this.cfg.minLength) {
-                                const instant = this._searchReports(trimmed);
-                                if (instant.length) render({ term: trimmed, reportes: instant, entidades: {} });
-                            }
-                            return;
-                        }
-                    }
-                }
-
                 if (!isOpen) return;
-                if (e.key === 'ArrowDown') { e.preventDefault(); this._move(1, dd); }
-                if (e.key === 'ArrowUp') { e.preventDefault(); this._move(-1, dd); }
-                if (e.key === 'Enter') { e.preventDefault(); this._selIdx >= 0 ? this._activate(dd) : dd.querySelector('.bg-item')?.click(); }
-                if (e.key === 'Escape') { close(); input.blur(); }
-                if (e.key === 'Tab') { close(); }
+                if (e.key === 'ArrowDown') { e.preventDefault(); this._move( 1, dd); }
+                if (e.key === 'ArrowUp')   { e.preventDefault(); this._move(-1, dd); }
+                if (e.key === 'Enter')     { e.preventDefault(); this._selIdx >= 0 ? this._activate(dd) : dd.querySelector('.bg-item')?.click(); }
+                if (e.key === 'Escape')    { close(); input.blur(); }
+                if (e.key === 'Tab')       { close(); }
             });
 
             input.addEventListener('focus', () => {
@@ -544,8 +478,8 @@
         crearBuscadorTabs(categoria, onSeleccionarReporte) {
             return this.crearBuscador({
                 placeholder: 'Buscar reporte, participante...',
-                compact: true,
-                onReporte: onSeleccionarReporte
+                compact:     true,
+                onReporte:   onSeleccionarReporte
             });
         }
     }
@@ -569,8 +503,7 @@
 .bg-wrap--hero .bg-icon-left{font-size:1.15rem}
 
 .bg-input{flex:1;border:none;outline:none;background:transparent;
-    font-size:.9rem;color:#212529;min-width:0;padding:5px 0;transition:color 0.3s ease}
-.bg-input--corrected{color:#198754;font-weight:600}
+    font-size:.9rem;color:#212529;min-width:0;padding:5px 0}
 .bg-wrap--hero .bg-input{font-size:1rem;padding:7px 0}
 .bg-input::placeholder{color:#adb5bd}
 

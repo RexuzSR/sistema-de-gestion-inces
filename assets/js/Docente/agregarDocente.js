@@ -160,7 +160,40 @@ $(document).ready(function () {
                 success: function (response) {
                     if (response.exists) {
                         if (response.table === 'docentes') {
+                            const data = response.data;
                             $('#cedula-repetida').show();
+                            
+                            // Autocompletar campos con info del docente existente
+                            $('#primer_nombre').val(data.primer_nombre).trigger('input');
+                            $('#segundo_nombre').val(data.segundo_nombre || '').trigger('input');
+                            $('#primer_apellido').val(data.primer_apellido).trigger('input');
+                            $('#segundo_apellido').val(data.segundo_apellido || '').trigger('input');
+                            $('#correo').val(data.correo).trigger('input');
+                            
+                            if (data.telefono) {
+                                let telStr = String(data.telefono);
+                                if (telStr.length === 10) telStr = '0' + telStr;
+                                
+                                if (telStr.length >= 11) {
+                                    const pref = telStr.substring(0, 4);
+                                    const num = telStr.substring(4);
+                                    $('#prefijo_telefono').val(pref).trigger('change');
+                                    $('#telefono_numero').val(num).trigger('input');
+                                    $('#telefono').val(telStr);
+                                } else {
+                                    $('#telefono').val(telStr).trigger('input');
+                                }
+                            }
+                            
+                            $('#fechaNacimiento').val(data.fecha_nacimiento).trigger('change');
+                            
+                            const rawGender = data.genero || data.sexo;
+                            if (rawGender) {
+                                const generoStr = rawGender.toLowerCase();
+                                const targetValue = generoStr.startsWith('m') ? 'Masculino' : (generoStr.startsWith('f') ? 'Femenino' : null);
+                                if (targetValue) $('#genero').val(targetValue).trigger('change');
+                            }
+                            
                             $form.find('input, select, #btn-addDocente-submit').not('#cedula').prop('disabled', true);
                             toastr.error('Cédula ya registrada como Docente.');
                         } else if (response.table === 'participantes') {
@@ -183,13 +216,22 @@ $(document).ready(function () {
                                     $('#primer_apellido').val(data.primer_apellido).trigger('input');
                                     $('#segundo_apellido').val(data.segundo_apellido || '').trigger('input');
                                     $('#correo').val(data.correo).trigger('input');
-                                    if (data.telefono && data.telefono.length >= 10) {
-                                        const pref = data.telefono.substring(0, 4);
-                                        const num = data.telefono.substring(4);
-                                        $('#prefijo_telefono').val(pref);
-                                        $('#telefono_numero').val(num);
-                                        $('#telefono').val(data.telefono);
+                                    
+                                    if (data.telefono) {
+                                        let telStr = String(data.telefono);
+                                        if (telStr.length === 10) telStr = '0' + telStr;
+                                        
+                                        if (telStr.length >= 11) {
+                                            const pref = telStr.substring(0, 4);
+                                            const num = telStr.substring(4);
+                                            $('#prefijo_telefono').val(pref).trigger('change');
+                                            $('#telefono_numero').val(num).trigger('input');
+                                            $('#telefono').val(telStr);
+                                        } else {
+                                            $('#telefono').val(telStr).trigger('input');
+                                        }
                                     }
+                                    
                                     $('#fechaNacimiento').val(data.fecha_nacimiento).trigger('change');
 
                                     const rawGender = data.genero || data.sexo;

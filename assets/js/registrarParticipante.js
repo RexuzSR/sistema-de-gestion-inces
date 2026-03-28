@@ -154,7 +154,51 @@ $(document).ready(function () {
                 success: function (response) {
                     if (response.exists) {
                         if (response.table === 'participantes') {
+                            const data = response.data;
                             $('#cedula-repetida').show();
+                            
+                            // Autocompletar campos con info del participante existente
+                            $('#primer_nombre').val(data.primer_nombre).trigger('input');
+                            $('#segundo_nombre').val(data.segundo_nombre || '').trigger('input');
+                            $('#primer_apellido').val(data.primer_apellido).trigger('input');
+                            $('#segundo_apellido').val(data.segundo_apellido || '').trigger('input');
+                            $('#correo').val(data.correo).trigger('input');
+                            
+                            // Rellenar teléfono dividido
+                            if (data.telefono) {
+                                let telStr = String(data.telefono);
+                                if (telStr.length === 10) telStr = '0' + telStr;
+                                
+                                if (telStr.length >= 11) {
+                                    const prefijo = telStr.substring(0, 4);
+                                    const numero = telStr.substring(4);
+                                    $('#prefijo_telefono').val(prefijo).trigger('change');
+                                    $('#telefono_numero').val(numero).trigger('input');
+                                    $('#telefono').val(telStr);
+                                } else {
+                                    $('#telefono').val(telStr).trigger('input');
+                                }
+                            }
+                            
+                            $('#fecha_nacimiento').val(data.fecha_nacimiento).trigger('change');
+                            
+                            const rawGender = data.genero || data.sexo;
+                            if (rawGender) {
+                                const generoStr = rawGender.toLowerCase();
+                                if (generoStr.startsWith('m')) {
+                                    $('#genero_masculino').prop('checked', true).trigger('change');
+                                } else if (generoStr.startsWith('f')) {
+                                    $('#genero_femenino').prop('checked', true).trigger('change');
+                                }
+                            }
+                            
+                            if (data.id_discapacidad) {
+                                $('#id_discapacidad').val(data.id_discapacidad).trigger('change');
+                            }
+                            if (data.grado_institucion) {
+                                $('#grado_institucion').val(data.grado_institucion).trigger('change');
+                            }
+
                             $form.find('input, select, button[type="submit"]').not('#cedula').prop('disabled', true);
                             toastr.error('Cédula ya registrada como Participante.');
                         } else if (response.table === 'docentes') {
@@ -177,7 +221,22 @@ $(document).ready(function () {
                                     $('#primer_apellido').val(data.primer_apellido).trigger('input');
                                     $('#segundo_apellido').val(data.segundo_apellido || '').trigger('input');
                                     $('#correo').val(data.correo).trigger('input');
-                                    $('#telefono').val(data.telefono).trigger('input');
+                                    
+                                    if (data.telefono) {
+                                        let telStr = String(data.telefono);
+                                        if (telStr.length === 10) telStr = '0' + telStr;
+                                        
+                                        if (telStr.length >= 11) {
+                                            const prefijo = telStr.substring(0, 4);
+                                            const numero = telStr.substring(4);
+                                            $('#prefijo_telefono').val(prefijo).trigger('change');
+                                            $('#telefono_numero').val(numero).trigger('input');
+                                            $('#telefono').val(telStr);
+                                        } else {
+                                            $('#telefono').val(telStr).trigger('input');
+                                        }
+                                    }
+
                                     $('#fecha_nacimiento').val(data.fecha_nacimiento).trigger('change');
 
                                     const rawGender = data.genero || data.sexo;
@@ -189,6 +248,14 @@ $(document).ready(function () {
                                             $('#genero_femenino').prop('checked', true).trigger('change');
                                         }
                                     }
+                                    
+                                    if (data.id_discapacidad) {
+                                        $('#id_discapacidad').val(data.id_discapacidad).trigger('change');
+                                    }
+                                    if (data.grado_institucion) {
+                                        $('#grado_institucion').val(data.grado_institucion).trigger('change');
+                                    }
+                                    
                                     toastr.success('Campos autocompletados desde el registro de Docentes');
                                 }, 300);
                             });

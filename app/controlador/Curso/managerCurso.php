@@ -680,6 +680,7 @@ class Curso {
     public function obtenerDocentePorCurso($idCurso) {
         try {
             $sql = "SELECT 
+                        d.id_docente,
                         d.primer_nombre, 
                         d.primer_apellido, 
                         d.cedula, 

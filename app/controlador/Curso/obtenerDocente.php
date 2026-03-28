@@ -26,6 +26,7 @@ try {
         echo json_encode([
             'success' => true,
             'docente' => [
+                'id_docente' => $docente['id_docente'] ?? '',
                 'nombre' => $nombre,
                 'cedula' => $cedula,
                 'edad' => $edad

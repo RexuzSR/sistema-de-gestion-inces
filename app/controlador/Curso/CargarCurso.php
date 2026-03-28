@@ -1,3 +1,4 @@
+<?php
 session_name('SISTEMA_CONTROL_INCES');
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once '../../modelo/conexion.php';
@@ -133,4 +134,3 @@ try {
         'message' => $e->getMessage()
     ]);
 }
-?>

@@ -10,6 +10,16 @@ $(document).ready(function () {
     let allParticipantes = []; // Todos los datos originales
     let filteredParticipantes = []; // Datos después de filtros y búsqueda
 
+    // Función para normalizar texto (quitar acentos y pasar a minúsculas)
+    function normalizeString(str) {
+        if (!str) return '';
+        return str.toString()
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
+    }
+
     // Función inicial para cargar TODOS los registros del servidor
     function initTabla() {
         // Mostrar estado de carga
@@ -59,21 +69,30 @@ $(document).ready(function () {
                 matchEdad = edad >= min && edad <= max;
             }
 
-            const estado = p.estado || p.estado_participante || 'En sistema';
-            const matchEstado = currentFilters.estado === '' || estado === currentFilters.estado;
+            const estado = (p.estado || p.estado_participante || 'En sistema').toLowerCase();
+            const matchEstado = currentFilters.estado === '' || estado === currentFilters.estado.toLowerCase();
 
             return matchGenero && matchEdad && matchEstado;
         });
 
         // 2. Aplicar Búsqueda
         if (currentSearchTerm.trim() !== '') {
-            const term = currentSearchTerm.toLowerCase().trim();
-            filteredParticipantes = filteredParticipantes.filter(p => {
-                const nombreCompleto = `${p.nombre || p.primer_nombre || ''} ${p.apellido || p.primer_apellido || ''}`.toLowerCase();
-                const cedula = (p.cedula || '').toLowerCase();
-                const correo = (p.correo || '').toLowerCase();
+            const searchTermNormalized = normalizeString(currentSearchTerm);
+            const tokens = searchTermNormalized.split(/\s+/).filter(t => t.length > 0);
 
-                return nombreCompleto.includes(term) || cedula.includes(term) || correo.includes(term);
+            filteredParticipantes = filteredParticipantes.filter(p => {
+                // Construir una cadena única con todos los campos por los que se puede buscar
+                const searchableData = normalizeString([
+                    p.nombre || p.primer_nombre || '',
+                    p.segundo_nombre || '',
+                    p.apellido || p.primer_apellido || '',
+                    p.segundo_apellido || '',
+                    p.cedula || '',
+                    p.correo || ''
+                ].join(' '));
+
+                // El registro debe contener TODAS las palabras buscadas (en cualquier orden)
+                return tokens.every(token => searchableData.includes(token));
             });
         }
 
@@ -339,21 +358,26 @@ $(document).ready(function () {
     // Variable para el temporizador de búsqueda (debounce)
     let searchTimer;
 
-    // Evento para búsqueda
-    $('#searchInput').on('keyup input', function () {
+    // Función centralizada de búsqueda
+    function ejecutarBusqueda() {
         clearTimeout(searchTimer);
-        const searchTerm = $(this).val();
-
+        const searchTerm = $('#searchInput').val();
         searchTimer = setTimeout(() => {
             currentPage = 1;
             currentSearchTerm = searchTerm;
             procesarTabla();
-        }, 300); // Retardo de 300ms
+        }, 300);
+    }
+
+    // Evento para búsqueda — keyup, input y paste
+    $('#searchInput').on('keyup input', ejecutarBusqueda);
+    $('#searchInput').on('paste', function() {
+        setTimeout(ejecutarBusqueda, 50); // esperar a que el valor se pegue
     });
 
     // Evitar que el enter haga submit en el campo de busqueda
-    $('.search-bar').on('submit', function (e) {
-        e.preventDefault();
+    $('#searchInput').on('keydown', function(e) {
+        if (e.key === 'Enter') e.preventDefault();
     });
 
     // Evento para ordenamiento

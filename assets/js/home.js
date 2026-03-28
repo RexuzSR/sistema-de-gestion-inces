@@ -2,16 +2,57 @@
    home.js  —  INCES Sistema de Control
    ============================================================ */
 
-const PALETA_ESTADO = ['#28c76f', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-const PALETA_GENERO = ['#0ea5e9', '#ec4899'];
-const PALETA_GRADO = ['#6366f1', '#f59e0b', '#10b981'];
-const PALETA_TIPO = ['#7367f0', '#28c76f', '#ff9f43', '#ea5455'];
+const PALETA_ESTADO  = ['#28c76f', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const PALETA_GENERO  = ['#0ea5e9', '#ec4899'];
+const PALETA_GRADO   = ['#6366f1', '#f59e0b', '#10b981'];
+const PALETA_TIPO    = ['#7367f0', '#28c76f', '#ff9f43', '#ea5455'];
 const PALETA_ESTATUS = ['#28c76f', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#6c757d'];
-const PALETA_MODAL = ['#0ea5e9', '#7367f0', '#28c76f'];
-const PALETA_TURNO = ['#ff9f43', '#0ea5e9'];
-const COLOR_METAS = '#ef4444';
+const PALETA_MODAL   = ['#0ea5e9', '#7367f0', '#28c76f'];
+const PALETA_TURNO   = ['#ff9f43', '#0ea5e9'];
+const COLOR_METAS    = '#ef4444';
+const PALETA_AMBITO_SOL = ['#6366f1','#0ea5e9','#28c76f','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981'];
 
-const graficasCreadas = {};
+/* ──────────────────────────────────────────────────────────
+   Mapa de gráficas por sección y tab
+   Cada entrada define:
+     - chartId  → id del canvas
+     - render   → nombre de la función que dibuja la gráfica
+   ────────────────────────────────────────────────────────── */
+const CHART_MAP = {
+    participantes: {
+        estado:  { chartId: 'chartPartEstado',  render: 'renderPartEstado'  },
+        genero:  { chartId: 'chartPartGenero',  render: 'renderPartGenero'  },
+        grado:   { chartId: 'chartPartGrado',   render: 'renderPartGrado'   },
+    },
+    cursos: {
+        estatus:   { chartId: 'chartCursosEstatus',   render: 'renderCursosEstatus'   },
+        modalidad: { chartId: 'chartCursosModalidad', render: 'renderCursosModalidad' },
+        turno:     { chartId: 'chartCursosTurno',     render: 'renderCursosTurno'     },
+        cancelados:{ chartId: 'chartCursosEstatus2',  render: 'renderCursosCancelados'},
+        ambito: { chartId: 'chartAmbitoSolicitadoTab', render: 'renderAmbitoSolicitado' },
+    },
+    docentes: {
+        tipo:   { chartId: 'chartDocTipo',   render: 'renderDocTipo'   },
+        estado: { chartId: 'chartDocEstado', render: 'renderDocEstado' },
+        genero: { chartId: 'chartDocGenero', render: 'renderDocGenero' },
+    },
+    metas: {
+        ambito: { chartId: 'chartCumplimientoAmbito', render: 'renderCumplimientoAmbito' },
+        mes:    { chartId: 'chartMetasMes',            render: 'renderCalendarioMetas'    },
+    },
+};
+
+/* ──────────────────────────────────────────────────────────
+   Estado de gráficas ya renderizadas  { "section:chart": true }
+   ────────────────────────────────────────────────────────── */
+const graficasCreadas   = {};
+const graficasRendered  = new Set();
+
+function colorPorPct(pct) {
+    if (pct >= 95) return '#28c76f';
+    if (pct >= 80) return '#f59e0b';
+    return '#ef4444';
+}
 
 function waitForChart(callback, maxAttempts = 20) {
     let attempts = 0;
@@ -23,99 +64,57 @@ function waitForChart(callback, maxAttempts = 20) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializar Sidebar inmediatamente
     initSidebar();
-
-    // Si estamos en una vista con gráficas (inicio, reportes, etc), intentamos cargar Home
-    // HOME_CHARTS es usualmente inyectada en inicio.php
     waitForChart(initHome);
 });
 
+/* ════════════════════════════
+   INICIALIZACIÓN
+════════════════════════════ */
+function initHome() {
+    initSidebar();
+    animateProgressBars();
+    initTooltips();
+    initTableNavigation();
+    initChartTabs();
+
+    const btnVerTodos = document.getElementById('btn-metas-ver-todos');
+    if (btnVerTodos) btnVerTodos.addEventListener('click', () => mostrarTodasMetas());
+
+    // Mini charts del resumen
+    setTimeout(() => { if (window.HOME_CHARTS) renderMiniChartsMensuales(); }, 300);
+}
+
 function initSidebar() {
-    /* ── Sidebar ── */
     const sidebar = document.getElementById('sidebar');
-    const toggle = document.getElementById('toggle-btn');
+    const toggle  = document.getElementById('toggle-btn');
     if (sidebar && toggle) {
-        // Remover listeners viejos clonando el node si es necesario, o simplemente añadimos
-        // En este caso como es una carga de página, solo añadimos.
         toggle.addEventListener('click', () => sidebar.classList.toggle('expand'));
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('mouseenter', () => { link.style.transition = 'transform .3s ease'; link.style.transform = 'scale(1.05)'; });
             link.addEventListener('mouseleave', () => { link.style.transform = 'scale(1)'; });
         });
     }
-
-    // Sub-menús (Dropdowns)
     document.querySelectorAll('.sidebar-item.dropdown').forEach(item => {
         const link = item.querySelector('.sidebar-link');
-        if (link) {
-            link.addEventListener('click', e => {
-                e.preventDefault();
-                item.classList.toggle('sub-menu-toggle');
-            });
-        }
+        if (link) link.addEventListener('click', e => { e.preventDefault(); item.classList.toggle('sub-menu-toggle'); });
     });
 }
 
-function initHome() {
-
-    /* ── Iconos toggle ── */
-    const ICO_ABAJO = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
-    const ICO_ARRIBA = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
-
-    /* ════ PANEL BÁSICO ════ */
-    let panelBasicoActivo = null;
-
-    function togglePanelBasico(kpiId) {
-        const esMismo = (panelBasicoActivo === kpiId);
-        if (panelBasicoActivo) {
-            const prev = panelBasicoActivo;
-            document.getElementById('panel-basic-' + prev)?.classList.remove('kpi-panel-abierto');
-            document.getElementById('badge-basic-' + prev).innerHTML = ICO_ABAJO + ' Ver desglose';
-            document.querySelector(`[data-kpi-basic="${prev}"]`)?.classList.remove('kpi-activo');
-            panelBasicoActivo = null;
-            if (prev === 'metas') { mesMetaActivo = null; }
-        }
-        if (esMismo) return;
-        const panel = document.getElementById('panel-basic-' + kpiId);
-        if (!panel) return;
-        panelBasicoActivo = kpiId;
-        panel.classList.add('kpi-panel-abierto');
-        document.getElementById('badge-basic-' + kpiId).innerHTML = ICO_ARRIBA + ' Ocultar';
-        document.querySelector(`[data-kpi-basic="${kpiId}"]`)?.classList.add('kpi-activo');
-        setTimeout(() => { renderGraficasBasicas(kpiId); }, 80);
-    }
-
-    document.querySelectorAll('.kpi-basic-btn').forEach(card => {
-        card.addEventListener('click', () => togglePanelBasico(card.dataset.kpiBasic));
-        card.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePanelBasico(card.dataset.kpiBasic); }
-        });
-    });
-
-    document.addEventListener('keydown', e => {
-        if (e.key !== 'Escape') return;
-        if (panelBasicoActivo) togglePanelBasico(panelBasicoActivo);
-    });
-
-    /* ── Barras animadas ── */
+function animateProgressBars() {
     document.querySelectorAll('.kpi-adv-barra').forEach(b => {
         const w = b.style.width; b.style.width = '0%';
         requestAnimationFrame(() => requestAnimationFrame(() => { b.style.width = w; }));
     });
+}
 
+function initTooltips() {
     if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     }
+}
 
-    const btnVerTodos = document.getElementById('btn-metas-ver-todos');
-    if (btnVerTodos) btnVerTodos.addEventListener('click', () => mostrarTodasMetas());
-
-    /* ══════════════════════════════════════════════════════════
-       NAVEGACIÓN — clic en fila de PARTICIPANTE
-       <tr class="part-row-link" data-cedula="...">
-       → participante.php?buscar=CEDULA
-    ══════════════════════════════════════════════════════════ */
+function initTableNavigation() {
     document.addEventListener('click', function (e) {
         const fila = e.target.closest('tr.part-row-link');
         if (!fila) return;
@@ -126,11 +125,6 @@ function initHome() {
         setTimeout(() => { window.location.href = `participante.php?buscar=${encodeURIComponent(cedula)}`; }, 150);
     });
 
-    /* ══════════════════════════════════════════════════════════
-       NAVEGACIÓN — clic en fila de CURSO
-       <tr class="curso-row-link" data-nombre="...">
-       → cursos.php?buscar=NOMBRE_CURSO
-    ══════════════════════════════════════════════════════════ */
     document.addEventListener('click', function (e) {
         const fila = e.target.closest('tr.curso-row-link');
         if (!fila) return;
@@ -141,11 +135,6 @@ function initHome() {
         setTimeout(() => { window.location.href = `cursos.php?buscar=${encodeURIComponent(nombre)}`; }, 150);
     });
 
-    /* ══════════════════════════════════════════════════════════
-       NAVEGACIÓN — clic en fila de META
-       <tr class="meta-row-link" data-id="...">
-       → metas.php?buscar=ID_META
-    ══════════════════════════════════════════════════════════ */
     document.addEventListener('click', function (e) {
         const fila = e.target.closest('tr.meta-row-link');
         if (!fila) return;
@@ -156,11 +145,6 @@ function initHome() {
         setTimeout(() => { window.location.href = `metas.php?buscar=${encodeURIComponent(id)}`; }, 150);
     });
 
-    /* ══════════════════════════════════════════════════════════
-       NAVEGACIÓN — clic en fila de DOCENTE
-       <tr class="docente-row-link" data-cedula="...">
-       → docente.php?buscar=CEDULA
-    ══════════════════════════════════════════════════════════ */
     document.addEventListener('click', function (e) {
         const fila = e.target.closest('tr.docente-row-link');
         if (!fila) return;
@@ -170,13 +154,161 @@ function initHome() {
         fila.style.background = 'rgba(115,103,240,.18)';
         setTimeout(() => { window.location.href = `docente.php?buscar=${encodeURIComponent(cedula)}`; }, 150);
     });
-
-    setTimeout(() => { if (window.HOME_CHARTS) renderMiniChartsMensuales(); }, 300);
 }
 
-/* ══════════════════════════════
-   GRÁFICAS
-══════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   LÓGICA DE SUB-TABS DE GRÁFICAS
+════════════════════════════════════════════════════ */
+function initChartTabs() {
+    document.querySelectorAll('.chart-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const section = btn.dataset.section;
+            const chart   = btn.dataset.chart;
+            activateChartTab(section, chart, btn);
+        });
+    });
+}
+
+function activateChartTab(section, chartKey, btnEl) {
+    // 1. Actualizar botones activos dentro del nav de esta sección
+    const nav = document.getElementById(`chart-nav-${section}`);
+    if (nav) {
+        nav.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
+    }
+    if (btnEl) btnEl.classList.add('active');
+
+    // 2. Ocultar todos los paneles de la sección y mostrar el target
+    const sectionEl = document.getElementById(`section-${section}`);
+    if (sectionEl) {
+        sectionEl.querySelectorAll('.chart-tab-panel').forEach(p => p.classList.remove('active'));
+    }
+    const panel = document.getElementById(`chart-panel-${section}-${chartKey}`);
+    if (panel) panel.classList.add('active');
+
+    // 3. Renderizar la gráfica si aún no fue creada
+    const key = `${section}:${chartKey}`;
+    if (!graficasRendered.has(key)) {
+        graficasRendered.add(key);
+        const entry = CHART_MAP[section]?.[chartKey];
+        if (entry && typeof window[entry.render] === 'function') {
+            setTimeout(() => window[entry.render](), 60);
+        }
+    }
+}
+
+/* ════════════════════════════════════════════════════
+   RENDERIZADO POR SECCIÓN (llamado desde el nav principal)
+   Se renderiza SOLO el tab activo de cada sección
+════════════════════════════════════════════════════ */
+function renderGraficasBasicas(seccionId) {
+    if (!window.HOME_CHARTS) { setTimeout(() => renderGraficasBasicas(seccionId), 200); return; }
+
+    // Encontrar el tab activo de la sección recién activada y renderizarlo
+    const nav = document.getElementById(`chart-nav-${seccionId}`);
+    if (!nav) return;
+    const activeBtn = nav.querySelector('.chart-tab-btn.active');
+    if (!activeBtn) return;
+
+    const chartKey = activeBtn.dataset.chart;
+    activateChartTab(seccionId, chartKey, activeBtn);
+}
+
+/* ════════════════════════════════════════════════════
+   FUNCIONES DE RENDERIZADO INDIVIDUALES
+   Cada función dibuja UNA gráfica específica
+════════════════════════════════════════════════════ */
+
+/* ── Participantes ── */
+function renderPartEstado() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartPartEstado', d.partEstado.labels, d.partEstado.data, PALETA_ESTADO);
+}
+function renderPartGenero() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartPartGenero', d.partGenero.labels, d.partGenero.data, PALETA_GENERO);
+}
+function renderPartGrado() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeBar('chartPartGrado', d.partGrado.labels, d.partGrado.data, PALETA_GRADO);
+}
+
+/* ── Cursos ── */
+function renderCursosEstatus() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartCursosEstatus', d.cursosEstatus.labels, d.cursosEstatus.data, PALETA_ESTATUS);
+}
+function renderCursosModalidad() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartCursosModalidad', d.cursosModal.labels, d.cursosModal.data, PALETA_MODAL);
+}
+function renderCursosTurno() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeBar('chartCursosTurno', d.cursosTurno.labels, d.cursosTurno.data, PALETA_TURNO);
+}
+function renderCursosCancelados() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartCursosEstatus2', d.cursosEstatus.labels, d.cursosEstatus.data, PALETA_ESTATUS);
+}
+function renderAmbitoSolicitado() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    if (d.ambitoSolicitado?.labels?.length) {
+        makeDonutAmbitoSol('chartAmbitoSolicitadoTab', d.ambitoSolicitado.labels, d.ambitoSolicitado.data);
+    }
+}
+
+/* ── Docentes ── */
+function renderDocTipo() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartDocTipo', d.docTipo.labels, d.docTipo.data, PALETA_TIPO);
+}
+function renderDocEstado() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeBar('chartDocEstado', d.docEstado.labels, d.docEstado.data, PALETA_ESTADO);
+}
+function renderDocGenero() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeDonut('chartDocGenero', d.docGenero.labels, d.docGenero.data, PALETA_GENERO);
+}
+
+/* ── Metas ── */
+function renderCumplimientoAmbito() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    if (d.cumplimientoAmbito?.labels?.length) {
+        makeBarAmbitoH('chartCumplimientoAmbito', d.cumplimientoAmbito.labels, d.cumplimientoAmbito.data);
+    }
+}
+function renderCalendarioMetas() {
+    const d = window.HOME_CHARTS;
+    if (!d) return;
+    makeCalendarioMetas('chartMetasMes', d.metasMes.data, COLOR_METAS);
+}
+
+/* ════════════════════════════
+   MINI CHARTS (sección resumen)
+════════════════════════════ */
+function renderMiniChartsMensuales() {
+    if (!window.HOME_CHARTS) return;
+    const d = window.HOME_CHARTS;
+    makeMiniBarMes('chartPartMes',     d.partMes.data,     '#00c8e0');
+    makeMiniBarMes('chartCursosMes',   d.cursosMes.data,   '#28c76f');
+    makeMiniBarMes('chartDocentesMes', d.docentesMes.data, '#7367f0');
+}
+
+/* ════════════════════════════
+   GRÁFICAS — funciones base
+════════════════════════════ */
 function makeDonut(canvasId, labels, data, colores) {
     const ctx = document.getElementById(canvasId);
     if (!ctx || !labels?.length) return;
@@ -193,7 +325,7 @@ function makeDonut(canvasId, labels, data, colores) {
                 }
             }
         });
-    } catch (e) { }
+    } catch (e) {}
 }
 
 function makeBar(canvasId, labels, data, colores, horizontal = false) {
@@ -214,17 +346,17 @@ function makeBar(canvasId, labels, data, colores, horizontal = false) {
                 }
             }
         });
-    } catch (e) { }
+    } catch (e) {}
 }
 
 function makeMiniBarMes(canvasId, data, color) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
-    const mesActual = new Date().getMonth();
-    const bgColors = data.map((_, i) => i === mesActual ? color : color + '55');
+    const mesActual    = new Date().getMonth();
+    const bgColors     = data.map((_, i) => i === mesActual ? color : color + '55');
     const borderColors = data.map((_, i) => i === mesActual ? color : 'transparent');
-    const lbls = typeof MESES_LABELS !== 'undefined' ? MESES_LABELS : ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    const lbls = typeof MESES_LABELS !== 'undefined' ? MESES_LABELS : ['E','F','M','A','M','J','J','A','S','O','N','D'];
     try {
         graficasCreadas[canvasId] = new Chart(ctx, {
             type: 'bar',
@@ -248,27 +380,98 @@ function makeMiniBarMes(canvasId, data, color) {
                         display: true, grid: { display: false }, border: { display: false },
                         ticks: {
                             font: { size: 8 }, color: '#adb5bd', maxRotation: 0,
-                            callback: (_, idx) => ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][idx] ?? ''
+                            callback: (_, idx) => ['E','F','M','A','M','J','J','A','S','O','N','D'][idx] ?? ''
                         }
                     },
                     y: { display: false, beginAtZero: true }
                 }
             }
         });
-    } catch (e) { }
+    } catch (e) {}
 }
 
-/* ══════════════════════════════════════════════════════
-   CALENDARIO DE METAS
-══════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   Gráfica horizontal: cumplimiento por ámbito
+════════════════════════════════════════════════════ */
+function makeBarAmbitoH(canvasId, labels, data) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !labels?.length) return;
+    if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
+
+    const colores = data.map(v => colorPorPct(v));
+
+    const lineaMeta = {
+        id: 'lineaMeta',
+        afterDraw(chart) {
+            const { ctx: c, chartArea, scales } = chart;
+            if (!scales.x) return;
+            const x = scales.x.getPixelForValue(100);
+            if (x < chartArea.left || x > chartArea.right) return;
+            c.save();
+            c.beginPath();
+            c.moveTo(x, chartArea.top);
+            c.lineTo(x, chartArea.bottom);
+            c.strokeStyle = 'rgba(100,116,139,.5)';
+            c.lineWidth = 1.5;
+            c.setLineDash([4, 4]);
+            c.stroke();
+            c.fillStyle = 'rgba(100,116,139,.8)';
+            c.font = '10px sans-serif';
+            c.textAlign = 'center';
+            c.fillText('Meta 100%', x, chartArea.top - 4);
+            c.restore();
+        }
+    };
+
+    try {
+        graficasCreadas[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ data, backgroundColor: colores, borderRadius: 5, borderSkipped: false, barThickness: 18 }] },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                animation: { duration: 700, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: c => ` ${c.parsed.x}% promedio de cumplimiento`,
+                            afterLabel: c => {
+                                const pct = c.parsed.x;
+                                if (pct >= 95) return ' ✓ Óptimo (≥95%)';
+                                if (pct >= 80) return ' ⚠ Atención (80–94%)';
+                                return ' ✗ Crítico (<80%)';
+                            }
+                        },
+                        backgroundColor: 'rgba(15,23,42,.88)', titleFont: { size: 12, weight: 600 },
+                        bodyFont: { size: 11 }, padding: 10, cornerRadius: 7
+                    }
+                },
+                scales: {
+                    x: {
+                        min: 0, max: 110,
+                        grid: { color: 'rgba(0,0,0,.05)' }, border: { display: false },
+                        ticks: { font: { size: 10 }, color: '#94a3b8', callback: v => v + '%', stepSize: 20 }
+                    },
+                    y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 }, color: '#334155' } }
+                }
+            },
+            plugins: [lineaMeta]
+        });
+    } catch (e) {}
+}
+
+/* ════════════════════════════
+   Calendario de metas por mes
+════════════════════════════ */
 let mesMetaActivo = null;
 
 function makeCalendarioMetas(canvasId, data, color) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
-    const lbls = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const bgColors = data.map(v => v > 0 ? color : color + '28');
+    const lbls = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const bgColors     = data.map(v => v > 0 ? color : color + '28');
     const borderColors = data.map(v => v > 0 ? color : 'transparent');
     try {
         graficasCreadas[canvasId] = new Chart(ctx, {
@@ -308,7 +511,7 @@ function makeCalendarioMetas(canvasId, data, color) {
                 }
             }
         });
-    } catch (e) { }
+    } catch (e) {}
 }
 
 function filtrarMetasPorMes(mesNum, mesLabel) {
@@ -325,16 +528,16 @@ function filtrarMetasPorMes(mesNum, mesLabel) {
     const btnTodos = document.getElementById('btn-metas-ver-todos');
     const wrapLabel = document.getElementById('metas-mes-activo-wrap');
     const spanLabel = document.getElementById('metas-mes-label');
-    const sinDatos = document.getElementById('metas-sin-datos-mes');
-    if (btnTodos) btnTodos.classList.remove('d-none');
+    const sinDatos  = document.getElementById('metas-sin-datos-mes');
+    if (btnTodos)  btnTodos.classList.remove('d-none');
     if (wrapLabel) wrapLabel.classList.remove('d-none');
     if (spanLabel) spanLabel.textContent = mesLabel;
-    if (sinDatos) sinDatos.style.display = visibles === 0 ? '' : 'none';
+    if (sinDatos)  sinDatos.style.display = visibles === 0 ? '' : 'none';
     const chart = graficasCreadas['chartMetasMes'];
     if (chart) {
         const color = COLOR_METAS;
         chart.data.datasets[0].backgroundColor = chart.data.labels.map((_, i) => i === mesNum - 1 ? color : color + '28');
-        chart.data.datasets[0].borderColor = chart.data.labels.map((_, i) => i === mesNum - 1 ? color : 'transparent');
+        chart.data.datasets[0].borderColor      = chart.data.labels.map((_, i) => i === mesNum - 1 ? color : 'transparent');
         chart.update('none');
     }
 }
@@ -343,222 +546,55 @@ function mostrarTodasMetas() {
     const tbody = document.querySelector('#tabla-metas-panel tbody');
     if (!tbody) return;
     tbody.querySelectorAll('tr[data-mes-meta]').forEach(f => f.style.display = '');
-    const btnTodos = document.getElementById('btn-metas-ver-todos');
+    const btnTodos  = document.getElementById('btn-metas-ver-todos');
     const wrapLabel = document.getElementById('metas-mes-activo-wrap');
-    const sinDatos = document.getElementById('metas-sin-datos-mes');
-    if (btnTodos) btnTodos.classList.add('d-none');
+    const sinDatos  = document.getElementById('metas-sin-datos-mes');
+    if (btnTodos)  btnTodos.classList.add('d-none');
     if (wrapLabel) wrapLabel.classList.add('d-none');
-    if (sinDatos) sinDatos.style.display = 'none';
+    if (sinDatos)  sinDatos.style.display = 'none';
     mesMetaActivo = null;
     const chart = graficasCreadas['chartMetasMes'];
     if (chart) {
         const color = COLOR_METAS;
-        const data = chart.data.datasets[0].data;
+        const data  = chart.data.datasets[0].data;
         chart.data.datasets[0].backgroundColor = data.map(v => v > 0 ? color : color + '28');
-        chart.data.datasets[0].borderColor = data.map(v => v > 0 ? color : 'transparent');
+        chart.data.datasets[0].borderColor      = data.map(v => v > 0 ? color : 'transparent');
         chart.update('none');
     }
 }
 
-function renderMiniChartsMensuales() {
-    if (!window.HOME_CHARTS) return;
-    const d = window.HOME_CHARTS;
-    makeMiniBarMes('chartPartMes', d.partMes.data, '#00c8e0');
-    makeMiniBarMes('chartCursosMes', d.cursosMes.data, '#28c76f');
-    makeMiniBarMes('chartDocentesMes', d.docentesMes.data, '#7367f0');
+/* ════════════════════════════════════════════════════
+   Donut ámbito más solicitado por mes
+════════════════════════════════════════════════════ */
+function makeDonutAmbitoSol(canvasId, labels, data) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !labels?.length) return;
+    if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
+    const total = data.reduce((a, b) => a + b, 0);
+    try {
+        graficasCreadas[canvasId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{ data, backgroundColor: labels.map((_, i) => PALETA_AMBITO_SOL[i % PALETA_AMBITO_SOL.length]), borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '60%',
+                animation: { duration: 700, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 10 } },
+                    tooltip: {
+                        callbacks: {
+                            label: c => {
+                                const pct = total > 0 ? Math.round(c.parsed / total * 100) : 0;
+                                return ` ${c.label}: ${c.parsed} inscripciones (${pct}%)`;
+                            }
+                        },
+                        backgroundColor: 'rgba(15,23,42,.88)', titleFont: { size: 11, weight: 600 },
+                        bodyFont: { size: 11 }, padding: 10, cornerRadius: 7
+                    }
+                }
+            }
+        });
+    } catch (e) {}
 }
-
-function renderGraficasBasicas(kpiId) {
-    if (!window.HOME_CHARTS) { setTimeout(() => renderGraficasBasicas(kpiId), 200); return; }
-    const d = window.HOME_CHARTS;
-    switch (kpiId) {
-        case 'participantes':
-            makeDonut('chartPartEstado', d.partEstado.labels, d.partEstado.data, PALETA_ESTADO);
-            makeDonut('chartPartGenero', d.partGenero.labels, d.partGenero.data, PALETA_GENERO);
-            makeBar('chartPartGrado', d.partGrado.labels, d.partGrado.data, PALETA_GRADO);
-            break;
-        case 'cursos':
-            makeDonut('chartCursosEstatus', d.cursosEstatus.labels, d.cursosEstatus.data, PALETA_ESTATUS);
-            makeDonut('chartCursosModalidad', d.cursosModal.labels, d.cursosModal.data, PALETA_MODAL);
-            makeBar('chartCursosTurno', d.cursosTurno.labels, d.cursosTurno.data, PALETA_TURNO);
-            break;
-        case 'docentes':
-            makeDonut('chartDocTipo', d.docTipo.labels, d.docTipo.data, PALETA_TIPO);
-            makeBar('chartDocEstado', d.docEstado.labels, d.docEstado.data, PALETA_ESTADO);
-            makeDonut('chartDocGenero', d.docGenero.labels, d.docGenero.data, PALETA_GENERO);
-            break;
-        case 'metas':
-            makeCalendarioMetas('chartMetasMes', d.metasMes.data, COLOR_METAS);
-            break;
-    }
-}
-
-/* ══════════════════════════════════════════════════════════════════════
-   CALENDARIO — lógica completa
-══════════════════════════════════════════════════════════════════════ */
-
-// Llamar dentro de initHome() → al final, justo antes del cierre de la función:
-//   initCalendario();
-
-function initCalendario() {
-    const MESES_NOMBRES = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-
-    const hoy = new Date();
-    let calAnio = hoy.getFullYear();
-    let calMes = hoy.getMonth();       // 0-based
-    let diaSelec = null;                 // { anio, mes, dia }
-
-    const grid = document.getElementById('cal-grid');
-    const labelMesAnio = document.getElementById('cal-mes-anio-label');
-    const labelSelec = document.getElementById('cal-sel-label');
-    const btnPrev = document.getElementById('cal-prev');
-    const btnNext = document.getElementById('cal-next');
-    const btnHoy = document.getElementById('cal-hoy');
-
-    if (!grid) return; // si no existe el elemento, salir
-
-    /* ── Renderiza el mes activo ── */
-    function renderMes() {
-        // Actualizar etiqueta del mes
-        if (labelMesAnio) {
-            labelMesAnio.textContent = `${MESES_NOMBRES[calMes]} ${calAnio}`;
-        }
-
-        // Calcular primer día del mes y total de días
-        const primerDia = new Date(calAnio, calMes, 1).getDay();    // 0=Dom
-        const diasEnMes = new Date(calAnio, calMes + 1, 0).getDate();
-        const diasMesAnt = new Date(calAnio, calMes, 0).getDate();
-
-        // Animación de entrada
-        grid.classList.remove('cal-anim');
-        void grid.offsetWidth; // force reflow
-        grid.classList.add('cal-anim');
-
-        grid.innerHTML = '';
-
-        // Días del mes anterior (relleno)
-        for (let i = primerDia - 1; i >= 0; i--) {
-            const dia = diasMesAnt - i;
-            const el = crearDia(dia, true, false, false);
-            grid.appendChild(el);
-        }
-
-        // Días del mes actual
-        for (let d = 1; d <= diasEnMes; d++) {
-            const esHoy = (d === hoy.getDate() && calMes === hoy.getMonth() && calAnio === hoy.getFullYear());
-            const esFds = (() => {
-                const dow = new Date(calAnio, calMes, d).getDay();
-                return dow === 0 || dow === 6;
-            })();
-            const esSel = diaSelec
-                && diaSelec.dia === d
-                && diaSelec.mes === calMes
-                && diaSelec.anio === calAnio;
-
-            const el = crearDia(d, false, esHoy, esFds, esSel);
-            el.addEventListener('click', () => seleccionarDia(d));
-            grid.appendChild(el);
-        }
-
-        // Días del mes siguiente (relleno hasta completar 6 filas = 42 celdas)
-        const totalCeldas = 42;
-        const celdaActual = primerDia + diasEnMes;
-        const restantes = totalCeldas - celdaActual;
-        for (let d = 1; d <= restantes; d++) {
-            const el = crearDia(d, true, false, false);
-            grid.appendChild(el);
-        }
-
-        // Actualizar label de día seleccionado
-        actualizarLabelSel();
-    }
-
-    /* ── Crea un elemento <div> para un día del grid ── */
-    function crearDia(num, otroMes, esHoy, esFds, esSel = false) {
-        const el = document.createElement('div');
-        el.className = 'cal-dia';
-        el.textContent = num;
-
-        if (otroMes) el.classList.add('cal-dia-otro-mes');
-        if (esHoy) el.classList.add('cal-dia-hoy');
-        if (esFds && !otroMes) el.classList.add('cal-dia-fds');
-        if (esSel) el.classList.add('cal-dia-seleccionado');
-
-        return el;
-    }
-
-    /* ── Lógica de selección de día ── */
-    function seleccionarDia(d) {
-        const yaSel = diaSelec
-            && diaSelec.dia === d
-            && diaSelec.mes === calMes
-            && diaSelec.anio === calAnio;
-
-        diaSelec = yaSel ? null : { dia: d, mes: calMes, anio: calAnio };
-        renderMes();
-    }
-
-    /* ── Actualiza el label inferior con la fecha seleccionada ── */
-    function actualizarLabelSel() {
-        if (!labelSelec) return;
-        if (!diaSelec) {
-            labelSelec.textContent = '';
-            labelSelec.style.opacity = '0';
-            return;
-        }
-        const diasSem = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        const fecha = new Date(diaSelec.anio, diaSelec.mes, diaSelec.dia);
-        labelSelec.textContent = `${diasSem[fecha.getDay()]} ${diaSelec.dia} de ${MESES_NOMBRES[diaSelec.mes]} ${diaSelec.anio}`;
-        labelSelec.style.opacity = '1';
-    }
-
-    /* ── Controles de navegación ── */
-    if (btnPrev) btnPrev.addEventListener('click', () => {
-        calMes--;
-        if (calMes < 0) { calMes = 11; calAnio--; }
-        renderMes();
-    });
-
-    if (btnNext) btnNext.addEventListener('click', () => {
-        calMes++;
-        if (calMes > 11) { calMes = 0; calAnio++; }
-        renderMes();
-    });
-
-    if (btnHoy) btnHoy.addEventListener('click', () => {
-        calAnio = hoy.getFullYear();
-        calMes = hoy.getMonth();
-        diaSelec = null;
-        renderMes();
-    });
-
-    // Render inicial
-    renderMes();
-}
-
-/* ── API pública para usar desde otros módulos ──────────────────────
-   Ejemplo de uso futuro para el historial:
-
-   window.HISTORIAL = {
-       agregar(tipo, accion, usuario, fecha) {
-           // tipo: 'add' | 'edit' | 'delete' | 'login'
-           const lista = document.getElementById('historial-lista');
-           const empty = document.getElementById('historial-empty');
-           if (!lista) return;
-           const li = document.createElement('li');
-           li.className = `hc-timeline-item hc-ev-${tipo}`;
-           li.innerHTML = `
-               <div class="hc-tl-dot"></div>
-               <div class="hc-tl-body">
-                   <span class="hc-tl-accion">${accion}</span>
-                   <span class="hc-tl-meta">${usuario} · ${fecha}</span>
-               </div>`;
-           lista.prepend(li);
-           if (empty) empty.style.display = 'none';
-           lista.style.display = '';
-       }
-   };
-───────────────────────────────────────────────────────────────────── */

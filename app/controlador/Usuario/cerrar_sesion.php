@@ -13,6 +13,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Registrar cierre de sesión en el historial
+if (isset($_SESSION['id_usuario']) && isset($_SESSION['nombre_usuario'])) {
+    require_once '../../modelo/HistorialUtil.php';
+    HistorialUtil::registrarLogout($_SESSION['id_usuario'], $_SESSION['nombre_usuario']);
+}
+
 // SOLO AQUÍ se destruye la sesión completamente
 $_SESSION = array();
 

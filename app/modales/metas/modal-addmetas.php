@@ -64,9 +64,10 @@
                             </label>
                             <select class="form-select" id="periodo_tiempo" name="periodo_tiempo" required>
                                 <option value="">Seleccione un periodo</option>
-                                <option value="mensual">Mensual</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="semestral">Semestral</option>
+                                <option value="mensual">Mensual (1 mes)</option>
+                                <option value="trimestral">Trimestral (3 meses)</option>
+                                <option value="semestral">Semestral (6 meses)</option>
+                                <option value="anual">Anual (12 meses)</option>
                             </select>
                         </div>
 
@@ -95,7 +96,14 @@
                                                     <i class="bi bi-calendar-check text-primary"></i>
                                                 </span>
                                                 <input type="date" class="form-control" 
-                                                       id="fecha_fin" name="fecha_fin" required>
+                                                       id="fecha_fin" name="fecha_fin" 
+                                                        readonly
+                                                        disabled
+                                                        style="background:#f8f9fa;cursor:not-allowed;"
+                                                        required>
+                                            </div>
+                                            <div class="form-text text-muted mt-1" id="fecha_fin_help">
+                                                <i class="bi bi-info-circle me-1"></i>Se calcula automáticamente según el periodo seleccionado.
                                             </div>
                                         </div>
                                     </div>
@@ -470,6 +478,9 @@ function calcularFechaFin() {
         case 'semestral':
             fecha.setMonth(fecha.getMonth() + 6);
             break;
+        case 'anual':
+            fecha.setFullYear(fecha.getFullYear() + 1);
+            break;
     }
 
     const year = fecha.getFullYear();
@@ -493,29 +504,48 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaInicio.value = hoy;
     }
     
+    // Bloquear fecha_fin hasta que se seleccione un periodo
+    const fechaFinInput = document.getElementById('fecha_fin');
+    fechaFinInput.disabled = true;
+    fechaFinInput.style.cursor = 'not-allowed';
+
+    // Función para actualizar el estado de fecha_fin
+    function actualizarFechaFin() {
+        const periodoVal = periodoSelect.value;
+        if (periodoVal) {
+            fechaFin.disabled = false;
+            fechaFin.style.cursor = '';
+            calcularFechaFin();
+        } else {
+            fechaFin.disabled = true;
+            fechaFin.style.cursor = 'not-allowed';
+            fechaFin.value = '';
+        }
+    }
+
     // Event listeners para fecha
     fechaInicio.addEventListener('change', function() {
         if (this.value) {
             fechaFin.min = this.value;
-            if (fechaFin.value && fechaFin.value < this.value) {
-                fechaFin.value = this.value;
-            }
             // Recalcular fecha fin si hay período seleccionado
             if (periodoSelect.value) {
                 calcularFechaFin();
             }
         }
     });
-    
-    fechaFin.addEventListener('change', function() {
-        if (fechaInicio.value && this.value && this.value < fechaInicio.value) {
-            alert('La fecha fin debe ser posterior o igual a la fecha inicio');
-            this.value = fechaInicio.value;
+
+    // Fecha fin es solo lectura — no permitir cambio manual
+    fechaFin.addEventListener('mousedown', function(e) {
+        if (!periodoSelect.value) {
+            e.preventDefault();
         }
     });
     
-    // Event listeners para período
-    periodoSelect.addEventListener('change', calcularFechaFin);
+    // Event listener para período: recalcula automaticamente
+    periodoSelect.addEventListener('change', actualizarFechaFin);
+    
+    // Inicializar estado
+    actualizarFechaFin();
     
     // Validaciones para meta objetivo
     if (metaObjetivo) {

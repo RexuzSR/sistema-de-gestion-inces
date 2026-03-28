@@ -214,13 +214,23 @@ $(document).ready(function () {
                     $('#cedula-Edit').val(participante.cedula);
 
                     // Separar prefijo y número
-                    let telCompleto = participante.telefono || '';
-                    if (telCompleto.length >= 10) {
-                        const pref = telCompleto.substring(0, 4);
-                        const num = telCompleto.substring(4);
-                        $('#prefijo_telefono-Edit').val(pref);
-                        $('#telefono_numero-Edit').val(num);
-                        $('#telefono-Edit').val(telCompleto);
+                    if (participante.telefono) {
+                        let telStr = String(participante.telefono);
+                        if (telStr.length === 10) telStr = '0' + telStr;
+                        
+                        if (telStr.length >= 11) {
+                            const pref = telStr.substring(0, 4);
+                            const num = telStr.substring(4);
+                            $('#prefijo_telefono-Edit').val(pref);
+                            $('#telefono_numero-Edit').val(num);
+                            $('#telefono-Edit').val(telStr);
+                        } else {
+                            $('#telefono-Edit').val(telStr);
+                        }
+                    } else {
+                        $('#prefijo_telefono-Edit').val('');
+                        $('#telefono_numero-Edit').val('');
+                        $('#telefono-Edit').val('');
                     }
 
                     $('#primer_nombre-Edit').val(participante.primer_nombre);

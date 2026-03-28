@@ -67,7 +67,7 @@ session_start();
 
                     <label class="login-label" for="nombre_usuario">Usuario</label>
                     <div class="input-wrap">
-                        <input class="input" type="text" id="nombre_usuario" name="nombre_usuario" placeholder="Introduce tu usuario" required>
+                        <input class="input" type="text" id="nombre_usuario" name="nombre_usuario" placeholder="Introduce tu usuario" maxlength="64" required>
                         <span class="icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1a1a2e" viewBox="0 0 16 16">
                                 <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
@@ -78,7 +78,7 @@ session_start();
 
                     <label class="login-label" for="contrasena">Contraseña</label>
                     <div class="input-wrap">
-                        <input class="input" type="password" id="contrasena" name="contraseña" placeholder="Introduce tu contraseña" required>
+                        <input class="input" type="password" id="contrasena" name="contraseña" placeholder="Introduce tu contraseña" maxlength="64" required>
                         <span class="icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1a1a2e" viewBox="0 0 16 16">
                                 <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2"/>

@@ -21,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['docente_id']) && isse
             
             require_once '../Docente/managerDocente.php';
             $docenteMgr = new Docente();
-            $docData = $docenteMgr->obtenerPorId($idDocente);
+            $docDataRes = $docenteMgr->obtenerDocentePorId($idDocente);
+            $docData = $docDataRes['data'] ?? [];
             $nombreDocente = isset($docData['primer_nombre']) ? $docData['primer_nombre'] . " " . $docData['primer_apellido'] : "ID: $idDocente";
 
             HistorialUtil::registrarAsignarDocenteCurso($idDocente, $nombreDocente, $idCurso, $nombreCurso, $_SESSION['id_usuario']);

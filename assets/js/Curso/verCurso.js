@@ -373,18 +373,20 @@ function manejarClicDocente() {
 window.initTablaDocentesParaAsignar = function (cursoId) {
   const selectDocente = $('#asignarDocente');
   selectDocente.empty().append('<option value="" disabled selected>Cargando docentes...</option>');
+  $('#info-docente-seleccionado').addClass('d-none');
 
   // Obtener docentes disponibles
   $.ajax({
     url: '../../app/controlador/Docente/obtenerDocentes.php',
     method: 'GET',
     // Podemos traer gran cantidad, y si aplica, filtrarlo a estado "Disponible" u omitirlo
-    data: { per_page: 1000 },
+    data: { per_page: 1000, curso_id: cursoId },
     dataType: 'json',
     success: function (response) {
       selectDocente.empty().append('<option value="" disabled selected>Seleccione un docente</option>');
 
       if (response.success && response.data && response.data.length > 0) {
+        window.docentesDisponiblesCache = response.data;
         response.data.forEach(function (docente) {
           const estadoText = docente.estado || '';
           if (estadoText !== 'Inactivo') {
@@ -401,6 +403,28 @@ window.initTablaDocentesParaAsignar = function (cursoId) {
       console.error('Error cargando docentes:', xhr);
       selectDocente.empty().append('<option value="" disabled selected>Error al cargar docentes</option>');
       toastr.error('Ocurrió un error al obtener la lista de docentes.');
+    }
+  });
+
+  // Agregar evento change para mostrar detalles del docente seleccionado
+  $('#asignarDocente').off('change').on('change', function() {
+    const selectedId = $(this).val();
+    const infoContainer = $('#info-docente-seleccionado');
+    if (!selectedId) {
+        infoContainer.addClass('d-none');
+        return;
+    }
+    
+    if (window.docentesDisponiblesCache) {
+        const docente = window.docentesDisponiblesCache.find(d => d.id_docente == selectedId);
+        if (docente) {
+            $('#info-docente-cedula').text(docente.cedula || 'N/A');
+            $('#info-docente-edad').text(docente.edad || 'N/A');
+            $('#info-docente-correo').text(docente.correo || 'N/A');
+            infoContainer.removeClass('d-none');
+        } else {
+            infoContainer.addClass('d-none');
+        }
     }
   });
 };

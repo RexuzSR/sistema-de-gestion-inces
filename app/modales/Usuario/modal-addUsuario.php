@@ -254,7 +254,7 @@
                                                 border-radius: 12px 0 0 12px;
                                                 color: #0281fe;
                                             "><i class="bi bi-person"></i></span>
-                                            <input class="form-control neon-input" type="text" name="nombre_usuario" id="nombre_usuario" required placeholder="usuario" style="
+                                            <input class="form-control neon-input" type="text" name="nombre_usuario" id="nombre_usuario" required placeholder="usuario" maxlength="64" style="
                                                 border: 1.5px solid #e2e8f0;
                                                 border-left: none;
                                                 border-radius: 0 12px 12px 0;
@@ -279,7 +279,7 @@
                                                 border-radius: 12px 0 0 12px;
                                                 color: #0281fe;
                                             "><i class="bi bi-lock"></i></span>
-                                            <input class="form-control neon-input" type="password" id="password" name="password" required placeholder="••••••••" style="
+                                            <input class="form-control neon-input" type="password" id="password" name="password" required placeholder="••••••••" maxlength="64" style="
                                                 border: 1.5px solid #e2e8f0;
                                                 border-left: none;
                                                 border-radius: 0 12px 12px 0;
@@ -636,12 +636,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Validar contraseña (mínimo 6 caracteres)
+            // Validar nombre de usuario (máximo 64 caracteres)
+            const nombreUsuario = document.getElementById('nombre_usuario');
+            if (nombreUsuario && nombreUsuario.value.trim()) {
+                if (nombreUsuario.value.length > 64) {
+                    nombreUsuario.classList.add('is-invalid');
+                    document.getElementById('error-nombre_usuario').textContent = 'El nombre de usuario no puede superar los 64 caracteres';
+                    isValid = false;
+                    shakeElement(nombreUsuario);
+                }
+            }
+
+            // Validar contraseña (mínimo 6, máximo 64 caracteres)
             const password = document.getElementById('password');
             if (password && password.value.trim()) {
                 if (password.value.length < 6) {
                     password.classList.add('is-invalid');
                     document.getElementById('error-password').textContent = 'La contraseña debe tener al menos 6 caracteres';
+                    isValid = false;
+                    shakeElement(password);
+                } else if (password.value.length > 64) {
+                    password.classList.add('is-invalid');
+                    document.getElementById('error-password').textContent = 'La contraseña no puede superar los 64 caracteres';
                     isValid = false;
                     shakeElement(password);
                 }

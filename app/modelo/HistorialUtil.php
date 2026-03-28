@@ -67,6 +67,19 @@ class HistorialUtil {
     }
 
     /**
+     * Registra un logout de usuario
+     */
+    public static function registrarLogout($usuario_id, $nombre_usuario) {
+        return self::registrar(
+            'Logout',
+            "Usuario $nombre_usuario cerró sesión",
+            'tb_usuario',
+            $usuario_id,
+            $usuario_id
+        );
+    }
+
+    /**
      * Registra la creación de un participante
      */
     public static function registrarCrearParticipante($id_participante, $nombre_participante, $usuario_id) {
@@ -287,4 +300,3 @@ class HistorialUtil {
         );
     }
 }
-?>
