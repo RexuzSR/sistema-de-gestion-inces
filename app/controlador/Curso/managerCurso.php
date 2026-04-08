@@ -16,7 +16,7 @@ class Curso {
     /**
      * Actualiza automáticamente el estado de los cursos basándose en la fecha actual y requisitos
      */
-    private function actualizarEstadosPorFecha() {
+    public function actualizarEstadosPorFecha() {
         try {
             $hoy = date('Y-m-d');
             
@@ -32,24 +32,65 @@ class Curso {
             $stmt1 = $this->conn->prepare($sqlDiferido);
             $stmt1->execute([':hoy' => $hoy]);
 
-            // 2. A 'En proceso' (3): Llegó la fecha inicio o límite, y se cumplen todos los requisitos
-            $sqlEnProceso = "UPDATE tb_curso c
-                            SET id_estatusCurso = 3 
-                            WHERE id_estatusCurso IN (1, 2) 
-                            AND (fecha_inicio <= :hoy OR (fecha_limite_inicio IS NOT NULL AND fecha_limite_inicio <= :hoy))
-                            AND num_inscritos >= IFNULL(c.min_participantes, 12) 
-                            AND EXISTS (SELECT 1 FROM tb_docente_curso dc WHERE dc.id_curso = c.id_curso)";
-            $stmt2 = $this->conn->prepare($sqlEnProceso);
-            $stmt2->execute([':hoy' => $hoy]);
+            // 1. Sincronizar participantes a 'En formación' (Prioridad Máxima)
+            $sqlSyncFormacion = "UPDATE tb_participante p
+                                 SET p.estado = 'En formación'
+                                 WHERE p.estado <> 'Inactivo'
+                                 AND EXISTS (
+                                     SELECT 1 FROM tb_participante_curso pc
+                                     INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                                     WHERE pc.id_participante = p.id_participante
+                                     AND c.id_estatusCurso = 3
+                                 )";
+            $this->conn->prepare($sqlSyncFormacion)->execute();
 
-            // 3. A 'Culminado' (5): Si la fecha_fin ya pasó
-            // Se aplica a cursos 'En proceso' (3)
-            $sqlCulminado = "UPDATE tb_curso 
-                            SET id_estatusCurso = 5 
-                            WHERE id_estatusCurso = 3 
-                            AND fecha_fin < :hoy";
-            $stmt3 = $this->conn->prepare($sqlCulminado);
-            $stmt3->execute([':hoy' => $hoy]);
+            // 2. Sincronizar participantes a 'Asignado' (Prioridad Media)
+            $sqlSyncAsignado = "UPDATE tb_participante p
+                                SET p.estado = 'Asignado'
+                                WHERE p.estado NOT IN ('En formación', 'Inactivo')
+                                AND EXISTS (
+                                    SELECT 1 FROM tb_participante_curso pc
+                                    INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                                    WHERE pc.id_participante = p.id_participante
+                                    AND c.id_estatusCurso IN (1, 4)
+                                )
+                                AND NOT EXISTS (
+                                    SELECT 1 FROM tb_participante_curso pc2
+                                    INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                                    WHERE pc2.id_participante = p.id_participante
+                                    AND c2.id_estatusCurso = 3
+                                )";
+            $this->conn->prepare($sqlSyncAsignado)->execute();
+
+            // 3. Sincronizar participantes a 'Diferido' (Prioridad Baja)
+            $sqlSyncDiferido = "UPDATE tb_participante p
+                                SET p.estado = 'Diferido'
+                                WHERE p.estado NOT IN ('En formación', 'Asignado', 'Inactivo')
+                                AND EXISTS (
+                                    SELECT 1 FROM tb_participante_curso pc
+                                    INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                                    WHERE pc.id_participante = p.id_participante
+                                    AND c.id_estatusCurso = 2
+                                )
+                                AND NOT EXISTS (
+                                    SELECT 1 FROM tb_participante_curso pc2
+                                    INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                                    WHERE pc2.id_participante = p.id_participante
+                                    AND c2.id_estatusCurso IN (1, 3, 4)
+                                )";
+            $this->conn->prepare($sqlSyncDiferido)->execute();
+
+            // 4. Sincronizar a 'Disponible' o 'En sistema' si no tienen cursos activos
+            $sqlSyncSistema = "UPDATE tb_participante p
+                               SET p.estado = 'En sistema'
+                               WHERE p.estado IN ('Asignado', 'En formación', 'Diferido')
+                               AND NOT EXISTS (
+                                   SELECT 1 FROM tb_participante_curso pc
+                                   INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                                   WHERE pc.id_participante = p.id_participante
+                                   AND c.id_estatusCurso IN (1, 2, 3, 4)
+                               )";
+            $this->conn->prepare($sqlSyncSistema)->execute();
 
         } catch (PDOException $e) {
             error_log("Error en actualizarEstadosPorFecha: " . $e->getMessage());
@@ -1271,18 +1312,29 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
 
             // Actualizar estado de cada participante en tb_participante
             foreach ($participantes as $idParticipante) {
-                $sqlOtros = "SELECT COUNT(*)
+                // Verificar otros cursos del participante
+                $sqlOtros = "SELECT 
+                                SUM(CASE WHEN c.id_estatusCurso = 3 THEN 1 ELSE 0 END) as en_proceso,
+                                SUM(CASE WHEN c.id_estatusCurso IN (1, 4) THEN 1 ELSE 0 END) as asignado,
+                                SUM(CASE WHEN c.id_estatusCurso = 2 THEN 1 ELSE 0 END) as diferido
                              FROM tb_participante_curso pc
                              INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
                              WHERE pc.id_participante = :id_p
                                AND pc.id_curso != :id_c
-                               AND pc.estatus_participante IN ('Pendiente', 'En formación')
-                               AND c.id_estatusCurso IN (1, 2, 3, 4)";
+                               AND pc.estatus_participante IN ('Pendiente', 'En formación')";
                 $stmtOtros = $this->conn->prepare($sqlOtros);
                 $stmtOtros->execute([':id_p' => $idParticipante, ':id_c' => $idCurso]);
-                $tieneOtros = (int)$stmtOtros->fetchColumn() > 0;
+                $counts = $stmtOtros->fetch(PDO::FETCH_ASSOC);
 
-                    $nuevoEstadoPart = $tieneOtros ? 'Asignado' : 'Disponible';
+                if ($counts['en_proceso'] > 0) {
+                    $nuevoEstadoPart = 'En formación';
+                } elseif ($counts['asignado'] > 0) {
+                    $nuevoEstadoPart = 'Asignado';
+                } elseif ($counts['diferido'] > 0) {
+                    $nuevoEstadoPart = 'Diferido';
+                } else {
+                    $nuevoEstadoPart = 'En sistema';
+                }
 
                 $sqlUpdPart = "UPDATE tb_participante 
                                SET estado = :estado 
@@ -1335,25 +1387,28 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
 
             // Actualizar estado general de cada participante en tb_participante
             foreach ($participantes as $idParticipante) {
-                $sqlEnForm = "SELECT COUNT(*)
-                              FROM tb_participante_curso pc
-                              INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
-                              WHERE pc.id_participante = :id_p
-                                AND pc.id_curso != :id_c
-                                AND pc.estatus_participante = 'En formación'
-                                AND c.id_estatusCurso = 3";
-                $stmtEnForm = $this->conn->prepare($sqlEnForm);
-                $stmtEnForm->execute([':id_p' => $idParticipante, ':id_c' => $idCurso]);
-                $tieneEnFormacion = (int)$stmtEnForm->fetchColumn() > 0;
+                // Verificar estado de todos los cursos del participante (incluyendo el actual que ahora es 'En espera' = 1)
+                $sqlCheck = "SELECT 
+                                SUM(CASE WHEN c.id_estatusCurso = 3 THEN 1 ELSE 0 END) as en_proceso,
+                                SUM(CASE WHEN c.id_estatusCurso IN (1, 4) THEN 1 ELSE 0 END) as asignado,
+                                SUM(CASE WHEN c.id_estatusCurso = 2 THEN 1 ELSE 0 END) as diferido
+                             FROM tb_participante_curso pc
+                             INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                             WHERE pc.id_participante = :id_p
+                               AND pc.estatus_participante IN ('Pendiente', 'En formación')";
+                $stmtCheck = $this->conn->prepare($sqlCheck);
+                $stmtCheck->execute([':id_p' => $idParticipante]);
+                $counts = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-                // Si no tiene cursos en formación, verificar si no tiene ningún curso
-                if (!$tieneEnFormacion) {
-                    $sqlSinCursos = "SELECT COUNT(*) FROM tb_participante_curso WHERE id_participante = :id_p";
-                    $stmtSinCursos = $this->conn->prepare($sqlSinCursos);
-                    $stmtSinCursos->execute([':id_p' => $idParticipante]);
-                    $sinCursos = (int)$stmtSinCursos->fetchColumn() === 0;
+                if ($counts['en_proceso'] > 0) {
+                    $nuevoEstadoPart = 'En formación';
+                } elseif ($counts['asignado'] > 0) {
+                    $nuevoEstadoPart = 'Asignado';
+                } elseif ($counts['diferido'] > 0) {
+                    $nuevoEstadoPart = 'Diferido';
+                } else {
+                    $nuevoEstadoPart = 'En sistema';
                 }
-                $nuevoEstadoPart = $tieneEnFormacion ? 'En formación' : ($sinCursos ? 'En sistema' : 'Asignado');
 
                 $sqlUpdPart = "UPDATE tb_participante 
                                SET estado = :estado 

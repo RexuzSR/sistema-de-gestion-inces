@@ -265,7 +265,7 @@ if (!empty($imagenUsuario)) {
                             <option value="">Todos</option>
                             <?php
                                 // Use the ENUM values directly
-                                $estados = ['En formación', 'Disponible', 'En sistema', 'Asignado'];
+                                $estados = ['En formación', 'Disponible', 'En sistema', 'Asignado', 'Diferido'];
                                 foreach ($estados as $estado) {
                                     echo "<option value='" . $estado . "'>" . $estado . "</option>";
                                 }

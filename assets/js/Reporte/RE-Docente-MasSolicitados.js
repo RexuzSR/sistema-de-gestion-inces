@@ -6,8 +6,10 @@
 const API_URL_DOCENTES_SOL = '../controlador/Reporte/api_reportes.php';
 
 let docentesSolicitadosChart = null;
-let docentesSolicitadosData  = [];   // datos del ranking desde la API
+let docentesSolicitadosData  = [];
 let anioDocentesSol          = new Date().getFullYear();
+let docSolTotalesActuales    = null;   // totales del año activo (para paneles de KPI)
+let docSolPanelActivo        = null;   // 'total'|'cursos'|'inactivos'|'top'|null
 
 // ─── Helper: fetch con manejo de errores ─────────────────────────────────────
 async function apiFetchSol(accion, params = {}) {
@@ -25,10 +27,16 @@ async function apiFetchSol(accion, params = {}) {
 
 // ─── Función principal ────────────────────────────────────────────────────────
 async function cargarDocentesMasSolicitados() {
-    const contentDiv = document.getElementById('reportContent');
+    const contentDiv  = document.getElementById('reportContent');
     const categoriaId = window.currentCategoryId || 3;
-    const categoria = (window.categoriasReportes || []).find(c => c.id === categoriaId)
-                   || { color: 'warning', nombre: 'Docentes' };
+    const categoria   = (window.categoriasReportes || []).find(c => c.id === categoriaId)
+                     || { color: 'warning', nombre: 'Docentes' };
+
+    // Reset de estado
+    docentesSolicitadosChart = null;
+    docentesSolicitadosData  = [];
+    docSolTotalesActuales    = null;
+    docSolPanelActivo        = null;
 
     contentDiv.innerHTML = `
         <div class="card shadow-lg border-0">
@@ -61,18 +69,19 @@ async function cargarDocentesMasSolicitados() {
 
     // Cargar años disponibles
     try {
-        const anios = await apiFetchSol('anios_disponibles');
+        const anios  = await apiFetchSol('anios_disponibles');
         const select = document.getElementById('selectAnioDocentesSol');
         if (select && Array.isArray(anios) && anios.length > 0) {
             anios.forEach(a => {
-                const opt = document.createElement('option');
-                opt.value = a;
+                const opt       = document.createElement('option');
+                opt.value       = a;
                 opt.textContent = a;
                 if (a === anioDocentesSol) opt.selected = true;
                 select.appendChild(opt);
             });
             select.addEventListener('change', e => {
-                anioDocentesSol = parseInt(e.target.value);
+                anioDocentesSol   = parseInt(e.target.value);
+                docSolPanelActivo = null;
                 cargarContenidoDocSol();
             });
         }
@@ -81,32 +90,34 @@ async function cargarDocentesMasSolicitados() {
     cargarContenidoDocSol();
 }
 
+// ─── Carga principal de contenido ────────────────────────────────────────────
 async function cargarContenidoDocSol() {
     const loadEl  = document.getElementById('loadingDocentesSolicitados');
     const contEl  = document.getElementById('contenidoDocentesSolicitados');
     const errorEl = document.getElementById('errorDocentesSolicitados');
     const errMsg  = document.getElementById('errorMsgDocSol');
 
-    loadEl.style.display  = 'flex';
+    loadEl.style.display       = 'flex';
     loadEl.style.flexDirection = 'column';
-    loadEl.style.alignItems = 'center';
-    contEl.style.display  = 'none';
-    errorEl.style.display = 'none';
+    loadEl.style.alignItems    = 'center';
+    contEl.style.display       = 'none';
+    errorEl.style.display      = 'none';
+    docSolPanelActivo          = null;
 
-    // Destruir gráfico anterior
     if (docentesSolicitadosChart) {
         docentesSolicitadosChart.destroy();
         docentesSolicitadosChart = null;
     }
 
     try {
-        const [ranking, totales] = await Promise.all([
+        const [ranking, totalesObj] = await Promise.all([
             apiFetchSol('docentes_mas_solicitados', { limite: 15 }),
             apiFetchSol('docentes_total'),
         ]);
 
         docentesSolicitadosData = Array.isArray(ranking) ? ranking : [];
-        renderDocentesSolicitados(docentesSolicitadosData, totales);
+        docSolTotalesActuales   = totalesObj?.totales || {};
+        renderDocentesSolicitados(docentesSolicitadosData, totalesObj);
 
     } catch (err) {
         loadEl.style.display  = 'none';
@@ -122,70 +133,87 @@ function renderDocentesSolicitados(data, totalesObj) {
     const contEl = document.getElementById('contenidoDocentesSolicitados');
 
     const categoriaId = window.currentCategoryId || 3;
-    const categoria = (window.categoriasReportes || []).find(c => c.id === categoriaId)
-                   || { color: 'warning' };
+    const categoria   = (window.categoriasReportes || []).find(c => c.id === categoriaId)
+                     || { color: 'warning' };
 
     loadEl.style.display = 'none';
     contEl.style.display = 'block';
 
-    const tot = totalesObj?.totales || {};
-    const totalDocentes   = parseInt(tot.total         || 0);
-    const totalDisponible = parseInt(tot.disponible    || 0);
-    const totalAsignado   = parseInt(tot.asignado      || 0);
-    const totalInactivo   = parseInt(tot.inactivo      || 0);
+    const tot              = totalesObj?.totales || {};
+    const totalDocentes    = parseInt(tot.total      || 0);
+    const totalDisponible  = parseInt(tot.disponible || 0);
+    const totalAsignado    = parseInt(tot.asignado   || 0);
+    const totalInactivo    = parseInt(tot.inactivo   || 0);
+    const totalCursos      = data.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
+    const topDocente       = data.length > 0 ? data[0] : null;
 
-    // Totales del ranking
-    const totalCursos = data.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
-    const topDocente  = data.length > 0 ? data[0] : null;
+    // Iconos SVG inline (misma técnica que RE-Docente-Total.js)
+    const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
+
+    // KPI Cards — mismo marcado que RE-Docente-Total.js
+    const kpiCards = [
+        {
+            tipo:  'total',
+            valor: totalDocentes,
+            label: 'Total Docentes',
+            sub:   `${totalDisponible} disponibles · ${totalAsignado} asignados`,
+            color: 'primary'
+        },
+        {
+            tipo:  'cursos',
+            valor: totalCursos,
+            label: 'Cursos Asignados',
+            sub:   `En el ranking top ${data.length}`,
+            color: 'success'
+        },
+        {
+            tipo:  'inactivos',
+            valor: totalInactivo,
+            label: 'Inactivos',
+            sub:   'Sin cursos activos',
+            color: 'danger'
+        },
+        {
+            tipo:  'top',
+            valor: topDocente
+                ? `${topDocente.primer_nombre} ${topDocente.primer_apellido}`
+                : '—',
+            label: 'Más Solicitado',
+            sub:   topDocente
+                ? `${topDocente.cursos_asignados} cursos asignados`
+                : 'Sin datos',
+            color: 'warning',
+            esTexto: true
+        }
+    ];
+
+    const kpisHtml = `
+        <div class="row mb-1" id="docSolKPIs">
+            ${kpiCards.map(c => `
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-3 kpi-card doc-sol-kpi-card"
+                     role="button" data-tipo="${c.tipo}">
+                    <div class="card-body text-center py-3">
+                        <h2 class="fw-bold text-${c.color} mt-1 mb-0"
+                            style="${c.esTexto ? 'font-size:1.1rem;' : ''}">
+                            ${c.esTexto ? c.valor : parseInt(c.valor).toLocaleString()}
+                        </h2>
+                        <p class="rp-kpi-card-label">${c.label}</p>
+                        <p class="rp-kpi-card-sub">${c.sub}</p>
+                        <span class="badge bg-${c.color} bg-opacity-10 text-${c.color} small"
+                              id="docSolBadge-${c.tipo}">${svgDown}Ver detalle</span>
+                    </div>
+                </div>
+            </div>`).join('')}
+        </div>`;
 
     contEl.innerHTML = `
-        <!-- ── KPI Cards ── -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100 kpi-hover">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-${categoria.color}"><i class="bi bi-people-fill"></i></div>
-                        <h5 class="card-title mt-2">Total Docentes</h5>
-                        <h3 class="text-primary">${totalDocentes.toLocaleString()}</h3>
-                        <small class="text-muted">${totalDisponible} disponibles · ${totalAsignado} asignados</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100 kpi-hover">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-${categoria.color}"><i class="bi bi-book-fill"></i></div>
-                        <h5 class="card-title mt-2">Cursos Asignados</h5>
-                        <h3 class="text-success">${totalCursos.toLocaleString()}</h3>
-                        <small class="text-muted">En el ranking top ${data.length}</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100 kpi-hover">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-${categoria.color}"><i class="bi bi-person-x-fill"></i></div>
-                        <h5 class="card-title mt-2">Inactivos</h5>
-                        <h3 class="text-danger">${totalInactivo.toLocaleString()}</h3>
-                        <small class="text-muted">Sin cursos activos</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100 kpi-hover">
-                    <div class="card-body text-center">
-                        <div class="display-6 text-${categoria.color}"><i class="bi bi-trophy-fill"></i></div>
-                        <h5 class="card-title mt-2">Más Solicitado</h5>
-                        <h3 class="text-warning" style="font-size:1.15rem;">
-                            ${topDocente ? `${topDocente.primer_nombre} ${topDocente.primer_apellido}` : '—'}
-                        </h3>
-                        <small class="text-muted">${topDocente ? topDocente.cursos_asignados + ' cursos asignados' : 'Sin datos'}</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+        ${kpisHtml}
 
-        <!-- ── Gráfico + Detalle ── -->
+        <!-- Panel colapsable de detalle -->
+        <div id="docSolPanelDetalle" style="display:none;" class="mb-4"></div>
+
+        <!-- Gráfico + Detalle de docente seleccionado -->
         <div class="row mt-4" style="min-height:350px;">
             <div class="col-md-6">
                 <div class="card border-0 shadow-sm h-100">
@@ -216,7 +244,7 @@ function renderDocentesSolicitados(data, totalesObj) {
             </div>
         </div>
 
-        <!-- ── Tabla ranking ── -->
+        <!-- Tabla ranking -->
         <div class="row mt-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
@@ -264,22 +292,437 @@ function renderDocentesSolicitados(data, totalesObj) {
 
     // Gráfico
     renderGraficoDocSol(data, categoria);
+
+    // Eventos de las KPI cards (misma lógica que RE-Docente-Total.js)
+    contEl.querySelectorAll('.doc-sol-kpi-card').forEach(card =>
+        card.addEventListener('click', () => docSolTogglePanel(card.dataset.tipo))
+    );
+}
+
+// ─── Toggle del panel colapsable ─────────────────────────────────────────────
+function docSolTogglePanel(tipo) {
+    const wrapper = document.getElementById('docSolPanelDetalle');
+    if (!wrapper) return;
+
+    const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
+    const svgUp   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
+
+    // Resetear badges
+    ['total', 'cursos', 'inactivos', 'top'].forEach(t => {
+        const b = document.getElementById(`docSolBadge-${t}`);
+        if (b) b.innerHTML = `${svgDown}Ver detalle`;
+    });
+
+    // Si ya estaba abierto el mismo, cerrar
+    if (docSolPanelActivo === tipo) {
+        wrapper.style.display = 'none';
+        docSolPanelActivo     = null;
+        return;
+    }
+
+    docSolPanelActivo = tipo;
+    docSolRenderPanel(tipo);
+    wrapper.style.display = 'block';
+
+    const badge = document.getElementById(`docSolBadge-${tipo}`);
+    if (badge) badge.innerHTML = `${svgUp}Ocultar`;
+
+    setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
+}
+
+// ─── Paneles de detalle por KPI ───────────────────────────────────────────────
+function docSolRenderPanel(tipo) {
+    const wrapper = document.getElementById('docSolPanelDetalle');
+    if (!wrapper) return;
+
+    const t = docSolTotalesActuales || {};
+
+    const cfgMap = {
+        total:    { titulo: 'Distribución de Docentes por Tipo y Estado', color: 'primary' },
+        cursos:   { titulo: 'Distribución de Cursos en el Ranking',       color: 'success' },
+        inactivos:{ titulo: 'Detalle de Docentes Inactivos',              color: 'danger'  },
+        top:      { titulo: 'Información del Docente Más Solicitado',     color: 'warning' }
+    };
+    const cfg = cfgMap[tipo] || { titulo: 'Detalle', color: 'secondary' };
+
+    let contenidoPanel = '';
+
+    // ── Panel: Total Docentes ─────────────────────────────────────────────────
+    if (tipo === 'total') {
+        const totalActivos    = (parseInt(t.disponible)||0) + (parseInt(t.en_formacion)||0) + (parseInt(t.asignado)||0);
+        const totalGeneral    = parseInt(t.total) || 0;
+        const pctDisponible   = totalGeneral > 0 ? Math.round(((parseInt(t.disponible)||0)  / totalGeneral) * 100) : 0;
+        const pctAsignado     = totalGeneral > 0 ? Math.round(((parseInt(t.asignado)||0)    / totalGeneral) * 100) : 0;
+        const pctInactivo     = totalGeneral > 0 ? Math.round(((parseInt(t.inactivo)||0)    / totalGeneral) * 100) : 0;
+        const pctEnFormacion  = totalGeneral > 0 ? Math.round(((parseInt(t.en_formacion)||0)/ totalGeneral) * 100) : 0;
+
+        contenidoPanel = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-semibold mb-2">Por Tipo de Docente</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr><th>Tipo</th><th class="text-center">Cantidad</th><th class="text-center">%</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="badge bg-primary">Fijo</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.fijo)||0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.fijo)||0)/totalGeneral)*100) : 0}%</td></tr>
+                            <tr><td><span class="badge bg-info text-dark">Contratado</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.contratado)||0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.contratado)||0)/totalGeneral)*100) : 0}%</td></tr>
+                            <tr><td><span class="badge bg-success">PDL</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.pdl)||0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.pdl)||0)/totalGeneral)*100) : 0}%</td></tr>
+                            <tr><td><span class="badge bg-secondary">Voluntario</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.voluntario)||0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.voluntario)||0)/totalGeneral)*100) : 0}%</td></tr>
+                            <tr class="table-secondary fw-bold"><td>Total</td>
+                                <td class="text-center">${totalGeneral}</td><td class="text-center">100%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-semibold mb-2">Por Estado</h6>
+                    <table class="table table-sm table-bordered mb-3">
+                        <thead class="table-light">
+                            <tr><th>Estado</th><th class="text-center">Cantidad</th><th>Participación</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-success">Disponible</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.disponible)||0}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <div class="progress flex-grow-1" style="height:6px;">
+                                            <div class="progress-bar bg-success" style="width:${pctDisponible}%;"></div>
+                                        </div>
+                                        <small>${pctDisponible}%</small>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark">Asignado</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.asignado)||0}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <div class="progress flex-grow-1" style="height:6px;">
+                                            <div class="progress-bar bg-warning" style="width:${pctAsignado}%;"></div>
+                                        </div>
+                                        <small>${pctAsignado}%</small>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-info text-dark">En formación</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.en_formacion)||0}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <div class="progress flex-grow-1" style="height:6px;">
+                                            <div class="progress-bar bg-info" style="width:${pctEnFormacion}%;"></div>
+                                        </div>
+                                        <small>${pctEnFormacion}%</small>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">Inactivo</span></td>
+                                <td class="text-center fw-bold">${parseInt(t.inactivo)||0}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <div class="progress flex-grow-1" style="height:6px;">
+                                            <div class="progress-bar bg-danger" style="width:${pctInactivo}%;"></div>
+                                        </div>
+                                        <small>${pctInactivo}%</small>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="table-secondary fw-bold">
+                                <td>Activos</td>
+                                <td class="text-center">${totalActivos}</td>
+                                <td><small class="text-muted">${totalGeneral > 0 ? Math.round((totalActivos/totalGeneral)*100) : 0}% del total</small></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <h6 class="fw-semibold mb-2">Por Género</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr><th>Género</th><th class="text-center">Cantidad</th><th class="text-center">%</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Masculino</td>
+                                <td class="text-center fw-bold">${parseInt(t.masculino)||0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.masculino)||0)/totalGeneral)*100) : 0}%</td></tr>
+                            <tr><td>Femenino</td>
+                                <td class="text-center fw-bold">${parseInt(t.femenino)||0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.femenino)||0)/totalGeneral)*100) : 0}%</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+    }
+
+    // ── Panel: Cursos en el ranking ───────────────────────────────────────────
+    else if (tipo === 'cursos') {
+        const data       = docentesSolicitadosData;
+        const totalCursos = data.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
+        const maxCursos   = data.length > 0 ? parseInt(data[0].cursos_asignados || 1) : 1;
+
+        // Agrupar por tipo de docente
+        const porTipo = {};
+        data.forEach(d => {
+            const tipo_d = d.tipo_docente || 'Sin tipo';
+            if (!porTipo[tipo_d]) porTipo[tipo_d] = { docentes: 0, cursos: 0 };
+            porTipo[tipo_d].docentes++;
+            porTipo[tipo_d].cursos += parseInt(d.cursos_asignados || 0);
+        });
+
+        // Promedio de carga
+        const promedio = data.length > 0 ? (totalCursos / data.length).toFixed(1) : 0;
+
+        contenidoPanel = `
+            <div class="row">
+                <div class="col-md-5">
+                    <h6 class="fw-semibold mb-2">Resumen del Ranking</h6>
+                    <table class="table table-sm table-bordered mb-3">
+                        <tbody>
+                            <tr><td class="text-muted">Docentes en ranking</td>
+                                <td class="text-center fw-bold">${data.length}</td></tr>
+                            <tr><td class="text-muted">Total cursos asignados</td>
+                                <td class="text-center fw-bold text-success">${totalCursos}</td></tr>
+                            <tr><td class="text-muted">Promedio por docente</td>
+                                <td class="text-center fw-bold">${promedio}</td></tr>
+                            <tr><td class="text-muted">Máximo (1er lugar)</td>
+                                <td class="text-center fw-bold text-warning">${maxCursos}</td></tr>
+                        </tbody>
+                    </table>
+                    <h6 class="fw-semibold mb-2">Por Tipo de Docente</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr><th>Tipo</th><th class="text-center">Docentes</th><th class="text-center">Cursos</th></tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(porTipo).map(([tipo_d, vals]) => `
+                            <tr>
+                                <td>${tipo_d}</td>
+                                <td class="text-center">${vals.docentes}</td>
+                                <td class="text-center fw-bold">${vals.cursos}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-7">
+                    <h6 class="fw-semibold mb-2">Carga por Docente (Top ${Math.min(10, data.length)})</h6>
+                    <div style="max-height:280px;overflow-y:auto;">
+                        ${data.slice(0, 10).map((d, idx) => {
+                            const cursos  = parseInt(d.cursos_asignados || 0);
+                            const pct     = maxCursos > 0 ? Math.round((cursos / maxCursos) * 100) : 0;
+                            const nivel   = cursos >= maxCursos * 0.7 ? 'danger'
+                                          : cursos >= maxCursos * 0.4 ? 'warning' : 'info';
+                            const iniciales = `${(d.primer_nombre||'')[0]||''}${(d.primer_apellido||'')[0]||''}`.toUpperCase();
+                            return `
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0 fw-bold"
+                                     style="width:32px;height:32px;font-size:.7rem;">
+                                    ${iniciales}
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="fw-semibold text-truncate">${d.primer_nombre} ${d.primer_apellido}</small>
+                                        <small class="ms-2 text-${nivel} fw-bold flex-shrink-0">${cursos} c.</small>
+                                    </div>
+                                    <div class="progress" style="height:5px;">
+                                        <div class="progress-bar bg-${nivel}" style="width:${pct}%;"></div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    // ── Panel: Inactivos ──────────────────────────────────────────────────────
+    else if (tipo === 'inactivos') {
+        const totalInactivo = parseInt(t.inactivo) || 0;
+        const totalGeneral  = parseInt(t.total)    || 0;
+        const pct           = totalGeneral > 0 ? ((totalInactivo / totalGeneral) * 100).toFixed(1) : 0;
+
+        // Docentes del ranking con estado Inactivo
+        const inactivosEnRanking = docentesSolicitadosData.filter(
+            d => (d.estado_docente || '').toLowerCase() === 'inactivo'
+        );
+
+        contenidoPanel = `
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="alert alert-danger d-flex align-items-start gap-3 mb-3">
+                        <i class="bi bi-person-x-fill fs-4 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h5 class="mb-1">${totalInactivo} docente${totalInactivo !== 1 ? 's' : ''} inactivo${totalInactivo !== 1 ? 's' : ''}</h5>
+                            <p class="mb-0 small">
+                                Representan el <strong>${pct}%</strong> del total de docentes
+                                registrados en el sistema.
+                            </p>
+                        </div>
+                    </div>
+                    <table class="table table-sm table-bordered">
+                        <tbody>
+                            <tr><td class="text-muted">Total en sistema</td>
+                                <td class="text-center fw-bold">${totalGeneral}</td></tr>
+                            <tr><td class="text-muted">Inactivos</td>
+                                <td class="text-center fw-bold text-danger">${totalInactivo}</td></tr>
+                            <tr><td class="text-muted">% sobre el total</td>
+                                <td class="text-center fw-bold">${pct}%</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="text-muted small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Para ver el listado completo de inactivos con última fecha de asignación,
+                        use el reporte <em>Docentes Inactivos</em>.
+                    </p>
+                </div>
+                <div class="col-md-7">
+                    <h6 class="fw-semibold mb-2">Inactivos con asignaciones en ${anioDocentesSol}</h6>
+                    ${inactivosEnRanking.length === 0
+                        ? `<div class="text-center py-3 text-muted">
+                               <i class="bi bi-check-circle-fill text-success" style="font-size:1.8rem;"></i>
+                               <p class="mt-2 small">Ningún docente del ranking tiene estado Inactivo.</p>
+                           </div>`
+                        : `<div class="table-responsive">
+                               <table class="table table-sm table-bordered">
+                                   <thead class="table-light">
+                                       <tr><th>Docente</th><th class="text-center">Cursos</th><th>Tipo</th></tr>
+                                   </thead>
+                                   <tbody>
+                                       ${inactivosEnRanking.map(d => `
+                                       <tr>
+                                           <td>${d.primer_nombre} ${d.primer_apellido}</td>
+                                           <td class="text-center fw-bold">${d.cursos_asignados}</td>
+                                           <td><span class="badge bg-secondary">${d.tipo_docente||'—'}</span></td>
+                                       </tr>`).join('')}
+                                   </tbody>
+                               </table>
+                           </div>`
+                    }
+                </div>
+            </div>`;
+    }
+
+    // ── Panel: Top Docente ────────────────────────────────────────────────────
+    else if (tipo === 'top') {
+        const topDocente  = docentesSolicitadosData.length > 0 ? docentesSolicitadosData[0] : null;
+        const totalCursos = docentesSolicitadosData.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
+
+        if (!topDocente) {
+            contenidoPanel = `<div class="text-center py-3 text-muted">
+                <i class="bi bi-inbox" style="font-size:2rem;"></i>
+                <p class="mt-2">No hay datos disponibles para ${anioDocentesSol}.</p>
+            </div>`;
+        } else {
+            const cursos      = parseInt(topDocente.cursos_asignados || 0);
+            const pctGlobal   = totalCursos > 0 ? ((cursos / totalCursos) * 100).toFixed(1) : 0;
+            const iniciales   = `${(topDocente.primer_nombre||'')[0]||''}${(topDocente.primer_apellido||'')[0]||''}`.toUpperCase();
+            const clsTipo     = { Fijo:'primary', Contratado:'info', PDL:'success', Voluntario:'secondary' };
+            const clsEst      = { Disponible:'success', Asignado:'warning', 'En formación':'info', Inactivo:'secondary' };
+
+            // Posición relativa respecto a los demás docentes del ranking
+            const ranking = docentesSolicitadosData.map((d, i) => ({
+                pos:    i + 1,
+                nombre: `${d.primer_nombre} ${d.primer_apellido}`,
+                cursos: parseInt(d.cursos_asignados || 0)
+            }));
+
+            contenidoPanel = `
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0 fw-bold"
+                                 style="width:64px;height:64px;font-size:1.3rem;">${iniciales}</div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">${topDocente.primer_nombre} ${topDocente.primer_apellido}</h5>
+                                <div class="d-flex gap-2 mt-1 flex-wrap">
+                                    <span class="badge bg-${clsTipo[topDocente.tipo_docente]||'secondary'}">${topDocente.tipo_docente||'—'}</span>
+                                    <span class="badge bg-${clsEst[topDocente.estado_docente]||'secondary'}">${topDocente.estado_docente||'—'}</span>
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-trophy-fill me-1"></i>#1 del ranking</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <div class="card border-0 bg-light py-2">
+                                    <h4 class="fw-bold text-primary mb-0">${cursos}</h4>
+                                    <small class="text-muted">Cursos asignados</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card border-0 bg-light py-2">
+                                    <h4 class="fw-bold text-warning mb-0">${pctGlobal}%</h4>
+                                    <small class="text-muted">Del total del ranking</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Participación en cursos</span>
+                                <strong>${pctGlobal}%</strong>
+                            </div>
+                            <div class="progress" style="height:10px;">
+                                <div class="progress-bar bg-warning" style="width:${pctGlobal}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <h6 class="fw-semibold mb-2">Posición relativa en el ranking</h6>
+                        <div style="max-height:260px;overflow-y:auto;">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr><th>Pos.</th><th>Docente</th><th class="text-center">Cursos</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${ranking.slice(0, 10).map(r => `
+                                    <tr class="${r.pos === 1 ? 'table-warning' : ''}">
+                                        <td>
+                                            <span class="badge ${r.pos === 1 ? 'bg-warning text-dark' : r.pos === 2 ? 'bg-secondary' : r.pos === 3 ? 'bg-danger' : 'bg-light text-dark border'}">
+                                                ${r.pos}
+                                            </span>
+                                            ${r.pos === 1 ? '<i class="bi bi-trophy-fill text-warning ms-1"></i>' : ''}
+                                        </td>
+                                        <td class="${r.pos === 1 ? 'fw-bold' : ''}">${r.nombre}</td>
+                                        <td class="text-center fw-bold">${r.cursos}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+        }
+    }
+
+    wrapper.innerHTML = `
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="mb-3 text-${cfg.color} fw-semibold">
+                    <i class="bi bi-table me-1"></i>${cfg.titulo}
+                </h6>
+                ${contenidoPanel}
+            </div>
+        </div>`;
 }
 
 // ─── Fila de tabla ────────────────────────────────────────────────────────────
 function renderFilaDocSol(item, idx, totalCursos, totalDocentes, categoria) {
-    const cursos     = parseInt(item.cursos_asignados || 0);
-    const maxCursos  = docentesSolicitadosData.length > 0
-                       ? parseInt(docentesSolicitadosData[0].cursos_asignados || 1)
-                       : 1;
-    const pct        = Math.min(Math.round((cursos / maxCursos) * 100), 100);
-    const nivel      = cursos >= maxCursos * 0.7 ? 'Alto'
-                     : cursos >= maxCursos * 0.4 ? 'Moderado' : 'Básico';
-    const clsNivel   = nivel === 'Alto' ? 'bg-danger' : nivel === 'Moderado' ? 'bg-warning text-dark' : 'bg-info';
-    const clsPos     = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
-    const clsTipo    = { Fijo:'bg-primary', Contratado:'bg-info', PDL:'bg-success', Voluntario:'bg-secondary' };
-    const clsEst     = { Disponible:'bg-success', Asignado:'bg-warning text-dark', 'En formación':'bg-info', Inactivo:'bg-secondary' };
-    const iniciales  = `${(item.primer_nombre||'')[0]||''}${(item.primer_apellido||'')[0]||''}`.toUpperCase();
+    const cursos    = parseInt(item.cursos_asignados || 0);
+    const maxCursos = docentesSolicitadosData.length > 0
+                      ? parseInt(docentesSolicitadosData[0].cursos_asignados || 1)
+                      : 1;
+    const pct       = Math.min(Math.round((cursos / maxCursos) * 100), 100);
+    const nivel     = cursos >= maxCursos * 0.7 ? 'Alto' : cursos >= maxCursos * 0.4 ? 'Moderado' : 'Básico';
+    const clsNivel  = nivel === 'Alto' ? 'bg-danger' : nivel === 'Moderado' ? 'bg-warning text-dark' : 'bg-info';
+    const clsPos    = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
+    const clsTipo   = { Fijo:'bg-primary', Contratado:'bg-info', PDL:'bg-success', Voluntario:'bg-secondary' };
+    const clsEst    = { Disponible:'bg-success', Asignado:'bg-warning text-dark', 'En formación':'bg-info', Inactivo:'bg-secondary' };
+    const iniciales = `${(item.primer_nombre||'')[0]||''}${(item.primer_apellido||'')[0]||''}`.toUpperCase();
 
     return `
     <tr style="cursor:pointer;" onclick="mostrarDetalleDocSolTabla(${idx})">
@@ -386,13 +829,13 @@ function renderGraficoDocSol(data, categoria) {
     });
 }
 
-// ─── Panel de detalle ─────────────────────────────────────────────────────────
+// ─── Panel lateral de detalle (clic en barra o fila) ─────────────────────────
 function mostrarDetalleDocSol(idx) {
     const d = docentesSolicitadosData[idx];
     if (!d) return;
 
-    const cursos   = parseInt(d.cursos_asignados || 0);
-    const total    = docentesSolicitadosData.reduce((s, x) => s + parseInt(x.cursos_asignados || 0), 0);
+    const cursos    = parseInt(d.cursos_asignados || 0);
+    const total     = docentesSolicitadosData.reduce((s, x) => s + parseInt(x.cursos_asignados || 0), 0);
     const pctGlobal = total > 0 ? ((cursos / total) * 100).toFixed(1) : 0;
     const iniciales = `${(d.primer_nombre||'')[0]||''}${(d.primer_apellido||'')[0]||''}`.toUpperCase();
     const nivel     = cursos >= docentesSolicitadosData[0]?.cursos_asignados * 0.7 ? 'Alto'
@@ -401,12 +844,9 @@ function mostrarDetalleDocSol(idx) {
     const clsTipo   = { Fijo:'primary', Contratado:'info', PDL:'success', Voluntario:'secondary' };
     const clsEst    = { Disponible:'success', Asignado:'warning', 'En formación':'info', Inactivo:'secondary' };
 
-    const detEl  = document.getElementById('detalleDocSol');
-    const titEl  = document.getElementById('tituloDetalleDocSol');
+    document.getElementById('tituloDetalleDocSol').textContent = `Detalle: ${d.primer_nombre}`;
 
-    titEl.textContent = `Detalle: ${d.primer_nombre}`;
-
-    detEl.innerHTML = `
+    document.getElementById('detalleDocSol').innerHTML = `
         <div class="text-start">
             <div class="d-flex align-items-center gap-3 mb-4">
                 <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0 fw-bold"
@@ -454,7 +894,6 @@ function mostrarDetalleDocSol(idx) {
 
 function mostrarDetalleDocSolTabla(idx) {
     mostrarDetalleDocSol(idx);
-    // Resaltar barra si está en el top 8 visible en la gráfica
     if (idx < 8 && docentesSolicitadosChart) {
         const meta = docentesSolicitadosChart.getDatasetMeta(0);
         const bar  = meta.data[idx];
@@ -475,9 +914,9 @@ function ordenarTablaDocSol(criterio, evt) {
     const tbody = document.querySelector('#tablaDocSol tbody');
     if (!tbody) return;
 
-    const filas = Array.from(tbody.querySelectorAll('tr'));
     const categoriaId = window.currentCategoryId || 3;
-    const categoria = (window.categoriasReportes || []).find(c => c.id === categoriaId) || { color: 'warning' };
+    const categoria   = (window.categoriasReportes || []).find(c => c.id === categoriaId) || { color: 'warning' };
+    const filas       = Array.from(tbody.querySelectorAll('tr'));
 
     filas.sort((a, b) => {
         if (criterio === 'nombre') {
@@ -485,7 +924,6 @@ function ordenarTablaDocSol(criterio, evt) {
             const nB = b.querySelector('strong')?.textContent.trim().toLowerCase() || '';
             return nA.localeCompare(nB);
         }
-        // cursos
         const vA = parseInt(a.querySelector('.badge.bg-primary')?.textContent || 0);
         const vB = parseInt(b.querySelector('.badge.bg-primary')?.textContent || 0);
         return vB - vA;
@@ -493,8 +931,6 @@ function ordenarTablaDocSol(criterio, evt) {
 
     filas.forEach(f => tbody.appendChild(f));
 
-    // Recalcular posiciones
-    const totalCursos = docentesSolicitadosData.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
     filas.forEach((fila, idx) => {
         const posCell = fila.querySelector('td:first-child');
         const clsPos  = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
@@ -505,7 +941,6 @@ function ordenarTablaDocSol(criterio, evt) {
             </div>`;
     });
 
-    // Botones activos
     document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
     if (evt?.target) evt.target.classList.add('active');
 }
@@ -516,26 +951,47 @@ function limpiarDocentesMasSolicitados() {
         docentesSolicitadosChart.destroy();
         docentesSolicitadosChart = null;
     }
-    docentesSolicitadosData = [];
-    anioDocentesSol = new Date().getFullYear();
+    docentesSolicitadosData  = [];
+    anioDocentesSol          = new Date().getFullYear();
+    docSolTotalesActuales    = null;
+    docSolPanelActivo        = null;
 }
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 (function inyectarEstilosDocSol() {
     if (document.getElementById('_estDocSol')) return;
     const s = document.createElement('style');
-    s.id = '_estDocSol';
+    s.id    = '_estDocSol';
     s.textContent = `
-        .kpi-hover { transition: transform .25s, box-shadow .25s; }
-        .kpi-hover:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,.13) !important; }
+        .kpi-card {
+            transition: transform .25s, box-shadow .25s;
+            cursor: pointer;
+        }
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,.13) !important;
+        }
+        .rp-kpi-card-label {
+            font-size: .8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #666;
+            margin: .25rem 0 0;
+        }
+        .rp-kpi-card-sub {
+            font-size: .72rem;
+            color: #999;
+            margin: 0;
+        }
     `;
     document.head.appendChild(s);
 })();
 
 // ─── Registro global ──────────────────────────────────────────────────────────
-window.cargarDocentesMasSolicitados    = cargarDocentesMasSolicitados;
-window.limpiarDocentesMasSolicitados   = limpiarDocentesMasSolicitados;
-window.ordenarTablaDocSol              = ordenarTablaDocSol;
-window.mostrarDetalleDocSolTabla       = mostrarDetalleDocSolTabla;
+window.cargarDocentesMasSolicitados  = cargarDocentesMasSolicitados;
+window.limpiarDocentesMasSolicitados = limpiarDocentesMasSolicitados;
+window.ordenarTablaDocSol            = ordenarTablaDocSol;
+window.mostrarDetalleDocSolTabla     = mostrarDetalleDocSolTabla;
 
-console.log('RE-Docente-MasSolicitados.js');
+console.log('RE-Docente-MasSolicitados.js cargado');

@@ -522,7 +522,7 @@ public function eliminar($id) {
                 }
 
                 // Filtro Estado
-                if (!empty($filtros['estado']) && in_array($filtros['estado'], ['En formación', 'Disponible', 'En sistema', 'Asignado'])) {
+                if (!empty($filtros['estado']) && in_array($filtros['estado'], ['En formación', 'Disponible', 'En sistema', 'Asignado', 'Diferido'])) {
                     $sql .= " AND estado = :estado";
                     $params[':estado'] = $filtros['estado'];
                 }

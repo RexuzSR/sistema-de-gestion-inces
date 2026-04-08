@@ -1,7 +1,14 @@
 /* ============================================================
    home.js  —  INCES Sistema de Control
+   Dashboard principal: inicialización, navegación,
+   renderizado de gráficas y utilidades de dibujo.
    ============================================================ */
 
+
+/* ════════════════════════════════════════════════════════════
+   PALETAS DE COLOR
+   Centralizadas aquí para cambiar en un solo lugar.
+════════════════════════════════════════════════════════════ */
 const PALETA_ESTADO  = ['#28c76f', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 const PALETA_GENERO  = ['#0ea5e9', '#ec4899'];
 const PALETA_GRADO   = ['#6366f1', '#f59e0b', '#10b981'];
@@ -10,14 +17,14 @@ const PALETA_ESTATUS = ['#28c76f', '#0ea5e9', '#f59e0b', '#ef4444', '#8b5cf6', '
 const PALETA_MODAL   = ['#0ea5e9', '#7367f0', '#28c76f'];
 const PALETA_TURNO   = ['#ff9f43', '#0ea5e9'];
 const COLOR_METAS    = '#ef4444';
-const PALETA_AMBITO_SOL = ['#6366f1','#0ea5e9','#28c76f','#f59e0b','#ef4444','#8b5cf6','#ec4899','#10b981'];
+const PALETA_AMBITO  = ['#6366f1', '#0ea5e9', '#28c76f', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#10b981'];
 
-/* ──────────────────────────────────────────────────────────
-   Mapa de gráficas por sección y tab
-   Cada entrada define:
-     - chartId  → id del canvas
-     - render   → nombre de la función que dibuja la gráfica
-   ────────────────────────────────────────────────────────── */
+
+/* ════════════════════════════════════════════════════════════
+   MAPA DE GRÁFICAS
+   Relaciona cada sección + tab con su canvas y función de render.
+   Usado por activateChartTab() para saber qué dibujar.
+════════════════════════════════════════════════════════════ */
 const CHART_MAP = {
     participantes: {
         estado:  { chartId: 'chartPartEstado',  render: 'renderPartEstado'  },
@@ -25,11 +32,10 @@ const CHART_MAP = {
         grado:   { chartId: 'chartPartGrado',   render: 'renderPartGrado'   },
     },
     cursos: {
-        estatus:   { chartId: 'chartCursosEstatus',   render: 'renderCursosEstatus'   },
-        modalidad: { chartId: 'chartCursosModalidad', render: 'renderCursosModalidad' },
-        turno:     { chartId: 'chartCursosTurno',     render: 'renderCursosTurno'     },
-        cancelados:{ chartId: 'chartCursosEstatus2',  render: 'renderCursosCancelados'},
-        ambito: { chartId: 'chartAmbitoSolicitadoTab', render: 'renderAmbitoSolicitado' },
+        estatus:   { chartId: 'chartCursosEstatus',      render: 'renderCursosEstatus'   },
+        modalidad: { chartId: 'chartCursosModalidad',    render: 'renderCursosModalidad' },
+        turno:     { chartId: 'chartCursosTurno',        render: 'renderCursosTurno'     },
+        ambito:    { chartId: 'chartAmbitoSolicitadoTab', render: 'renderAmbitoSolicitado' },
     },
     docentes: {
         tipo:   { chartId: 'chartDocTipo',   render: 'renderDocTipo'   },
@@ -37,52 +43,60 @@ const CHART_MAP = {
         genero: { chartId: 'chartDocGenero', render: 'renderDocGenero' },
     },
     metas: {
-        ambito: { chartId: 'chartCumplimientoAmbito', render: 'renderCumplimientoAmbito' },
-        mes:    { chartId: 'chartMetasMes',            render: 'renderCalendarioMetas'    },
+        ambito: { chartId: 'chartCumplimientoAmbitoTab', render: 'renderCumplimientoAmbitoTab' },
+        mes:    { chartId: 'chartMetasMes',              render: 'renderCalendarioMetas'       },
     },
 };
 
-/* ──────────────────────────────────────────────────────────
-   Estado de gráficas ya renderizadas  { "section:chart": true }
-   ────────────────────────────────────────────────────────── */
-const graficasCreadas   = {};
-const graficasRendered  = new Set();
 
-function colorPorPct(pct) {
-    if (pct >= 95) return '#28c76f';
-    if (pct >= 80) return '#f59e0b';
-    return '#ef4444';
-}
+/* ════════════════════════════════════════════════════════════
+   ESTADO INTERNO
+   Registra instancias de Chart.js y tabs ya renderizados
+   para evitar recrear gráficas innecesariamente.
+════════════════════════════════════════════════════════════ */
+const graficasCreadas  = {};
+const graficasRendered = new Set();
+
+
+/* ════════════════════════════════════════════════════════════
+   PUNTO DE ENTRADA
+   Espera a que Chart.js esté disponible antes de inicializar.
+════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+    initHome();
+});
 
 function waitForChart(callback, maxAttempts = 20) {
     let attempts = 0;
     const interval = setInterval(() => {
         attempts++;
         if (typeof Chart !== 'undefined') { clearInterval(interval); callback(); }
-        else if (attempts >= maxAttempts) { clearInterval(interval); }
+        else if (attempts >= maxAttempts)  { clearInterval(interval); }
     }, 100);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initSidebar();
-    waitForChart(initHome);
-});
 
-/* ════════════════════════════
-   INICIALIZACIÓN
-════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   INICIALIZACIÓN DEL DASHBOARD
+   Orquesta el arranque de todos los subsistemas.
+════════════════════════════════════════════════════════════ */
 function initHome() {
     initSidebar();
     animateProgressBars();
     initTooltips();
     initTableNavigation();
-    initChartTabs();
 
-    const btnVerTodos = document.getElementById('btn-metas-ver-todos');
-    if (btnVerTodos) btnVerTodos.addEventListener('click', () => mostrarTodasMetas());
+    // Solo lo relacionado con gráficas espera a Chart.js (Dashboard/Inicio)
+    waitForChart(() => {
+        initChartTabs();
 
-    // Mini charts del resumen
-    setTimeout(() => { if (window.HOME_CHARTS) renderMiniChartsMensuales(); }, 300);
+        const btnVerTodos = document.getElementById('btn-metas-ver-todos');
+        if (btnVerTodos) btnVerTodos.addEventListener('click', () => mostrarTodasMetas());
+
+        setTimeout(() => { 
+            if (window.HOME_CHARTS) renderMiniChartsMensuales(); 
+        }, 300);
+    });
 }
 
 function initSidebar() {
@@ -114,78 +128,59 @@ function initTooltips() {
     }
 }
 
+
+/* ════════════════════════════════════════════════════════════
+   NAVEGACIÓN DE TABLAS
+   Delegación de eventos para filas clicables de cada módulo.
+   Navega a la página correspondiente al hacer clic en una fila.
+════════════════════════════════════════════════════════════ */
 function initTableNavigation() {
-    document.addEventListener('click', function (e) {
-        const fila = e.target.closest('tr.part-row-link');
-        if (!fila) return;
-        const cedula = fila.dataset.cedula;
-        if (!cedula) return;
-        fila.style.transition = 'background .15s';
-        fila.style.background = 'rgba(0,200,224,.18)';
-        setTimeout(() => { window.location.href = `participante.php?buscar=${encodeURIComponent(cedula)}`; }, 150);
-    });
+    const handlers = [
+        { selector: 'tr.part-row-link',    key: 'cedula', url: c => `participante.php?buscar=${c}`, color: 'rgba(0,200,224,.18)'    },
+        { selector: 'tr.curso-row-link',   key: 'nombre', url: c => `cursos.php?buscar=${c}`,       color: 'rgba(40,199,111,.18)'   },
+        { selector: 'tr.meta-row-link',    key: 'id',     url: c => `metas.php?buscar=${c}`,        color: 'rgba(239,68,68,.15)'    },
+        { selector: 'tr.docente-row-link', key: 'cedula', url: c => `docente.php?buscar=${c}`,      color: 'rgba(115,103,240,.18)'  },
+    ];
 
-    document.addEventListener('click', function (e) {
-        const fila = e.target.closest('tr.curso-row-link');
-        if (!fila) return;
-        const nombre = fila.dataset.nombre;
-        if (!nombre) return;
-        fila.style.transition = 'background .15s';
-        fila.style.background = 'rgba(40,199,111,.18)';
-        setTimeout(() => { window.location.href = `cursos.php?buscar=${encodeURIComponent(nombre)}`; }, 150);
-    });
-
-    document.addEventListener('click', function (e) {
-        const fila = e.target.closest('tr.meta-row-link');
-        if (!fila) return;
-        const id = fila.dataset.id;
-        if (!id) return;
-        fila.style.transition = 'background .15s';
-        fila.style.background = 'rgba(239,68,68,.15)';
-        setTimeout(() => { window.location.href = `metas.php?buscar=${encodeURIComponent(id)}`; }, 150);
-    });
-
-    document.addEventListener('click', function (e) {
-        const fila = e.target.closest('tr.docente-row-link');
-        if (!fila) return;
-        const cedula = fila.dataset.cedula;
-        if (!cedula) return;
-        fila.style.transition = 'background .15s';
-        fila.style.background = 'rgba(115,103,240,.18)';
-        setTimeout(() => { window.location.href = `docente.php?buscar=${encodeURIComponent(cedula)}`; }, 150);
+    handlers.forEach(({ selector, key, url, color }) => {
+        document.addEventListener('click', e => {
+            const fila = e.target.closest(selector);
+            if (!fila) return;
+            const valor = fila.dataset[key];
+            if (!valor) return;
+            fila.style.transition = 'background .15s';
+            fila.style.background = color;
+            setTimeout(() => { window.location.href = url(encodeURIComponent(valor)); }, 150);
+        });
     });
 }
 
-/* ════════════════════════════════════════════════════
-   LÓGICA DE SUB-TABS DE GRÁFICAS
-════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   SISTEMA DE TABS DE GRÁFICAS
+   Controla qué panel y qué gráfica se muestran dentro
+   de cada sección del dashboard.
+   NOTA: inicio.php NO debe registrar sus propios listeners
+         para .chart-tab-btn este módulo es el único dueño.
+════════════════════════════════════════════════════════════ */
 function initChartTabs() {
     document.querySelectorAll('.chart-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            const section = btn.dataset.section;
-            const chart   = btn.dataset.chart;
-            activateChartTab(section, chart, btn);
+            activateChartTab(btn.dataset.section, btn.dataset.chart, btn);
         });
     });
 }
 
 function activateChartTab(section, chartKey, btnEl) {
-    // 1. Actualizar botones activos dentro del nav de esta sección
     const nav = document.getElementById(`chart-nav-${section}`);
-    if (nav) {
-        nav.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
-    }
+    if (nav) nav.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
     if (btnEl) btnEl.classList.add('active');
 
-    // 2. Ocultar todos los paneles de la sección y mostrar el target
     const sectionEl = document.getElementById(`section-${section}`);
-    if (sectionEl) {
-        sectionEl.querySelectorAll('.chart-tab-panel').forEach(p => p.classList.remove('active'));
-    }
+    if (sectionEl) sectionEl.querySelectorAll('.chart-tab-panel').forEach(p => p.classList.remove('active'));
     const panel = document.getElementById(`chart-panel-${section}-${chartKey}`);
     if (panel) panel.classList.add('active');
 
-    // 3. Renderizar la gráfica si aún no fue creada
     const key = `${section}:${chartKey}`;
     if (!graficasRendered.has(key)) {
         graficasRendered.add(key);
@@ -196,108 +191,99 @@ function activateChartTab(section, chartKey, btnEl) {
     }
 }
 
-/* ════════════════════════════════════════════════════
-   RENDERIZADO POR SECCIÓN (llamado desde el nav principal)
-   Se renderiza SOLO el tab activo de cada sección
-════════════════════════════════════════════════════ */
 function renderGraficasBasicas(seccionId) {
     if (!window.HOME_CHARTS) { setTimeout(() => renderGraficasBasicas(seccionId), 200); return; }
-
-    // Encontrar el tab activo de la sección recién activada y renderizarlo
     const nav = document.getElementById(`chart-nav-${seccionId}`);
     if (!nav) return;
     const activeBtn = nav.querySelector('.chart-tab-btn.active');
     if (!activeBtn) return;
-
-    const chartKey = activeBtn.dataset.chart;
-    activateChartTab(seccionId, chartKey, activeBtn);
+    activateChartTab(seccionId, activeBtn.dataset.chart, activeBtn);
 }
 
-/* ════════════════════════════════════════════════════
-   FUNCIONES DE RENDERIZADO INDIVIDUALES
-   Cada función dibuja UNA gráfica específica
-════════════════════════════════════════════════════ */
 
-/* ── Participantes ── */
+/* ════════════════════════════════════════════════════════════
+   RENDERS — PARTICIPANTES
+════════════════════════════════════════════════════════════ */
 function renderPartEstado() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeDonut('chartPartEstado', d.partEstado.labels, d.partEstado.data, PALETA_ESTADO);
 }
 function renderPartGenero() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeDonut('chartPartGenero', d.partGenero.labels, d.partGenero.data, PALETA_GENERO);
 }
 function renderPartGrado() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeBar('chartPartGrado', d.partGrado.labels, d.partGrado.data, PALETA_GRADO);
 }
 
-/* ── Cursos ── */
+
+/* ════════════════════════════════════════════════════════════
+   RENDERS — CURSOS
+════════════════════════════════════════════════════════════ */
 function renderCursosEstatus() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeDonut('chartCursosEstatus', d.cursosEstatus.labels, d.cursosEstatus.data, PALETA_ESTATUS);
 }
 function renderCursosModalidad() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeDonut('chartCursosModalidad', d.cursosModal.labels, d.cursosModal.data, PALETA_MODAL);
 }
 function renderCursosTurno() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeBar('chartCursosTurno', d.cursosTurno.labels, d.cursosTurno.data, PALETA_TURNO);
 }
-function renderCursosCancelados() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
-    makeDonut('chartCursosEstatus2', d.cursosEstatus.labels, d.cursosEstatus.data, PALETA_ESTATUS);
-}
 function renderAmbitoSolicitado() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     if (d.ambitoSolicitado?.labels?.length) {
         makeDonutAmbitoSol('chartAmbitoSolicitadoTab', d.ambitoSolicitado.labels, d.ambitoSolicitado.data);
     }
 }
 
-/* ── Docentes ── */
+
+/* ════════════════════════════════════════════════════════════
+   RENDERS — DOCENTES
+════════════════════════════════════════════════════════════ */
 function renderDocTipo() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeDonut('chartDocTipo', d.docTipo.labels, d.docTipo.data, PALETA_TIPO);
 }
 function renderDocEstado() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeBar('chartDocEstado', d.docEstado.labels, d.docEstado.data, PALETA_ESTADO);
 }
 function renderDocGenero() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     makeDonut('chartDocGenero', d.docGenero.labels, d.docGenero.data, PALETA_GENERO);
 }
 
-/* ── Metas ── */
+
+/* ════════════════════════════════════════════════════════════
+   RENDERS — METAS
+════════════════════════════════════════════════════════════ */
+function renderCumplimientoAmbitoTab() {
+    const d = window.HOME_CHARTS; if (!d) return;
+    if (d.cumplimientoAmbito?.labels?.length) {
+        makeBarAmbitoH('chartCumplimientoAmbitoTab', d.cumplimientoAmbito.labels, d.cumplimientoAmbito.data);
+    }
+}
 function renderCumplimientoAmbito() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
+    const d = window.HOME_CHARTS; if (!d) return;
     if (d.cumplimientoAmbito?.labels?.length) {
         makeBarAmbitoH('chartCumplimientoAmbito', d.cumplimientoAmbito.labels, d.cumplimientoAmbito.data);
     }
 }
 function renderCalendarioMetas() {
-    const d = window.HOME_CHARTS;
-    if (!d) return;
-    makeCalendarioMetas('chartMetasMes', d.metasMes.data, COLOR_METAS);
+    const d = window.HOME_CHARTS; if (!d) return;
+    makeCalendarioMetas('chartMetasMes',      d.metasMes.data, COLOR_METAS);
+    makeCalendarioMetas('chartMetasMesTabla', d.metasMes.data, COLOR_METAS);
 }
 
-/* ════════════════════════════
-   MINI CHARTS (sección resumen)
-════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   RENDERS — RESUMEN (mini charts mensuales)
+   Dibuja las barras pequeñas de las tarjetas KPI del resumen.
+════════════════════════════════════════════════════════════ */
 function renderMiniChartsMensuales() {
     if (!window.HOME_CHARTS) return;
     const d = window.HOME_CHARTS;
@@ -306,9 +292,79 @@ function renderMiniChartsMensuales() {
     makeMiniBarMes('chartDocentesMes', d.docentesMes.data, '#7367f0');
 }
 
-/* ════════════════════════════
-   GRÁFICAS — funciones base
-════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════
+   FILTRO DE METAS POR MES
+   Controla el calendario interactivo de la sección metas.
+   Al clic en una barra del calendario filtra la tabla inferior.
+════════════════════════════════════════════════════════════ */
+let mesMetaActivo = null;
+
+function filtrarMetasPorMes(mesNum, mesLabel) {
+    const tbody = document.querySelector('#tabla-metas-panel tbody');
+    if (!tbody) return;
+    mesMetaActivo = mesNum;
+
+    let visibles = 0;
+    tbody.querySelectorAll('tr[data-mes-meta]').forEach(f => {
+        const mostrar = parseInt(f.dataset.mesMeta) === mesNum;
+        f.style.display = mostrar ? '' : 'none';
+        if (mostrar) visibles++;
+    });
+
+    const btnTodos  = document.getElementById('btn-metas-ver-todos');
+    const wrapLabel = document.getElementById('metas-mes-activo-wrap');
+    const spanLabel = document.getElementById('metas-mes-label');
+    const sinDatos  = document.getElementById('metas-sin-datos-mes');
+    if (btnTodos)  btnTodos.classList.remove('d-none');
+    if (wrapLabel) wrapLabel.classList.remove('d-none');
+    if (spanLabel) spanLabel.textContent = mesLabel;
+    if (sinDatos)  sinDatos.style.display = visibles === 0 ? '' : 'none';
+
+    ['chartMetasMes', 'chartMetasMesTabla'].forEach(id => {
+        const chart = graficasCreadas[id];
+        if (!chart) return;
+        chart.data.datasets[0].backgroundColor = chart.data.labels.map((_, i) => i === mesNum - 1 ? COLOR_METAS : COLOR_METAS + '28');
+        chart.data.datasets[0].borderColor      = chart.data.labels.map((_, i) => i === mesNum - 1 ? COLOR_METAS : 'transparent');
+        chart.update('none');
+    });
+}
+
+function mostrarTodasMetas() {
+    const tbody = document.querySelector('#tabla-metas-panel tbody');
+    if (!tbody) return;
+    tbody.querySelectorAll('tr[data-mes-meta]').forEach(f => f.style.display = '');
+    mesMetaActivo = null;
+
+    const btnTodos  = document.getElementById('btn-metas-ver-todos');
+    const wrapLabel = document.getElementById('metas-mes-activo-wrap');
+    const sinDatos  = document.getElementById('metas-sin-datos-mes');
+    if (btnTodos)  btnTodos.classList.add('d-none');
+    if (wrapLabel) wrapLabel.classList.add('d-none');
+    if (sinDatos)  sinDatos.style.display = 'none';
+
+    ['chartMetasMes', 'chartMetasMesTabla'].forEach(id => {
+        const chart = graficasCreadas[id];
+        if (!chart) return;
+        const data = chart.data.datasets[0].data;
+        chart.data.datasets[0].backgroundColor = data.map(v => v > 0 ? COLOR_METAS : COLOR_METAS + '28');
+        chart.data.datasets[0].borderColor      = data.map(v => v > 0 ? COLOR_METAS : 'transparent');
+        chart.update('none');
+    });
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   UTILIDADES DE DIBUJO — Chart.js
+   Funciones base reutilizadas por todos los renders.
+   Cada función destruye la instancia previa antes de redibujar.
+════════════════════════════════════════════════════════════ */
+function colorPorPct(pct) {
+    if (pct >= 95) return '#28c76f';
+    if (pct >= 80) return '#f59e0b';
+    return '#ef4444';
+}
+
 function makeDonut(canvasId, labels, data, colores) {
     const ctx = document.getElementById(canvasId);
     if (!ctx || !labels?.length) return;
@@ -369,7 +425,7 @@ function makeMiniBarMes(canvasId, data, color) {
                     tooltip: {
                         callbacks: {
                             title: items => lbls[items[0].dataIndex] ?? items[0].label,
-                            label: item => ` ${item.parsed.y}`
+                            label: item  => ` ${item.parsed.y}`
                         },
                         backgroundColor: 'rgba(15,23,42,.85)', titleFont: { size: 11, weight: 600 },
                         bodyFont: { size: 11 }, padding: 8, cornerRadius: 6
@@ -378,8 +434,7 @@ function makeMiniBarMes(canvasId, data, color) {
                 scales: {
                     x: {
                         display: true, grid: { display: false }, border: { display: false },
-                        ticks: {
-                            font: { size: 8 }, color: '#adb5bd', maxRotation: 0,
+                        ticks: { font: { size: 8 }, color: '#adb5bd', maxRotation: 0,
                             callback: (_, idx) => ['E','F','M','A','M','J','J','A','S','O','N','D'][idx] ?? ''
                         }
                     },
@@ -390,16 +445,12 @@ function makeMiniBarMes(canvasId, data, color) {
     } catch (e) {}
 }
 
-/* ════════════════════════════════════════════════════
-   Gráfica horizontal: cumplimiento por ámbito
-════════════════════════════════════════════════════ */
 function makeBarAmbitoH(canvasId, labels, data) {
     const ctx = document.getElementById(canvasId);
     if (!ctx || !labels?.length) return;
     if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
 
-    const colores = data.map(v => colorPorPct(v));
-
+    const colores   = data.map(v => colorPorPct(v));
     const lineaMeta = {
         id: 'lineaMeta',
         afterDraw(chart) {
@@ -435,7 +486,7 @@ function makeBarAmbitoH(canvasId, labels, data) {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: c => ` ${c.parsed.x}% promedio de cumplimiento`,
+                            label:      c => ` ${c.parsed.x}% promedio de cumplimiento`,
                             afterLabel: c => {
                                 const pct = c.parsed.x;
                                 if (pct >= 95) return ' ✓ Óptimo (≥95%)';
@@ -461,16 +512,11 @@ function makeBarAmbitoH(canvasId, labels, data) {
     } catch (e) {}
 }
 
-/* ════════════════════════════
-   Calendario de metas por mes
-════════════════════════════ */
-let mesMetaActivo = null;
-
 function makeCalendarioMetas(canvasId, data, color) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
-    const lbls = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const lbls         = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     const bgColors     = data.map(v => v > 0 ? color : color + '28');
     const borderColors = data.map(v => v > 0 ? color : 'transparent');
     try {
@@ -485,7 +531,7 @@ function makeCalendarioMetas(canvasId, data, color) {
                     tooltip: {
                         callbacks: {
                             title: items => lbls[items[0].dataIndex],
-                            label: item => {
+                            label: item  => {
                                 const v = item.parsed.y;
                                 return v > 0 ? ` ${v} meta${v !== 1 ? 's' : ''} — clic para filtrar` : ' Sin metas este mes';
                             }
@@ -500,10 +546,9 @@ function makeCalendarioMetas(canvasId, data, color) {
                 },
                 onClick: (event, elements) => {
                     if (!elements.length) return;
-                    const mesIdx = elements[0].index;
-                    const mesNum = mesIdx + 1;
-                    if (mesMetaActivo === mesNum) { mostrarTodasMetas(); }
-                    else { filtrarMetasPorMes(mesNum, lbls[mesIdx]); }
+                    const mesNum = elements[0].index + 1;
+                    if (mesMetaActivo === mesNum) mostrarTodasMetas();
+                    else filtrarMetasPorMes(mesNum, lbls[elements[0].index]);
                 },
                 onHover: (event, elements) => {
                     const tgt = event.native?.target;
@@ -514,58 +559,6 @@ function makeCalendarioMetas(canvasId, data, color) {
     } catch (e) {}
 }
 
-function filtrarMetasPorMes(mesNum, mesLabel) {
-    const tbody = document.querySelector('#tabla-metas-panel tbody');
-    if (!tbody) return;
-    mesMetaActivo = mesNum;
-    const filas = tbody.querySelectorAll('tr[data-mes-meta]');
-    let visibles = 0;
-    filas.forEach(f => {
-        const mostrar = parseInt(f.dataset.mesMeta) === mesNum;
-        f.style.display = mostrar ? '' : 'none';
-        if (mostrar) visibles++;
-    });
-    const btnTodos = document.getElementById('btn-metas-ver-todos');
-    const wrapLabel = document.getElementById('metas-mes-activo-wrap');
-    const spanLabel = document.getElementById('metas-mes-label');
-    const sinDatos  = document.getElementById('metas-sin-datos-mes');
-    if (btnTodos)  btnTodos.classList.remove('d-none');
-    if (wrapLabel) wrapLabel.classList.remove('d-none');
-    if (spanLabel) spanLabel.textContent = mesLabel;
-    if (sinDatos)  sinDatos.style.display = visibles === 0 ? '' : 'none';
-    const chart = graficasCreadas['chartMetasMes'];
-    if (chart) {
-        const color = COLOR_METAS;
-        chart.data.datasets[0].backgroundColor = chart.data.labels.map((_, i) => i === mesNum - 1 ? color : color + '28');
-        chart.data.datasets[0].borderColor      = chart.data.labels.map((_, i) => i === mesNum - 1 ? color : 'transparent');
-        chart.update('none');
-    }
-}
-
-function mostrarTodasMetas() {
-    const tbody = document.querySelector('#tabla-metas-panel tbody');
-    if (!tbody) return;
-    tbody.querySelectorAll('tr[data-mes-meta]').forEach(f => f.style.display = '');
-    const btnTodos  = document.getElementById('btn-metas-ver-todos');
-    const wrapLabel = document.getElementById('metas-mes-activo-wrap');
-    const sinDatos  = document.getElementById('metas-sin-datos-mes');
-    if (btnTodos)  btnTodos.classList.add('d-none');
-    if (wrapLabel) wrapLabel.classList.add('d-none');
-    if (sinDatos)  sinDatos.style.display = 'none';
-    mesMetaActivo = null;
-    const chart = graficasCreadas['chartMetasMes'];
-    if (chart) {
-        const color = COLOR_METAS;
-        const data  = chart.data.datasets[0].data;
-        chart.data.datasets[0].backgroundColor = data.map(v => v > 0 ? color : color + '28');
-        chart.data.datasets[0].borderColor      = data.map(v => v > 0 ? color : 'transparent');
-        chart.update('none');
-    }
-}
-
-/* ════════════════════════════════════════════════════
-   Donut ámbito más solicitado por mes
-════════════════════════════════════════════════════ */
 function makeDonutAmbitoSol(canvasId, labels, data) {
     const ctx = document.getElementById(canvasId);
     if (!ctx || !labels?.length) return;
@@ -576,7 +569,7 @@ function makeDonutAmbitoSol(canvasId, labels, data) {
             type: 'doughnut',
             data: {
                 labels,
-                datasets: [{ data, backgroundColor: labels.map((_, i) => PALETA_AMBITO_SOL[i % PALETA_AMBITO_SOL.length]), borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+                datasets: [{ data, backgroundColor: labels.map((_, i) => PALETA_AMBITO[i % PALETA_AMBITO.length]), borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, cutout: '60%',
@@ -598,3 +591,352 @@ function makeDonutAmbitoSol(canvasId, labels, data) {
         });
     } catch (e) {}
 }
+
+/* ════════════════════════════════════════════════════════════
+   CARDS SELECCIONABLES — Indicadores semáforo del resumen
+   Añadir al final de home.js
+════════════════════════════════════════════════════════════ */
+
+const PANEL_CHARTS = {
+    utilizacion: 'chartUtilizacionDonut',
+    formacion:   'chartFormacionDonut',
+    asignacion:  'chartAsignacionDonut',
+    ejecucion:   'chartEjecucionDonut',
+};
+
+const PANEL_ACCENTS = {
+    utilizacion: '#0ea5e9',
+    formacion:   '#28c76f',
+    asignacion:  '#7367f0',
+    ejecucion:   '#f59e0b',
+};
+
+let kpiPanelActivo = null;
+
+/* ════════════════════════════════════════════════════════════
+   Plugin interno: dibuja el valor numérico dentro de cada
+   segmento del donut. Registrado una sola vez en Chart.js.
+════════════════════════════════════════════════════════════ */
+const pluginValoresDonut = {
+    id: 'valoresDonut',
+    afterDraw(chart) {
+        if (chart.config.type !== 'doughnut') return;
+        const { ctx, data } = chart;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data) return;
+
+        meta.data.forEach((arc, i) => {
+            const value = data.datasets[0].data[i];
+            if (!value || value === 0) return;
+
+            /* Centro del arco en coordenadas polares */
+            const startAngle = arc.startAngle;
+            const endAngle   = arc.endAngle;
+            const midAngle   = (startAngle + endAngle) / 2;
+
+            /* Radio al punto medio del segmento (entre inner y outer) */
+            const innerR = arc.innerRadius;
+            const outerR = arc.outerRadius;
+            const midR   = innerR + (outerR - innerR) * 0.58;
+
+            const x = arc.x + midR * Math.cos(midAngle);
+            const y = arc.y + midR * Math.sin(midAngle);
+
+            /* Sólo dibujar si el arco es suficientemente grande */
+            const arcLength = Math.abs(endAngle - startAngle);
+            if (arcLength < 0.28) return;
+
+            ctx.save();
+            ctx.font         = 'bold 13px Roboto, sans-serif';
+            ctx.fillStyle    = '#fff';
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor  = 'rgba(0,0,0,0.35)';
+            ctx.shadowBlur   = 3;
+            ctx.fillText(value, x, y);
+            ctx.restore();
+        });
+    }
+};
+
+/* Registrar el plugin una sola vez cuando Chart.js esté listo */
+(function registrarPlugin() {
+    if (typeof Chart !== 'undefined') {
+        Chart.register(pluginValoresDonut);
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            const t = setInterval(() => {
+                if (typeof Chart !== 'undefined') {
+                    Chart.register(pluginValoresDonut);
+                    clearInterval(t);
+                }
+            }, 100);
+        });
+    }
+})();
+
+
+/* ════════════════════════════════════════════════════════════
+   INICIALIZACIÓN
+════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarCardsSeleccionables();
+});
+
+function inicializarCardsSeleccionables() {
+    document.querySelectorAll('.panel-mini-kpi.kpi-seleccionable').forEach(card => {
+        card.addEventListener('click', () => toggleKpiPanel(card.dataset.kpi));
+    });
+
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('[data-close-panel]');
+        if (btn) { e.stopPropagation(); cerrarKpiPanel(btn.dataset.closePanel); }
+    });
+
+    document.querySelectorAll('.kpi-mini-tab-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            activarMiniTab(btn.dataset.panel, btn.dataset.tab, btn);
+        });
+    });
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   TOGGLE / ABRIR / CERRAR PANEL
+════════════════════════════════════════════════════════════ */
+function toggleKpiPanel(kpiId) {
+    if (kpiPanelActivo === kpiId) cerrarKpiPanel(kpiId);
+    else {
+        if (kpiPanelActivo) cerrarKpiPanel(kpiPanelActivo, false);
+        abrirKpiPanel(kpiId);
+    }
+}
+
+function abrirKpiPanel(kpiId) {
+    const panel = document.getElementById('panel-' + kpiId);
+    const card  = document.querySelector(`.kpi-seleccionable[data-kpi="${kpiId}"]`);
+    const badge = document.getElementById('badge-' + kpiId);
+    if (!panel || !card) return;
+
+    kpiPanelActivo = kpiId;
+    card.classList.add('kpi-activa');
+
+    if (badge) {
+        badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg> Ocultar`;
+        badge.style.background = PANEL_ACCENTS[kpiId] + '18';
+        badge.style.color      = PANEL_ACCENTS[kpiId];
+    }
+
+    panel.style.display   = 'block';
+    panel.style.opacity   = '0';
+    panel.style.transform = 'translateY(-8px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        panel.style.transition = 'opacity .28s ease, transform .28s ease';
+        panel.style.opacity    = '1';
+        panel.style.transform  = 'translateY(0)';
+    }));
+
+    const chartId = PANEL_CHARTS[kpiId];
+    if (chartId && !graficasCreadas[chartId]) {
+        setTimeout(() => renderKpiMiniChart(kpiId), 130);
+    }
+
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 70);
+}
+
+function cerrarKpiPanel(kpiId, resetActivo = true) {
+    const panel = document.getElementById('panel-' + kpiId);
+    const card  = document.querySelector(`.kpi-seleccionable[data-kpi="${kpiId}"]`);
+    const badge = document.getElementById('badge-' + kpiId);
+    if (!panel) return;
+
+    if (resetActivo) kpiPanelActivo = null;
+    card?.classList.remove('kpi-activa');
+
+    if (badge) {
+        badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg> Ver detalle`;
+        badge.style.background = '';
+        badge.style.color      = '';
+    }
+
+    panel.style.transition = 'opacity .2s ease, transform .2s ease';
+    panel.style.opacity    = '0';
+    panel.style.transform  = 'translateY(-6px)';
+    setTimeout(() => {
+        panel.style.display    = 'none';
+        panel.style.transition = '';
+        panel.style.transform  = '';
+    }, 220);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   TABS INTERNOS
+════════════════════════════════════════════════════════════ */
+function activarMiniTab(panelId, tabId, btnEl) {
+    const accent = PANEL_ACCENTS[panelId] || '#6366f1';
+
+    document.querySelectorAll(`.kpi-mini-tab-btn[data-panel="${panelId}"]`).forEach(b => {
+        b.style.color            = '#64748b';
+        b.style.borderBottomColor = 'transparent';
+        b.style.fontWeight       = '600';
+    });
+
+    btnEl.style.color            = accent;
+    btnEl.style.borderBottomColor = accent;
+    btnEl.style.fontWeight       = '700';
+
+    const panelEl = document.getElementById('panel-' + panelId);
+    if (!panelEl) return;
+
+    panelEl.querySelectorAll('.kpi-mini-tab-panel').forEach(p => p.style.display = 'none');
+
+    const target = document.getElementById(`tab-${panelId}-${tabId}`);
+    if (target) {
+        target.style.display   = 'block';
+        target.style.animation = 'kpiFadeIn .2s ease';
+    }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   FUNCIÓN BASE: Donut con valores numéricos en segmentos
+   Envuelve makeDonut() pero con opciones extendidas para
+   mostrar los números dentro de cada porción.
+════════════════════════════════════════════════════════════ */
+function makeDonutConValores(canvasId, labels, data, colores) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !labels?.length) return;
+    if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
+
+    try {
+        graficasCreadas[canvasId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    backgroundColor: colores,
+                    borderWidth:  2,
+                    borderColor:  '#fff',
+                    hoverOffset:  6
+                }]
+            },
+            options: {
+                responsive:          true,
+                maintainAspectRatio: false,
+                cutout:              '58%',
+                animation: { duration: 700, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font:     { size: 11 },
+                            padding:  10,
+                            boxWidth: 12,
+                            generateLabels(chart) {
+                                const ds = chart.data.datasets[0];
+                                return chart.data.labels.map((label, i) => ({
+                                    text:            `${label}: ${ds.data[i]}`,
+                                    fillStyle:       ds.backgroundColor[i],
+                                    strokeStyle:     ds.backgroundColor[i],
+                                    lineWidth:       0,
+                                    hidden:          false,
+                                    index:           i,
+                                    datasetIndex:    0,
+                                    pointStyle:      'rectRounded',
+                                }));
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label(c) {
+                                const total = c.dataset.data.reduce((a,b) => a+b, 0);
+                                const pct   = total > 0 ? Math.round(c.parsed / total * 100) : 0;
+                                return ` ${c.label}: ${c.parsed} (${pct}%)`;
+                            }
+                        },
+                        backgroundColor: 'rgba(15,23,42,.88)',
+                        titleFont: { size: 11, weight: 600 },
+                        bodyFont:  { size: 11 },
+                        padding: 10, cornerRadius: 7
+                    }
+                }
+            }
+            /* El plugin pluginValoresDonut está registrado globalmente
+               y se aplica automáticamente a todos los donuts          */
+        });
+    } catch (e) {}
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   RENDERS POR PANEL
+════════════════════════════════════════════════════════════ */
+function renderKpiMiniChart(kpiId) {
+    const d = window.RESUMEN_KPI;
+    if (!d) return;
+
+    switch (kpiId) {
+
+        case 'utilizacion':
+            makeDonutConValores(
+                'chartUtilizacionDonut',
+                ['Asignados', 'Cupos libres'],
+                [d.utilizacion.inscritos, d.utilizacion.libres],
+                ['#0ea5e9', '#ef4444']
+            );
+            break;
+
+        case 'formacion': {
+            const labels = ['En formación', 'Disponibles'];
+            const vals   = [d.formacion.enFormacion, d.formacion.disponibles];
+            const cols   = ['#28c76f', '#f59e0b'];
+            /* Incluir "Otros" sólo si existe */
+            if (d.formacion.otros > 0) {
+                labels.push('Otros estados');
+                vals.push(d.formacion.otros);
+                cols.push('#e2e8f0');
+            }
+            makeDonutConValores('chartFormacionDonut', labels, vals, cols);
+            break;
+        }
+
+        case 'asignacion':
+            makeDonutConValores(
+                'chartAsignacionDonut',
+                ['En formación', 'Asignados', 'Sin asignar'],
+                [d.asignacion.enFormacion, d.asignacion.asignados, d.asignacion.sinAsignar],
+                ['#7367f0', '#0ea5e9', '#cbd5e1']
+            );
+            break;
+
+        case 'ejecucion':
+            makeDonutConValores(
+                'chartEjecucionDonut',
+                ['Ejecutados', 'Pendientes'],
+                [d.ejecucion.ejecutados, d.ejecucion.pendientes],
+                ['#28c76f', '#ef4444']
+            );
+            break;
+    }
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   KEYFRAME fade-in para tabs (inyectado una sola vez)
+════════════════════════════════════════════════════════════ */
+(function () {
+    if (document.getElementById('kpi-mini-style')) return;
+    const s = document.createElement('style');
+    s.id = 'kpi-mini-style';
+    s.textContent = `
+        @keyframes kpiFadeIn {
+            from { opacity:0; transform:translateY(4px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+    `;
+    document.head.appendChild(s);
+})();

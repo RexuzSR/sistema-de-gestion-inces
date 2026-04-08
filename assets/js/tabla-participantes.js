@@ -176,6 +176,9 @@ $(document).ready(function () {
                 case "Disponible":
                     estadoBadge = '<span class="badge bg-info text-black">Disponible</span>';
                     break;
+                case "Diferido":
+                    estadoBadge = '<span class="badge bg-danger text-white">Diferido</span>';
+                    break;
                 default:
                     estadoBadge = `<span class="badge bg-light text-black">${estado}</span>`;
             }

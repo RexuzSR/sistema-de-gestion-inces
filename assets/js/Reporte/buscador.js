@@ -231,7 +231,8 @@
             if (!estado) return '';
             const m = {
                 'En formación':'success', 'Activo':'success',    'Disponible':'success',
-                'Asignado':'primary',     'Inactivo':'secondary', 'En sistema':'info'
+                'Asignado':'primary',     'Inactivo':'secondary', 'En sistema':'info',
+                'Diferido':'warning'
             };
             return `<span class="badge bg-${m[estado]||'secondary'} bg-opacity-75 fw-normal"
                          style="font-size:.68rem">${estado}</span>`;

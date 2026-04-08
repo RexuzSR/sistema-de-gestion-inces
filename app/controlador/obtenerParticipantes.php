@@ -3,7 +3,11 @@
 require_once '../modelo/conexion.php';
 require_once 'managerParticipante.php'; // Asegúrate de que esta ruta sea correcta
 
+require_once 'Curso/managerCurso.php';
+
 $participante = new Participante();
+$curso = new Curso();
+$curso->actualizarEstadosPorFecha();
 
 try {
     // Obtener parámetros de búsqueda y filtros

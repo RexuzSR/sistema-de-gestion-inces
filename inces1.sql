@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 24-03-2026 a las 04:16:21
+-- Tiempo de generación: 28-03-2026 a las 03:52:39
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -113,7 +113,8 @@ INSERT INTO `tb_curso` (`id_curso`, `nombre_curso`, `fecha_inicio`, `fecha_limit
 (108, 'constructor', '2026-03-17', '2026-03-26', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 0, 2, 'Unidad Curricular', 2, 2, 5, 3, 1, 1, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 00:35:51', '2026-03-24 01:51:41'),
 (109, 'EstadosComprobar', '2026-03-17', '2026-03-26', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 6, 2, 'Unidad Curricular', 2, 2, 2, 3, 8, 2, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 04:14:04', '2026-03-24 01:51:41'),
 (110, 'constructoras', '2026-03-17', '2026-03-06', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 0, 1, 'Unidad Curricular', 2, 2, 4, 3, 8, 1, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 06:39:52', '2026-03-14 16:50:35'),
-(111, 'constructoras', '2026-03-24', '2026-04-02', '2026-04-14', 80.00, 5.00, 0.00, 50, 12, 0, 2, 'Unidad Curricular', 2, 2, 4, 1, 8, 3, 'Tarde', 'Programa de Formación Productiva (PFP)', '2026-03-14 21:33:32', '2026-03-24 01:51:41');
+(111, 'constructoras', '2026-03-24', '2026-04-02', '2026-04-14', 80.00, 5.00, 0.00, 50, 12, 0, 2, 'Unidad Curricular', 2, 2, 4, 1, 8, 3, 'Tarde', 'Programa de Formación Productiva (PFP)', '2026-03-14 21:33:32', '2026-03-24 01:51:41'),
+(113, 'constructorass', '2026-04-06', '2026-04-15', '2026-04-24', 60.00, 4.00, 0.00, 40, 12, 2, 2, 'Unidad Curricular', 1, 1, 2, 3, 8, 2, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-26 22:31:04', '2026-03-28 01:56:10');
 
 -- --------------------------------------------------------
 
@@ -165,7 +166,8 @@ INSERT INTO `tb_docente` (`id_docente`, `primer_nombre`, `segundo_nombre`, `prim
 (21, 'Jorge', '', 'Santos', '', 31104273, 'gdanieldj@gmail.com', '2000-06-08', 25, 'Disponible', 'Femenino', 'Fijo'),
 (22, 'maigualida ', 'del valle', 'Rengel', '', 12665258, 'examplee@gmail.com', '1975-10-15', 50, 'En formación', 'Femenino', 'Voluntario'),
 (23, 'samuel ', 'jose ', 'rivas', 'rengel', 30635942, 'example@gmail.com', '2004-10-27', 21, 'Asignado', 'Masculino', 'Fijo'),
-(24, 'asdf', 'asdf', 'asdff', 'qwerty', 8643258, 'example@gmail.com', '2004-10-20', 21, 'Disponible', 'Femenino', 'Voluntario');
+(24, 'asdf', 'asdf', 'asdff', 'qwerty', 8643258, 'example@gmail.com', '2004-10-20', 21, 'Asignado', 'Femenino', 'Voluntario'),
+(25, 'Trinity', 'tarcillena', 'asdff', 'asdasf', 8643257, 'samueljosealexander@gmail.com', '2010-04-15', 15, 'Asignado', 'Femenino', 'PDL');
 
 -- --------------------------------------------------------
 
@@ -190,7 +192,10 @@ INSERT INTO `tb_docente_curso` (`id_docente_curso`, `id_docente`, `id_curso`, `f
 (58, 14, 76, '2025-12-18'),
 (59, NULL, 80, '2025-12-18'),
 (62, 22, 96, '2026-01-21'),
-(63, 23, 95, '2026-01-21');
+(63, 23, 95, '2026-01-21'),
+(89, 24, 113, '2026-03-26'),
+(90, 25, 111, '2026-03-26'),
+(91, 23, 110, '2026-03-26');
 
 -- --------------------------------------------------------
 
@@ -238,7 +243,21 @@ CREATE TABLE `tb_historial` (
 INSERT INTO `tb_historial` (`id_historial`, `tipo_actividad`, `descripcion`, `tabla_afectada`, `id_registro`, `usuario_id`, `fecha_hora`) VALUES
 (1, 'Crear', 'Se creó el participante: Jorge Sucre', 'tb_participante', 351, 16, '2026-03-14 16:39:59'),
 (2, 'Editar', 'Se editó el curso: constructoras', 'tb_curso', 110, 16, '2026-03-14 16:50:35'),
-(3, 'Crear', 'Se creó la meta: Aprobados (800)', 'tb_metas', 19, 16, '2026-03-14 17:59:43');
+(3, 'Crear', 'Se creó la meta: Aprobados (800)', 'tb_metas', 19, 16, '2026-03-14 17:59:43'),
+(4, 'Crear', 'Se creó la meta: Aprobados (400)', 'tb_metas', 20, 16, '2026-03-26 03:10:32'),
+(5, 'Editar', 'Se editó la meta: Aprobados (20)', 'tb_metas', 17, 16, '2026-03-26 03:10:49'),
+(6, 'Editar', 'Se editó la meta: Aprobados (20)', 'tb_metas', 17, 16, '2026-03-26 03:10:54'),
+(7, 'Crear', 'Se creó el participante: Alexander Serrada', 'tb_participante', 352, 16, '2026-03-26 17:14:34'),
+(8, 'Eliminar', 'Se eliminó el curso: Curso de Prueba 2', 'tb_curso', 112, 16, '2026-03-26 17:30:39'),
+(9, 'Crear', 'Se creó el curso: constructorass', 'tb_curso', 113, 16, '2026-03-26 17:31:04'),
+(10, 'Crear', 'Se creó el docente: Trinity asdff', 'tb_docente', NULL, 16, '2026-03-26 17:38:32'),
+(11, 'Editar', 'Se asignó el docente samuel  rivas al curso constructoras', 'tb_docente_curso', 23, 16, '2026-03-26 18:12:21'),
+(12, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-03-26 18:21:36'),
+(13, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-03-26 18:21:59'),
+(14, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-03-26 18:24:16'),
+(15, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-03-26 18:24:22'),
+(16, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-03-26 18:24:31'),
+(17, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-03-28 01:29:43');
 
 -- --------------------------------------------------------
 
@@ -267,9 +286,10 @@ CREATE TABLE `tb_metas` (
 --
 
 INSERT INTO `tb_metas` (`id_meta`, `id_ambito`, `meta_objetivo`, `estudiantes_formados`, `tipo_objetivo`, `fecha_inicio`, `fecha_fin`, `estado`, `created_at`, `ambito_id`, `periodo_tiempo`) VALUES
-(17, 1, 20, 0, 'Inscritos', '2026-01-01', '2026-01-31', 'Cerrada', '2026-01-31 14:37:58', 0, NULL),
+(17, 1, 20, 0, 'Aprobados', '2026-01-01', '0000-00-00', 'Cerrada', '2026-01-31 14:37:58', 0, NULL),
 (18, 1, 20, 0, 'Aprobados', '2026-01-01', '2026-01-31', 'Cerrada', '2026-01-31 15:00:26', 0, NULL),
-(19, 1, 800, 0, 'Aprobados', '2026-03-01', '2026-03-28', 'Activa', '2026-03-14 17:59:43', 0, NULL);
+(19, 1, 800, 0, 'Aprobados', '2026-03-01', '2026-03-28', 'Activa', '2026-03-14 17:59:43', 0, NULL),
+(20, 1, 400, 0, 'Aprobados', '2026-03-01', '2026-03-28', 'Activa', '2026-03-26 03:10:32', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -350,7 +370,7 @@ CREATE TABLE `tb_participante` (
   `correo` varchar(50) NOT NULL,
   `fecha_nacimiento` date NOT NULL,
   `fecha_registro` date DEFAULT current_timestamp(),
-  `estado` enum('En formación','Inactivo','Disponible','Asignado','En sistema') NOT NULL,
+  `estado` enum('En formaci?n','Inactivo','Disponible','Asignado','En sistema','Diferido') NOT NULL,
   `grado_institucion` enum('Primaria','Bachillerato','Universidad') NOT NULL,
   `genero` enum('Masculino','Femenino') NOT NULL,
   `id_discapacidad` int(11) DEFAULT NULL
@@ -361,16 +381,17 @@ CREATE TABLE `tb_participante` (
 --
 
 INSERT INTO `tb_participante` (`id_participante`, `primer_nombre`, `segundo_nombre`, `primer_apellido`, `segundo_apellido`, `cedula`, `edad`, `correo`, `fecha_nacimiento`, `fecha_registro`, `estado`, `grado_institucion`, `genero`, `id_discapacidad`) VALUES
-(339, 'Jorge', 'Josmauro', 'Santos', 'Silva', 31104273, 25, 'silvajosmauro@gmail.com', '2000-02-12', '2026-01-07', 'En formación', 'Primaria', 'Femenino', 2),
-(341, 'samuel', 'jose', 'rivas', 'rengel', 30635942, 21, 'samueljosealexander@gmail.com', '2004-10-27', '2026-01-07', 'En formación', 'Universidad', 'Masculino', 1),
-(343, 'samuel', 'jose', 'rivas', 'rengel', 30635941, 21, 'example@gmail.com', '2004-10-27', '2026-01-11', 'En formación', 'Universidad', 'Masculino', 2),
-(345, 'Alexander', 'Del Valle', 'Rivas', 'Rengel', 30635932, 52, 'example@gmail.com', '1973-10-10', '2026-02-27', 'En formación', 'Primaria', 'Masculino', 3),
-(346, 'Trinity', 'Jose', 'Rivas', 'Morales', 33312864, 15, 'example@gmail.com', '2010-04-15', '2026-02-27', 'En formación', 'Primaria', 'Femenino', 3),
-(347, 'Alexander', 'Jose', 'Rivas', 'Rengel', 6803423, 49, 'example@gmail.com', '1976-05-20', '2026-03-07', 'En formación', 'Bachillerato', 'Masculino', 2),
-(348, 'Alexander', 'Jose', 'Nolazco', 'Gonzales', 30655942, 60, 'example@gmail.com', '1965-04-15', '2026-03-07', 'En formación', 'Primaria', 'Masculino', 3),
-(349, 'Alexander', 'Del Valle', 'Rivas', 'Rengel', 30635742, 45, 'example@gmail.com', '1980-04-10', '2026-03-07', 'En formación', 'Bachillerato', 'Femenino', 2),
-(350, 'Trinity', 'Angel Ys', 'Rivas', 'Diouh', 30638942, 65, 'example@gmail.com', '1960-04-15', '2026-03-07', 'En formación', 'Primaria', 'Femenino', 2),
-(351, 'Jorge', 'Del Valle', 'Sucre', 'Cumana', 7894561, 15, 'example@gmail.com', '2010-06-09', '2026-03-14', 'En sistema', 'Bachillerato', 'Masculino', 4);
+(339, 'Jorge', 'Josmauro', 'Santos', 'Silva', 31104273, 25, 'silvajosmauro@gmail.com', '2000-02-12', '2026-01-07', 'En sistema', 'Primaria', 'Femenino', 2),
+(341, 'samuel', 'jose', 'rivas', 'rengel', 30635942, 21, 'samueljosealexander@gmail.com', '2004-10-27', '2026-01-07', 'En sistema', 'Universidad', 'Masculino', 1),
+(343, 'samuel', 'jose', 'rivas', 'rengel', 30635941, 21, 'example@gmail.com', '2004-10-27', '2026-01-11', 'En sistema', 'Universidad', 'Masculino', 2),
+(345, 'Alexander', 'Del Valle', 'Rivas', 'Rengel', 30635932, 52, 'example@gmail.com', '1973-10-10', '2026-02-27', 'Diferido', 'Primaria', 'Masculino', 3),
+(346, 'Trinity', 'Jose', 'Rivas', 'Morales', 33312864, 15, 'example@gmail.com', '2010-04-15', '2026-02-27', 'Diferido', 'Primaria', 'Femenino', 3),
+(347, 'Alexander', 'Jose', 'Rivas', 'Rengel', 6803423, 49, 'example@gmail.com', '1976-05-20', '2026-03-07', 'Diferido', 'Bachillerato', 'Masculino', 2),
+(348, 'Alexander', 'Jose', 'Nolazco', 'Gonzales', 30655942, 60, 'example@gmail.com', '1965-04-15', '2026-03-07', 'Diferido', 'Primaria', 'Masculino', 3),
+(349, 'Alexander', 'Del Valle', 'Rivas', 'Rengel', 30635742, 45, 'example@gmail.com', '1980-04-10', '2026-03-07', 'Diferido', 'Bachillerato', 'Femenino', 2),
+(350, 'Trinity', 'Angel Ys', 'Rivas', 'Diouh', 30638942, 65, 'example@gmail.com', '1960-04-15', '2026-03-07', 'Diferido', 'Primaria', 'Femenino', 2),
+(351, 'Jorge', 'Del Valle', 'Sucre', 'Cumana', 7894561, 15, 'example@gmail.com', '2010-06-09', '2026-03-14', 'Asignado', 'Bachillerato', 'Masculino', 4),
+(352, 'Alexander', 'Del Valle', 'Serrada', 'Martinez', 30635956, 51, 'examplee@gmail.com', '1975-03-26', '2026-03-26', 'Asignado', 'Bachillerato', 'Masculino', 3);
 
 -- --------------------------------------------------------
 
@@ -425,7 +446,9 @@ INSERT INTO `tb_participante_curso` (`id_participante_curso`, `id_participante`,
 (478, 348, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'En formación'),
 (479, 349, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'En formación'),
 (480, 346, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'En formación'),
-(481, 350, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'En formación');
+(481, 350, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'En formación'),
+(482, 352, 113, '2026-03-27', '2026-04-06', '2026-04-24', 'Pendiente'),
+(483, 351, 113, '2026-03-27', '2026-04-06', '2026-04-24', 'Pendiente');
 
 -- --------------------------------------------------------
 
@@ -531,7 +554,9 @@ INSERT INTO `tb_telefono` (`id_telefono`, `numero_de_telefono`, `tipo_de_telefon
 (54, 4121234568, 'Móvil', NULL, 349, NULL),
 (55, 4121234568, 'Móvil', NULL, 350, NULL),
 (56, 4121234568, 'Móvil', 24, NULL, NULL),
-(57, 4127775577, 'Móvil', NULL, 351, NULL);
+(57, 4127775577, 'Móvil', NULL, 351, NULL),
+(58, 4164568754, 'Móvil', NULL, 352, NULL),
+(59, 4167775577, 'Móvil', 25, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -721,7 +746,7 @@ ALTER TABLE `tb_areaformativa`
 -- AUTO_INCREMENT de la tabla `tb_curso`
 --
 ALTER TABLE `tb_curso`
-  MODIFY `id_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
+  MODIFY `id_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_discapacidad`
@@ -733,13 +758,13 @@ ALTER TABLE `tb_discapacidad`
 -- AUTO_INCREMENT de la tabla `tb_docente`
 --
 ALTER TABLE `tb_docente`
-  MODIFY `id_docente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id_docente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_docente_curso`
 --
 ALTER TABLE `tb_docente_curso`
-  MODIFY `id_docente_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
+  MODIFY `id_docente_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=92;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_estatuscurso`
@@ -751,13 +776,13 @@ ALTER TABLE `tb_estatuscurso`
 -- AUTO_INCREMENT de la tabla `tb_historial`
 --
 ALTER TABLE `tb_historial`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_metas`
 --
 ALTER TABLE `tb_metas`
-  MODIFY `id_meta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id_meta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_modalidad`
@@ -781,13 +806,13 @@ ALTER TABLE `tb_objetivos`
 -- AUTO_INCREMENT de la tabla `tb_participante`
 --
 ALTER TABLE `tb_participante`
-  MODIFY `id_participante` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=352;
+  MODIFY `id_participante` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=353;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_participante_curso`
 --
 ALTER TABLE `tb_participante_curso`
-  MODIFY `id_participante_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=482;
+  MODIFY `id_participante_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=484;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_sectoreconomico`
@@ -805,7 +830,7 @@ ALTER TABLE `tb_subtipo`
 -- AUTO_INCREMENT de la tabla `tb_telefono`
 --
 ALTER TABLE `tb_telefono`
-  MODIFY `id_telefono` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id_telefono` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_usuario`
