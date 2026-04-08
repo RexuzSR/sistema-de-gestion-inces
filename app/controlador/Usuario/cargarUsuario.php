@@ -21,12 +21,19 @@ try {
     $response = $usuario->registrarUsuario($data);
     
     if ($response['success'] && isset($_SESSION['id_usuario'])) {
-        $nombreUsuario = $_POST['usuario'] ?? 'Nuevo Usuario';
-        HistorialUtil::registrar('Crear', "Se creó el usuario: $nombreUsuario", 'tb_usuario', $response['id_usuario'], $_SESSION['id_usuario']);
+        $nombreUsuario = $_POST['nombre_usuario'] ?? 'Nuevo Usuario';
+        try {
+            HistorialUtil::registrar('Crear', "Se creó el usuario: $nombreUsuario", 'tb_usuario', $response['id_usuario'] ?? 0, $_SESSION['id_usuario']);
+        } catch (Exception $e) {
+            error_log("Error al registrar historial de usuario: " . $e->getMessage());
+        }
     }
 
     echo json_encode($response);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => '❌ Error del servidor: ' . $e->getMessage()]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => '❌ Error inesperado: ' . $e->getMessage()]);
 }

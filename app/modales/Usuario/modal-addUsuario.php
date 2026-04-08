@@ -268,6 +268,31 @@
                                     </div>
 
                                     <div class="col-md-6">
+                                        <label for="correo" class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
+                                            Correo Electrónico <span style="color: #ef4444;">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text" style="
+                                                background: #f1f5f9;
+                                                border: 1.5px solid #e2e8f0;
+                                                border-right: none;
+                                                border-radius: 12px 0 0 12px;
+                                                color: #0281fe;
+                                            "><i class="bi bi-envelope"></i></span>
+                                            <input type="email" class="form-control neon-input" id="correo" name="correo" required placeholder="ejemplo@correo.com" style="
+                                                border: 1.5px solid #e2e8f0;
+                                                border-left: none;
+                                                border-radius: 0 12px 12px 0;
+                                                padding: 10px 14px;
+                                                font-size: 0.95rem;
+                                                transition: all 0.3s ease;
+                                                background: #ffffff;
+                                            " onmouseover="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.1), 0 0 20px rgba(2,129,254,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.2), 0 0 25px rgba(2,129,254,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                        </div>
+                                        <div class="error-feedback text-danger" id="error-correo" style="font-size: 0.8rem; margin-top: 4px;"></div>
+                                    </div>
+
+                                    <div class="col-md-6">
                                         <label for="password" class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
                                             Contraseña <span style="color: #ef4444;">*</span>
                                         </label>
@@ -292,29 +317,43 @@
                                         <div class="error-feedback text-danger" id="error-password" style="font-size: 0.8rem; margin-top: 4px;"></div>
                                     </div>
 
-                                    <div class="col-12">
-                                        <label for="correo" class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
-                                            Correo Electrónico <span style="color: #ef4444;">*</span>
+                                    <div class="col-md-6" id="container-confirm-password">
+                                        <label for="confirm_password" class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
+                                            Confirmar Contraseña <span style="color: #ef4444;">*</span>
                                         </label>
                                         <div class="input-group">
-                                            <span class="input-group-text" style="
+                                            <span class="input-group-text icon-status-bg" style="
                                                 background: #f1f5f9;
                                                 border: 1.5px solid #e2e8f0;
                                                 border-right: none;
                                                 border-radius: 12px 0 0 12px;
                                                 color: #0281fe;
-                                            "><i class="bi bi-envelope"></i></span>
-                                            <input type="email" class="form-control neon-input" id="correo" name="correo" required placeholder="ejemplo@correo.com" style="
+                                                transition: all 0.3s ease;
+                                            "><i class="bi bi-shield-lock" id="main-confirm-icon"></i></span>
+                                            <input class="form-control neon-input" type="password" id="confirm_password" name="confirm_password" required placeholder="••••••••" maxlength="64" style="
                                                 border: 1.5px solid #e2e8f0;
                                                 border-left: none;
-                                                border-radius: 0 12px 12px 0;
+                                                border-right: none;
+                                                border-radius: 0;
                                                 padding: 10px 14px;
                                                 font-size: 0.95rem;
                                                 transition: all 0.3s ease;
                                                 background: #ffffff;
-                                            " onmouseover="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.1), 0 0 20px rgba(2,129,254,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.2), 0 0 25px rgba(2,129,254,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                            " onmouseover="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.1), 0 0 20px rgba(16,185,129,0.4)'" onmouseout="if(!this.classList.contains('neon-invalid-pulse') && !this.classList.contains('neon-valid-pulse')) { this.style.borderColor='#e2e8f0'; this.style.boxShadow='none' }" onfocus="this.style.borderColor='#10b981'; this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.2), 0 0 25px rgba(16,185,129,0.5)'" onblur="if(!this.classList.contains('neon-invalid-pulse') && !this.classList.contains('neon-valid-pulse')) { this.style.borderColor='#e2e8f0'; this.style.boxShadow='none' }">
+                                            <span class="input-group-text status-indicator" style="
+                                                background: #ffffff;
+                                                border: 1.5px solid #e2e8f0;
+                                                border-left: none;
+                                                border-radius: 0 12px 12px 0;
+                                                min-width: 45px;
+                                                display: flex;
+                                                justify-content: center;
+                                                transition: all 0.3s ease;
+                                            ">
+                                                <i class="bi bi-three-dots text-muted" id="status-icon"></i>
+                                            </span>
                                         </div>
-                                        <div class="error-feedback text-danger" id="error-correo" style="font-size: 0.8rem; margin-top: 4px;"></div>
+                                        <div class="error-feedback text-danger" id="error-confirm_password" style="font-size: 0.8rem; margin-top: 4px;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -606,6 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 { id: 'primer_apellido', name: 'Primer apellido' },
                 { id: 'nombre_usuario', name: 'Nombre de usuario' },
                 { id: 'password', name: 'Contraseña' },
+                { id: 'confirm_password', name: 'Confirmar contraseña' },
                 { id: 'correo', name: 'Correo electrónico' },
                 { id: 'rol', name: 'Rol' },
                 { id: 'estado_usuario', name: 'Estado' }
@@ -660,6 +700,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('error-password').textContent = 'La contraseña no puede superar los 64 caracteres';
                     isValid = false;
                     shakeElement(password);
+                }
+
+                // Validar que las contraseñas coincidan
+                const confirm_password = document.getElementById('confirm_password');
+                if (confirm_password && password.value !== confirm_password.value) {
+                    confirm_password.classList.add('is-invalid');
+                    document.getElementById('error-confirm_password').textContent = 'Las contraseñas no coinciden';
+                    isValid = false;
+                    shakeElement(confirm_password);
                 }
             }
             
@@ -757,7 +806,89 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Limpiar mensajes de error
             document.querySelectorAll('.error-feedback').forEach(el => el.textContent = '');
+
+            // Limpiar efectos de validación en tiempo real
+            const confirmInput = document.getElementById('confirm_password');
+            if(confirmInput) {
+                confirmInput.classList.remove('neon-invalid-pulse', 'neon-valid-pulse');
+                confirmInput.style.borderColor = '#e2e8f0';
+                confirmInput.style.boxShadow = 'none';
+            }
+            const statusIcon = document.getElementById('status-icon');
+            if(statusIcon) {
+                statusIcon.className = 'bi bi-three-dots text-muted';
+            }
+            const iconBg = document.querySelector('.icon-status-bg');
+            if(iconBg) {
+                iconBg.style.borderColor = '#e2e8f0';
+                iconBg.style.color = '#0281fe';
+            }
+            const statusBg = document.querySelector('.status-indicator');
+            if(statusBg) {
+                statusBg.style.borderColor = '#e2e8f0';
+            }
         });
+    }
+
+    // Validación en tiempo real para contraseñas
+    const passInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm_password');
+    const statusIcon = document.getElementById('status-icon');
+    const iconBg = document.querySelector('.icon-status-bg');
+    const statusBg = document.querySelector('.status-indicator');
+
+    function validatePasswords() {
+        const pass = passInput.value;
+        const confirm = confirmInput.value;
+
+        if (!confirm) {
+            confirmInput.classList.remove('neon-invalid-pulse', 'neon-valid-pulse');
+            statusIcon.className = 'bi bi-three-dots text-muted';
+            resetColors();
+            return;
+        }
+
+        if (pass === confirm) {
+            confirmInput.classList.remove('neon-invalid-pulse');
+            confirmInput.classList.add('neon-valid-pulse');
+            statusIcon.className = 'bi bi-check-circle-fill text-success';
+            applyColors('#10b981', 'rgba(16, 185, 129, 0.4)');
+            document.getElementById('error-confirm_password').textContent = '';
+        } else {
+            confirmInput.classList.remove('neon-valid-pulse');
+            confirmInput.classList.add('neon-invalid-pulse');
+            statusIcon.className = 'bi bi-x-circle-fill text-danger';
+            applyColors('#ef4444', 'rgba(239, 68, 68, 0.4)');
+        }
+    }
+
+    function applyColors(color, glow) {
+        confirmInput.style.borderColor = color;
+        confirmInput.style.boxShadow = `0 0 15px ${glow}`;
+        if(iconBg) {
+            iconBg.style.borderColor = color;
+            iconBg.style.color = color;
+        }
+        if(statusBg) {
+            statusBg.style.borderColor = color;
+        }
+    }
+
+    function resetColors() {
+        confirmInput.style.borderColor = '#e2e8f0';
+        confirmInput.style.boxShadow = 'none';
+        if(iconBg) {
+            iconBg.style.borderColor = '#e2e8f0';
+            iconBg.style.color = '#0281fe';
+        }
+        if(statusBg) {
+            statusBg.style.borderColor = '#e2e8f0';
+        }
+    }
+
+    if (passInput && confirmInput) {
+        passInput.addEventListener('input', validatePasswords);
+        confirmInput.addEventListener('input', validatePasswords);
     }
 });
 </script>
@@ -796,6 +927,26 @@ document.addEventListener('DOMContentLoaded', function() {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
     20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes neonErrorPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4), 0 0 10px rgba(239, 68, 68, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 30px rgba(239, 68, 68, 0.4); }
+}
+
+@keyframes neonSuccessPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.4), 0 0 10px rgba(16, 185, 129, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 0 30px rgba(16, 185, 129, 0.4); }
+}
+
+.neon-invalid-pulse {
+    animation: neonErrorPulse 1.5s infinite alternate !important;
+    border-color: #ef4444 !important;
+}
+
+.neon-valid-pulse {
+    animation: neonSuccessPulse 1.5s infinite alternate !important;
+    border-color: #10b981 !important;
 }
 
 @keyframes float {

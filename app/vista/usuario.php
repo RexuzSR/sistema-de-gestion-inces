@@ -26,6 +26,12 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 // ==================== FIN SEGURIDAD ====================
 
+// Restringir acceso para usuarios de Apoyo
+if (($_SESSION['rol'] ?? '') === 'Apoyo') {
+    header('Location: Inicio.php');
+    exit;
+}
+
 // Incluir la conexión
 require_once '../modelo/conexion.php';
 

@@ -376,7 +376,9 @@ public function registrarUsuario($data) {
             ':estado_usuario' => $data['estado_usuario'] // "Activo" o "Inactivo"
         ]);
 
-        return ["success" => true, "message" => "✅ Usuario registrado con éxito."];
+        $lastId = $this->conn->lastInsertId();
+
+        return ["success" => true, "message" => "✅ Usuario registrado con éxito.", "id_usuario" => $lastId];
 
     } catch (PDOException $e) {
         return ["success" => false, "message" => "Error en la base de datos: " . $e->getMessage()];

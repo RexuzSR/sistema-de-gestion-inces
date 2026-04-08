@@ -129,6 +129,17 @@ $conn = null;
 
         <!-- Paginación -->
         <div id="paginacion-container"></div>
+        <div class="registros-historial-container">
+            <div class="registros-selector">
+                <label for="historial-registros">Mostrar</label>
+                <select id="historial-registros">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                </select>
+                <span>registros por página</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -142,7 +153,15 @@ $conn = null;
 <script src="../../assets/js/notifications.js"></script>
 
 <script>
-const ITEMS_POR_PAGINA = 50;
+    const userRole = "<?php echo $_SESSION['rol'] ?? ''; ?>";
+    if (userRole === "Apoyo") {
+        const usuarioItem = document.getElementById('sidebar-usuario');
+        if (usuarioItem) usuarioItem.remove();
+    }
+</script>
+
+<script>
+let itemsPorPagina = 50;
 let paginaActual = 1;
 let totalRegistros = 0;
 
@@ -219,17 +238,19 @@ function cargarTiposActividad(tipos) {
 
 // Cargar historial
 function cargarHistorial(pagina = 1) {
-    const offset = (pagina - 1) * ITEMS_POR_PAGINA;
+    const offset = (pagina - 1) * itemsPorPagina;
     const filtro = $('#filtro-tipo').val();
     const fechaDesde = $('#filtro-fecha-desde').val();
     const fechaHasta = $('#filtro-fecha-hasta').val();
+
+    $('#contenedor-tabla').html('<div class="cargando">Cargando historial...</div>');
 
     $.ajax({
         url: '../controlador/Historial/obtenerHistorial.php',
         type: 'GET',
         dataType: 'json',
         data: {
-            limite: ITEMS_POR_PAGINA,
+            limite: itemsPorPagina,
             offset: offset,
             filtro: filtro,
             fecha_desde: fechaDesde,
@@ -239,7 +260,7 @@ function cargarHistorial(pagina = 1) {
             if (response.success) {
                 totalRegistros = response.total;
                 mostrarHistorial(response.data);
-                mostrarPaginacion(pagina, Math.ceil(totalRegistros / ITEMS_POR_PAGINA));
+                mostrarPaginacion(pagina, Math.ceil(totalRegistros / itemsPorPagina));
             } else {
                 mostrarSinDatos();
             }
@@ -323,7 +344,7 @@ function mostrarPaginacion(paginaActual, totalPaginas) {
         return;
     }
 
-    let html = `<div class="info-paginacion">Mostrando ${(paginaActual - 1) * ITEMS_POR_PAGINA + 1} a ${Math.min(paginaActual * ITEMS_POR_PAGINA, totalRegistros)} de ${totalRegistros} registros</div>`;
+    let html = `<div class="info-paginacion">Mostrando ${(paginaActual - 1) * itemsPorPagina + 1} a ${Math.min(paginaActual * itemsPorPagina, totalRegistros)} de ${totalRegistros} registros</div>`;
     html += '<div class="paginacion">';
 
     // Botón anterior
@@ -386,6 +407,13 @@ $(document).ready(function() {
         $('#filtro-tipo').val('');
         $('#filtro-fecha-desde').val('');
         $('#filtro-fecha-hasta').val('');
+        paginaActual = 1;
+        cargarHistorial(1);
+    });
+
+    // Cambiar registros por página
+    $('#historial-registros').on('change', function() {
+        itemsPorPagina = parseInt($(this).val());
         paginaActual = 1;
         cargarHistorial(1);
     });

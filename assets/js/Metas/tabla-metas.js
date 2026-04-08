@@ -148,6 +148,11 @@ $(document).ready(function () {
         });
 
         $('#tabla-metas tbody').html(rows);
+
+        // Ocultar botones de editar y eliminar para usuarios de Apoyo
+        if (typeof userRole !== 'undefined' && userRole === 'Apoyo') {
+            $('#tabla-metas .button-action.edit, #tabla-metas .button-action.delete').hide();
+        }
     }
 
     function renderPaginacion(totalPages, activePage) {
