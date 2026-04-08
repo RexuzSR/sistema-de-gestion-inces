@@ -133,9 +133,9 @@ $conn = null;
             <div class="registros-selector">
                 <label for="historial-registros">Mostrar</label>
                 <select id="historial-registros">
-                    <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="25">25</option>
+                    <option value="50">50</option>
                 </select>
                 <span>registros por página</span>
             </div>
@@ -161,7 +161,7 @@ $conn = null;
 </script>
 
 <script>
-let itemsPorPagina = 50;
+let itemsPorPagina = 10;
 let paginaActual = 1;
 let totalRegistros = 0;
 
