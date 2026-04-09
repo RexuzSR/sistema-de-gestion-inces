@@ -87,17 +87,30 @@ function cargarCursosActivos(idParticipante) {
 
                 if (cursosOrdenados.length > 0) {
                     cursosOrdenados.forEach(curso => {
+                        // Sincronizar con el gestor central de estados de cursos
+                        const infoEstado = window.estadoCurso.getInfo(curso.id_estado_curso);
+                        let displayEstado = infoEstado.texto;
                         let badgeColor = '';
-                        let displayEstado = curso.estado;
 
-                        // Si el curso está culminado (ID 5) pero el participante sigue "En formación", mostrar como culminado
-                        if (curso.id_estado_curso == 5 && curso.estado === 'En formación') {
-                            displayEstado = 'Culminado';
-                            badgeColor = 'estado-badge culminado';
-                        } else if (curso.estado === 'En formación') {
-                            badgeColor = 'estado-badge en-curso';
-                        } else {
-                            badgeColor = 'estado-badge pendiente';
+                        // Mapeo dinámico de clases según el estado central
+                        switch(displayEstado) {
+                            case 'En proceso':
+                                badgeColor = 'estado-badge en-curso';
+                                break;
+                            case 'Culminado':
+                                badgeColor = 'estado-badge culminado';
+                                break;
+                            case 'Diferido':
+                                badgeColor = 'estado-badge diferido';
+                                break;
+                            case 'En espera':
+                                badgeColor = 'estado-badge en-espera';
+                                break;
+                            case 'En pausa':
+                                badgeColor = 'estado-badge en-pausa';
+                                break;
+                            default:
+                                badgeColor = curso.estado === 'Pendiente' ? 'estado-badge pendiente' : 'estado-badge en-curso';
                         }
 
                         const cursoHTML = `

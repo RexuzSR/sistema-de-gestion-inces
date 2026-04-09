@@ -701,7 +701,8 @@ td {
     border: none;
 }
 
-.estado-badge.pendiente {
+.estado-badge.pendiente, 
+.estado-badge.diferido {
     background: linear-gradient(135deg, #ea580c, #f97316);
     box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
     border: none;
@@ -710,6 +711,18 @@ td {
 .estado-badge.finalizado {
     background: linear-gradient(135deg, #2563eb, #3b82f6);
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    border: none;
+}
+
+.estado-badge.en-espera {
+    background: linear-gradient(135deg, #64748b, #94a3b8);
+    box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+    border: none;
+}
+
+.estado-badge.en-pausa {
+    background: linear-gradient(135deg, #0891b2, #06b6d4);
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
     border: none;
 }
 
