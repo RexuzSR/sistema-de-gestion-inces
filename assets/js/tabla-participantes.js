@@ -255,76 +255,80 @@ $(document).ready(function () {
     }
 
     function renderizarPaginacion(totalPages, activePage) {
+        const container = $('#paginacion-container');
+        const totalRegistros = filteredParticipantes.length;
+
         if (totalPages <= 1 || recordsPerPage === 0) {
-            $('#pagination').html('');
+            container.html('');
             return;
         }
 
-        let paginationHTML = '';
-
-        // Botón Primero y Anterior
-        paginationHTML += `
-            <li class="page-item ${activePage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="1">Primero</a>
-            </li>
-            <li class="page-item ${activePage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${Math.max(1, activePage - 1)}">Anterior</a>
-            </li>
+        let paginationHTML = `
+            <div class="info-paginacion-crud">
+                Mostrando ${(activePage - 1) * recordsPerPage + 1} a ${Math.min(activePage * recordsPerPage, totalRegistros)} de ${totalRegistros} registros
+            </div>
+            <div class="paginacion-crud">
         `;
 
-        // Determinar rango de páginas a mostrar
-        let startPage = Math.max(1, activePage - 2);
-        let endPage = Math.min(totalPages, activePage + 2);
+        // Botón Anterior
+        paginationHTML += `
+            <button data-page="${Math.max(1, activePage - 1)}" ${activePage === 1 ? 'disabled' : ''}>
+                ← Anterior
+            </button>
+        `;
 
-        if (activePage <= 3) {
-            endPage = Math.min(5, totalPages);
+        // Lógica de números de página (estilo Historial)
+        const inicio = Math.max(1, activePage - 2);
+        const fin = Math.min(totalPages, activePage + 2);
+
+        if (inicio > 1) {
+            paginationHTML += `<button data-page="1">1</button>`;
+            if (inicio > 2) paginationHTML += `<span>...</span>`;
         }
 
-        if (activePage >= totalPages - 2) {
-            startPage = Math.max(1, totalPages - 4);
-        }
-
-        // Mostrar páginas numéricas
-        for (let i = startPage; i <= endPage; i++) {
+        for (let i = inicio; i <= fin; i++) {
             paginationHTML += `
-                <li class="page-item ${activePage === i ? 'active' : ''}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>
+                <button class="${activePage === i ? 'activa' : ''}" data-page="${i}">
+                    ${i}
+                </button>
             `;
         }
 
-        // Botones Siguiente y Último
+        if (fin < totalPages) {
+            if (fin < totalPages - 1) paginationHTML += `<span>...</span>`;
+            paginationHTML += `<button data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        // Botón Siguiente
         paginationHTML += `
-            <li class="page-item ${activePage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${Math.min(totalPages, activePage + 1)}">Siguiente</a>
-            </li>
-            <li class="page-item ${activePage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${totalPages}">Último</a>
-            </li>
+            <button data-page="${Math.min(totalPages, activePage + 1)}" ${activePage === totalPages ? 'disabled' : ''}>
+                Siguiente →
+            </button>
         `;
 
-        $('#pagination').html(paginationHTML);
+        paginationHTML += '</div>';
+        container.html(paginationHTML);
     }
 
     // --- EVENT LISTENERS (Delegación de eventos para evitar crear y destruir constantemente) ---
 
     // Eventos de paginación
-    $(document).on('click', '#pagination .page-link', function (e) {
+    $(document).on('click', '.paginacion-crud button', function (e) {
         e.preventDefault();
-        const parentLi = $(this).parent();
-        if (parentLi.hasClass('disabled') || parentLi.hasClass('active')) return;
+        if ($(this).prop('disabled') || $(this).hasClass('activa')) return;
 
         const newPage = parseInt($(this).data('page'));
         if (!isNaN(newPage)) {
             currentPage = newPage;
             procesarTabla();
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll suave arriba al cambiar página
         }
     });
 
     // Evento para cambiar registros por página
     $('#registros').on('change', function () {
         const val = $(this).val();
-        recordsPerPage = val === "Todos" ? 0 : parseInt(val);
+        recordsPerPage = (val === "Todos" || val === "0") ? 0 : parseInt(val);
         currentPage = 1;
         procesarTabla();
     });

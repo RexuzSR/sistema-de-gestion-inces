@@ -10,9 +10,10 @@ $(document).ready(function () {
             dataType: 'json',
             success: function (data) {
                 const totalRecords = data.length; // Total de registros
-                const totalPages = perPage === 'Todos' ? 1 : Math.ceil(totalRecords / perPage); // Calcular páginas totales
-                let start = (page - 1) * perPage; // Índice inicial
-                let end = start + parseInt(perPage); // Índice final
+                const perPageVal = recordsPerPage === 'Todos' ? totalRecords : parseInt(recordsPerPage);
+                const totalPages = recordsPerPage === 'Todos' ? 1 : Math.ceil(totalRecords / perPageVal); // Calcular páginas totales
+                let start = (page - 1) * perPageVal; // Índice inicial
+                let end = start + perPageVal; // Índice final
 
                 // Si selecciona "Todos", mostramos todos los registros
                 if (perPage === 'Todos') {
@@ -74,7 +75,7 @@ $(document).ready(function () {
                 $('#tabla-usuarios tbody').html(rows); // Actualiza la tabla
 
                 // Renderizar la paginación
-                renderizarPaginacion(totalPages, page);
+                renderizarPaginacion(totalPages, page, totalRecords);
             },
             error: function (xhr, status, error) {
                 console.error('Error en la solicitud AJAX:', error);
@@ -84,43 +85,72 @@ $(document).ready(function () {
     }
 
     // Función para renderizar la paginación
-    function renderizarPaginacion(totalPages, activePage) {
+    function renderizarPaginacion(totalPages, activePage, totalRegistros) {
+        const container = $('#paginacion-container');
+
+        if (totalPages <= 1 || recordsPerPage === 'Todos') {
+            container.html('');
+            return;
+        }
+
+        const perPageVal = parseInt(recordsPerPage);
         let paginationHTML = `
-            <li class="page-item ${activePage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="1">Primero</a>
-            </li>
-            <li class="page-item ${activePage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${activePage - 1}">Anterior</a>
-            </li>
+            <div class="info-paginacion-crud">
+                Mostrando ${(activePage - 1) * perPageVal + 1} a ${Math.min(activePage * perPageVal, totalRegistros)} de ${totalRegistros} registros
+            </div>
+            <div class="paginacion-crud">
         `;
 
-        for (let i = 1; i <= totalPages; i++) {
+        // Botón Anterior
+        paginationHTML += `
+            <button data-page="${Math.max(1, activePage - 1)}" ${activePage === 1 ? 'disabled' : ''}>
+                ← Anterior
+            </button>
+        `;
+
+        // Lógica de números de página (estilo Historial)
+        const inicio = Math.max(1, activePage - 2);
+        const fin = Math.min(totalPages, activePage + 2);
+
+        if (inicio > 1) {
+            paginationHTML += `<button data-page="1">1</button>`;
+            if (inicio > 2) paginationHTML += `<span>...</span>`;
+        }
+
+        for (let i = inicio; i <= fin; i++) {
             paginationHTML += `
-                <li class="page-item ${activePage === i ? 'active' : ''}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>
+                <button class="${activePage === i ? 'activa' : ''}" data-page="${i}">
+                    ${i}
+                </button>
             `;
         }
 
+        if (fin < totalPages) {
+            if (fin < totalPages - 1) paginationHTML += `<span>...</span>`;
+            paginationHTML += `<button data-page="${totalPages}">${totalPages}</button>`;
+        }
+
+        // Botón Siguiente
         paginationHTML += `
-            <li class="page-item ${activePage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${activePage + 1}">Siguiente</a>
-            </li>
-            <li class="page-item ${activePage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${totalPages}">Último</a>
-            </li>
+            <button data-page="${Math.min(totalPages, activePage + 1)}" ${activePage === totalPages ? 'disabled' : ''}>
+                Siguiente →
+            </button>
         `;
 
-        $('.pagination').html(paginationHTML); // Actualiza la paginación
+        paginationHTML += '</div>';
+        container.html(paginationHTML);
     }
 
     // Event listener para cambiar la página
-    $(document).on('click', '.pagination .page-link', function (e) {
+    $(document).on('click', '.paginacion-crud button', function (e) {
         e.preventDefault();
+        if ($(this).prop('disabled') || $(this).hasClass('activa')) return;
+
         const newPage = parseInt($(this).data('page'));
         if (!isNaN(newPage)) {
             currentPage = newPage;
             cargarRegistros(currentPage, recordsPerPage);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
 

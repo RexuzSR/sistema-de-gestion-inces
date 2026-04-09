@@ -269,47 +269,20 @@ if (!empty($imagenUsuario)) {
                         </table>
                     </div>
                     <!-- Paginación -->
+                    <div id="paginacion-container"></div>
+                    <div class="registros-crud-container">
+                        <div class="registros-crud-selector">
+                            <label for="registros">Mostrar</label>
+                            <select id="registros">
+                                <option value="8" selected>8</option>
+                                <option value="15">15</option>
+                                <option value="25">25</option>
+                                <option value="0">Todos</option>
+                            </select>
+                            <span>registros por página</span>
+                        </div>
+                    </div>
 
-<div class="d-flex justify-content-between align-items-center">
-
-<div class="registros-container d-flex align-items-center gap-2">
-        <label class="label">Mostrar</label>
-        <select class="form-select form-select form-select-sm" id="registros">
-        <option value="1">1</option>
-          <option value="5">5</option>
-          <option value="8" selected>8</option>
-          <option value="10">10</option>
-          <option value="15">15</option>
-          <option value="Todos">Todos</option>
-        </select>
-        <span class="label">Registros</span>
-      </div>
-
-    <nav aria-label="Page navigation" class="mt-1">
-        <ul class="pagination pagination-sm">
-          <li class="page-item">
-            <a class="page-link" href="#">Primero</a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="#">Anterior</a>
-          </li>
-          <li class="page-item active" aria-current="page">
-            <a class="page-link" href="#">1</a>
-          </li>
-          <li class="page-item"><a class="page-link" href="#">2</a></li>
-          <li class="page-item"><a class="page-link" href="#">3</a></li>
-          <li class="page-item"><a class="page-link" href="#">4</a></li>
-          <li class="page-item"><a class="page-link" href="#">5</a></li>
-          <li class="page-item">
-            <a class="page-link" href="#">Siguiente</a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="#">Último</a>
-          </li>
-        </ul>
-      </nav>
-    
-</div>
     
    
  

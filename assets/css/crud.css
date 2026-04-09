@@ -745,3 +745,110 @@ td{
     border: 2px solid #fff;
     box-shadow: 0 0 0 2px rgba(0,0,0,0.03);
 }
+
+/* ============================================
+   ESTILOS DE PAGINACIÓN MODERNA (ESTILO HISTORIAL)
+   ============================================ */
+.info-paginacion-crud {
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    margin-top: 1.5rem;
+}
+
+.paginacion-crud {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.paginacion-crud button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    color: #333;
+}
+
+.paginacion-crud button:hover {
+    background: #06b1e6;
+    color: white;
+    border-color: #06b1e6;
+}
+
+.paginacion-crud button.activa {
+    background: #06b1e6;
+    color: white;
+    border-color: #06b1e6;
+    font-weight: bold;
+}
+
+.paginacion-crud button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f8f9fa;
+    color: #aaa;
+}
+
+.registros-crud-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.registros-crud-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    font-size: 0.9rem;
+    color: #555;
+    border: 1px solid #eee;
+}
+
+.registros-crud-selector label {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.registros-crud-selector select {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #333;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+}
+
+.registros-crud-selector select:focus {
+    border-color: #05c5e7;
+    box-shadow: 0 0 0 3px rgba(4, 235, 235, 0.2);
+}
+
+.registros-crud-selector select:hover {
+    border-color: #aab;
+}
+
+.registros-crud-selector span {
+    color: #777;
+}
+
+@media (max-width: 768px) {
+    .registros-crud-container {
+        justify-content: center;
+    }
+}

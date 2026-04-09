@@ -259,26 +259,20 @@ if (!empty($imagenUsuario)) {
                     </div>
 
                     <!-- Paginación -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div class="registros-container d-flex align-items-center gap-2">
-                            <label class="label">Mostrar</label>
-                            <select class="form-select form-select form-select-sm" id="registros">
-                                <option value="5">5</option>
+                    <div id="paginacion-container"></div>
+                    <div class="registros-crud-container">
+                        <div class="registros-crud-selector">
+                            <label for="registros">Mostrar</label>
+                            <select id="registros">
                                 <option value="8" selected>8</option>
-                                <option value="10">10</option>
                                 <option value="15">15</option>
-                                <option value="20">20</option>
+                                <option value="25">25</option>
                                 <option value="0">Todos</option>
                             </select>
-                            <span class="label">Registros</span>
+                            <span>registros por página</span>
                         </div>
-
-                        <nav aria-label="Page navigation" class="mt-1">
-                            <ul class="pagination pagination-sm" id="pagination">
-                                <!-- La paginación se generará dinámicamente -->
-                            </ul>
-                        </nav>
                     </div>
+
                 </div>
             </div>
         </div>
