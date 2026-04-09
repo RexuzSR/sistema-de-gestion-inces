@@ -107,6 +107,43 @@
             return dp[a.length][b.length];
         }
 
+        // Corregir una sola palabra buscando el token más cercano en el índice
+        _correctWord(word) {
+            if (!word || word.length < 3) return word;
+            const norm = this._norm(word);
+            if (this._idx.has(norm)) return word; // Ya es exacta
+
+            let bestToken = null;
+            let bestDist  = Infinity;
+            const maxDist = norm.length <= 4 ? 1 : 2;
+
+            this._idx.forEach((entries, token) => {
+                if (token.length < 3) return;
+                // Solo comparar tokens de longitud similar
+                if (Math.abs(token.length - norm.length) > maxDist) return;
+                const d = this._lev(norm, token);
+                if (d > 0 && d <= maxDist && d < bestDist) {
+                    // Preferir tokens con mayor peso (más relevantes)
+                    bestDist  = d;
+                    bestToken = token;
+                }
+            });
+
+            return bestToken || word;
+        }
+
+        // Corregir toda la consulta, palabra por palabra
+        _correctQuery(text) {
+            const words = text.split(/\s+/).filter(Boolean);
+            let changed = false;
+            const corrected = words.map(w => {
+                const c = this._correctWord(w);
+                if (c !== this._norm(w) && c !== w) changed = true;
+                return c !== this._norm(w) ? c : w;
+            });
+            return { text: corrected.join(' '), changed };
+        }
+
         _searchReports(term) {
             const norm   = this._norm(term);
             const words  = norm.split(' ').filter(w => w.length > 1);
@@ -127,14 +164,19 @@
                         else if (token.includes(w)) entries.forEach(e => add(e.catId, e.repId, e.w * 0.3));
                     }
                 });
-            });
 
-            if (words.length === 1 && norm.length >= 4) {
-                this._idx.forEach((entries, token) => {
-                    if (token.length > 3 && this._lev(norm, token) === 1)
-                        entries.forEach(e => add(e.catId, e.repId, e.w * 0.4));
-                });
-            }
+                // Fuzzy matching por Levenshtein para CADA palabra
+                if (w.length >= 3) {
+                    const maxD = w.length <= 4 ? 1 : 2;
+                    this._idx.forEach((entries, token) => {
+                        if (token.length >= 3 && Math.abs(token.length - w.length) <= maxD) {
+                            const d = this._lev(w, token);
+                            if (d > 0 && d <= maxD)
+                                entries.forEach(e => add(e.catId, e.repId, e.w * (0.5 / d)));
+                        }
+                    });
+                }
+            });
 
             const seen = new Set();
             return [...scores.entries()]
@@ -447,6 +489,27 @@
             });
 
             input.addEventListener('keydown', e => {
+                // Autocorrección al presionar espacio
+                if (e.key === ' ' || e.code === 'Space') {
+                    const cursorPos = input.selectionStart;
+                    const textBeforeCursor = input.value.substring(0, cursorPos);
+                    const textAfterCursor  = input.value.substring(cursorPos);
+                    
+                    // Solo corregir si hay texto antes del cursor
+                    if (textBeforeCursor.trim().length >= 3) {
+                        const result = this._correctQuery(textBeforeCursor);
+                        if (result.changed) {
+                            e.preventDefault();
+                            input.value = result.text + ' ' + textAfterCursor.trimStart();
+                            // Posicionar cursor después de la corrección + espacio
+                            const newPos = result.text.length + 1;
+                            input.setSelectionRange(newPos, newPos);
+                            // Disparar evento input para actualizar resultados
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                    return;
+                }
                 if (!isOpen) return;
                 if (e.key === 'ArrowDown') { e.preventDefault(); this._move( 1, dd); }
                 if (e.key === 'ArrowUp')   { e.preventDefault(); this._move(-1, dd); }

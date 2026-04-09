@@ -9,6 +9,9 @@
   // Almacenamiento local para ID de notificaciones "leídas"
   const STORAGE_KEY = 'inces_read_notifications';
 
+  // Cache de notificaciones cargadas
+  let cachedNotifications = [];
+
   // Utilidad para crear elementos DOM rápidos
   function el(tag, opts = {}) {
     const n = document.createElement(tag);
@@ -22,7 +25,6 @@
   function timeAgo(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
-    // Ajustamos la zona horaria si la fecha devuelta por db no cuadra exacto (simplificado asume TZ local o UTC)
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
 
@@ -62,7 +64,8 @@
       readNotifs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     } catch (e) { }
 
-    let unreadCount = 0;
+    // Calcular unreadCount basado en TODAS las notificaciones cacheadas para el badge
+    let totalUnreadCount = cachedNotifications.filter(n => !readNotifs.includes(n.notif_id)).length;
 
     if (!data || data.length === 0) {
       listEl.innerHTML = `
@@ -70,34 +73,24 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-bell-slash" viewBox="0 0 16 16" style="opacity: 0.5; margin-bottom: 10px;">
                         <path d="M5.164 14H15c-1.5-1-2-5.902-2-7 q0-.396-.06-.776l-9.776 9.776c.328.04.692.06 1.05.06m6.208-10.608A4.98 4.98 0 0 0 8 3c-2.3 0-4.14 1.76-4.992 4.08A28 28 0 0 0 3.013 12H1.5a.5.5 0 0 1 0-1h.638a27 27 0 0 1 .156-4.152A5.98 5.98 0 0 1 8 2c.983 0 1.9.23 2.709.638zM14 14.5a1.5 1.5 0 0 1-3 0h3zm-13.646.354l13-13 .708.708-13 13z"/>
                     </svg>
-                    <div>No hay notificaciones recientes</div>
+                    <div>No hay notificaciones con este filtro</div>
                 </div>`;
-
-      if (badgeBtn) badgeBtn.style.display = 'none';
+      
+      handleBadge(totalUnreadCount, badgeBtn);
       return;
     }
 
     data.forEach(t => {
       const isRead = readNotifs.includes(t.notif_id);
-      if (!isRead) unreadCount++;
 
-      /* 
-        Estructura que espera el header.php:
-        <div class="notification-item unread">
-            <div style="font-weight: 600; font-size: 13px;">Título</div>
-            <div style="font-size: 11px; color: #666; margin-top: 2px;">Mensaje</div>
-        </div>
-      */
       const item = el('div', {
         class: `notification-item ${isRead ? '' : 'unread'}`,
         attrs: {
           'data-id': t.notif_id,
-          // Redirige al ver el curso si se hace clic
           'onclick': `window.location.href='cursos.php?buscar=${encodeURIComponent(t.id)}'`
         }
       });
 
-      // Usamos el diseño con ícono personalizado devuelto por backend
       item.innerHTML = `
                 <div style="display: flex; gap: 10px; align-items:flex-start;">
                     <div style="color: ${t.color}; margin-top: 2px;">
@@ -112,15 +105,16 @@
                     </div>
                 </div>
             `;
-
       listEl.appendChild(item);
     });
 
-    // Manejamos el puntito rojo pulsante del header
+    handleBadge(totalUnreadCount, badgeBtn);
+  }
+
+  function handleBadge(unreadCount, badgeBtn) {
     if (badgeBtn) {
       if (unreadCount > 0) {
         badgeBtn.style.display = 'block';
-        // Añadir pulso si hay nuevas
         badgeBtn.style.animation = 'pulse 1.5s infinite';
       } else {
         badgeBtn.style.display = 'none';
@@ -143,14 +137,10 @@
 
   // Exponer la función global para el botón "Marcar todas como leídas" del header.php
   window.markAllAsRead = function () {
-    // Encontrar todos los items no leídos
     const unreadItems = document.querySelectorAll('.notification-item.unread');
-
-    // Obtener historial actual
     let readNotifs = [];
     try { readNotifs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { }
 
-    // Agregar los IDs a leídos visualmente y en localstorage
     unreadItems.forEach(item => {
       item.classList.remove('unread');
       const id = item.getAttribute('data-id');
@@ -159,10 +149,8 @@
       }
     });
 
-    // Guardar
     localStorage.setItem(STORAGE_KEY, JSON.stringify(readNotifs));
 
-    // Ocultar pulso
     const badge = document.querySelector('.notification-badge-modern');
     if (badge) {
       badge.style.display = 'none';
@@ -171,8 +159,30 @@
 
   async function loadAndRender() {
     const data = await fetchData();
-    renderItems(data);
+    cachedNotifications = data;
+    
+    // Mantener filtro activo si existe
+    const filterEl = document.getElementById('notif-filter');
+    const type = filterEl ? filterEl.value : 'all';
+    
+    filterAndRender(type);
   }
+
+  function filterAndRender(type) {
+    if (type === 'all') {
+      renderItems(cachedNotifications);
+    } else {
+      const filtered = cachedNotifications.filter(n => n.tipo === type);
+      renderItems(filtered);
+    }
+  }
+
+  // Listeners
+  document.addEventListener('change', e => {
+      if (e.target && e.target.id === 'notif-filter') {
+          filterAndRender(e.target.value);
+      }
+  });
 
   // Iniciar
   if (document.readyState === 'loading') {
@@ -181,7 +191,7 @@
     loadAndRender();
   }
 
-  // Opcional: Refrescar data cada X minutos para mantener vivo (3 minutos)
+  // Refrescar data cada X minutos (3 minutos)
   setInterval(loadAndRender, 180000);
 
 })();
