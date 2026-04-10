@@ -29,7 +29,6 @@ try {
         'tipo_formacion-Edit'       => $_POST['tipo_formacion-Edit']       ?? null,
         'id_estatusCurso-Edit'      => $_POST['id_estatusCurso-Edit']      ?? null,
         'id_sectoreconomico-Edit'   => $_POST['id_sectoreconomico-Edit']   ?? null,
-        'id_motor-Edit'             => $_POST['id_motor-Edit']             ?? null,
         'id_subtipo-Edit'           => $_POST['id_subtipo-Edit']           ?? null,
         'id_areaFormativa-Edit'     => $_POST['id_areaFormativa-Edit']     ?? null,
         'id_ambito-Edit'            => $_POST['id_ambito-Edit']            ?? null,

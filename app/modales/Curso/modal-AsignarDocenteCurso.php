@@ -27,7 +27,6 @@
                             <p><b>Modalidad: </b><span id="asignar-modalidad"></span></p>
                         </div>
                         <div class="col-md-6">
-                            <p><b>Motor: </b><span id="asignar-motor"></span></p>
                             <p><b>Área Formativa: </b><span id="asignar-area-formativa"></span></p>
                         </div>
 

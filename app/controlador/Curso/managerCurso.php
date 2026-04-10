@@ -207,7 +207,6 @@ class Curso {
                         tipo_formacion,
                         id_estatusCurso, 
                         id_sectoreconomico,
-                        id_motor, 
                         id_subtipo,
                         id_areaFormativa, 
                         id_ambito,
@@ -230,7 +229,6 @@ class Curso {
                         :tipo_formacion,
                         :id_estatusCurso, 
                         :id_sectoreconomico,
-                        :id_motor, 
                         :id_subtipo,
                         :id_areaFormativa, 
                         :id_ambito,
@@ -258,7 +256,6 @@ class Curso {
                 ':tipo_formacion' => $data['tipo_formacion'] ?? null,
                 ':id_estatusCurso' => $data['id_estatusCurso'] ?? 1,
                 ':id_sectoreconomico' => $data['id_sectoreconomico'] ?? ($data['sectoreconomico'] ?? null),
-                ':id_motor' => $data['id_motor'] ?? null,
                 ':id_subtipo' => $data['id_subtipo'] ?? ($data['subtipo'] ?? null),
                 ':id_areaFormativa' => $data['id_areaFormativa'] ?? null,
                 ':id_ambito' => $data['id_ambito'] ?? ($data['ambito'] ?? null),
@@ -399,7 +396,6 @@ class Curso {
                         c.nombre_curso, 
                         c.id_modalidad,
                         m.nombre_modalidad, 
-                        mot.nombre_motor, 
                         c.programa_formacion, 
                         af.nombre_areaFormativa, 
                         c.fecha_inicio, 
@@ -421,7 +417,6 @@ class Curso {
                         c.fecha_actualizacion
                     FROM tb_curso c
                     LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
-                    LEFT JOIN tb_motor mot ON c.id_motor = mot.id_motor
                     LEFT JOIN tb_areaformativa af ON c.id_areaFormativa = af.id_areaFormativa
                     LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
                     LEFT JOIN tb_sectoreconomico se ON c.id_sectoreconomico = se.id_sectoreconomico
@@ -520,14 +515,12 @@ class Curso {
                         c.tipo_formacion,
                         c.id_estatusCurso,
                         c.id_sectoreconomico,
-                        c.id_motor,
                         c.id_subtipo,
                         c.id_areaFormativa,
                         c.id_ambito,
                         c.turno,
                         c.programa_formacion,
                         m.nombre_modalidad,
-                        mot.nombre_motor,
                         af.nombre_areaFormativa,
                         se.nombre_sectoreconomico,
                         st.nombre_subtipo,
@@ -537,7 +530,6 @@ class Curso {
                         c.fecha_actualizacion
                     FROM tb_curso c
                     LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
-                    LEFT JOIN tb_motor mot ON c.id_motor = mot.id_motor
                     LEFT JOIN tb_areaformativa af ON c.id_areaFormativa = af.id_areaFormativa
                     LEFT JOIN tb_sectoreconomico se ON c.id_sectoreconomico = se.id_sectoreconomico
                     LEFT JOIN tb_subtipo st ON c.id_subtipo = st.id_subtipo
@@ -587,7 +579,6 @@ class Curso {
                 max_participantes   = :max_participantes,
                 min_participantes   = :min_participantes,
                 id_modalidad        = :id_modalidad,
-                id_motor            = :id_motor,
                 id_areaFormativa    = :id_areaFormativa,
                 id_sectoreconomico  = :id_sectoreconomico,
                 id_subtipo          = :id_subtipo,
@@ -610,7 +601,6 @@ class Curso {
             ':max_participantes'   => $data['max_participantes-Edit']   ?? $data['max_participantes'],
             ':min_participantes'   => $data['min_participantes-Edit']   ?? $data['min_participantes']   ?? null,
             ':id_modalidad'        => $data['id_modalidad-Edit']        ?? $data['id_modalidad'],
-            ':id_motor'            => $data['id_motor-Edit']            ?? $data['id_motor'],
             ':id_areaFormativa'    => $data['id_areaFormativa-Edit']    ?? $data['id_areaFormativa'],
             ':id_sectoreconomico'  => $data['id_sectoreconomico-Edit']  ?? $data['id_sectoreconomico']  ?? null,
             ':id_subtipo'          => $data['id_subtipo-Edit']          ?? $data['id_subtipo']          ?? null,
@@ -651,13 +641,11 @@ class Curso {
                         c.tipo_formacion,
                         c.id_ambito,
                         c.id_sectoreconomico,
-                        c.id_motor,
                         c.id_subtipo,
                         c.id_areaFormativa,
                         c.turno,
                         c.programa_formacion,
                         m.nombre_modalidad AS modalidad,
-                        mot.nombre_motor AS motor,
                         af.nombre_areaFormativa AS area_formativa,
                         ec.nombre_estatusCurso AS estado,
                         se.nombre_sectoreconomico AS sectoreconomico_nombre,
@@ -665,7 +653,6 @@ class Curso {
                         a.nombre_ambito AS ambito_nombre
                     FROM tb_curso c
                     LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
-                    LEFT JOIN tb_motor mot ON c.id_motor = mot.id_motor
                     LEFT JOIN tb_areaformativa af ON c.id_areaFormativa = af.id_areaFormativa
                     LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
                     LEFT JOIN tb_sectoreconomico se ON c.id_sectoreconomico = se.id_sectoreconomico
@@ -700,7 +687,6 @@ class Curso {
                     'ambito' => $curso['ambito_nombre'],
                     'sectorEconomico' => $curso['sectoreconomico_nombre'],
                     'modalidad' => $curso['modalidad'],
-                    'motor' => $curso['motor'],
                     'areaFormativa' => $curso['area_formativa'],
                     'estado' => $curso['estado'],
                     'programa_formacion' => $curso['programa_formacion'],
@@ -1230,10 +1216,6 @@ class Curso {
             // Obtener modalidades
             $stmtModalidades = $this->conn->query("SELECT * FROM tb_modalidad ORDER BY nombre_modalidad");
             $datos['modalidades'] = $stmtModalidades->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Obtener motores
-            $stmtMotores = $this->conn->query("SELECT * FROM tb_motor ORDER BY nombre_motor");
-            $datos['motores'] = $stmtMotores->fetchAll(PDO::FETCH_ASSOC);
             
             // Obtener áreas formativas
             $stmtAreas = $this->conn->query("SELECT * FROM tb_areaformativa ORDER BY nombre_areaFormativa");

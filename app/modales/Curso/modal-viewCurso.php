@@ -213,10 +213,6 @@
                   <span class="info-label-light">Tipo de Formación</span>
                   <span id="tipoFormacion-view" class="info-value-light">-</span>
                 </div>
-                <div class="info-row-light">
-                  <span class="info-label-light">Motor</span>
-                  <span id="motor-view" class="info-value-light">-</span>
-                </div>
               </div>
             </div>
 

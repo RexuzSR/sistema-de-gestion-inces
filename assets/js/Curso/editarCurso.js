@@ -162,7 +162,6 @@ $(document).ready(function () {
                 // Selects: asignar y aplicar fallback por entero
                 const selects = [
                     ['id_modalidad-Edit', data.id_modalidad],
-                    ['id_motor-Edit', data.id_motor],
                     ['id_areaFormativa-Edit', data.id_areaFormativa],
                     ['id_sectoreconomico-Edit', data.id_sectoreconomico],
                     ['id_subtipo-Edit', data.id_subtipo],
@@ -200,7 +199,6 @@ $(document).ready(function () {
                     validateHorasPorClase();
                     validateParticipantes();
                     validateSelect('id_modalidad-Edit', 'Seleccione una modalidad');
-                    validateSelect('id_motor-Edit', 'Seleccione un motor');
                     validateSelect('id_areaFormativa-Edit', 'Seleccione un área formativa');
                     validateSelect('id_sectoreconomico-Edit', 'Seleccione un sector económico');
                     validateSelect('id_subtipo-Edit', 'Seleccione un subtipo');
@@ -223,7 +221,6 @@ $(document).ready(function () {
         const checks = [
             validateNombre(),
             validateSelect('id_modalidad-Edit', 'Seleccione una modalidad'),
-            validateSelect('id_motor-Edit', 'Seleccione un motor'),
             validateSelect('id_areaFormativa-Edit', 'Seleccione un área formativa'),
             validateSelect('id_sectoreconomico-Edit', 'Seleccione un sector económico'),
             validateSelect('id_subtipo-Edit', 'Seleccione un subtipo'),

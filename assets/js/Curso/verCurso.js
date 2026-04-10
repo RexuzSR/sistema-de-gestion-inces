@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', function () {
               document.getElementById('modalidad-view').textContent = curso.modalidad || '-';
               document.getElementById('turno-view').textContent = curso.turno || '-';
               document.getElementById('tipoFormacion-view').textContent = curso.tipoFormacion || '-';
-              document.getElementById('motor-view').textContent = curso.motor || '-';
               document.getElementById('areaFormativa-view').textContent = curso.areaFormativa || '-';
               document.getElementById('sectorEconomico-view').textContent = curso.sectorEconomico || '-';
               document.getElementById('ambito-view').textContent = curso.ambito || '-';
@@ -351,9 +350,6 @@ function manejarClicDocente() {
 
           const modalidadCurso = document.getElementById('modalidad-view')?.innerText || '-';
           asignarModal.find('#asignar-modalidad').text(modalidadCurso);
-
-          const motorCurso = document.getElementById('motor-view')?.innerText || '-';
-          asignarModal.find('#asignar-motor').text(motorCurso);
 
           const areaCurso = document.getElementById('areaFormativa-view')?.innerText || '-';
           asignarModal.find('#asignar-area-formativa').text(areaCurso);

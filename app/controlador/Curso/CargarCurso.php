@@ -71,7 +71,6 @@ try {
         'tipo_formacion'    => $post['tipo_formacion'] ?? null,
         'id_estatusCurso'   => $post['id_estatusCurso'] ?? 1,
         'id_sectoreconomico'=> $post['id_sectoreconomico'] ?? null,
-        'id_motor'          => $post['id_motor'] ?? null,
         'id_subtipo'        => $post['id_subtipo'] ?? null,
         'id_areaFormativa'  => $post['id_areaFormativa'] ?? null,
         'id_ambito'         => $post['id_ambito'] ?? null,

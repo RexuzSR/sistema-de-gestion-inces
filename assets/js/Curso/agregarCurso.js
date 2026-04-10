@@ -57,7 +57,6 @@ $(document).ready(function () {
         const camposRequeridos = [
             'nombre_curso',
             'id_modalidad',
-            'id_motor',
             'id_areaFormativa',
             'id_sectoreconomico',
             'id_subtipo',
