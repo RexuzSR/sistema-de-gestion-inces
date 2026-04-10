@@ -15,9 +15,10 @@ class Metas {
      */
     private function cerrarMetasVencidas() {
         try {
+            // Sincronizar estados: si la fecha fin ya pasó, forzar a 'Cerrada'
             $sql = "UPDATE tb_metas
                        SET estado = 'Cerrada'
-                     WHERE estado = 'Activa'
+                     WHERE estado != 'Cerrada'
                        AND fecha_fin < CURDATE()";
             $this->conn->exec($sql);
         } catch (PDOException $e) {
@@ -165,6 +166,12 @@ class Metas {
                 return ['success' => false, 'message' => 'No se puede crear una meta con fecha de inicio anterior al día de hoy.'];
             }
 
+            // Determinamos el estado automáticamente basado en la fecha fin
+            $estado = 'Activa';
+            if (!empty($data['fecha_fin']) && strtotime($data['fecha_fin']) < strtotime(date('Y-m-d'))) {
+                $estado = 'Cerrada';
+            }
+
             // No guardamos estudiantes_formados aquí: se calcula dinámicamente
             $sql = "INSERT INTO tb_metas (meta_objetivo, estudiantes_formados, tipo_objetivo, fecha_inicio, fecha_fin, estado, id_ambito) VALUES (:meta_objetivo, 0, :tipo_objetivo, :fecha_inicio, :fecha_fin, :estado, :id_ambito)";
             $stmt = $this->conn->prepare($sql);
@@ -173,7 +180,7 @@ class Metas {
                 ':tipo_objetivo' => $data['tipo_objetivo'] ?? 'Aprobados',
                 ':fecha_inicio' => $data['fecha_inicio'] ?? null,
                 ':fecha_fin' => $data['fecha_fin'] ?? null,
-                ':estado' => $data['estado'] ?? 'Activa',
+                ':estado' => $estado,
                 ':id_ambito' => isset($data['id_ambito']) && $data['id_ambito'] !== '' ? $data['id_ambito'] : null
             ]);
 
@@ -189,7 +196,32 @@ class Metas {
 
     public function actualizar($data) {
         try {
-            // estudiantes_formados se calcula dinámicamente; no lo almacenamos manualmente
+            // Verificar estado actual
+            $stmtCheck = $this->conn->prepare("SELECT estado, fecha_fin FROM tb_metas WHERE id_meta = :id");
+            $stmtCheck->execute([':id' => $data['id_meta']]);
+            $currentMeta = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+            if (!$currentMeta) {
+                return ['success' => false, 'message' => 'Meta no encontrada.'];
+            }
+
+            // Si ya está cerrada, no permitir reabrirla (a menos que estemos extendiendo la fecha en el futuro, pero el usuario dijo "no reabrirse")
+            // Si el estado enviado es 'Activa' pero en BD es 'Cerrada', bloqueamos.
+            // Dado que quitaremos el selector de estado, el backend debe decidir.
+            
+            $nuevoEstado = $currentMeta['estado']; // Mantener estado actual por defecto
+            
+            // Si la fecha fin es hoy o futura, y está activa, se mantiene activa.
+            // Si la fecha fin ya pasó, forzamos cerrada.
+            if (!empty($data['fecha_fin']) && strtotime($data['fecha_fin']) < strtotime(date('Y-m-d'))) {
+                $nuevoEstado = 'Cerrada';
+            } else if ($currentMeta['estado'] === 'Cerrada' && strtotime($data['fecha_fin'] ?? $currentMeta['fecha_fin']) >= strtotime(date('Y-m-d'))) {
+                 // Si intentan editar una cerrada dándole más tiempo... ¿se permite?
+                 // El requerimiento dice "una meta ya cerrada no pueda reabrirse".
+                 // Interpretamos que "Cerrada" es un estado final.
+                 return ['success' => false, 'message' => 'No se puede reabrir ni editar una meta que ya ha sido cerrada.'];
+            }
+
             $sql = "UPDATE tb_metas SET meta_objetivo = :meta_objetivo, tipo_objetivo = :tipo_objetivo, fecha_inicio = :fecha_inicio, fecha_fin = :fecha_fin, estado = :estado, id_ambito = :id_ambito WHERE id_meta = :id_meta";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
@@ -197,7 +229,7 @@ class Metas {
                 ':tipo_objetivo' => $data['tipo_objetivo'] ?? 'Aprobados',
                 ':fecha_inicio' => $data['fecha_inicio'] ?? null,
                 ':fecha_fin' => $data['fecha_fin'] ?? null,
-                ':estado' => $data['estado'] ?? 'Activa',
+                ':estado' => $nuevoEstado,
                 ':id_ambito' => isset($data['id_ambito']) && $data['id_ambito'] !== '' ? $data['id_ambito'] : null,
                 ':id_meta' => $data['id_meta']
             ]);

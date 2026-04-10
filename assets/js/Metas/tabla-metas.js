@@ -72,18 +72,13 @@ $(document).ready(function () {
         return 'progress-bar-danger';
     }
 
-    function getEstadoClass(estado, cumplimiento) {
-        estado = (estado || '').toLowerCase();
-        cumplimiento = (cumplimiento || '').toLowerCase();
-
-        if (estado === 'cerrada') {
-            if (cumplimiento === 'cumplida') return 'status-active';
-            return 'status-danger';
-        }
-
-        if (estado === 'activa') return 'status-pending';
-        if (estado === 'alcanzada') return 'status-active';
-        if (estado === 'no alcanzada') return 'status-danger';
+    function getEstadoClass(cumplimiento) {
+        const c = (cumplimiento || '').toLowerCase();
+        
+        if (c === 'cumplida') return 'status-active';
+        if (c === 'no cumplida') return 'status-danger';
+        if (c === 'en progreso' || c === 'en proceso' || c === 'en progreso') return 'status-pending';
+        
         return 'status-pending';
     }
 
@@ -118,8 +113,8 @@ $(document).ready(function () {
                 </div>
             `;
 
-            const estadoTexto = getEstadoText(m.estado);
-            const estadoClass = getEstadoClass(m.estado, m.estado_cumplimiento);
+            const cumplimientoTexto = m.estado_cumplimiento || 'En progreso';
+            const estadoClass = getEstadoClass(m.estado_cumplimiento);
             
             rows += `
                 <tr style="--row-index: ${index};">
@@ -128,9 +123,9 @@ $(document).ready(function () {
                     <td>${m.tipo_objetivo || 'Aprobados'}</td>
                     <td class="text-end">${m.estudiantes_formados}</td>
                     <td class="text-center">${progressHtml}</td>
-                    <td>${new Date(m.fecha_inicio).toLocaleDateString('es-ES')}</td>
-                    <td>${new Date(m.fecha_fin).toLocaleDateString('es-ES')}</td>
-                    <td><span class="status-badge ${estadoClass}">${estadoTexto}</span></td>
+                    <td>${m.fecha_inicio ? new Date(m.fecha_inicio).toLocaleDateString('es-ES') : '-'}</td>
+                    <td>${m.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString('es-ES') : '-'}</td>
+                    <td><span class="status-badge ${estadoClass}">${cumplimientoTexto}</span></td>
                     <td>
                         <div class="actions-container">
                             <button class="button-action view" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-viewMeta" title="Ver detalles">
@@ -139,16 +134,18 @@ $(document).ready(function () {
                                     <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/>
                                 </svg>
                             </button>
-                            <button class="button-action edit" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-editMeta" title="Editar">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-wide text-white" viewBox="0 0 16 16">
-                                    <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
-                                </svg>
-                            </button>
-                            <button class="button-action delete" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-deleteMeta" title="Eliminar">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill text-white" viewBox="0 0 16 16">
-                                    <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
-                                </svg>
-                            </button>
+                            ${m.estado !== 'Cerrada' ? `
+                                <button class="button-action edit" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-editMeta" title="Editar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-wide text-white" viewBox="0 0 16 16">
+                                        <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
+                                    </svg>
+                                </button>
+                                <button class="button-action delete" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-deleteMeta" title="Eliminar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill text-white" viewBox="0 0 16 16">
+                                        <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+                                    </svg>
+                                </button>
+                            ` : ''}
                         </div>
                     </td>
                 </tr>
