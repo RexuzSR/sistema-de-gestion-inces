@@ -130,25 +130,7 @@
                             </div>
                         </div>
 
-                        <!-- ESTADO -->
-                        <div class="col-md-6">
-                            <div class="form-modern">
-                                <label class="form-label fw-semibold text-dark mb-2">
-                                    Estado
-                                </label>
-                                <div class="btn-group btn-group-modern w-100" role="group">
-                                    <input type="radio" class="btn-check" name="estado" id="edit_estado_activa" value="Activa">
-                                        <label class="btn btn-outline-modern btn-radio-modern" for="edit_estado_activa">
-                                        <span>Activa</span>
-                                    </label>
-                                    
-                                    <input type="radio" class="btn-check" name="estado" id="edit_estado_cerrada" value="Cerrada">
-                                        <label class="btn btn-outline-modern btn-radio-modern" for="edit_estado_cerrada">
-                                        <span>Cerrada</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+
 
                         <!-- TIPO DE OBJETIVO -->
                         <div class="col-md-6">
@@ -730,14 +712,7 @@ function loadEditMetaData(data) {
         fechaFin.value = '';
     }
     
-    // Configurar radio buttons de estado
-    if (data.estado === 'Activa') {
-        document.getElementById('edit_estado_activa').checked = true;
-        document.getElementById('edit_estado_activa').dispatchEvent(new Event('change'));
-    } else if (data.estado === 'Cerrada') {
-        document.getElementById('edit_estado_cerrada').checked = true;
-        document.getElementById('edit_estado_cerrada').dispatchEvent(new Event('change'));
-    }
+    // Configurar radio buttons
     
     // Tipo objetivo
     document.getElementById('edit_tipo_objetivo').value = data.tipo_objetivo || '';

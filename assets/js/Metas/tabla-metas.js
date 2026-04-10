@@ -72,10 +72,18 @@ $(document).ready(function () {
         return 'progress-bar-danger';
     }
 
-    function getEstadoClass(estado) {
-        estado = estado.toLowerCase();
+    function getEstadoClass(estado, cumplimiento) {
+        estado = (estado || '').toLowerCase();
+        cumplimiento = (cumplimiento || '').toLowerCase();
+
+        if (estado === 'cerrada') {
+            if (cumplimiento === 'cumplida') return 'status-active';
+            return 'status-danger';
+        }
+
+        if (estado === 'activa') return 'status-pending';
         if (estado === 'alcanzada') return 'status-active';
-        if (estado === 'no alcanzada') return 'status-inactive';
+        if (estado === 'no alcanzada') return 'status-danger';
         return 'status-pending';
     }
 
@@ -111,7 +119,7 @@ $(document).ready(function () {
             `;
 
             const estadoTexto = getEstadoText(m.estado);
-            const estadoClass = getEstadoClass(m.estado);
+            const estadoClass = getEstadoClass(m.estado, m.estado_cumplimiento);
             
             rows += `
                 <tr style="--row-index: ${index};">
@@ -269,7 +277,7 @@ $(document).ready(function () {
                 $('#view_porcentaje_cumplimiento').html(progressHtml);
                 
                 const estadoTexto = getEstadoText(m.estado);
-                const estadoClass = getEstadoClass(m.estado);
+                const estadoClass = getEstadoClass(m.estado, m.estado_cumplimiento);
                 $('#view_estado_cumplimiento').attr('class', 'status-badge ' + estadoClass).text(m.estado_cumplimiento || 'En Proceso');
                 $('#view_estado').text(estadoTexto);
                 $('#view_created_at').text(m.created_at);
@@ -295,7 +303,6 @@ $(document).ready(function () {
                 $('#edit_id_ambito').val(m.id_ambito || '');
                 $('#edit_fecha_inicio').val(m.fecha_inicio);
                 $('#edit_fecha_fin').val(m.fecha_fin);
-                $('#edit_estado').val(m.estado);
                 $('#edit_tipo_objetivo').val(m.tipo_objetivo || 'Aprobados');
             } else {
                 toastr.error(res.message || 'No se encontró la meta');

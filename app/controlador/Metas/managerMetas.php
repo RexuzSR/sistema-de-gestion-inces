@@ -76,13 +76,15 @@ class Metas {
                              ELSE ROUND(({$dynamicCount})/m.meta_objetivo*100, 2)
                         END AS porcentaje_cumplimiento,
                         CASE WHEN ({$dynamicCount}) >= m.meta_objetivo THEN 'Cumplida'
+                             WHEN m.estado = 'Cerrada' OR m.fecha_fin < CURDATE() THEN 'No cumplida'
                              ELSE 'En progreso'
                         END AS estado_cumplimiento,
                         DATE_FORMAT(m.fecha_inicio, '%Y-%m-%d') as fecha_inicio,
                         DATE_FORMAT(m.fecha_fin, '%Y-%m-%d') as fecha_fin,
                         m.estado, m.created_at
                     FROM tb_metas m
-                    LEFT JOIN tb_ambito a ON m.id_ambito = a.id_ambito";
+                    LEFT JOIN tb_ambito a ON m.id_ambito = a.id_ambito
+                    ORDER BY m.id_meta DESC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -139,6 +141,7 @@ class Metas {
                              ELSE ROUND(({$dynamicCount})/m.meta_objetivo*100, 2)
                         END AS porcentaje_cumplimiento,
                         CASE WHEN ({$dynamicCount}) >= m.meta_objetivo THEN 'Cumplida'
+                             WHEN m.estado = 'Cerrada' OR m.fecha_fin < CURDATE() THEN 'No cumplida'
                              ELSE 'En progreso'
                         END AS estado_cumplimiento,
                         DATE_FORMAT(m.fecha_inicio, '%Y-%m-%d') as fecha_inicio,
@@ -158,6 +161,10 @@ class Metas {
 
     public function registrar($data) {
         try {
+            if (!empty($data['fecha_inicio']) && strtotime($data['fecha_inicio']) < strtotime(date('Y-m-d'))) {
+                return ['success' => false, 'message' => 'No se puede crear una meta con fecha de inicio anterior al día de hoy.'];
+            }
+
             // No guardamos estudiantes_formados aquí: se calcula dinámicamente
             $sql = "INSERT INTO tb_metas (meta_objetivo, estudiantes_formados, tipo_objetivo, fecha_inicio, fecha_fin, estado, id_ambito) VALUES (:meta_objetivo, 0, :tipo_objetivo, :fecha_inicio, :fecha_fin, :estado, :id_ambito)";
             $stmt = $this->conn->prepare($sql);
@@ -204,6 +211,17 @@ class Metas {
 
     public function eliminar($id) {
         try {
+            // Verificar si está vencida
+            $stmtCheck = $this->conn->prepare("SELECT fecha_fin FROM tb_metas WHERE id_meta = :id");
+            $stmtCheck->execute([':id' => $id]);
+            $meta = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+            
+            if ($meta) {
+                if (strtotime($meta['fecha_fin']) < strtotime(date('Y-m-d'))) {
+                    return ['success' => false, 'message' => 'No se puede eliminar una meta que ya ha vencido.'];
+                }
+            }
+
             $sql = "DELETE FROM tb_metas WHERE id_meta = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([':id' => $id]);

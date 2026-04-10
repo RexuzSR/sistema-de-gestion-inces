@@ -326,6 +326,11 @@
     color: white;
 }
 
+.status-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
 .status-pending {
     background-color: #f39c12;
     color: white;

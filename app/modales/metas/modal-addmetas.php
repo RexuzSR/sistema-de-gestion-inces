@@ -121,29 +121,7 @@
                             </div>
                         </div>
 
-                        <!-- Estado con badges visuales -->
-                        <div class="col-md-6">
-                            <label class="form-label fw-medium text-secondary mb-2">
-                                <i class="bi bi-toggle-on me-1"></i>Estado
-                            </label>
-                            <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="estado" id="estado_activa" 
-                                       value="Activa" checked>
-                                <label class="btn btn-outline-success d-flex align-items-center justify-content-center" 
-                                       for="estado_activa">
-                                    <i class="bi bi-play-circle me-2"></i>
-                                    <span>Activa</span>
-                                </label>
-                                
-                                <input type="radio" class="btn-check" name="estado" id="estado_cerrada" 
-                                       value="Cerrada">
-                                <label class="btn btn-outline-secondary d-flex align-items-center justify-content-center" 
-                                       for="estado_cerrada">
-                                    <i class="bi bi-pause-circle me-2"></i>
-                                    <span>Cerrada</span>
-                                </label>
-                            </div>
-                        </div>
+
 
                         <!-- Tipo objetivo mejorado -->
                         <div class="col-md-6">
@@ -503,6 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Establecer fecha mínima para fecha inicio (hoy)
     const hoy = new Date().toISOString().split('T')[0];
+    fechaInicio.min = hoy; // No permitir fechas pasadas en el calendario
     if (!fechaInicio.value) {
         fechaInicio.value = hoy;
     }
@@ -619,7 +598,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validar fecha de inicio (año actual)
         const fechaInicio = new Date(fechaInicioInput.value);
         const fechaActual = new Date();
+        const strHoy = fechaActual.toISOString().split('T')[0];
         
+        if (fechaInicioInput.value < strHoy) {
+            e.preventDefault();
+            alert('La fecha de inicio no puede ser anterior al día de hoy.');
+            return;
+        }
+
         if (fechaInicio.getFullYear() !== fechaActual.getFullYear()) {
             e.preventDefault();
             alert('La fecha de inicio debe estar dentro del año actual.');
