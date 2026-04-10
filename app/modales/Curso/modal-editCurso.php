@@ -41,6 +41,30 @@
                             </div>
                             
                             <div class="row g-3">
+                                <!-- Área Formativa -->
+                                <div class="col-12 mb-2">
+                                    <label for="id_areaFormativa-Edit" class="form-label fw-medium">
+                                        Perfil Productivo Laboral
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <select class="form-select form-select-sm input-shadow" 
+                                                id="id_areaFormativa-Edit" 
+                                                name="id_areaFormativa-Edit" 
+                                                required>
+                                            <option value="" disabled selected>Seleccione un perfil productivo</option>
+                                            <?php
+                                            $areaFormativas = $conn->query("SELECT * FROM tb_areaformativa ORDER BY nombre_areaFormativa")->fetchAll(PDO::FETCH_ASSOC);
+                                            foreach ($areaFormativas as $areaFormativa) {
+                                                echo "<option value='{$areaFormativa['id_areaFormativa']}'>{$areaFormativa['nombre_areaFormativa']}</option>";
+                                            }
+                                            ?>
+                                        </select>
+                                        <div class="focus-line"></div>
+                                    </div>
+                                    <div class="error-feedback small text-danger mt-1" id="error-id_areaFormativa-Edit"></div>
+                                </div>
+
                                 <!-- Nombre del Curso -->
                                 <div class="col-12 mb-2">
                                     <label for="nombre_curso-Edit" class="form-label fw-medium">
@@ -67,8 +91,23 @@
                                     <div class="error-feedback small text-danger mt-1" id="error-nombre_curso-Edit"></div>
                                     <small class="text-muted">Máximo 20 caracteres. Letras, números y espacios.</small>
                                 </div>
+                            </div>
+                        </div>
 
-                                <!-- Modalidad y Motor -->
+                        <!-- Sección 2: Clasificación -->
+                        <div class="col-12 mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2a5298" class="bi bi-tags" viewBox="0 0 16 16">
+                                        <path d="M3 2v4.586l7 7L14.586 9l-7-7zM2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586z"/>
+                                        <path d="M5.5 5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m0 1a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M1 7.086a1 1 0 0 0 .293.707L8.75 15.25l-.043.043a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 0 7.586V3a1 1 0 0 1 1-1z"/>
+                                    </svg>
+                                </div>
+                                <h6 class="mb-0 text-primary fw-semibold">Clasificación del Curso</h6>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <!-- Modalidad y Sector Económico -->
                                 <div class="col-md-6 mb-2">
                                     <label for="id_modalidad-Edit" class="form-label fw-medium">
                                         Modalidad
@@ -97,47 +136,6 @@
                                         <div class="focus-line"></div>
                                     </div>
                                     <div class="error-feedback small text-danger mt-1" id="error-id_modalidad-Edit"></div>
-                                </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sección 2: Clasificación -->
-                        <div class="col-12 mb-4">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#2a5298" class="bi bi-tags" viewBox="0 0 16 16">
-                                        <path d="M3 2v4.586l7 7L14.586 9l-7-7zM2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586z"/>
-                                        <path d="M5.5 5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m0 1a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M1 7.086a1 1 0 0 0 .293.707L8.75 15.25l-.043.043a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 0 7.586V3a1 1 0 0 1 1-1z"/>
-                                    </svg>
-                                </div>
-                                <h6 class="mb-0 text-primary fw-semibold">Clasificación del Curso</h6>
-                            </div>
-                            
-                            <div class="row g-3">
-                                <!-- Área Formativa -->
-                                <div class="col-md-6 mb-2">
-                                    <label for="id_areaFormativa-Edit" class="form-label fw-medium">
-                                        Área Formativa
-                                        <span class="text-danger">*</span>
-                                    </label>
-                                    <div class="input-wrapper">
-                                        <select class="form-select form-select-sm input-shadow" 
-                                                id="id_areaFormativa-Edit" 
-                                                name="id_areaFormativa-Edit" 
-                                                required>
-                                            <option value="" disabled selected>Seleccione un área</option>
-                                            <?php
-                                            $areaFormativas = $conn->query("SELECT * FROM tb_areaformativa ORDER BY nombre_areaFormativa")->fetchAll(PDO::FETCH_ASSOC);
-                                            foreach ($areaFormativas as $areaFormativa) {
-                                                echo "<option value='{$areaFormativa['id_areaFormativa']}'>{$areaFormativa['nombre_areaFormativa']}</option>";
-                                            }
-                                            ?>
-                                        </select>
-                                        <div class="focus-line"></div>
-                                    </div>
-                                    <div class="error-feedback small text-danger mt-1" id="error-id_areaFormativa-Edit"></div>
                                 </div>
 
                                 <!-- Sector Económico -->

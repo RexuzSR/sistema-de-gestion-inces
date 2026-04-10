@@ -156,9 +156,13 @@
                                     <label class="form-label fw-semibold text-dark mb-2">
                                     Tipo de Objetivo
                                 </label>
-                                <select class="form-select modern-select" id="edit_tipo_objetivo" name="tipo_objetivo">
+                                <select class="form-select modern-select" id="edit_tipo_objetivo" name="tipo_objetivo" required>
+                                    <option value="">Seleccione el tipo de objetivo</option>
                                     <option value="Aprobados">Participantes Aprobados</option>
                                     <option value="Inscritos">Participantes Inscritos</option>
+                                    <option value="Ingresados">Participantes Ingresados al Sistema</option>
+                                    <option value="Masculino">Participantes por Género Masculino</option>
+                                    <option value="Femenino">Participantes por Género Femenino</option>
                                 </select>
                             </div>
                         </div>
@@ -658,6 +662,14 @@ function initEditMetaModal() {
             metaObjetivo.focus();
             return false;
         }
+
+        // Tipo objetivo obligatorio
+        const tipoObjetivo = document.getElementById('edit_tipo_objetivo');
+        if (!tipoObjetivo.value) {
+            showToast('Debe seleccionar el tipo de objetivo de la meta', 'warning');
+            tipoObjetivo.focus();
+            return false;
+        }
         
         // Mostrar loading en el botón
         const submitBtn = this.querySelector('button[type="submit"]');
@@ -728,7 +740,7 @@ function loadEditMetaData(data) {
     }
     
     // Tipo objetivo
-    document.getElementById('edit_tipo_objetivo').value = data.tipo_objetivo || 'Aprobados';
+    document.getElementById('edit_tipo_objetivo').value = data.tipo_objetivo || '';
     
     // Ámbito: si es null/vacío => Global (value="")
     const ambitoSelect = document.getElementById('edit_id_ambito');

@@ -150,10 +150,13 @@
                             <label class="form-label fw-medium text-secondary mb-2">
                                 <i class="bi bi-bullseye me-1"></i>Tipo de Objetivo
                             </label>
-                            <select class="form-select" id="tipo_objetivo" name="tipo_objetivo">
+                            <select class="form-select" id="tipo_objetivo" name="tipo_objetivo" required>
                                 <option value="">Seleccione el tipo de objetivo</option>
                                 <option value="Aprobados">Participantes Aprobados</option>
                                 <option value="Inscritos">Participantes Inscritos</option>
+                                <option value="Ingresados">Participantes Ingresados al Sistema</option>
+                                <option value="Masculino">Participantes por Género Masculino</option>
+                                <option value="Femenino">Participantes por Género Femenino</option>
                             </select>
                         </div>
 
@@ -602,6 +605,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!validarMetaObjetivo(metaObjetivoInput)) {
             e.preventDefault();
             metaObjetivoInput.focus();
+            return;
+        }
+        
+        const tipoObjetivoInput = document.getElementById('tipo_objetivo');
+        if (!tipoObjetivoInput.value) {
+            e.preventDefault();
+            alert('Debe seleccionar el tipo de objetivo de la meta.');
+            tipoObjetivoInput.focus();
             return;
         }
         

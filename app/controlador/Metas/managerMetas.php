@@ -31,19 +31,43 @@ class Metas {
             // Si m.id_ambito IS NULL => meta Global: suma de todos los cursos.
             // Si m.id_ambito tiene valor => solo cuenta participantes de cursos de ese ámbito.
             // Soporta tipo_objetivo: 'Aprobados' (estatus=Aprobado, por FechaFin) o 'Inscritos' (por fecha_inscripcion).
-            $dynamicCount = "(SELECT
-                CASE WHEN m.tipo_objetivo = 'Aprobados'
-                    THEN COUNT(DISTINCT CASE
-                        WHEN pc2.estatus_participante = 'Aprobado'
+            $dynamicCount = "(
+                CASE 
+                    WHEN m.tipo_objetivo = 'Aprobados' THEN (
+                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        FROM tb_participante_curso pc2
+                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                        WHERE pc2.estatus_participante = 'Aprobado'
                           AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
-                        THEN pc2.id_participante END)
-                    ELSE COUNT(DISTINCT CASE
-                        WHEN pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
-                        THEN pc2.id_participante END)
+                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+                    )
+                    WHEN m.tipo_objetivo = 'Inscritos' THEN (
+                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        FROM tb_participante_curso pc2
+                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                        WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
+                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+                    )
+                    WHEN m.tipo_objetivo = 'Ingresados' THEN (
+                        SELECT COUNT(DISTINCT p.id_participante)
+                        FROM tb_participante p
+                        WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                    )
+                    WHEN m.tipo_objetivo = 'Masculino' THEN (
+                        SELECT COUNT(DISTINCT p.id_participante)
+                        FROM tb_participante p
+                        WHERE p.genero = 'Masculino'
+                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                    )
+                    WHEN m.tipo_objetivo = 'Femenino' THEN (
+                        SELECT COUNT(DISTINCT p.id_participante)
+                        FROM tb_participante p
+                        WHERE p.genero = 'Femenino'
+                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                    )
+                    ELSE 0
                 END
-            FROM tb_participante_curso pc2
-            INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-            WHERE (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito))";
+            )";
 
             $sql = "SELECT m.id_meta, m.meta_objetivo, m.id_ambito, m.tipo_objetivo,
                         COALESCE(a.nombre_ambito, 'Global') AS ambito_nombre,
@@ -70,19 +94,43 @@ class Metas {
 
     public function obtenerPorId($id) {
         try {
-            $dynamicCount = "(SELECT
-                CASE WHEN m.tipo_objetivo = 'Aprobados'
-                    THEN COUNT(DISTINCT CASE
-                        WHEN pc2.estatus_participante = 'Aprobado'
+            $dynamicCount = "(
+                CASE 
+                    WHEN m.tipo_objetivo = 'Aprobados' THEN (
+                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        FROM tb_participante_curso pc2
+                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                        WHERE pc2.estatus_participante = 'Aprobado'
                           AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
-                        THEN pc2.id_participante END)
-                    ELSE COUNT(DISTINCT CASE
-                        WHEN pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
-                        THEN pc2.id_participante END)
+                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+                    )
+                    WHEN m.tipo_objetivo = 'Inscritos' THEN (
+                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        FROM tb_participante_curso pc2
+                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                        WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
+                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+                    )
+                    WHEN m.tipo_objetivo = 'Ingresados' THEN (
+                        SELECT COUNT(DISTINCT p.id_participante)
+                        FROM tb_participante p
+                        WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                    )
+                    WHEN m.tipo_objetivo = 'Masculino' THEN (
+                        SELECT COUNT(DISTINCT p.id_participante)
+                        FROM tb_participante p
+                        WHERE p.genero = 'Masculino'
+                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                    )
+                    WHEN m.tipo_objetivo = 'Femenino' THEN (
+                        SELECT COUNT(DISTINCT p.id_participante)
+                        FROM tb_participante p
+                        WHERE p.genero = 'Femenino'
+                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                    )
+                    ELSE 0
                 END
-            FROM tb_participante_curso pc2
-            INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-            WHERE (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito))";
+            )";
 
             $sql = "SELECT m.id_meta, m.meta_objetivo, m.id_ambito, m.tipo_objetivo,
                         COALESCE(a.nombre_ambito, 'Global') AS ambito_nombre,

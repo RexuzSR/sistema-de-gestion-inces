@@ -443,11 +443,56 @@ function getDocentesInactivos(PDO $conn): array {
 // ====================================================================
 
 function getMetasPorAmbito(PDO $conn, int $anio): array {
+    $dynamicCount = "(
+        CASE 
+            WHEN m.tipo_objetivo = 'Aprobados' THEN (
+                SELECT COUNT(DISTINCT pc2.id_participante)
+                FROM tb_participante_curso pc2
+                INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                WHERE pc2.estatus_participante = 'Aprobado'
+                  AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
+                  AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+            )
+            WHEN m.tipo_objetivo = 'Inscritos' THEN (
+                SELECT COUNT(DISTINCT pc2.id_participante)
+                FROM tb_participante_curso pc2
+                INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
+                  AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+            )
+            WHEN m.tipo_objetivo = 'Ingresados' THEN (
+                SELECT COUNT(DISTINCT p.id_participante)
+                FROM tb_participante p
+                WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+            )
+            WHEN m.tipo_objetivo = 'Masculino' THEN (
+                SELECT COUNT(DISTINCT p.id_participante)
+                FROM tb_participante p
+                WHERE p.genero = 'Masculino'
+                  AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+            )
+            WHEN m.tipo_objetivo = 'Femenino' THEN (
+                SELECT COUNT(DISTINCT p.id_participante)
+                FROM tb_participante p
+                WHERE p.genero = 'Femenino'
+                  AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+            )
+            ELSE 0
+        END
+    )";
+
     $stmt = $conn->prepare("
-        SELECT a.nombre_ambito, m.tipo_objetivo, m.meta_objetivo, m.estudiantes_formados,
-               m.porcentaje_cumplimiento, m.estado_cumplimiento, m.estado, m.fecha_inicio, m.fecha_fin
+        SELECT a.nombre_ambito, m.tipo_objetivo, m.meta_objetivo, 
+               {$dynamicCount} AS estudiantes_formados,
+               CASE WHEN m.meta_objetivo = 0 THEN 0
+                    ELSE ROUND(({$dynamicCount})/m.meta_objetivo*100, 2)
+               END AS porcentaje_cumplimiento,
+               CASE WHEN ({$dynamicCount}) >= m.meta_objetivo THEN 'Cumplida'
+                    ELSE 'En progreso'
+               END AS estado_cumplimiento, 
+               m.estado, m.fecha_inicio, m.fecha_fin
         FROM tb_metas m
-        JOIN tb_ambito a ON a.id_ambito = m.id_ambito
+        LEFT JOIN tb_ambito a ON a.id_ambito = m.id_ambito
         WHERE YEAR(m.fecha_inicio) = :anio
         ORDER BY a.nombre_ambito, m.tipo_objetivo
     ");
