@@ -77,6 +77,7 @@
     }
     /* puntico de la campana */
     .notification-badge-modern {
+        display: none; /* Oculto por defecto para evitar parpadeos */
         position: absolute;
         top: 8px;
         right: 8px;

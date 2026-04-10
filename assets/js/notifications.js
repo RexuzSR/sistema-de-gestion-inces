@@ -3,8 +3,17 @@
    ============================================================ */
 
 (function () {
-  // Endpoint para obtener notificaciones de cursos 
-  const ENDPOINT = '../../app/controlador/notification/api_notificaciones.php';
+  // Endpoint para obtener notificaciones de cursos (Búsqueda dinámica de ruta)
+  function getEndpoint() {
+      const paths = [
+          '../../app/controlador/notification/api_notificaciones.php',
+          '../app/controlador/notification/api_notificaciones.php',
+          'app/controlador/notification/api_notificaciones.php'
+      ];
+      // Para propósitos de este entorno, usaremos la lógica de nivel relativa al documento actual
+      return '../../app/controlador/notification/api_notificaciones.php'; 
+  }
+  const ENDPOINT = getEndpoint();
 
   // Almacenamiento local para ID de notificaciones "leídas"
   const STORAGE_KEY = 'inces_read_notifications';
@@ -86,8 +95,7 @@
       const item = el('div', {
         class: `notification-item ${isRead ? '' : 'unread'}`,
         attrs: {
-          'data-id': t.notif_id,
-          'onclick': `window.location.href='cursos.php?buscar=${encodeURIComponent(t.id)}'`
+          'data-id': t.notif_id
         }
       });
 
@@ -96,7 +104,7 @@
                     <div style="color: ${t.color}; margin-top: 2px;">
                         ${t.icono}
                     </div>
-                    <div>
+                    <div style="flex: 1;">
                         <div style="font-weight: 600; font-size: 13px; color: #333;">${t.titulo}</div>
                         <div style="font-size: 12px; color: #555; margin-top: 3px; line-height: 1.3;">${t.mensaje}</div>
                         <div style="font-size: 11px; color: #888; margin-top: 4px; font-weight: 500;">
@@ -105,6 +113,24 @@
                     </div>
                 </div>
             `;
+
+      // Nuevo manejador de clic para persistencia
+      item.addEventListener('click', function(e) {
+          e.preventDefault();
+          const id = t.notif_id;
+          
+          // Marcar como leído
+          let currentRead = [];
+          try { currentRead = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (err) {}
+          if (!currentRead.includes(id)) {
+              currentRead.push(id);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(currentRead));
+          }
+          
+          // Navegar
+          window.location.href = `cursos.php?buscar=${encodeURIComponent(t.id)}`;
+      });
+
       listEl.appendChild(item);
     });
 
@@ -131,30 +157,34 @@
       return json.success ? json.data : [];
     } catch (err) {
       console.error('Error cargando notificaciones de cursos', err);
+      // En caso de error, aseguramos que el badge se oculte
+      const badgeBtn = document.querySelector('.notification-badge-modern');
+      handleBadge(0, badgeBtn);
       return [];
     }
   }
 
   // Exponer la función global para el botón "Marcar todas como leídas" del header.php
   window.markAllAsRead = function () {
-    const unreadItems = document.querySelectorAll('.notification-item.unread');
     let readNotifs = [];
     try { readNotifs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { }
 
-    unreadItems.forEach(item => {
-      item.classList.remove('unread');
-      const id = item.getAttribute('data-id');
-      if (id && !readNotifs.includes(id)) {
-        readNotifs.push(id);
+    // Marcar TODOS los cacheados como leídos (los visibles y los que no)
+    cachedNotifications.forEach(n => {
+      if (n.notif_id && !readNotifs.includes(n.notif_id)) {
+        readNotifs.push(n.notif_id);
       }
     });
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(readNotifs));
 
-    const badge = document.querySelector('.notification-badge-modern');
-    if (badge) {
-      badge.style.display = 'none';
-    }
+    // Actualizar UI inmediatamente
+    const badgeBtn = document.querySelector('.notification-badge-modern');
+    handleBadge(0, badgeBtn);
+    
+    // Refrescar la lista de items para quitar estilos de "unread"
+    const unreadItems = document.querySelectorAll('.notification-item.unread');
+    unreadItems.forEach(item => item.classList.remove('unread'));
   };
 
   async function loadAndRender() {
