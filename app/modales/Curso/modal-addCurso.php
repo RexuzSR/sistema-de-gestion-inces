@@ -44,44 +44,55 @@
                                 </div>
                                 
                                 <div class="row g-3">
-                                    <!-- Perfil Productivo Laboral -->
-                                    <div class="col-12 mb-2" id="div-area">
-                                        <label for="id_areaFormativa" class="form-label fw-medium">
+                                    <!-- Perfil Productivo Laboral (tb_ppl) -->
+                                    <div class="col-12 mb-2" id="div-ppl">
+                                        <label for="id_ppl" class="form-label fw-medium">
                                             Perfil Productivo Laboral
                                             <span class="text-danger">*</span>
                                         </label>
                                         <div class="input-wrapper">
-                                            <select class="form-select form-select-sm input-shadow" id="id_areaFormativa" name="id_areaFormativa" required>
+                                            <select class="form-select form-select-sm input-shadow" id="id_ppl" name="id_ppl" required>
                                                 <option value="" disabled selected>Seleccione un perfil productivo</option>
                                                 <?php
-                                                $areaFormativas = $conn->query("SELECT * FROM tb_areaformativa ORDER BY nombre_areaFormativa")->fetchAll(PDO::FETCH_ASSOC);
-                                                foreach ($areaFormativas as $areaFormativa) {
-                                                    echo "<option value='{$areaFormativa['id_areaFormativa']}'>{$areaFormativa['nombre_areaFormativa']}</option>";
+                                                try {
+                                                    $ppls = $conn->query("SELECT id_ppl, nombre_ppl FROM tb_ppl ORDER BY nombre_ppl")->fetchAll(PDO::FETCH_ASSOC);
+                                                    foreach ($ppls as $ppl) {
+                                                        $id = (int) $ppl['id_ppl'];
+                                                        $nombre = htmlspecialchars($ppl['nombre_ppl'], ENT_QUOTES, 'UTF-8');
+                                                        echo "<option value=\"{$id}\">{$nombre}</option>";
+                                                    }
+                                                } catch (Exception $e) {
+                                                    echo '<option disabled>Error al cargar perfiles</option>';
                                                 }
                                                 ?>
                                             </select>
                                             <div class="focus-line"></div>
                                         </div>
-                                        <div class="error-feedback small text-danger mt-1" id="error-id_areaFormativa"></div>
+                                        <div class="error-feedback small text-danger mt-1" id="error-id_ppl"></div>
                                     </div>
 
-                                    <!-- Nombre del Curso -->
+                                    <!-- Nombre del Curso (catálogo tb_nombrecurso por PPL) -->
                                     <div class="col-12 mb-2">
-                                        <label for="nombre_curso" class="form-label fw-medium">
+                                        <label for="catalogo_nombre_curso" class="form-label fw-medium">
                                             Nombre del Curso
                                             <span class="text-danger">*</span>
                                         </label>
                                         <div class="input-wrapper">
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text bg-light border-end-0">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#6c757d" class="bi bi-book" viewBox="0 0 16 16">
-                                                        <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
-                                                    </svg>
-                                                </span>
-                                                <input class="form-control form-control-sm border-start-0 input-shadow" type="text" name="nombre_curso" id="nombre_curso" maxlength="70" placeholder="Ingrese el nombre completo del curso" required>
-                                            </div>
+                                            <select class="form-select form-select-sm input-shadow" id="catalogo_nombre_curso" disabled>
+                                                <option value="">Seleccione primero un perfil productivo</option>
+                                            </select>
                                             <div class="focus-line"></div>
                                         </div>
+                                        <div id="wrapper-nombre-otro" class="mt-2 d-none">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label for="nombre_curso_otro" class="form-label fw-medium small mb-0">Otro nombre (no está en la lista)</label>
+                                                <span class="text-muted small" style="font-size: 0.7rem;">Máximo 70 caracteres</span>
+                                            </div>
+                                            <input class="form-control form-control-sm input-shadow" type="text" id="nombre_curso_otro" maxlength="70" placeholder="Escriba el nombre del curso" autocomplete="off">
+                                        </div>
+                                        <input type="hidden" name="id_nombrecurso" id="id_nombrecurso" value="">
+                                        <input type="hidden" name="nombre_curso" id="nombre_curso" value="" required>
+                                        <input type="hidden" name="confirmar_nuevo_curso" id="confirmar_nuevo_curso" value="0">
                                         <div class="error-feedback small text-danger mt-1" id="error-nombre_curso"></div>
                                     </div>
                                 </div>
@@ -428,6 +439,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const stepIndicator = document.getElementById('modal-step-indicator');
     
     btnSiguiente.addEventListener('click', function() {
+        if (typeof window.syncNombreCursoAddCurso === 'function') {
+            window.syncNombreCursoAddCurso();
+        }
         // Obtenemos el input de nombre_curso y su estado de validación
         const nombreInput = document.getElementById('nombre_curso');
         

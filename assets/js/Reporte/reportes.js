@@ -38,8 +38,7 @@ const categoriasReportes = [
         bgColor: "rgba(220,53,69,0.9)", lightColor: "rgba(220,53,69,0.5)",
         darkColor: "rgba(180,35,50,0.95)", bodyBgColor: "rgba(220,53,69,0.06)",
         reportes: [
-            { id: 8,  nombre: "Generar Constancias", funcion: 'cargarGenerarConstancias' },
-            { id: 11, nombre: "Meta por Ámbito",     funcion: 'cargarMetaPorAmbito' }
+            { id: 11, nombre: "Meta por Ámbito", funcion: 'cargarMetaPorAmbito' }
         ]
     }
 ];
@@ -52,7 +51,6 @@ let currentCategoryId = null;
 let currentReportId   = null;
 let chartInstances    = {};
 let cleanupStickyTabs = null;
-let buscador          = null;
 let categoriaActivaId = null;
 
 function getColorFromCategory(colorClass) {
@@ -75,8 +73,8 @@ function aplicarRippleCard(element, event, colorHex) {
         Math.hypot(x - rect.width, y - rect.height)
     );
     const diameter = maxDist * 2.5;
-    const ripple = document.createElement('div');
-    ripple.className = 'rp-card-ripple';
+    const ripple   = document.createElement('div');
+    ripple.className  = 'rp-card-ripple';
     ripple.style.cssText = `
         width: ${diameter}px; height: ${diameter}px;
         left: ${x - diameter / 2}px; top: ${y - diameter / 2}px;
@@ -117,7 +115,7 @@ function validarEstructuraDatos() {
     } catch (e) { console.error('Error validando datos:', e); return false; }
 }
 
-function obtenerCategoriaPorId(id) { return categoriasReportes.find(c => c.id === id) || null; }
+function obtenerCategoriaPorId(id)    { return categoriasReportes.find(c => c.id === id) || null; }
 
 function obtenerReportePorIds(cId, rId) {
     const cat = obtenerCategoriaPorId(cId);
@@ -131,12 +129,173 @@ function debounce(fn, delay) {
     return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); };
 }
 
+function _abrirMetas() {
+    if (cardsContainer) cardsContainer.style.display = 'none';
+    if (reportContainer) {
+        reportContainer.style.display = 'block';
+        reportContainer.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-danger" role="status"></div><p class="mt-3">Cargando módulo de Metas...</p></div>';
+    }
+    
+    if (tabsContainer) tabsContainer.style.display = 'none';
+    
+    // Verificar si la función ya existe
+    if (typeof window.cargarMetaPorAmbito === 'function') {
+        // Configurar el estado actual para el reporte
+        window.currentCategoryId = 4;
+        window.currentReportId = 11;
+        
+        // Limpiar el contenedor y crear estructura
+        reportContainer.innerHTML = '';
+        
+        const categoria = window.categoriasReportes?.find(c => c.id === 4) || { color: 'danger', nombre: 'Metas' };
+        
+        // Crear título
+        const title = document.createElement('h2');
+        title.className = 'text-danger fw-bold mb-3 report-title';
+        title.innerHTML = `<i class="bi bi-bullseye me-2"></i>Meta por Ámbito`;
+        reportContainer.appendChild(title);
+        
+        // Crear contenedor de contenido
+        const contentDiv = document.createElement('div');
+        contentDiv.id = 'reportContent';
+        contentDiv.className = 'fade-in';
+        reportContainer.appendChild(contentDiv);
+        
+        // Llamar a la función del reporte
+        setTimeout(() => {
+            try {
+                window.cargarMetaPorAmbito();
+            } catch (e) {
+                console.error('Error al cargar Meta por Ámbito:', e);
+                contentDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al cargar el reporte: ${e.message}
+                    </div>
+                    <button class="btn btn-outline-primary mt-3" onclick="window.mostrarCategorias()">
+                        <i class="bi bi-arrow-left me-2"></i>Volver a categorías
+                    </button>
+                `;
+            }
+        }, 50);
+        
+        return;
+    }
+    
+    // Si no existe la función, intentar cargar el script
+    console.log('cargarMetaPorAmbito no encontrada, intentando cargar script...');
+    
+    const script = document.createElement('script');
+    script.src = 'assets/js/Reporte/reportes-metas.js';
+    script.onload = () => {
+        setTimeout(() => {
+            if (typeof window.cargarMetaPorAmbito === 'function') {
+                // Reintentar después de cargar
+                _abrirMetas();
+            } else {
+                reportContainer.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        El script se cargó pero la función no está disponible.
+                    </div>
+                    <button class="btn btn-outline-primary mt-3" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Recargar página
+                    </button>
+                `;
+            }
+        }, 100);
+    };
+    script.onerror = () => {
+        reportContainer.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                No se pudo cargar el archivo reportes-metas.js
+            </div>
+            <button class="btn btn-outline-primary mt-3" onclick="window.mostrarCategorias()">
+                <i class="bi bi-arrow-left me-2"></i>Volver a categorías
+            </button>
+        `;
+    };
+    document.head.appendChild(script);
+}
+
+function _mostrarReporteMetasDirecto() {
+    // Modo directo: mostrar el reporte Meta por Ámbito
+    if (!reportContainer) return;
+    
+    reportContainer.innerHTML = '';
+    
+    // Crear estructura básica del reporte
+    const title = document.createElement('h2');
+    title.className = 'text-danger fw-bold mb-3';
+    title.innerHTML = '<i class="bi bi-bullseye me-2"></i>Meta por Ámbito';
+    reportContainer.appendChild(title);
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.id = 'reportContent';
+    contentDiv.className = 'fade-in';
+    reportContainer.appendChild(contentDiv);
+    
+    // Llamar directamente a la función del reporte
+    if (typeof window.cargarMetaPorAmbito === 'function') {
+        window.cargarMetaPorAmbito();
+    } else {
+        contentDiv.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                La función cargarMetaPorAmbito no está disponible. 
+                Verifica que el archivo reportes-metas.js se haya cargado correctamente.
+            </div>
+            <div class="mt-3">
+                <button class="btn btn-outline-primary" onclick="window.location.reload()">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Recargar página
+                </button>
+            </div>`;
+    }
+}
+
+function _cargarResumen() {
+    fetch('../controlador/Reporte/api_reportes.php?accion=resumen_global', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(data => {
+        const setNum = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) { el.textContent = val ?? '—'; _animarContador(el, parseInt(val) || 0); }
+        };
+        setNum('rsc-num-participantes', data.participantes);
+        setNum('rsc-num-cursos',        data.cursos);
+        setNum('rsc-num-docentes',      data.docentes);
+
+        const pct = Math.min(100, Math.max(0, parseFloat(data.pct_metas) || 0));
+        const numMetas = document.getElementById('rsc-num-metas');
+        const barMetas = document.getElementById('rsc-bar-metas');
+        if (numMetas) numMetas.textContent = pct.toFixed(1) + '%';
+        if (barMetas) setTimeout(() => { barMetas.style.width = pct + '%'; }, 120);
+    })
+    .catch(() => {
+        ['rsc-num-participantes','rsc-num-cursos','rsc-num-docentes','rsc-num-metas']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'N/D'; });
+    });
+}
+
+function _animarContador(el, target) {
+    if (!target || target <= 0) return;
+    const dur  = 800;
+    const step = Math.ceil(target / (dur / 16));
+    let cur    = 0;
+    const tick = () => {
+        cur = Math.min(cur + step, target);
+        el.textContent = cur.toLocaleString();
+        if (cur < target) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+}
+
 function init() {
     if (!validarEstructuraDatos()) { mostrarErrorInicial('Estructura de datos inválida'); return; }
     try {
-        if (typeof BuscadorGlobal === 'function') {
-            buscador = new BuscadorGlobal(categoriasReportes);
-        }
         crearTabsContainer();
         mostrarCategorias();
     } catch (e) { console.error('Error init:', e); mostrarErrorInicial('Error al inicializar'); }
@@ -157,7 +316,7 @@ function mostrarCategoriasForzado() { try { mostrarCategorias(); } catch(e){} }
 function crearTabsContainer() {
     if (tabsContainer) return;
     tabsContainer = document.createElement('div');
-    tabsContainer.id = 'tabsContainer';
+    tabsContainer.id        = 'tabsContainer';
     tabsContainer.className = 'tabs-wrapper';
     const ca = document.getElementById('contentArea');
     if (ca) ca.insertBefore(tabsContainer, reportContainer);
@@ -179,58 +338,87 @@ function mostrarCategorias() {
         cardsContainer.className      = 'mt-0 pt-0';
         cardsContainer.style.position = 'relative';
 
+        // ── Título principal ──
         const title = document.createElement('h1');
         title.className   = 'text-center mb-3 fw-bold text-primary rp-main-title';
         title.textContent = 'Reportes del Sistema';
         cardsContainer.appendChild(title);
 
-        const searchSection = document.createElement('div');
-        searchSection.className = 'rp-search-section rp-search-section--hero';
-        const buscadorEl = crearBuscadorInicial();
-        if (buscadorEl) searchSection.appendChild(buscadorEl);
-        cardsContainer.appendChild(searchSection);
-
         const subtitle = document.createElement('p');
-        subtitle.className   = 'text-center text-muted mb-3 rp-main-subtitle';
+        subtitle.className   = 'text-center text-muted mb-4 rp-main-subtitle';
         subtitle.textContent = 'Selecciona una categoría para explorar los reportes disponibles';
         cardsContainer.appendChild(subtitle);
 
-        const row = document.createElement('div');
-        row.id        = 'rp-category-grid';
-        row.className = 'row justify-content-center g-4 mb-0 mt-2';
+        // ── Cards de resumen (totales desde la API) ──
+        const resumenGrid = document.createElement('div');
+        resumenGrid.className = 'rp-resumen-grid mb-4';
+        resumenGrid.id        = 'rp-resumen-grid';
+        resumenGrid.innerHTML = `
+            <div class="rp-resumen-card rp-resumen-card--primary" id="rsc-participantes">
+                <div class="rp-resumen-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="rp-resumen-body">
+                    <span class="rp-resumen-num" id="rsc-num-participantes">—</span>
+                    <span class="rp-resumen-label">Participantes</span>
+                </div>
+            </div>
+            <div class="rp-resumen-card rp-resumen-card--success" id="rsc-cursos">
+                <div class="rp-resumen-icon"><i class="bi bi-book-half"></i></div>
+                <div class="rp-resumen-body">
+                    <span class="rp-resumen-num" id="rsc-num-cursos">—</span>
+                    <span class="rp-resumen-label">Cursos</span>
+                </div>
+            </div>
+            <div class="rp-resumen-card rp-resumen-card--warning" id="rsc-docentes">
+                <div class="rp-resumen-icon"><i class="bi bi-person-workspace"></i></div>
+                <div class="rp-resumen-body">
+                    <span class="rp-resumen-num" id="rsc-num-docentes">—</span>
+                    <span class="rp-resumen-label">Docentes</span>
+                </div>
+            </div>
+            <div class="rp-resumen-card rp-resumen-card--danger" id="rsc-metas">
+                <div class="rp-resumen-icon"><i class="bi bi-bullseye"></i></div>
+                <div class="rp-resumen-body">
+                    <span class="rp-resumen-num" id="rsc-num-metas">—</span>
+                    <span class="rp-resumen-label">Progreso de Metas</span>
+                    <div class="rp-resumen-bar-wrap">
+                        <div class="rp-resumen-bar" id="rsc-bar-metas" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>`;
+        cardsContainer.appendChild(resumenGrid);
+        _cargarResumen();
+
+        // ── 4 botones de categorías ──
+        const nav = document.createElement('nav');
+        nav.className = 'rp-category-nav mb-4';
 
         categoriasReportes.forEach(categoria => {
             const color = getColorFromCategory(categoria.color);
 
-            const col = document.createElement('div');
-            col.className     = 'col-md-6 col-lg-3 report-card-container';
-            col.dataset.catId = categoria.id;
+            const btn = document.createElement('button');
+            btn.className     = `rp-cat-nav-item rp-cat-nav-item--${categoria.color}`;
+            btn.dataset.catId = categoria.id;
+            btn.innerHTML     = `
+                ${categoria.icono}
+                ${categoria.nombre}
+                <span class="rp-cat-nav-count">${categoria.reportes.length}</span>`;
 
-            const card = document.createElement('div');
-            card.className  = `card card-report shadow h-100 border-0 rp-nav-card rp-nav-card--category hover-categoria-${categoria.color}`;
-            card.id         = `cat-card-${categoria.id}`;
-            card.dataset.id = categoria.id;
-
-            card.innerHTML = `
-                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
-                    <div class="rp-cat-icon mb-3 text-${categoria.color}">${categoria.icono}</div>
-                    <h3 class="rp-cat-name fw-bold text-${categoria.color} mb-2">${categoria.nombre}</h3>
-                    <p class="rp-cat-count text-muted mb-0">
-                        ${categoria.reportes.length} reporte${categoria.reportes.length !== 1 ? 's' : ''} disponible${categoria.reportes.length !== 1 ? 's' : ''}
-                    </p>
-                </div>`;
-
-            col.appendChild(card);
-            col.addEventListener('click', (e) => {
-                aplicarRippleCard(card, e, color);
-                toggleCategoriaExpansion(categoria.id);
+            btn.addEventListener('click', (e) => {
+                aplicarRippleCard(btn, e, color);
+                // Metas abre directamente su módulo en lugar de expandir reportes
+                if (categoria.id === 4) {
+                    _abrirMetas();
+                } else {
+                    toggleCategoriaExpansion(categoria.id);
+                }
             });
 
-            row.appendChild(col);
+            nav.appendChild(btn);
         });
 
-        cardsContainer.appendChild(row);
+        cardsContainer.appendChild(nav);
 
+        // ── Área de expansión de reportes ──
         const expansionArea = document.createElement('div');
         expansionArea.id        = 'rp-expansion-area';
         expansionArea.className = 'rp-expansion-area';
@@ -250,16 +438,10 @@ function toggleCategoriaExpansion(categoriaId) {
 
     const esCambioDirecto = categoriaActivaId !== null;
 
-    document.querySelectorAll('.rp-nav-card--category').forEach(c => {
-        c.classList.remove('active-category');
-        c.style.setProperty('--active-border', 'transparent');
-    });
+    document.querySelectorAll('.rp-cat-nav-item').forEach(b => b.classList.remove('active'));
 
-    const catCard = document.getElementById(`cat-card-${categoriaId}`);
-    if (catCard) {
-        catCard.classList.add('active-category');
-        catCard.style.setProperty('--active-border', getColorFromCategory(categoria.color));
-    }
+    const activeBtn = document.querySelector(`.rp-cat-nav-item[data-cat-id="${categoriaId}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
 
     categoriaActivaId = categoriaId;
     const area = document.getElementById('rp-expansion-area');
@@ -275,10 +457,7 @@ function toggleCategoriaExpansion(categoriaId) {
 
 function cerrarExpansion() {
     categoriaActivaId = null;
-    document.querySelectorAll('.rp-nav-card--category').forEach(c => {
-        c.classList.remove('active-category');
-        c.style.setProperty('--active-border', 'transparent');
-    });
+    document.querySelectorAll('.rp-cat-nav-item').forEach(b => b.classList.remove('active'));
     const area = document.getElementById('rp-expansion-area');
     if (area) {
         area.style.transition = 'opacity 0.2s ease, max-height 0.28s ease';
@@ -306,7 +485,7 @@ function mostrarExpansionReportes(categoria, esSwap = false) {
     }
 
     const inner = document.createElement('div');
-    inner.className       = 'rp-expansion-inner';
+    inner.className         = 'rp-expansion-inner';
     inner.style.borderColor = `${color}30`;
 
     const header = document.createElement('div');
@@ -331,7 +510,6 @@ function mostrarExpansionReportes(categoria, esSwap = false) {
         node.className     = 'rp-report-node';
         node.id            = `report-node-${reporte.id}`;
         node.style.cssText = `opacity:0; transform:translateY(18px) scale(0.92); --node-color:${color};`;
-
         node.innerHTML = `
             <div class="rp-report-node-icon-wrap" style="background:${color}12;color:${color}">
                 ${categoria.icono}
@@ -342,7 +520,6 @@ function mostrarExpansionReportes(categoria, esSwap = false) {
                     Ver reporte&nbsp;<i class="bi bi-arrow-right-short"></i>
                 </div>
             </div>`;
-
         node.addEventListener('click', e => { e.stopPropagation(); seleccionarReporte(reporte.id, categoria.id); });
         chain.appendChild(node);
     });
@@ -374,14 +551,6 @@ function animarNodos(chain) {
             node.style.opacity    = '1';
             node.style.transform  = 'translateY(0) scale(1)';
         }, idx * 65);
-    });
-}
-
-function crearBuscadorInicial() {
-    if (!buscador) return null;
-    return buscador.crearBuscador({
-        placeholder: 'Busca un reporte, participante, curso o docente...',
-        onReporte:   (repId, catId) => seleccionarReporte(repId, catId)
     });
 }
 
@@ -436,7 +605,6 @@ function crearTabs(categoriaId, reporteActivoId) {
             tc.appendChild(tab);
         });
 
-        tc.appendChild(_crearBuscadorTab(categoria));
         tabsContainer.appendChild(tc);
         tabsContainer.style.display = 'block';
         cleanupStickyTabs = setupStickyTabs();
@@ -450,40 +618,24 @@ function _aplicarColorTab(tab, cat, activo) {
     tab.style.fontWeight  = activo ? '600' : '500';
 }
 
-function _crearBuscadorTab(categoria) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'tab-search-wrapper';
-
-    if (buscador?.crearBuscadorTabs) {
-        const el = buscador.crearBuscadorTabs(
-            categoria,
-            (repId, catId) => seleccionarReporte(repId, catId)
-        );
-        wrapper.appendChild(el);
-    }
-
-    return wrapper;
-}
-
 function setupStickyTabs() {
     if (!tabsContainer) return () => {};
     let ph = null, isSticky = false;
     try {
         ph = document.createElement('div');
-        ph.id = '_tabs-placeholder';
+        ph.id            = '_tabs-placeholder';
         ph.style.cssText = 'display:none;pointer-events:none;';
         tabsContainer.parentNode.insertBefore(ph, tabsContainer.nextSibling);
 
         const sentinel = document.createElement('div');
-        sentinel.id = '_sticky-sentinel';
+        sentinel.id            = '_sticky-sentinel';
         sentinel.style.cssText = 'height:1px;visibility:hidden;pointer-events:none;';
         tabsContainer.parentNode.insertBefore(sentinel, tabsContainer);
 
         const activate = () => {
             if (isSticky) return;
             isSticky = true;
-            ph.style.height = ph.style.display = '';
-            ph.style.height = tabsContainer.offsetHeight + 'px';
+            ph.style.height  = tabsContainer.offsetHeight + 'px';
             ph.style.display = 'block';
             tabsContainer.style.cssText += `position:fixed!important;top:0!important;left:0!important;width:${window.innerWidth}px!important;z-index:9999!important;border-radius:0!important;margin:0!important;`;
             tabsContainer.classList.add('sticky-active');
@@ -523,7 +675,7 @@ function seleccionarReporte(reporteId, categoriaId) {
         if (!datos) { mostrarCategorias(); return; }
         if (currentReportId === reporteId && currentCategoryId === categoriaId && reportContainer.style.display !== 'none') return;
 
-        currentReportId = reporteId;
+        currentReportId   = reporteId;
         currentCategoryId = categoriaId;
         mostrarLoading();
         if (cleanupStickyTabs) { cleanupStickyTabs(); cleanupStickyTabs = null; }
@@ -657,6 +809,7 @@ window.obtenerCategoriaPorId    = obtenerCategoriaPorId;
 window.obtenerReportePorIds     = obtenerReportePorIds;
 window.mostrarCategoriasForzado = mostrarCategoriasForzado;
 window.mostrarErrorInicial      = mostrarErrorInicial;
+
 
 function mostrarReportesCategoria(cat) {
     try {

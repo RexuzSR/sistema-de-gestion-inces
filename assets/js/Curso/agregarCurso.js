@@ -1,11 +1,145 @@
 // assets/js/Curso/agregarCurso.js
 $(document).ready(function () {
+
+    function normNombreCurso(s) {
+        return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    window._nombresCatalogoPplNorm = [];
+
+    window.syncNombreCursoAddCurso = function () {
+        const $sel = $('#catalogo_nombre_curso');
+        const v = $sel.val();
+        const $nombre = $('#nombre_curso');
+        const $idNc = $('#id_nombrecurso');
+        const $otro = $('#nombre_curso_otro');
+        if (v === '__otro__') {
+            $('#wrapper-nombre-otro').removeClass('d-none');
+            $idNc.val('');
+            $nombre.val(($otro.val() || '').trim());
+        } else if (v) {
+            $('#wrapper-nombre-otro').addClass('d-none');
+            $otro.val('');
+            const $opt = $sel.find('option:selected');
+            $idNc.val(v);
+            const oficial = $opt.data('nombre');
+            $nombre.val(oficial != null && oficial !== '' ? String(oficial) : $opt.text());
+        } else {
+            $('#wrapper-nombre-otro').addClass('d-none');
+            $idNc.val('');
+            $nombre.val('');
+        }
+        $nombre.trigger('input');
+    };
+
+    function cargarCursosPorPpl(idPpl) {
+        const $sel = $('#catalogo_nombre_curso');
+        $sel.prop('disabled', true).html('<option value="">Cargando…</option>');
+        window._nombresCatalogoPplNorm = [];
+        $('#id_nombrecurso').val('');
+        $('#nombre_curso').val('').removeData('valido');
+        $('#nombre_curso_otro').val('');
+        $('#wrapper-nombre-otro').addClass('d-none');
+        $('#confirmar_nuevo_curso').val('0');
+
+        $.getJSON('../controlador/Curso/cursosPorPpl.php', { id_ppl: idPpl })
+            .done(function (resp) {
+                $sel.empty();
+                $sel.append($('<option>', { value: '', text: 'Seleccione un nombre de curso', selected: true, disabled: true }));
+                if (!resp || !resp.success || !resp.cursos || !resp.cursos.length) {
+                    $sel.append($('<option>', { value: '', text: 'Sin cursos en catálogo para este perfil', disabled: true }));
+                    toastr.warning((resp && resp.message) || 'Ejecute sql/tb_ppl_nombrecurso.sql para cargar el catálogo por perfil.');
+                    $sel.prop('disabled', false);
+                    return;
+                }
+                resp.cursos.forEach(function (c) {
+                    const opt = $('<option></option>')
+                        .val(c.id_nombrecurso)
+                        .attr('data-nombre', c.nombre_curso)
+                        .text(c.nombre_curso);
+                    $sel.append(opt);
+                    window._nombresCatalogoPplNorm.push(normNombreCurso(c.nombre_curso));
+                });
+                $sel.append($('<option>', { value: '__otro__', text: 'Otro (escribir nombre)…' }));
+                $sel.prop('disabled', false);
+            })
+            .fail(function () {
+                $sel.html('<option value="">Error al cargar cursos</option>').prop('disabled', true);
+                toastr.error('No se pudo cargar el catálogo de cursos.');
+            });
+    }
+
+    $('#id_ppl').on('change', function () {
+        $('#confirmar_nuevo_curso').val('0');
+        const id = $(this).val();
+        if (!id) {
+            $('#catalogo_nombre_curso').prop('disabled', true)
+                .html('<option value="">Seleccione primero un perfil productivo</option>');
+            window.syncNombreCursoAddCurso();
+            return;
+        }
+        cargarCursosPorPpl(id);
+    });
+
+    $('#catalogo_nombre_curso').on('change', function () {
+        $('#confirmar_nuevo_curso').val('0');
+        window.syncNombreCursoAddCurso();
+    });
+
+    $('#nombre_curso_otro').on('input', function () {
+        if ($('#catalogo_nombre_curso').val() !== '__otro__') {
+            return;
+        }
+        clearTimeout($(this).data('timeout'));
+        $(this).data('timeout', setTimeout(function () {
+            window.syncNombreCursoAddCurso();
+        }, 200));
+    });
+
+    $('#modal-addCurso').on('hidden.bs.modal', function () {
+        $('#confirmar_nuevo_curso').val('0');
+        $('#id_ppl').prop('selectedIndex', 0);
+        $('#catalogo_nombre_curso').prop('disabled', true)
+            .html('<option value="">Seleccione primero un perfil productivo</option>');
+        $('#wrapper-nombre-otro').addClass('d-none');
+        $('#nombre_curso_otro').val('');
+        $('#id_nombrecurso').val('');
+        $('#nombre_curso').val('').removeData('valido');
+        $('#error-nombre_curso').text('');
+        window._nombresCatalogoPplNorm = [];
+    });
+
     // Manejar el envío del formulario de agregar curso
     $('#form_addCurso').on('submit', function (e) {
         e.preventDefault();
 
-        if (validarFormularioAgregar()) {
-            // Enviar datos via AJAX
+        window.syncNombreCursoAddCurso();
+
+        if (!validarFormularioAgregar()) {
+            return;
+        }
+
+        const idNc = ($('#id_nombrecurso').val() || '').trim();
+        const nombre = ($('#nombre_curso').val() || '').trim();
+        if (!idNc) {
+            const nn = normNombreCurso(nombre);
+            if (window._nombresCatalogoPplNorm && window._nombresCatalogoPplNorm.indexOf(nn) !== -1) {
+                toastr.warning('Ese nombre ya está en el catálogo; elija la opción correspondiente en la lista.');
+                return;
+            }
+            if ($('#confirmar_nuevo_curso').val() !== '1') {
+                const ok = window.confirm(
+                    'Se está creando un nuevo curso que no está en el catálogo del perfil seleccionado.\n\n' +
+                    '¿Confirma continuar con la creación del curso?'
+                );
+                if (!ok) {
+                    return;
+                }
+                $('#confirmar_nuevo_curso').val('1');
+            }
+        }
+
+        // Enviar datos via AJAX
             $.ajax({
                 url: '../controlador/Curso/CargarCurso.php',
                 type: 'POST',
@@ -15,6 +149,7 @@ $(document).ready(function () {
                     // Log de depuración: mostrar contenido devuelto por el servidor (JSON ya parseado)
                     console.log('Server response (agregarCurso):', data);
                     if (data && data.success) {
+                        $('#confirmar_nuevo_curso').val('0');
                         toastr.success('Curso agregado correctamente');
                         // Guardar el ID del nuevo curso para destacarlo tras el reload
                         if (data.id_curso) {
@@ -43,7 +178,6 @@ $(document).ready(function () {
                     toastr.error(serverMsg);
                 }
             });
-        }
     });
 
     // Validación del formulario
@@ -57,7 +191,7 @@ $(document).ready(function () {
         const camposRequeridos = [
             'nombre_curso',
             'id_modalidad',
-            'id_areaFormativa',
+            'id_ppl',
             'id_sectoreconomico',
             'id_subtipo',
             'id_ambito',
@@ -69,11 +203,24 @@ $(document).ready(function () {
 
         camposRequeridos.forEach(function (campo) {
             const valor = $(`#${campo}`).val();
-            if (!valor || valor.trim() === '') {
-                $(`#error-${campo}`).text('Este campo es requerido');
+            if (!valor || String(valor).trim() === '') {
+                const errId = campo === 'nombre_curso' ? 'error-nombre_curso' : `error-${campo}`;
+                $(`#${errId}`).text('Este campo es requerido');
                 valid = false;
             }
         });
+
+        const catVal = $('#catalogo_nombre_curso').val();
+        if (!catVal) {
+            $('#error-nombre_curso').text('Seleccione un nombre de curso');
+            valid = false;
+        } else if (catVal === '__otro__') {
+            const otro = ($('#nombre_curso_otro').val() || '').trim();
+            if (!otro) {
+                $('#error-nombre_curso').text('Escriba el nombre del curso');
+                valid = false;
+            }
+        }
 
         // Validar fechas
         const fechaInicio = $('#fecha_inicio').val();
@@ -112,6 +259,12 @@ $(document).ready(function () {
             return;
         }
 
+        if (($('#id_nombrecurso').val() || '').trim() !== '') {
+            errorDiv.text('');
+            nombreInput.data('valido', true);
+            return;
+        }
+
         // Limpiar espacios al inicio y truncar a 70 chars
         if (nombre.startsWith(' ')) {
             nombreInput.val(nombre.trimStart());
@@ -122,8 +275,8 @@ $(document).ready(function () {
             nombre = nombreInput.val();
         }
 
-        if (nombre.length > 0 && !/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/.test(nombre)) {
-            errorDiv.text('Solo letras, números y espacios');
+        if (nombre.length > 0 && !/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s().,\-]+$/.test(nombre)) {
+            errorDiv.text('Caracteres no permitidos en el nombre');
             nombreInput.data('valido', false);
             return;
         }

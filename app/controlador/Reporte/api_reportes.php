@@ -69,7 +69,6 @@ try {
             echo json_encode(getCursoMasRequerido($conn, $anio));
             break;
 
-        // ── NUEVO: participantes de un curso específico ───────────────────────
         case 'participantes_por_curso':
             $idCurso = intval($_GET['id_curso'] ?? 0);
             echo json_encode(getParticipantesPorCurso($conn, $idCurso));
@@ -91,6 +90,33 @@ try {
         case 'metas_por_ambito':
             echo json_encode(getMetasPorAmbito($conn, $anio));
             break;
+            
+        case 'metas_por_anio':
+            echo json_encode(getMetasPorAnio($conn));
+            break;
+            
+        case 'metas_por_mes':
+            $anioMeta = intval($_GET['anio_meta'] ?? $anio);
+            echo json_encode(getMetasPorMes($conn, $anioMeta));
+            break;
+            
+        case 'metas_por_trimestre':
+            $anioMeta = intval($_GET['anio_meta'] ?? $anio);
+            echo json_encode(getMetasPorTrimestre($conn, $anioMeta));
+            break;
+            
+        case 'progreso_metas_detallado':
+            echo json_encode(getProgresoMetasDetallado($conn, $anio));
+            break;
+
+        case 'detalle_participantes_meta':
+            $idMeta = intval($_GET['id_meta'] ?? 0);
+            if ($idMeta <= 0) {
+                echo json_encode(['error' => 'ID de meta no válido']);
+                break;
+            }
+            echo json_encode(getDetalleParticipantesPorMeta($conn, $idMeta));
+            break;
 
         case 'busqueda_global':
             $q      = trim($_GET['q'] ?? '');
@@ -109,6 +135,10 @@ try {
         case 'anios_disponibles':
             echo json_encode(getAniosDisponibles($conn));
             break;
+        
+        case 'resumen_global':
+        echo json_encode(getResumenGlobal($conn));
+        break;
 
         default:
             http_response_code(400);
@@ -439,64 +469,249 @@ function getDocentesInactivos(PDO $conn): array {
 }
 
 // ====================================================================
-// ─────────────────── METAS ──────────────────────────────────────────
+// ───────────────────────────── METAS ─────────────────────────────
 // ====================================================================
 
 function getMetasPorAmbito(PDO $conn, int $anio): array {
-    $dynamicCount = "(
-        CASE 
-            WHEN m.tipo_objetivo = 'Aprobados' THEN (
-                SELECT COUNT(DISTINCT pc2.id_participante)
-                FROM tb_participante_curso pc2
-                INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-                WHERE pc2.estatus_participante = 'Aprobado'
-                  AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
-                  AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
-            )
-            WHEN m.tipo_objetivo = 'Inscritos' THEN (
-                SELECT COUNT(DISTINCT pc2.id_participante)
-                FROM tb_participante_curso pc2
-                INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-                WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
-                  AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
-            )
-            WHEN m.tipo_objetivo = 'Ingresados' THEN (
-                SELECT COUNT(DISTINCT p.id_participante)
-                FROM tb_participante p
-                WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-            )
-            WHEN m.tipo_objetivo = 'Masculino' THEN (
-                SELECT COUNT(DISTINCT p.id_participante)
-                FROM tb_participante p
-                WHERE p.genero = 'Masculino'
-                  AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-            )
-            WHEN m.tipo_objetivo = 'Femenino' THEN (
-                SELECT COUNT(DISTINCT p.id_participante)
-                FROM tb_participante p
-                WHERE p.genero = 'Femenino'
-                  AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-            )
-            ELSE 0
-        END
-    )";
-
+    // Primero obtener todas las metas
     $stmt = $conn->prepare("
-        SELECT a.nombre_ambito, m.tipo_objetivo, m.meta_objetivo, 
-               {$dynamicCount} AS estudiantes_formados,
-               CASE WHEN m.meta_objetivo = 0 THEN 0
-                    ELSE ROUND(({$dynamicCount})/m.meta_objetivo*100, 2)
-               END AS porcentaje_cumplimiento,
-               CASE WHEN ({$dynamicCount}) >= m.meta_objetivo THEN 'Cumplida'
-                    ELSE 'En progreso'
-               END AS estado_cumplimiento, 
-               m.estado, m.fecha_inicio, m.fecha_fin
+        SELECT 
+            m.id_meta,
+            COALESCE(a.nombre_ambito, 'Sin ámbito asignado') AS nombre_ambito,
+            m.tipo_objetivo,
+            m.meta_objetivo,
+            m.estado,
+            m.fecha_inicio,
+            m.fecha_fin,
+            m.periodo_tiempo,
+            m.id_ambito
         FROM tb_metas m
         LEFT JOIN tb_ambito a ON a.id_ambito = m.id_ambito
-        WHERE YEAR(m.fecha_inicio) = :anio
-        ORDER BY a.nombre_ambito, m.tipo_objetivo
+        WHERE (YEAR(m.fecha_inicio) = :anio OR m.fecha_inicio IS NULL)
+        ORDER BY COALESCE(a.nombre_ambito, 'ZZZ'), m.tipo_objetivo
     ");
     $stmt->execute([':anio' => $anio]);
+    $metas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Para cada meta, calcular el progreso real basado en participantes
+    foreach ($metas as &$meta) {
+        $estudiantesFormados = 0;
+        
+        // Determinar las fechas de la meta
+        $fechaInicio = $meta['fecha_inicio'];
+        $fechaFin = $meta['fecha_fin'];
+        
+        // Si no hay fechas definidas, usar el año completo
+        if (empty($fechaInicio)) {
+            $fechaInicio = "{$anio}-01-01";
+        }
+        if (empty($fechaFin)) {
+            $fechaFin = "{$anio}-12-31";
+        }
+        
+        if ($meta['tipo_objetivo'] === 'Aprobados') {
+            // Para metas de APROBADOS: contar participantes con estatus 'Aprobado'
+            // en cursos del mismo ámbito, dentro del período de la meta
+            $estudiantesFormados = contarAprobadosPorAmbitoYPeriodo(
+                $conn, 
+                $meta['id_ambito'], 
+                $fechaInicio, 
+                $fechaFin
+            );
+        } 
+        else if ($meta['tipo_objetivo'] === 'Inscritos') {
+            // Para metas de INSCRITOS: contar participantes inscritos
+            // en cursos del mismo ámbito, dentro del período de la meta
+            $estudiantesFormados = contarInscritosPorAmbitoYPeriodo(
+                $conn, 
+                $meta['id_ambito'], 
+                $fechaInicio, 
+                $fechaFin
+            );
+        }
+        
+        // Calcular porcentaje de cumplimiento
+        $metaObjetivo = intval($meta['meta_objetivo']);
+        $porcentaje = 0;
+        if ($metaObjetivo > 0) {
+            $porcentaje = ($estudiantesFormados / $metaObjetivo) * 100;
+        }
+        
+        // Determinar estado de cumplimiento
+        $estadoCumplimiento = 'En progreso';
+        if ($porcentaje >= 100) {
+            $estadoCumplimiento = 'Cumplida';
+        } else if ($porcentaje <= 0) {
+            $estadoCumplimiento = 'Sin iniciar';
+        }
+        
+        // Asignar valores calculados
+        $meta['estudiantes_formados'] = $estudiantesFormados;
+        $meta['porcentaje_cumplimiento'] = round($porcentaje, 2);
+        $meta['estado_cumplimiento'] = $estadoCumplimiento;
+    }
+    
+    error_log("Metas procesadas para año $anio: " . count($metas));
+    return $metas;
+}
+
+/**
+ * Cuenta participantes APROBADOS en cursos de un ámbito específico dentro de un período
+ */
+function contarAprobadosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaInicio, string $fechaFin): int {
+    // Si no hay ámbito asignado, buscar metas sin ámbito específico
+    if (empty($idAmbito)) {
+        $sql = "
+            SELECT COUNT(DISTINCT pc.id_participante) as total
+            FROM tb_participante_curso pc
+            INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
+            WHERE pc.estatus_participante = 'Aprobado'
+              AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
+        ";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':fecha_inicio' => $fechaInicio,
+            ':fecha_fin' => $fechaFin
+        ]);
+    } else {
+        // Contar aprobados en cursos del ámbito específico
+        $sql = "
+            SELECT COUNT(DISTINCT pc.id_participante) as total
+            FROM tb_participante_curso pc
+            INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
+            WHERE c.id_ambito = :id_ambito
+              AND pc.estatus_participante = 'Aprobado'
+              AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
+        ";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':id_ambito' => $idAmbito,
+            ':fecha_inicio' => $fechaInicio,
+            ':fecha_fin' => $fechaFin
+        ]);
+    }
+    
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return intval($result['total'] ?? 0);
+}
+
+/**
+ * Cuenta participantes INSCRITOS en cursos de un ámbito específico dentro de un período
+ * (basado en fecha_inscripcion)
+ */
+function contarInscritosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaInicio, string $fechaFin): int {
+    // Si no hay ámbito asignado, buscar metas sin ámbito específico
+    if (empty($idAmbito)) {
+        $sql = "
+            SELECT COUNT(DISTINCT pc.id_participante) as total
+            FROM tb_participante_curso pc
+            INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
+            WHERE pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
+        ";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':fecha_inicio' => $fechaInicio,
+            ':fecha_fin' => $fechaFin
+        ]);
+    } else {
+        // Contar inscritos en cursos del ámbito específico
+        $sql = "
+            SELECT COUNT(DISTINCT pc.id_participante) as total
+            FROM tb_participante_curso pc
+            INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
+            WHERE c.id_ambito = :id_ambito
+              AND pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
+        ";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':id_ambito' => $idAmbito,
+            ':fecha_inicio' => $fechaInicio,
+            ':fecha_fin' => $fechaFin
+        ]);
+    }
+    
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return intval($result['total'] ?? 0);
+}
+
+/**
+ * Función adicional: Obtiene el desglose de participantes por meta
+ * Útil para mostrar detalles en el reporte
+ */
+function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
+    // Primero obtener la meta
+    $stmt = $conn->prepare("
+        SELECT m.*, a.nombre_ambito
+        FROM tb_metas m
+        LEFT JOIN tb_ambito a ON a.id_ambito = m.id_ambito
+        WHERE m.id_meta = :id_meta
+    ");
+    $stmt->execute([':id_meta' => $idMeta]);
+    $meta = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$meta) {
+        return [];
+    }
+    
+    $fechaInicio = $meta['fecha_inicio'] ?? date('Y') . '-01-01';
+    $fechaFin = $meta['fecha_fin'] ?? date('Y') . '-12-31';
+    
+    if ($meta['tipo_objetivo'] === 'Aprobados') {
+        // Obtener lista de participantes aprobados
+        $sql = "
+            SELECT DISTINCT 
+                p.id_participante,
+                CONCAT(p.primer_nombre, ' ', p.primer_apellido) as nombre_completo,
+                p.cedula,
+                c.nombre_curso,
+                pc.FechaFin as fecha_aprobacion,
+                pc.calificacion
+            FROM tb_participante_curso pc
+            INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
+            INNER JOIN tb_participante p ON p.id_participante = pc.id_participante
+            WHERE " . (empty($meta['id_ambito']) ? "" : "c.id_ambito = :id_ambito AND") . "
+              pc.estatus_participante = 'Aprobado'
+              AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
+        ";
+        $params = [
+            ':fecha_inicio' => $fechaInicio,
+            ':fecha_fin' => $fechaFin
+        ];
+        if (!empty($meta['id_ambito'])) {
+            $params[':id_ambito'] = $meta['id_ambito'];
+        }
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+        
+    } else {
+        // Obtener lista de participantes inscritos
+        $sql = "
+            SELECT DISTINCT 
+                p.id_participante,
+                CONCAT(p.primer_nombre, ' ', p.primer_apellido) as nombre_completo,
+                p.cedula,
+                c.nombre_curso,
+                pc.fecha_inscripcion,
+                pc.estatus_participante
+            FROM tb_participante_curso pc
+            INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
+            INNER JOIN tb_participante p ON p.id_participante = pc.id_participante
+            WHERE " . (empty($meta['id_ambito']) ? "" : "c.id_ambito = :id_ambito AND") . "
+              pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
+        ";
+        $params = [
+            ':fecha_inicio' => $fechaInicio,
+            ':fecha_fin' => $fechaFin
+        ];
+        if (!empty($meta['id_ambito'])) {
+            $params[':id_ambito'] = $meta['id_ambito'];
+        }
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute($params);
+    }
+    
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -519,26 +734,98 @@ function getAniosDisponibles(PDO $conn): array {
     return empty($rows) ? [intval(date('Y'))] : array_map('intval', $rows);
 }
 
-function buscarParticipantes(PDO $conn, string $q, int $limite): array {
-    $stmt = $conn->prepare("SELECT CONCAT(primer_nombre,' ',primer_apellido) AS nombre, cedula, estado AS estado FROM tb_participante WHERE primer_nombre LIKE :q OR primer_apellido LIKE :q OR cedula LIKE :q LIMIT :limite");
-    $stmt->bindValue(':q', "%$q%", PDO::PARAM_STR);
-    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+
+
+function buscarParticipantes(PDO $conn, string $q, int $limite): array
+{
+    $stmt = $conn->prepare("
+        SELECT
+            CONCAT(primer_nombre, ' ', primer_apellido)  AS nombre,
+            cedula,
+            estado
+        FROM tb_participante
+        WHERE primer_nombre  LIKE :q
+           OR primer_apellido LIKE :q
+           OR cedula          LIKE :q
+           OR correo          LIKE :q
+        LIMIT :limite
+    ");
+    $stmt->bindValue(':q',      "%{$q}%", PDO::PARAM_STR);
+    $stmt->bindValue(':limite', $limite,  PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Devuelve: nombre, cedula, estado
+    // El JS usa `p.cedula` como valor de ?buscar=
+}
+ 
+function buscarCursos(PDO $conn, string $q, int $limite): array
+{
+    $stmt = $conn->prepare("
+        SELECT
+            c.id_curso,
+            c.nombre_curso              AS nombre,
+            e.nombre_estatusCurso       AS estatus
+        FROM tb_curso c
+        LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso
+        WHERE c.nombre_curso LIKE :q
+           OR c.id_curso     LIKE :q
+        LIMIT :limite
+    ");
+    $stmt->bindValue(':q',      "%{$q}%", PDO::PARAM_STR);
+    $stmt->bindValue(':limite', $limite,  PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Devuelve: id_curso, nombre, estatus
+    // El JS usa `c.id_curso` como valor de ?buscar=
+}
+ 
+function buscarDocentes(PDO $conn, string $q, int $limite): array
+{
+    $stmt = $conn->prepare("
+        SELECT
+            CONCAT(primer_nombre, ' ', primer_apellido)  AS nombre,
+            cedula,
+            tipo_docente,
+            estado_docente
+        FROM tb_docente
+        WHERE primer_nombre  LIKE :q
+           OR primer_apellido LIKE :q
+           OR cedula          LIKE :q
+        LIMIT :limite
+    ");
+    $stmt->bindValue(':q',      "%{$q}%", PDO::PARAM_STR);
+    $stmt->bindValue(':limite', $limite,  PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Devuelve: nombre, cedula, tipo_docente, estado_docente
+    // El JS usa `d.cedula` como valor de ?buscar=
 }
 
-function buscarCursos(PDO $conn, string $q, int $limite): array {
-    $stmt = $conn->prepare("SELECT c.nombre_curso AS nombre, e.nombre_estatusCurso AS estatus FROM tb_curso c LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso WHERE c.nombre_curso LIKE :q LIMIT :limite");
-    $stmt->bindValue(':q', "%$q%", PDO::PARAM_STR);
-    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-function buscarDocentes(PDO $conn, string $q, int $limite): array {
-    $stmt = $conn->prepare("SELECT CONCAT(primer_nombre,' ',primer_apellido) AS nombre, tipo_docente, estado_docente FROM tb_docente WHERE primer_nombre LIKE :q OR primer_apellido LIKE :q LIMIT :limite");
-    $stmt->bindValue(':q', "%$q%", PDO::PARAM_STR);
-    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+function getResumenGlobal(PDO $conn): array {
+    // Total de participantes
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM tb_participante");
+    $participantes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // Total de cursos
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM tb_curso");
+    $cursos = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // Total de docentes
+    $stmt = $conn->query("SELECT COUNT(*) as total FROM tb_docente");
+    $docentes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // Progreso de metas (porcentaje promedio de cumplimiento)
+    $stmt = $conn->query("
+        SELECT AVG(porcentaje_cumplimiento) as promedio 
+        FROM tb_metas 
+        WHERE estado = 'Activo'
+    ");
+    $promedioMeta = $stmt->fetch(PDO::FETCH_ASSOC)['promedio'] ?? 0;
+    
+    return [
+        'participantes' => (int)$participantes,
+        'cursos'        => (int)$cursos,
+        'docentes'      => (int)$docentes,
+        'pct_metas'     => round($promedioMeta, 1)
+    ];
 }

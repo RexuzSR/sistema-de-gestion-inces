@@ -155,51 +155,78 @@ $(document).ready(function() {
         return `<span class="badge ${estadoInfo.class}">${estadoInfo.text}</span>`;
     }
     
-    // Mostrar cursos asociados
+    // Mostrar cursos asociados con estilo premium y funcionalidad de clic
     function mostrarCursosAsociados(cursos) {
-        const cursosContainer = $('#cursos-asociados');
-        cursosContainer.empty();
+        const container = $('#cursos-asociados');
+        container.empty();
         
-        if (cursos.length > 0) {
-            cursos.forEach((curso, index) => {
-                const cursoCard = `
-                    <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <h6 class="card-title text-primary">${curso.nombre || curso.nombre_curso || 'Curso sin nombre'}</h6>
-                                <div class="mb-2">
-                                    <span class="badge ${obtenerBadgeColorCurso(curso.estado)}">
-                                        ${curso.estado || 'Sin estado'}
-                                    </span>
-                                </div>
-                                ${curso.fecha_asignacion ? `
-                                    <p class="card-text mb-1">
-                                        <small class="text-muted">
-                                            <strong>Asignado el:</strong> ${formatearFecha(curso.fecha_asignacion)}
-                                        </small>
-                                    </p>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                cursosContainer.append(cursoCard);
-            });
-        } else {
-            cursosContainer.html(`
+        if (!cursos || cursos.length === 0) {
+            container.html(`
                 <div class="col-12">
-                    <div class="alert alert-warning mb-0">
-                        <div class="d-flex align-items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-exclamation-triangle me-2" viewBox="0 0 16 16">
-                                <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.15.15 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.2.2 0 0 1-.054.06.1.1 0 0 1-.066.017H1.146a.1.1 0 0 1-.066-.017.2.2 0 0 1-.054-.06.18.18 0 0 1 .002-.183L7.884 2.073a.15.15 0 0 1 .054-.057m1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767z"/>
-                                <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/>
+                    <div class="text-center py-4" style="background: #f8fafc; border-radius: 20px; border: 1px dashed #e2e8f0;">
+                        <div style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 2px dashed #94a3b8;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
                             </svg>
-                            <span>Este docente no tiene cursos asignados.</span>
                         </div>
+                        <p style="color: #64748b;">No tiene cursos asociados</p>
                     </div>
                 </div>
             `);
+            return;
         }
+        
+        cursos.forEach(curso => {
+            const idCurso = curso.id_curso || curso.id;
+            const cardHtml = `
+                <div class="col-md-6">
+                    <div class="curso-card view-curso-card" data-id="${idCurso}" style="cursor: pointer;">
+                        <div class="curso-titulo">${curso.nombre || curso.nombre_curso || 'Sin nombre'}</div>
+                        <div class="curso-detalle">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Horario: ${curso.horario || 'No especificado'}
+                        </div>
+                        <div class="curso-detalle">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            ${formatearFecha(curso.fecha_inicio)} - ${formatearFecha(curso.fecha_fin)}
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge-status" style="${obtenerEstiloStatus(curso.estado)}">
+                                ${curso.estado || 'Desconocido'}
+                            </span>
+                        </div>
+                        ${curso.fecha_asignacion ? `
+                            <div class="mt-2 pt-2 border-top" style="font-size: 0.75rem; color: #94a3b8;">
+                                <i class="bi bi-calendar-check me-1"></i> Asignado el: ${formatearFecha(curso.fecha_asignacion)}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            container.append(cardHtml);
+        });
+    }
+
+    // Función auxiliar para los colores de estado de los cursos
+    function obtenerEstiloStatus(estado) {
+        const color = (estado === 'En formación' || estado === 'Activo' || estado === 'Culminado') ? '#10b981' : '#ef4444';
+        const bg = (estado === 'En formación' || estado === 'Activo' || estado === 'Culminado') ? '#d1fae5' : '#fee2e2';
+        
+        if (estado === 'DIFERIDO' || estado === 'En espera') {
+            return `background: #f1f5f9; color: #64748b; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; border: 1px solid #cbd5e1;`;
+        }
+
+        return `background: ${bg}; color: ${color}; padding: 4px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; border: 1px solid ${color};`;
     }
     
     // Obtener color del badge del curso

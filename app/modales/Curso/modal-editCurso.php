@@ -89,7 +89,7 @@
                                         <div class="focus-line"></div>
                                     </div>
                                     <div class="error-feedback small text-danger mt-1" id="error-nombre_curso-Edit"></div>
-                                    <small class="text-muted">Máximo 20 caracteres. Letras, números y espacios.</small>
+                                    <small class="text-muted">Máximo 70 caracteres. Letras, números y espacios.</small>
                                 </div>
                             </div>
                         </div>
@@ -304,7 +304,7 @@
                                     <div class="error-feedback small text-danger mt-1" id="error-fecha_fin-Edit"></div>
                                 </div>
 
-                                <!-- Horas por Clase -->
+                                <!-- Horas por Clase (mismo criterio que alta: solo 4 u 5) -->
                                 <div class="col-md-6 mb-2">
                                     <label for="horas_por_clase-Edit" class="form-label fw-medium">
                                         Horas por Clase
@@ -312,22 +312,20 @@
                                     </label>
                                     <div class="input-wrapper">
                                         <div class="input-group input-group-sm">
-                                            <input class="form-control form-control-sm input-shadow" 
-                                                   type="number" 
-                                                   step="1" 
-                                                   min="2" 
-                                                   max="6" 
-                                                   name="horas_por_clase-Edit" 
-                                                   id="horas_por_clase-Edit" 
-                                                   placeholder="Ej: 4"
-                                                   onkeypress="return (event.charCode >= 48 && event.charCode <= 57)"
-                                                   required>
+                                            <select class="form-select form-select-sm input-shadow" 
+                                                    name="horas_por_clase-Edit" 
+                                                    id="horas_por_clase-Edit" 
+                                                    required>
+                                                <option value="" disabled>Seleccione horas por clase</option>
+                                                <option value="4">4 horas</option>
+                                                <option value="5">5 horas</option>
+                                            </select>
                                             <span class="input-group-text">horas</span>
                                         </div>
                                         <div class="focus-line"></div>
                                     </div>
                                     <div class="error-feedback small text-danger mt-1" id="error-horas_por_clase-Edit"></div>
-                                    <small class="text-muted">Mínimo 2, máximo 6 horas</small>
+                                    <small class="text-muted">Solo bloques de 4 o 5 horas (reglamento de formación).</small>
                                 </div>
 
                                 <!-- Horas Totales (READONLY) -->

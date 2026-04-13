@@ -97,6 +97,42 @@ class Curso {
         }
     }
 
+    /**
+     * Indica si el id_nombrecurso está asociado al PPL en tb_ppl_nombrecurso.
+     */
+    public function esNombrecursoAsignadoAPpl($idPpl, $idNombrecurso) {
+        try {
+            $idPpl = (int) $idPpl;
+            $idNombrecurso = (int) $idNombrecurso;
+            if ($idPpl <= 0 || $idNombrecurso <= 0) {
+                return false;
+            }
+            $sql = 'SELECT 1 FROM tb_ppl_nombrecurso WHERE id_ppl = :p AND id_nombrecurso = :n LIMIT 1';
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':p' => $idPpl, ':n' => $idNombrecurso]);
+            return (bool) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log('esNombrecursoAsignadoAPpl: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function obtenerNombreNombrecurso($idNombrecurso) {
+        try {
+            $idNombrecurso = (int) $idNombrecurso;
+            if ($idNombrecurso <= 0) {
+                return null;
+            }
+            $stmt = $this->conn->prepare('SELECT nombre_curso FROM tb_nombrecurso WHERE id_nombrecurso = :id LIMIT 1');
+            $stmt->execute([':id' => $idNombrecurso]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ? (string) $row['nombre_curso'] : null;
+        } catch (PDOException $e) {
+            error_log('obtenerNombreNombrecurso: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     // Método para verificar si el nombre del curso ya existe (normalizado, solo por nombre)
     public function verificarNombreCurso($nombre_curso) {
         // Normalizar nombre en PHP (trim, colapsar espacios, minúsculas)
@@ -210,6 +246,8 @@ class Curso {
                         id_subtipo,
                         id_areaFormativa, 
                         id_ambito,
+                        id_ppl,
+                        id_nombre_especifico,
                         turno, 
                         programa_formacion,
                         fecha_creacion,
@@ -232,6 +270,8 @@ class Curso {
                         :id_subtipo,
                         :id_areaFormativa, 
                         :id_ambito,
+                        :id_ppl,
+                        :id_nombre_especifico,
                         :turno, 
                         :programa_formacion,
                         :fecha_creacion,
@@ -259,6 +299,8 @@ class Curso {
                 ':id_subtipo' => $data['id_subtipo'] ?? ($data['subtipo'] ?? null),
                 ':id_areaFormativa' => $data['id_areaFormativa'] ?? null,
                 ':id_ambito' => $data['id_ambito'] ?? ($data['ambito'] ?? null),
+                ':id_ppl' => !empty($data['id_ppl']) ? (int) $data['id_ppl'] : null,
+                ':id_nombre_especifico' => !empty($data['id_nombre_especifico']) ? (int) $data['id_nombre_especifico'] : null,
                 ':turno' => $data['turno'],
                 ':programa_formacion' => $data['programa_formacion'] ?? null,
                 ':fecha_creacion' => date('Y-m-d H:i:s'),
@@ -391,14 +433,14 @@ class Curso {
     public function obtenerCursos() {
         try {
             $this->actualizarEstadosPorFecha();
-            $sql = "SELECT 
-                        c.id_curso, 
-                        c.nombre_curso, 
+            $sql = "SELECT
+                        c.id_curso,
+                        c.nombre_curso,
                         c.id_modalidad,
-                        m.nombre_modalidad, 
-                        c.programa_formacion, 
-                        af.nombre_areaFormativa, 
-                        c.fecha_inicio, 
+                        m.nombre_modalidad,
+                        c.programa_formacion,
+                        af.nombre_areaFormativa,
+                        c.fecha_inicio,
                         c.fecha_limite_inicio,
                         c.fecha_fin,
                         c.horas_totales,
@@ -406,15 +448,16 @@ class Curso {
                         c.horas_completadas,
                         c.min_participantes,
                         c.turno,
-                        c.num_inscritos, 
-                        c.max_participantes, 
+                        c.num_inscritos,
+                        c.max_participantes,
                         c.id_estatusCurso,
                         ec.nombre_estatusCurso AS estatus,
                         se.nombre_sectoreconomico,
                         st.nombre_subtipo,
                         a.nombre_ambito,
                         c.fecha_creacion,
-                        c.fecha_actualizacion
+                        c.fecha_actualizacion,
+                        (SELECT COUNT(*) FROM tb_participante_curso pc WHERE pc.id_curso = c.id_curso) AS registros_participante_curso
                     FROM tb_curso c
                     LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
                     LEFT JOIN tb_areaformativa af ON c.id_areaFormativa = af.id_areaFormativa
@@ -569,6 +612,16 @@ class Curso {
 
  public function editar($data) {
     try {
+        if (isset($data['horas_por_clase-Edit']) && $data['horas_por_clase-Edit'] !== '' && $data['horas_por_clase-Edit'] !== null) {
+            $hpc = (float)$data['horas_por_clase-Edit'];
+            if ($hpc != 4.0 && $hpc != 5.0) {
+                return [
+                    'success' => false,
+                    'message' => 'Horas por clase solo pueden ser 4 o 5.'
+                ];
+            }
+        }
+
         $sql = "UPDATE tb_curso SET
                 nombre_curso        = :nombre_curso,
                 fecha_inicio        = :fecha_inicio,

@@ -11,6 +11,55 @@ $(document).ready(function () {
     function esDomingo(f) { return f.getDay() === 0; }
     function esSabado(f) { return f.getDay() === 6; }
 
+    /** Parseo seguro de números desde la API (coma decimal, strings, etc.) */
+    function parseNumApi(v) {
+        if (v === null || v === undefined || v === '') return NaN;
+        const s = String(v).trim().replace(/\s/g, '').replace(',', '.');
+        return parseFloat(s);
+    }
+
+    /** Misma regla que calcularHorasTotales: días hábiles entre fechas Y-m-d */
+    function contarDiasLectivos(fiStr, ffStr) {
+        if (!fiStr || !ffStr) return 0;
+        const ini = new Date(fiStr + 'T00:00:00');
+        const fin = new Date(ffStr + 'T00:00:00');
+        if (ini >= fin) return 0;
+        let dias = 0;
+        const cur = new Date(ini);
+        while (cur <= fin) {
+            if (!esDomingo(cur) && !esSabado(cur) && !esFestivo(cur)) dias++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return dias;
+    }
+
+    /** Coherente con app/controlador/Curso/obtenerCursoEditar.php */
+    function inferirHorasPorClaseDesdeApi(data) {
+        const fi = data.fecha_inicio;
+        const ff = data.fecha_fin;
+        const ht = parseNumApi(data.horas_totales);
+        if (!fi || !ff || !isFinite(ht) || ht <= 0) return NaN;
+        const dias = contarDiasLectivos(fi, ff);
+        if (dias <= 0) return NaN;
+        const ratio = ht / dias;
+        if (ratio >= 3.55 && ratio <= 4.45) return 4;
+        if (ratio >= 4.55 && ratio <= 5.45) return 5;
+        const r = Math.round(ratio);
+        if (r === 4 || r === 5) return r;
+        return NaN;
+    }
+
+    function leerHorasPorClaseApi(data) {
+        let v = data.horas_por_clase;
+        if (v === undefined || v === null) {
+            const k = Object.keys(data).find(function (key) {
+                return key.toLowerCase() === 'horas_por_clase';
+            });
+            if (k) v = data[k];
+        }
+        return v;
+    }
+
     function calcularHorasTotales() {
         const fi = $('#fecha_inicio-Edit').val();
         const ff = $('#fecha_fin-Edit').val();
@@ -18,15 +67,8 @@ $(document).ready(function () {
 
         if (!fi || !ff || hpc <= 0) { $('#horas_totales-Edit').val(''); return; }
 
-        const ini = new Date(fi + 'T00:00:00');
-        const fin = new Date(ff + 'T00:00:00');
-        if (ini >= fin) { $('#horas_totales-Edit').val(''); return; }
-
-        let dias = 0, cur = new Date(ini);
-        while (cur <= fin) {
-            if (!esDomingo(cur) && !esSabado(cur) && !esFestivo(cur)) dias++;
-            cur.setDate(cur.getDate() + 1);
-        }
+        const dias = contarDiasLectivos(fi, ff);
+        if (dias <= 0) { $('#horas_totales-Edit').val(''); return; }
         $('#horas_totales-Edit').val(Math.round(dias * hpc));
     }
 
@@ -69,6 +111,38 @@ $(document).ready(function () {
         return true;
     }
 
+    /**
+     * Coherente con agregarCurso.js (límite suele ser posterior al inicio).
+     * min/max en el input evitan elegir fuera del rango inicio–culminación.
+     * @param {boolean} clampLimite si true, corrige la límite al salirse del rango (solo al cambiar fechas).
+     */
+    function actualizarRestriccionesFechasEdit(clampLimite) {
+        const ini = $('#fecha_inicio-Edit').val();
+        const fin = $('#fecha_fin-Edit').val();
+        const $lim = $('#fecha_limite_inicio-Edit');
+
+        $('#fecha_fin-Edit').attr('min', ini || '');
+
+        if (ini && fin) {
+            const dI = new Date(ini + 'T00:00:00');
+            const dF = new Date(fin + 'T00:00:00');
+            if (dF <= dI) {
+                $lim.removeAttr('min').removeAttr('max');
+                return;
+            }
+            $lim.attr('min', ini).attr('max', fin);
+            if (clampLimite) {
+                const limVal = $lim.val();
+                if (limVal) {
+                    if (limVal < ini) { $lim.val(ini); }
+                    else if (limVal > fin) { $lim.val(fin); }
+                }
+            }
+        } else {
+            $lim.removeAttr('min').removeAttr('max');
+        }
+    }
+
     function validateFechas() {
         let ok = true;
         const lim = $('#fecha_limite_inicio-Edit').val();
@@ -83,21 +157,41 @@ $(document).ready(function () {
         if (ini && fin) {
             const dI = new Date(ini + 'T00:00:00');
             const dF = new Date(fin + 'T00:00:00');
-            if (dF <= dI) { showError('fecha_fin-Edit', 'Debe ser posterior al inicio'); ok = false; }
-            if (lim) {
+            if (dF <= dI) {
+                showError('fecha_fin-Edit', 'Debe ser posterior al inicio');
+                ok = false;
+                $('#fecha_limite_inicio-Edit').removeClass('is-invalid is-valid');
+                $('#error-fecha_limite_inicio-Edit').text('');
+            } else if (lim) {
                 const dL = new Date(lim + 'T00:00:00');
-                if (dL > dI) { showError('fecha_limite_inicio-Edit', 'Debe ser ≤ fecha de inicio'); ok = false; }
-                else { showSuccess('fecha_limite_inicio-Edit'); }
+                if (dL < dI) {
+                    showError('fecha_limite_inicio-Edit', 'No puede ser anterior a la fecha de inicio');
+                    ok = false;
+                } else if (dL > dF) {
+                    showError('fecha_limite_inicio-Edit', 'No puede ser posterior a la fecha de culminación');
+                    ok = false;
+                } else {
+                    showSuccess('fecha_limite_inicio-Edit');
+                }
+            } else {
+                $('#fecha_limite_inicio-Edit').removeClass('is-invalid is-valid');
+                $('#error-fecha_limite_inicio-Edit').text('');
             }
         }
         return ok;
     }
 
     function validateHorasPorClase() {
-        const h = parseFloat($('#horas_por_clase-Edit').val());
-        if (!h || isNaN(h)) { showError('horas_por_clase-Edit', 'Horas requeridas'); return false; }
-        if (h < 2) { showError('horas_por_clase-Edit', 'Mínimo 2 horas'); return false; }
-        if (h > 6) { showError('horas_por_clase-Edit', 'Máximo 6 horas'); return false; }
+        const raw = $('#horas_por_clase-Edit').val();
+        const h = parseFloat(raw);
+        if (raw === '' || raw === null || isNaN(h)) {
+            showError('horas_por_clase-Edit', 'Seleccione horas por clase');
+            return false;
+        }
+        if (h !== 4 && h !== 5) {
+            showError('horas_por_clase-Edit', 'Solo se permiten 4 o 5 horas por clase');
+            return false;
+        }
         showSuccess('horas_por_clase-Edit');
         return true;
     }
@@ -124,10 +218,13 @@ $(document).ready(function () {
     // Eventos en tiempo real
     $('#nombre_curso-Edit').on('input', validateNombre);
     $('#fecha_limite_inicio-Edit, #fecha_inicio-Edit, #fecha_fin-Edit').on('change', function () {
-        validateFechas(); calcularHorasTotales();
+        actualizarRestriccionesFechasEdit(true);
+        validateFechas();
+        calcularHorasTotales();
     });
-    $('#horas_por_clase-Edit').on('input', function () {
-        validateHorasPorClase(); calcularHorasTotales();
+    $('#horas_por_clase-Edit').on('change input', function () {
+        validateHorasPorClase();
+        calcularHorasTotales();
     });
     $('#min_participantes-Edit, #max_participantes-Edit').on('input', validateParticipantes);
 
@@ -136,7 +233,9 @@ $(document).ready(function () {
     // Antes: obtenerCurso.php → solo 3 campos
     // Ahora: obtenerCursoEditar.php → todos los campos
     // =====================================================
-    $(document).on('click', '.button.edit', function () {
+    $(document).on('click', '[data-edit-curso]', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         const idCurso = $(this).data('id');
         if (!idCurso || isNaN(idCurso)) { toastr.error('ID de curso inválido'); return; }
 
@@ -151,7 +250,21 @@ $(document).ready(function () {
                 $('#id_curso-Edit').val(idCurso);
                 $('#nombre_curso-Edit').val(data.nombre_curso || '');
                 $('#turno-Edit').val(data.turno || '');
-                $('#horas_por_clase-Edit').val(data.horas_por_clase || '');
+                const hpcEl = document.getElementById('horas_por_clase-Edit');
+                const $hpc = hpcEl ? $(hpcEl) : $();
+                let hpcNum = parseNumApi(leerHorasPorClaseApi(data));
+                let hpcRounded = !isNaN(hpcNum) ? Math.round(hpcNum) : NaN;
+                if (hpcRounded !== 4 && hpcRounded !== 5) {
+                    const inferred = inferirHorasPorClaseDesdeApi(data);
+                    if (inferred === 4 || inferred === 5) {
+                        hpcRounded = inferred;
+                    }
+                }
+                if (hpcRounded === 4 || hpcRounded === 5) {
+                    $hpc.val(String(hpcRounded));
+                } else {
+                    $hpc.val('4');
+                }
                 $('#horas_totales-Edit').val(data.horas_totales || '');
                 $('#min_participantes-Edit').val(data.min_participantes || 12);
                 $('#max_participantes-Edit').val(data.max_participantes || '');
@@ -182,7 +295,11 @@ $(document).ready(function () {
                     }
                 });
 
-                if (data.fecha_inicio && data.fecha_fin && data.horas_por_clase) calcularHorasTotales();
+                if (data.fecha_inicio && data.fecha_fin && (hpcRounded === 4 || hpcRounded === 5)) {
+                    calcularHorasTotales();
+                }
+
+                actualizarRestriccionesFechasEdit(false);
 
                 $btn.prop('disabled', false).html(
                     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle me-2" viewBox="0 0 16 16">' +
@@ -195,6 +312,7 @@ $(document).ready(function () {
                 // Disparar validaciones iniciales para mostrar estado visual inmediato
                 setTimeout(() => {
                     validateNombre();
+                    actualizarRestriccionesFechasEdit(false);
                     validateFechas();
                     validateHorasPorClase();
                     validateParticipantes();
@@ -270,6 +388,7 @@ $(document).ready(function () {
     // Limpiar al cerrar
     $('#modal-editCurso').on('hidden.bs.modal', function () {
         $('#form_editCurso')[0].reset();
+        $('#fecha_limite_inicio-Edit, #fecha_inicio-Edit, #fecha_fin-Edit').removeAttr('min').removeAttr('max');
         $(this).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
         $(this).find('.error-feedback').text('');
         $('#horas_totales-Edit').val('');

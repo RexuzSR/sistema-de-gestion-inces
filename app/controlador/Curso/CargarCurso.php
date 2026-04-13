@@ -22,10 +22,35 @@ try {
     $post = array_map('sanitize', $_POST);
     
     // Validar requeridos
-    $requiredFields = ['nombre_curso', 'fecha_inicio', 'fecha_fin', 'turno'];
+    $requiredFields = ['nombre_curso', 'fecha_inicio', 'fecha_fin', 'turno', 'id_ppl'];
     foreach ($requiredFields as $field) {
         if (empty($post[$field])) {
             throw new Exception("El campo $field es obligatorio");
+        }
+    }
+
+    $idPpl = (int) $post['id_ppl'];
+    if ($idPpl <= 0) {
+        throw new Exception('Debe seleccionar un perfil productivo laboral válido.');
+    }
+
+    $idNombrecursoPost = isset($post['id_nombrecurso']) ? trim((string) $post['id_nombrecurso']) : '';
+    $idNombrecurso = $idNombrecursoPost !== '' ? (int) $idNombrecursoPost : 0;
+    $confirmarNuevo = isset($post['confirmar_nuevo_curso']) && $post['confirmar_nuevo_curso'] === '1';
+
+    $cursoMgr = new Curso();
+
+    if ($idNombrecurso > 0) {
+        if (!$cursoMgr->esNombrecursoAsignadoAPpl($idPpl, $idNombrecurso)) {
+            throw new Exception('El nombre de curso seleccionado no corresponde al perfil productivo laboral.');
+        }
+        $nombreOficial = $cursoMgr->obtenerNombreNombrecurso($idNombrecurso);
+        if ($nombreOficial !== null) {
+            $post['nombre_curso'] = $nombreOficial;
+        }
+    } else {
+        if (!$confirmarNuevo) {
+            throw new Exception('Debe confirmar la creación cuando el curso no está en el catálogo del perfil.');
         }
     }
     
@@ -50,9 +75,6 @@ try {
         }
     }
 
-    // Registrar curso - AJUSTADO A TU ESTRUCTURA REAL
-    $cursoMgr = new Curso();
-
     // Validación: no permitir cursos con el mismo nombre (normalizado)
     if ($cursoMgr->verificarNombreCurso($post['nombre_curso'])) {
         throw new Exception('Ya existe un curso con ese nombre. Cambia el nombre.');
@@ -74,6 +96,8 @@ try {
         'id_subtipo'        => $post['id_subtipo'] ?? null,
         'id_areaFormativa'  => $post['id_areaFormativa'] ?? null,
         'id_ambito'         => $post['id_ambito'] ?? null,
+        'id_ppl'            => $idPpl,
+        'id_nombre_especifico' => $idNombrecurso > 0 ? $idNombrecurso : null,
         'turno'             => $post['turno'],
         'programa_formacion'=> $post['programa_formacion'] ?? null
     ]);
