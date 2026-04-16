@@ -18,6 +18,74 @@ $(document).ready(function () {
         return parseFloat(s);
     }
 
+    function normNombreCursoEdit(s) {
+        return (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function syncNombreCursoEdit() {
+        const $sel = $('#catalogo_nombre_curso-Edit');
+        const v = $sel.val();
+        const $nombre = $('#nombre_curso-Edit');
+        const $idNc = $('#id_nombrecurso-Edit');
+        const $otro = $('#nombre_curso_otro-Edit');
+
+        if (v === '__otro__') {
+            $('#wrapper-nombre-otro-Edit').removeClass('d-none');
+            $idNc.val('');
+            $nombre.val(($otro.val() || '').trim());
+        } else if (v) {
+            $('#wrapper-nombre-otro-Edit').addClass('d-none');
+            $otro.val('');
+            const $opt = $sel.find('option:selected');
+            $idNc.val(v);
+            const oficial = $opt.data('nombre');
+            $nombre.val(oficial != null && oficial !== '' ? String(oficial) : $opt.text());
+        } else {
+            $('#wrapper-nombre-otro-Edit').addClass('d-none');
+            $idNc.val('');
+            $nombre.val('');
+        }
+        $nombre.trigger('input');
+    }
+
+    function cargarCursosPorPplEdit(idPpl) {
+        const $sel = $('#catalogo_nombre_curso-Edit');
+        $sel.prop('disabled', true).html('<option value="">Cargando…</option>');
+        $('#id_nombrecurso-Edit').val('');
+        $('#nombre_curso-Edit').val('');
+        $('#nombre_curso_otro-Edit').val('');
+        $('#wrapper-nombre-otro-Edit').addClass('d-none');
+
+        return $.getJSON('../controlador/Curso/cursosPorPpl.php', { id_ppl: idPpl })
+            .done(function (resp) {
+                $sel.empty();
+                $sel.append($('<option>', { value: '', text: 'Seleccione un nombre de curso', selected: true, disabled: true }));
+                if (!resp || !resp.success || !resp.cursos || !resp.cursos.length) {
+                    if (!resp || !resp.success) {
+                        toastr.warning((resp && resp.message) || 'Ejecute sql/tb_ppl_nombrecurso.sql para cargar el catálogo por perfil.');
+                    } else {
+                        toastr.info('No hay cursos en catálogo para este perfil. Use la opción Otro para escribir el nombre.');
+                    }
+                    $sel.append($('<option>', { value: '__otro__', text: 'Otro (escribir nombre)…' }));
+                    $sel.prop('disabled', false);
+                    return;
+                }
+                resp.cursos.forEach(function (c) {
+                    const opt = $('<option></option>')
+                        .val(c.id_nombrecurso)
+                        .attr('data-nombre', c.nombre_curso)
+                        .text(c.nombre_curso);
+                    $sel.append(opt);
+                });
+                $sel.append($('<option>', { value: '__otro__', text: 'Otro (escribir nombre)…' }));
+                $sel.prop('disabled', false);
+            })
+            .fail(function () {
+                $sel.html('<option value="">Error al cargar cursos</option>').prop('disabled', true);
+                toastr.error('No se pudo cargar el catálogo de cursos.');
+            });
+    }
+
     /** Misma regla que calcularHorasTotales: días hábiles entre fechas Y-m-d */
     function contarDiasLectivos(fiStr, ffStr) {
         if (!fiStr || !ffStr) return 0;
@@ -81,33 +149,42 @@ $(document).ready(function () {
         $('#error-' + id).text('');
     }
 
-    function validateNombre() {
-        const input = $('#nombre_curso-Edit');
-        let v = input.val();
+    function validateNombreCursoEdit() {
+        const selected = $('#catalogo_nombre_curso-Edit').val();
+        const hiddenName = ($('#nombre_curso-Edit').val() || '').trim();
 
-        // Bloquear si empieza con espacio
-        if (v.startsWith(' ')) {
-            v = v.trimStart();
-            input.val(v);
-        }
-
-        if (!v || v.trim() === "") {
-            showError('nombre_curso-Edit', 'Nombre requerido');
+        if (!selected) {
+            showError('catalogo_nombre_curso-Edit', 'Seleccione un nombre de curso');
             return false;
         }
 
-        if (v.length > 70) {
-            showError('nombre_curso-Edit', 'Máximo 70 caracteres');
+        if (selected === '__otro__') {
+            const otro = ($('#nombre_curso_otro-Edit').val() || '').trim();
+            if (!otro) {
+                showError('nombre_curso_otro-Edit', 'Escriba el nombre del curso');
+                return false;
+            }
+            if (otro.length > 70) {
+                showError('nombre_curso_otro-Edit', 'Máximo 70 caracteres');
+                return false;
+            }
+            if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/.test(otro)) {
+                showError('nombre_curso_otro-Edit', 'Solo letras, números y espacios');
+                return false;
+            }
+            showSuccess('catalogo_nombre_curso-Edit');
+            showSuccess('nombre_curso_otro-Edit');
+            return true;
+        }
+
+        if (!hiddenName) {
+            showError('catalogo_nombre_curso-Edit', 'Nombre del curso inválido');
             return false;
         }
 
-        // Regex que permite letras, números y espacios pero no al inicio (ya manejado por trimStart/check)
-        if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/.test(v)) {
-            showError('nombre_curso-Edit', 'Solo letras, números y espacios');
-            return false;
-        }
-
-        showSuccess('nombre_curso-Edit');
+        showSuccess('catalogo_nombre_curso-Edit');
+        $('#nombre_curso_otro-Edit').removeClass('is-invalid is-valid');
+        $('#error-nombre_curso_otro-Edit').text('');
         return true;
     }
 
@@ -216,7 +293,34 @@ $(document).ready(function () {
     }
 
     // Eventos en tiempo real
-    $('#nombre_curso-Edit').on('input', validateNombre);
+    $('#id_ppl-Edit').on('change', function () {
+        const id = $(this).val();
+        if (!id) {
+            $('#catalogo_nombre_curso-Edit').prop('disabled', true).html('<option value="">Seleccione primero un perfil productivo</option>');
+            syncNombreCursoEdit();
+            return;
+        }
+        cargarCursosPorPplEdit(id).always(function () {
+            syncNombreCursoEdit();
+        });
+    });
+
+    $('#catalogo_nombre_curso-Edit').on('change', function () {
+        syncNombreCursoEdit();
+        validateNombreCursoEdit();
+    });
+
+    $('#nombre_curso_otro-Edit').on('input', function () {
+        if ($('#catalogo_nombre_curso-Edit').val() !== '__otro__') {
+            return;
+        }
+        clearTimeout($(this).data('timeout'));
+        $(this).data('timeout', setTimeout(function () {
+            syncNombreCursoEdit();
+            validateNombreCursoEdit();
+        }, 200));
+    });
+
     $('#fecha_limite_inicio-Edit, #fecha_inicio-Edit, #fecha_fin-Edit').on('change', function () {
         actualizarRestriccionesFechasEdit(true);
         validateFechas();
@@ -272,10 +376,39 @@ $(document).ready(function () {
                 $('#fecha_fin-Edit').val(data.fecha_fin || '');
                 $('#fecha_limite_inicio-Edit').val(data.fecha_limite_inicio || '');
 
+                $('#id_ppl-Edit').val(data.id_ppl || '');
+                if (data.id_ppl) {
+                    cargarCursosPorPplEdit(data.id_ppl).done(function () {
+                        if (data.id_nombre_especifico) {
+                            $('#catalogo_nombre_curso-Edit').val(String(data.id_nombre_especifico));
+                        } else {
+                            const nombreNorm = normNombreCursoEdit(data.nombre_curso || '');
+                            const $match = $('#catalogo_nombre_curso-Edit option').filter(function () {
+                                const val = $(this).val();
+                                return val !== '' && val !== '__otro__' && normNombreCursoEdit($(this).text()) === nombreNorm;
+                            }).first();
+
+                            if ($match.length) {
+                                $match.prop('selected', true);
+                            } else {
+                                $('#catalogo_nombre_curso-Edit').val('__otro__');
+                                $('#wrapper-nombre-otro-Edit').removeClass('d-none');
+                                $('#nombre_curso_otro-Edit').val(data.nombre_curso || '');
+                            }
+                        }
+                        syncNombreCursoEdit();
+                    }).fail(function () {
+                        $('#catalogo_nombre_curso-Edit').prop('disabled', true).html('<option value="">Seleccione primero un perfil productivo</option>');
+                        $('#nombre_curso-Edit').val(data.nombre_curso || '');
+                    });
+                } else {
+                    $('#catalogo_nombre_curso-Edit').prop('disabled', true).html('<option value="">Seleccione primero un perfil productivo</option>');
+                    $('#nombre_curso-Edit').val(data.nombre_curso || '');
+                }
+
                 // Selects: asignar y aplicar fallback por entero
                 const selects = [
                     ['id_modalidad-Edit', data.id_modalidad],
-                    ['id_areaFormativa-Edit', data.id_areaFormativa],
                     ['id_sectoreconomico-Edit', data.id_sectoreconomico],
                     ['id_subtipo-Edit', data.id_subtipo],
                     ['id_ambito-Edit', data.id_ambito]
@@ -311,17 +444,18 @@ $(document).ready(function () {
 
                 // Disparar validaciones iniciales para mostrar estado visual inmediato
                 setTimeout(() => {
-                    validateNombre();
+                    validateNombreCursoEdit();
                     actualizarRestriccionesFechasEdit(false);
                     validateFechas();
                     validateHorasPorClase();
                     validateParticipantes();
                     validateSelect('id_modalidad-Edit', 'Seleccione una modalidad');
-                    validateSelect('id_areaFormativa-Edit', 'Seleccione un área formativa');
+                    validateSelect('id_ppl-Edit', 'Seleccione un perfil productivo laboral');
                     validateSelect('id_sectoreconomico-Edit', 'Seleccione un sector económico');
                     validateSelect('id_subtipo-Edit', 'Seleccione un subtipo');
                     validateSelect('id_ambito-Edit', 'Seleccione un ámbito');
                     validateSelect('turno-Edit', 'Seleccione un turno');
+                    validateNombreCursoEdit();
                     calcularHorasTotales();
                 }, 500);
             })
@@ -337,9 +471,9 @@ $(document).ready(function () {
         e.preventDefault();
 
         const checks = [
-            validateNombre(),
+            validateNombreCursoEdit(),
             validateSelect('id_modalidad-Edit', 'Seleccione una modalidad'),
-            validateSelect('id_areaFormativa-Edit', 'Seleccione un área formativa'),
+            validateSelect('id_ppl-Edit', 'Seleccione un perfil productivo laboral'),
             validateSelect('id_sectoreconomico-Edit', 'Seleccione un sector económico'),
             validateSelect('id_subtipo-Edit', 'Seleccione un subtipo'),
             validateSelect('id_ambito-Edit', 'Seleccione un ámbito'),
@@ -388,6 +522,11 @@ $(document).ready(function () {
     // Limpiar al cerrar
     $('#modal-editCurso').on('hidden.bs.modal', function () {
         $('#form_editCurso')[0].reset();
+        $('#id_ppl-Edit').prop('selectedIndex', 0);
+        $('#catalogo_nombre_curso-Edit').prop('disabled', true).html('<option value="">Seleccione primero un perfil productivo</option>');
+        $('#wrapper-nombre-otro-Edit').addClass('d-none');
+        $('#nombre_curso_otro-Edit').val('');
+        $('#id_nombrecurso-Edit').val('');
         $('#fecha_limite_inicio-Edit, #fecha_inicio-Edit, #fecha_fin-Edit').removeAttr('min').removeAttr('max');
         $(this).find('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
         $(this).find('.error-feedback').text('');

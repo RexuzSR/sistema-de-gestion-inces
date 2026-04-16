@@ -47,8 +47,12 @@ $(document).ready(function () {
                 $sel.empty();
                 $sel.append($('<option>', { value: '', text: 'Seleccione un nombre de curso', selected: true, disabled: true }));
                 if (!resp || !resp.success || !resp.cursos || !resp.cursos.length) {
-                    $sel.append($('<option>', { value: '', text: 'Sin cursos en catálogo para este perfil', disabled: true }));
-                    toastr.warning((resp && resp.message) || 'Ejecute sql/tb_ppl_nombrecurso.sql para cargar el catálogo por perfil.');
+                    if (!resp || !resp.success) {
+                        toastr.warning((resp && resp.message) || 'Ejecute sql/tb_ppl_nombrecurso.sql para cargar el catálogo por perfil.');
+                    } else {
+                        toastr.info('No hay cursos en catálogo para este perfil. Use la opción Otro para escribir el nombre.');
+                    }
+                    $sel.append($('<option>', { value: '__otro__', text: 'Otro (escribir nombre)…' }));
                     $sel.prop('disabled', false);
                     return;
                 }

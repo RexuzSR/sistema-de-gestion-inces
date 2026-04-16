@@ -3,7 +3,7 @@
 <div class="header-modern">
     <div class="header-content">
         <h1 class="page-title">
-            <?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) : 'Control de Participantes'; ?>
+            <?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) : 'Sistema de Gestión Inces'; ?>
         </h1>
 
         <div class="header-actions">

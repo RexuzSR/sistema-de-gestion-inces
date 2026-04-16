@@ -18,6 +18,8 @@ try {
     $data = [
         'id_curso'                  => $_POST['id_curso']                  ?? null,
         'nombre_curso-Edit'         => $_POST['nombre_curso-Edit']         ?? null,
+        'id_ppl-Edit'               => $_POST['id_ppl-Edit']               ?? null,
+        'id_nombrecurso-Edit'       => $_POST['id_nombrecurso-Edit']       ?? null,
         'fecha_inicio-Edit'         => $_POST['fecha_inicio-Edit']         ?? null,
         'fecha_fin-Edit'            => $_POST['fecha_fin-Edit']            ?? null,
         'fecha_limite_inicio-Edit'  => $_POST['fecha_limite_inicio-Edit']  ?? null,
@@ -30,7 +32,6 @@ try {
         'id_estatusCurso-Edit'      => $_POST['id_estatusCurso-Edit']      ?? null,
         'id_sectoreconomico-Edit'   => $_POST['id_sectoreconomico-Edit']   ?? null,
         'id_subtipo-Edit'           => $_POST['id_subtipo-Edit']           ?? null,
-        'id_areaFormativa-Edit'     => $_POST['id_areaFormativa-Edit']     ?? null,
         'id_ambito-Edit'            => $_POST['id_ambito-Edit']            ?? null,
         'turno-Edit'                => $_POST['turno-Edit']                ?? null,
         'programa_formacion-Edit'   => $_POST['programa_formacion-Edit']   ?? null
@@ -39,6 +40,7 @@ try {
     $required = [
         'id_curso'          => 'ID de curso',
         'nombre_curso-Edit' => 'Nombre del curso',
+        'id_ppl-Edit'       => 'Perfil productivo laboral',
         'fecha_inicio-Edit' => 'Fecha de inicio',
         'fecha_fin-Edit'    => 'Fecha de fin',
         'turno-Edit'        => 'Turno'

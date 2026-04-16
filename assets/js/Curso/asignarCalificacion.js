@@ -283,7 +283,7 @@ $(document).ready(function () {
             $('#textoCheckbox').text('No disponible para cursos Culminados.');
 
             $('#confirmarReinicioCurso').data('id', idCurso).data('modo', 'culminado');
-            $('#modalReiniciarCurso').modal('show');
+            $('#modalReiniciarCurso').data('idCurso', idCurso).modal('show');
 
         } else if (estadoActualCurso === 2) {
             // --- DIFERIDO ---
@@ -297,23 +297,148 @@ $(document).ready(function () {
             $('#textoCheckbox').text('Si lo marcas, los participantes se conservarán con las nuevas fechas.');
 
             $('#confirmarReinicioCurso').data('id', idCurso).data('modo', 'diferido');
-            $('#modalReiniciarCurso').modal('show');
+            $('#modalReiniciarCurso').data('idCurso', idCurso).modal('show');
         }
     });
 
     // =========================================================
-    // VALIDACIÓN DE FECHAS
+    // VALIDACIÓN GENERAL / CAMPOS REINICIO
     // =========================================================
+    function showErrorReinicio(id, msg) {
+        $('#' + id).addClass('is-invalid');
+        $('#error-' + id).text(msg).show();
+    }
+
+    function clearErrorReinicio(id) {
+        $('#' + id).removeClass('is-invalid');
+        $('#error-' + id).text('').hide();
+    }
+
+    function validateSelectReinicio(id, msg) {
+        const value = $('#' + id).val();
+        if (!value || value === '') {
+            showErrorReinicio(id, msg);
+            return false;
+        }
+        clearErrorReinicio(id);
+        return true;
+    }
+
+    function validateNumberRangeReinicio(id, min, max, msg) {
+        const value = Number($('#' + id).val());
+        if (!Number.isInteger(value) || value < min || value > max) {
+            showErrorReinicio(id, msg);
+            return false;
+        }
+        clearErrorReinicio(id);
+        return true;
+    }
+
+    function validarParticipantesReinicio() {
+        const min = parseInt($('#min_participantes_Reinicio').val(), 10);
+        const max = parseInt($('#max_participantes_Reinicio').val(), 10);
+        let ok = true;
+
+        if (!validateNumberRangeReinicio('min_participantes_Reinicio', 12, 40, 'Debe ser entre 12 y 40')) {
+            ok = false;
+        }
+        if (!validateNumberRangeReinicio('max_participantes_Reinicio', 12, 40, 'Debe ser entre 12 y 40')) {
+            ok = false;
+        }
+        if (ok && min > max) {
+            showErrorReinicio('max_participantes_Reinicio', 'Debe ser mayor o igual al mínimo');
+            ok = false;
+        }
+        return ok;
+    }
+
+    function esFinDeSemana(fecha) {
+        return fecha.getDay() === 0 || fecha.getDay() === 6;
+    }
+
+    function contarDiasLectivosReinicio(iniStr, finStr) {
+        if (!iniStr || !finStr) return 0;
+        const ini = new Date(iniStr + 'T00:00:00');
+        const fin = new Date(finStr + 'T00:00:00');
+        if (ini > fin) return 0;
+        let dias = 0;
+        const cur = new Date(ini);
+        while (cur <= fin) {
+            if (!esFinDeSemana(cur)) dias++;
+            cur.setDate(cur.getDate() + 1);
+        }
+        return dias;
+    }
+
+    function calcularFechaFinReinicio(iniStr, horasTotales, horasPorClase) {
+        if (!iniStr || !horasTotales || !horasPorClase || horasPorClase <= 0) return '';
+        const diasNecesarios = Math.ceil(horasTotales / horasPorClase);
+        const ini = new Date(iniStr + 'T00:00:00');
+        let diasContados = 0;
+        const cur = new Date(ini);
+        while (diasContados < diasNecesarios) {
+            if (!esFinDeSemana(cur)) {
+                diasContados++;
+            }
+            if (diasContados < diasNecesarios) {
+                cur.setDate(cur.getDate() + 1);
+            }
+        }
+        const pad = n => String(n).padStart(2, '0');
+        return `${cur.getFullYear()}-${pad(cur.getMonth()+1)}-${pad(cur.getDate())}`;
+    }
+
+    function calcularHorasTotalesReinicio() {
+        const iniStr = $('#nuevaFechaInicio').val();
+        const finStr = $('#nuevaFechaFin').val();
+        const hpc = parseInt($('#horas_por_clase_Reinicio').val(), 10);
+        if (!iniStr || !finStr || ![4,5].includes(hpc)) {
+            $('#horas_totales_Reinicio').val('');
+            return;
+        }
+        const dias = contarDiasLectivosReinicio(iniStr, finStr);
+        if (dias <= 0) {
+            $('#horas_totales_Reinicio').val('');
+            return;
+        }
+        $('#horas_totales_Reinicio').val(String(dias * hpc));
+    }
+
+    function actualizarFinSegunHorasReinicio() {
+        const iniStr = $('#nuevaFechaInicio').val();
+        const hpc = parseInt($('#horas_por_clase_Reinicio').val(), 10);
+        const ht = parseInt($('#horas_totales_Reinicio').val(), 10);
+        if (!iniStr || ![4,5].includes(hpc) || !isFinite(ht) || ht <= 0) {
+            return;
+        }
+        const nuevaFin = calcularFechaFinReinicio(iniStr, ht, hpc);
+        if (nuevaFin) {
+            $('#nuevaFechaFin').val(nuevaFin);
+        }
+    }
+
     function validarFechasReinicio() {
         const hoy = new Date(); hoy.setHours(0,0,0,0);
+        const minInicio = new Date(hoy); minInicio.setDate(minInicio.getDate() + 7);
         const iniStr = $('#nuevaFechaInicio').val();
         const finStr = $('#nuevaFechaFin').val();
         $('#errorFechaInicio, #errorFechaFin').hide().text('');
         let ok = true;
 
-        if (iniStr && new Date(iniStr + 'T00:00:00') < hoy) {
-            $('#errorFechaInicio').text('La fecha de inicio no puede ser en el pasado.').show();
-            ok = false;
+        if (iniStr) {
+            const ini = new Date(iniStr + 'T00:00:00');
+            if (ini < minInicio) {
+                $('#errorFechaInicio').text('La fecha de inicio debe ser al menos 7 días después de hoy.').show();
+                $('#nuevaFechaInicio').addClass('is-invalid');
+                ok = false;
+            } else if (ini.getDay() === 0 || ini.getDay() === 6) {
+                $('#errorFechaInicio').text('La fecha de inicio no puede ser sábado ni domingo.').show();
+                $('#nuevaFechaInicio').addClass('is-invalid');
+                ok = false;
+            } else {
+                $('#errorFechaInicio').hide().text('');
+                $('#nuevaFechaInicio').removeClass('is-invalid');
+            }
         }
         if (iniStr && finStr) {
             const ini = new Date(iniStr + 'T00:00:00');
@@ -326,32 +451,72 @@ $(document).ready(function () {
 
     $('#nuevaFechaInicio').on('change', function () {
         const iniStr = $(this).val();
-        if (!iniStr) { $('#fechaLimiteInicio').val(''); return; }
+        $('#fechaLimiteInicio').val('');
 
-        const ini    = new Date(iniStr + 'T00:00:00');
+        if (!iniStr) {
+            validarFechasReinicio();
+            return;
+        }
+
+        const ini = new Date(iniStr + 'T00:00:00');
+        if (ini.getDay() === 0 || ini.getDay() === 6) {
+            $('#errorFechaInicio').text('La fecha de inicio no puede ser sábado ni domingo.').show();
+            $(this).addClass('is-invalid');
+            $('#nuevaFechaFin').attr('min', '');
+            $('#nuevaFechaFin').val('');
+            validarFechasReinicio();
+            return;
+        }
+
         const limite = new Date(ini); limite.setDate(limite.getDate() + 9);
         const minFin = new Date(ini); minFin.setDate(minFin.getDate() + 21);
-        const pad    = n => String(n).padStart(2, '0');
-        const fmt    = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        const pad = n => String(n).padStart(2, '0');
+        const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 
         $('#fechaLimiteInicio').val(fmt(limite));
         $('#nuevaFechaFin').attr('min', fmt(minFin));
-        if ($('#nuevaFechaFin').val() && new Date($('#nuevaFechaFin').val()+'T00:00:00') < minFin) $('#nuevaFechaFin').val('');
+        if ($('#nuevaFechaFin').val() && new Date($('#nuevaFechaFin').val() + 'T00:00:00') < minFin) {
+            $('#nuevaFechaFin').val('');
+        }
+
+        actualizarFinSegunHorasReinicio();
+        calcularHorasTotalesReinicio();
         validarFechasReinicio();
     });
 
-    $('#nuevaFechaFin').on('change input', validarFechasReinicio);
+    $('#nuevaFechaFin').on('change input', function () {
+        calcularHorasTotalesReinicio();
+        validarFechasReinicio();
+    });
+
+    $('#horas_por_clase_Reinicio').on('change', function () {
+        actualizarFinSegunHorasReinicio();
+        calcularHorasTotalesReinicio();
+        validateSelectReinicio('horas_por_clase_Reinicio', 'Seleccione horas por clase');
+    });
+
+    $('#min_participantes_Reinicio, #max_participantes_Reinicio').on('input', validarParticipantesReinicio);
 
     // =========================================================
     // CONFIRMAR REINICIO
     // =========================================================
     $('#confirmarReinicioCurso').on('click', function (e) {
         e.preventDefault();
+        const validFields = [
+            validateSelectReinicio('id_modalidad_Reinicio', 'Seleccione una modalidad'),
+            validateSelectReinicio('id_sectoreconomico_Reinicio', 'Seleccione un sector económico'),
+            validateSelectReinicio('id_subtipo_Reinicio', 'Seleccione un subtipo'),
+            validateSelectReinicio('id_ambito_Reinicio', 'Seleccione un ámbito'),
+            validateSelectReinicio('turno_Reinicio', 'Seleccione un turno'),
+            validateSelectReinicio('horas_por_clase_Reinicio', 'Seleccione horas por clase'),
+            validarParticipantesReinicio()
+        ];
+
         if (!$('#nuevaFechaInicio').val() || !$('#nuevaFechaFin').val()) {
             toastr.warning('Complete todos los campos de fecha'); return;
         }
-        if (!validarFechasReinicio()) {
-            toastr.warning('Verifique los errores en las fechas'); return;
+        if (!validarFechasReinicio() || !validFields.every(v => v === true)) {
+            toastr.warning('Verifique los errores en el formulario antes de reiniciar'); return;
         }
 
         const idCurso             = $(this).data('id');
@@ -364,6 +529,15 @@ $(document).ready(function () {
             contentType: 'application/json',
             data: JSON.stringify({
                 id_curso:              idCurso,
+                id_modalidad:          $('#id_modalidad_Reinicio').val(),
+                id_sectoreconomico:    $('#id_sectoreconomico_Reinicio').val(),
+                id_subtipo:            $('#id_subtipo_Reinicio').val(),
+                id_ambito:             $('#id_ambito_Reinicio').val(),
+                turno:                 $('#turno_Reinicio').val(),
+                horas_por_clase:       $('#horas_por_clase_Reinicio').val(),
+                horas_totales:         $('#horas_totales_Reinicio').val(),
+                min_participantes:     $('#min_participantes_Reinicio').val(),
+                max_participantes:     $('#max_participantes_Reinicio').val(),
                 nueva_fecha_inicio:    $('#nuevaFechaInicio').val(),
                 nueva_fecha_fin:       $('#nuevaFechaFin').val(),
                 modo:                  modo,
@@ -386,17 +560,48 @@ $(document).ready(function () {
     // Al abrir modal: limpiar campos y ocultar cursoModal
     $('#modalReiniciarCurso').on('show.bs.modal', function () {
         $('#cursoModal').modal('hide');
-        const hoy = new Date().toISOString().split('T')[0];
-        $('#nuevaFechaInicio, #nuevaFechaFin, #fechaLimiteInicio').val('');
-        $('#nuevaFechaInicio').attr('min', hoy);
-        $('#nuevaFechaFin').attr('min', hoy);
-        $('#errorFechaInicio, #errorFechaFin').hide().text('');
-        $('#chkMantenerParticipantes').prop('checked', false);
-    });
+        const hoy = new Date();
+        hoy.setHours(0,0,0,0);
+        const minInicio = new Date(hoy);
+        minInicio.setDate(minInicio.getDate() + 7);
+        const minInicioStr = minInicio.toISOString().split('T')[0];
 
-    // Cancelar: volver a cursoModal
-    $(document).on('click', '.btn-cancel-reiniciar', function () {
-        $('#modalReiniciarCurso').modal('hide');
-        $('#cursoModal').modal('show');
-    });
+            $('#reiniciarCursoId').val('');
+            $('#nuevaFechaInicio, #nuevaFechaFin, #fechaLimiteInicio, #horas_totales_Reinicio').val('');
+            $('#id_modalidad_Reinicio, #id_sectoreconomico_Reinicio, #id_subtipo_Reinicio, #id_ambito_Reinicio, #turno_Reinicio, #horas_por_clase_Reinicio').val('');
+            $('#min_participantes_Reinicio, #max_participantes_Reinicio').val('');
+            $('#nuevaFechaInicio').attr('min', minInicioStr);
+            $('#nuevaFechaFin').attr('min', minInicioStr);
+            $('#textoInicioMinimo').text('Inicio mínimo: ' + minInicioStr + '. No puede ser sábado ni domingo.');
+            $('#errorFechaInicio, #errorFechaFin').hide().text('');
+            $('.text-danger.small').hide();
+            $('.form-control').removeClass('is-invalid');
+            $('#chkMantenerParticipantes').prop('checked', false);
+
+            const idCurso = $(this).data('idCurso');
+            if (idCurso) {
+                cargarDatosCursoReinicio(idCurso);
+            }
+        });
+
+    function cargarDatosCursoReinicio(idCurso) {
+        fetch(`../../app/controlador/Curso/obtenerCursoEditar.php?id=${idCurso}`)
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                $('#reiniciarCursoId').val(idCurso);
+                $('#id_modalidad_Reinicio').val(data.id_modalidad || '');
+                $('#id_sectoreconomico_Reinicio').val(data.id_sectoreconomico || '');
+                $('#id_subtipo_Reinicio').val(data.id_subtipo || '');
+                $('#id_ambito_Reinicio').val(data.id_ambito || '');
+                $('#turno_Reinicio').val(data.turno || '');
+                $('#horas_por_clase_Reinicio').val(data.horas_por_clase ? String(Math.round(Number(data.horas_por_clase))) : '');
+                $('#horas_totales_Reinicio').val(data.horas_totales ? String(Math.round(Number(data.horas_totales))) : '');
+                $('#min_participantes_Reinicio').val(data.min_participantes || '');
+                $('#max_participantes_Reinicio').val(data.max_participantes || '');
+            })
+            .catch(err => {
+                console.error('Error cargando datos del curso para reinicio:', err);
+            });
+        }
 });

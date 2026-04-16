@@ -561,6 +561,8 @@ class Curso {
                         c.id_subtipo,
                         c.id_areaFormativa,
                         c.id_ambito,
+                        c.id_ppl,
+                        c.id_nombre_especifico,
                         c.turno,
                         c.programa_formacion,
                         m.nombre_modalidad,
@@ -636,6 +638,8 @@ class Curso {
                 id_sectoreconomico  = :id_sectoreconomico,
                 id_subtipo          = :id_subtipo,
                 id_ambito           = :id_ambito,
+                id_ppl              = :id_ppl,
+                id_nombre_especifico = :id_nombre_especifico,
                 turno               = :turno,
                 tipo_formacion      = :tipo_formacion,
                 programa_formacion  = :programa_formacion,
@@ -654,10 +658,12 @@ class Curso {
             ':max_participantes'   => $data['max_participantes-Edit']   ?? $data['max_participantes'],
             ':min_participantes'   => $data['min_participantes-Edit']   ?? $data['min_participantes']   ?? null,
             ':id_modalidad'        => $data['id_modalidad-Edit']        ?? $data['id_modalidad'],
-            ':id_areaFormativa'    => $data['id_areaFormativa-Edit']    ?? $data['id_areaFormativa'],
+            ':id_areaFormativa'    => $data['id_areaFormativa-Edit']    ?? $data['id_areaFormativa'] ?? null,
             ':id_sectoreconomico'  => $data['id_sectoreconomico-Edit']  ?? $data['id_sectoreconomico']  ?? null,
             ':id_subtipo'          => $data['id_subtipo-Edit']          ?? $data['id_subtipo']          ?? null,
             ':id_ambito'           => $data['id_ambito-Edit']           ?? $data['id_ambito']           ?? null,
+            ':id_ppl'              => !empty($data['id_ppl-Edit']) ? (int)$data['id_ppl-Edit'] : ($data['id_ppl'] ?? null),
+            ':id_nombre_especifico'=> !empty($data['id_nombrecurso-Edit']) ? (int)$data['id_nombrecurso-Edit'] : ($data['id_nombre_especifico'] ?? null),
             ':turno'               => $data['turno-Edit']               ?? $data['turno'],
             ':tipo_formacion'      => $data['tipo_formacion-Edit']      ?? $data['tipo_formacion'],
             ':programa_formacion'  => $data['programa_formacion-Edit']  ?? $data['programa_formacion'],
@@ -1298,13 +1304,33 @@ class Curso {
         }
     }
 
-public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $modo = 'diferido', $mantenerParticipantes = false) {
+public function reiniciarCurso(
+        $idCurso,
+        $nuevaFechaInicio,
+        $nuevaFechaFin,
+        $modo = 'diferido',
+        $mantenerParticipantes = false,
+        $id_modalidad = null,
+        $id_sectoreconomico = null,
+        $id_subtipo = null,
+        $id_ambito = null,
+        $turno = null,
+        $horas_por_clase = null,
+        $horas_totales = null,
+        $min_participantes = null,
+        $max_participantes = null
+    ) {
     try {
         // Validar que el curso exista y tenga estado válido
-        $sqlCheck = "SELECT id_estatusCurso FROM tb_curso WHERE id_curso = :id";
+        $sqlCheck = "SELECT id_estatusCurso, id_modalidad, id_sectoreconomico, id_subtipo, id_ambito, turno, horas_por_clase, horas_totales, min_participantes, max_participantes FROM tb_curso WHERE id_curso = :id";
         $stmtCheck = $this->conn->prepare($sqlCheck);
         $stmtCheck->execute([':id' => $idCurso]);
-        $estadoActual = (int) $stmtCheck->fetchColumn();
+        $current = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+        if (!$current) {
+            return ['success' => false, 'message' => 'El curso no existe.'];
+        }
+
+        $estadoActual = (int) $current['id_estatusCurso'];
 
         if (!$estadoActual) {
             return ['success' => false, 'message' => 'El curso no existe.'];
@@ -1321,6 +1347,39 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
         }
         if ($fechaInicio >= $fechaFin) {
             return ['success' => false, 'message' => 'La fecha de inicio debe ser anterior a la fecha de fin.'];
+        }
+
+        // Normalizar los nuevos valores usando los del curso actual cuando no se proporcionan.
+        $id_modalidad       = !empty($id_modalidad) ? (int)$id_modalidad : (int)$current['id_modalidad'];
+        $id_sectoreconomico = !empty($id_sectoreconomico) ? (int)$id_sectoreconomico : (int)$current['id_sectoreconomico'];
+        $id_subtipo         = !empty($id_subtipo) ? (int)$id_subtipo : (int)$current['id_subtipo'];
+        $id_ambito          = !empty($id_ambito) ? (int)$id_ambito : (int)$current['id_ambito'];
+        $turno              = !empty($turno) ? $turno : $current['turno'];
+        $horas_por_clase    = !empty($horas_por_clase) ? (int)$horas_por_clase : (int)$current['horas_por_clase'];
+        $horas_totales      = !empty($horas_totales) ? (int)$horas_totales : (int)$current['horas_totales'];
+        $min_participantes  = !empty($min_participantes) ? (int)$min_participantes : (int)$current['min_participantes'];
+        $max_participantes  = !empty($max_participantes) ? (int)$max_participantes : (int)$current['max_participantes'];
+
+        if ($id_modalidad <= 0 || $id_sectoreconomico <= 0 || $id_subtipo <= 0 || $id_ambito <= 0) {
+            return ['success' => false, 'message' => 'Debe seleccionar modalidad, sector económico, subtipo y ámbito válidos.'];
+        }
+        if (!in_array($turno, ['Mañana', 'Tarde'])) {
+            return ['success' => false, 'message' => 'El turno debe ser Mañana o Tarde.' ];
+        }
+        if ($horas_por_clase !== 4 && $horas_por_clase !== 5) {
+            return ['success' => false, 'message' => 'Las horas por clase deben ser 4 o 5.' ];
+        }
+        if ($horas_totales <= 0) {
+            return ['success' => false, 'message' => 'Las horas totales deben ser mayores a cero.' ];
+        }
+        if ($min_participantes < 12 || $min_participantes > 40) {
+            return ['success' => false, 'message' => 'El mínimo de participantes debe estar entre 12 y 40.' ];
+        }
+        if ($max_participantes < 12 || $max_participantes > 40) {
+            return ['success' => false, 'message' => 'El máximo de participantes debe estar entre 12 y 40.' ];
+        }
+        if ($min_participantes > $max_participantes) {
+            return ['success' => false, 'message' => 'El mínimo de participantes no puede ser mayor que el máximo.' ];
         }
 
         // Calcular fecha límite (9 días después)
@@ -1389,6 +1448,15 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
                              fecha_limite_inicio = :fecha_limite,
                              fecha_fin           = :fecha_fin,
                              id_estatusCurso     = 1,
+                             horas_por_clase     = :horas_por_clase,
+                             horas_totales       = :horas_totales,
+                             min_participantes   = :min_participantes,
+                             max_participantes   = :max_participantes,
+                             id_modalidad        = :id_modalidad,
+                             id_sectoreconomico  = :id_sectoreconomico,
+                             id_subtipo          = :id_subtipo,
+                             id_ambito           = :id_ambito,
+                             turno               = :turno,
                              horas_completadas   = 0,
                              num_inscritos       = 0,
                              fecha_actualizacion = NOW()
@@ -1398,6 +1466,15 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
                 ':fecha_inicio' => $nuevaFechaInicio,
                 ':fecha_limite' => $nuevaFechaLimite,
                 ':fecha_fin'    => $nuevaFechaFin,
+                ':horas_por_clase' => $horas_por_clase,
+                ':horas_totales' => $horas_totales,
+                ':min_participantes' => $min_participantes,
+                ':max_participantes' => $max_participantes,
+                ':id_modalidad' => $id_modalidad,
+                ':id_sectoreconomico' => $id_sectoreconomico,
+                ':id_subtipo' => $id_subtipo,
+                ':id_ambito' => $id_ambito,
+                ':turno' => $turno,
                 ':id'           => $idCurso
             ]);
 
@@ -1458,6 +1535,15 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
                              fecha_limite_inicio = :fecha_limite,
                              fecha_fin           = :fecha_fin,
                              id_estatusCurso     = 1,
+                             horas_por_clase     = :horas_por_clase,
+                             horas_totales       = :horas_totales,
+                             min_participantes   = :min_participantes,
+                             max_participantes   = :max_participantes,
+                             id_modalidad        = :id_modalidad,
+                             id_sectoreconomico  = :id_sectoreconomico,
+                             id_subtipo          = :id_subtipo,
+                             id_ambito           = :id_ambito,
+                             turno               = :turno,
                              horas_completadas   = 0,
                              fecha_actualizacion = NOW()
                          WHERE id_curso = :id";
@@ -1466,6 +1552,15 @@ public function reiniciarCurso($idCurso, $nuevaFechaInicio, $nuevaFechaFin, $mod
                 ':fecha_inicio' => $nuevaFechaInicio,
                 ':fecha_limite' => $nuevaFechaLimite,
                 ':fecha_fin'    => $nuevaFechaFin,
+                ':horas_por_clase' => $horas_por_clase,
+                ':horas_totales' => $horas_totales,
+                ':min_participantes' => $min_participantes,
+                ':max_participantes' => $max_participantes,
+                ':id_modalidad' => $id_modalidad,
+                ':id_sectoreconomico' => $id_sectoreconomico,
+                ':id_subtipo' => $id_subtipo,
+                ':id_ambito' => $id_ambito,
+                ':turno' => $turno,
                 ':id'           => $idCurso
             ]);
         }
