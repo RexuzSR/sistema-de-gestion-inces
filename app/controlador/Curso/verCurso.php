@@ -37,6 +37,7 @@ try {
                 af.nombre_areaFormativa,
                 se.nombre_sectoreconomico,
                 am.nombre_ambito,
+                c.id_ambito,
                 st.nombre_subtipo
             FROM tb_curso c
             LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
@@ -66,6 +67,7 @@ try {
                 'areaFormativa' => $cursoInfo['nombre_areaFormativa'] ?? '-',
                 'sectorEconomico' => $cursoInfo['nombre_sectoreconomico'] ?? '-',
                 'ambito' => $cursoInfo['nombre_ambito'] ?? '-',
+                'id_ambito' => $cursoInfo['id_ambito'] ?? null,
                 'maxParticipantes' => $cursoInfo['max_participantes'] ?? '-',
                 'numInscritos' => $cursoInfo['num_inscritos'] ?? 0,
                 'estado' => $cursoInfo['nombre_estatusCurso'] ?? '-',

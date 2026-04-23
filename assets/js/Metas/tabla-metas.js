@@ -2,6 +2,7 @@ $(document).ready(function () {
     let currentPage = 1;
     let recordsPerPage = parseInt($('#registros').val()) || 8;
     let currentSearch = '';
+    let filterAmbitoId = new URLSearchParams(window.location.search).get('ambito_id');
 
     function cargarMetas(page = 1, perPage = recordsPerPage, search = '') {
         currentPage = page;
@@ -41,6 +42,21 @@ $(document).ready(function () {
                 
                 if (estadoFilter) {
                     metas = metas.filter(m => m.estado === estadoFilter);
+                }
+
+                // Filtrar por ambito_id si viene de la URL
+                if (filterAmbitoId) {
+                    metas = metas.filter(m => String(m.id_ambito) === String(filterAmbitoId));
+                    
+                    // Mostrar aviso de filtro activo
+                    $('#active-filter-alert').fadeIn();
+                    
+                    // Si se encontró la meta, podemos mostrar un mensaje o resaltar
+                    if (metas.length > 0) {
+                        console.log('Filtrando por ámbito:', filterAmbitoId);
+                    }
+                } else {
+                    $('#active-filter-alert').hide();
                 }
 
                 const total = metas.length;
@@ -349,6 +365,20 @@ $(document).ready(function () {
                 toastr.error(res.message || 'Error al eliminar meta');
             }
         });
+    });
+
+    // Limpiar filtro de ámbito
+    $(document).on('click', '#clear-ambito-filter', function() {
+        filterAmbitoId = null;
+        
+        // Limpiar URL sin recargar
+        const url = new URL(window.location);
+        url.searchParams.delete('ambito_id');
+        window.history.replaceState({}, '', url);
+        
+        // Ocultar aviso y recargar tabla
+        $('#active-filter-alert').fadeOut();
+        cargarMetas(1, recordsPerPage, currentSearch);
     });
 
     // Inicializar

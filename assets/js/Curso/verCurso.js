@@ -39,6 +39,14 @@ document.addEventListener('DOMContentLoaded', function () {
               document.getElementById('ambito-view').textContent = curso.ambito || '-';
               document.getElementById('cupos-view').textContent = curso.maxParticipantes || '-';
 
+              console.log('ID Ámbito recibido:', curso.id_ambito); // Depuración
+
+              // Guardar id_ambito en el panel de progreso para filtrado en metas
+              const panelProgreso = document.querySelector('.panel-progreso-cupos');
+              if (panelProgreso) {
+                panelProgreso.setAttribute('data-id-ambito', curso.id_ambito || '');
+              }
+
               // Mostrar el estado actual del curso usando el módulo central
               const infoEstado = window.estadoCurso.getInfo(curso.estado || curso.id_estatus || curso.id_estatuscurso);
               document.getElementById('estadoCurso-view').textContent = infoEstado.texto;
@@ -269,6 +277,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+
+// ========== MANEJO CLIC PANEL PROGRESO A METAS ==========
+$(document).on('click', '.panel-progreso-cupos', function() {
+  const ambitoId = $(this).attr('data-id-ambito');
+  if (ambitoId) {
+    window.location.href = `metas.php?ambito_id=${ambitoId}`;
+  } else {
+    // Fallback si no tiene ámbito (meta global)
+    window.location.href = `metas.php`;
+  }
+});
 
 // ========== MANEJO CLIC CONTENEDOR DOCENTE ==========
 function manejarClicDocente() {

@@ -1,7 +1,6 @@
 // ==================== RE-Participante-Total.js ====================
 // Reporte: Total de Participantes
-// Datos: obtenidos desde api_reportes.php (sin generación aleatoria)
-// Autor: sistema INCES — adaptado a BD real
+// Datos: obtenidos desde api_reportes.php
 // ==================================================================
 
 // ── Estado global del reporte ──────────────────────────────────────

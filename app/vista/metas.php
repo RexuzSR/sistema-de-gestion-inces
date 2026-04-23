@@ -108,7 +108,22 @@ if (!empty($imagenUsuario)) {
                     </div>
                 </div>
 
-                    <div class="filters-container d-flex justify-content-between align-items-center pt-2">
+                <!-- Aviso de Filtro Activo -->
+                <div id="active-filter-alert" class="mt-2" style="display: none;">
+                    <div class="alert alert-info d-flex justify-content-between align-items-center py-2 px-3 mb-0" style="border-radius: 12px; background: rgba(2, 129, 254, 0.1); border: 1px solid rgba(2, 129, 254, 0.2);">
+                        <div class="d-flex align-items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#0281fe" class="bi bi-filter-circle-fill" viewBox="0 0 16 16">
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M3.5 5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1 0-1M5 8.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m2 3.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5"/>
+                            </svg>
+                            <span style="color: #0f172a; font-size: 0.9rem;">Filtrando por el ámbito del curso seleccionado</span>
+                        </div>
+                        <button type="button" id="clear-ambito-filter" class="btn btn-sm btn-outline-primary" style="border-radius: 20px; font-size: 0.75rem; padding: 2px 12px; border-width: 1.5px; font-weight: 600;">
+                            VER TODAS LAS METAS
+                        </button>
+                    </div>
+                </div>
+
+                <div class="filters-container d-flex justify-content-between align-items-center pt-2">
                         <!-- Filtros -->
                         <form id="filters-form" class="d-flex align-items-center gap-2">
                             <label class="label text-nowrap" for="tipo de meta">Tipo de meta:</label>

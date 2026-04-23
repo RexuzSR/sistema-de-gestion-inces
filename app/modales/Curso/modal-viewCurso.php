@@ -265,7 +265,7 @@
           <!-- Columna Derecha -->
           <div class="col-md-6">
             <!-- Panel de Progreso y Cupos -->
-            <div class="info-card-modern-light animate-on-show" data-delay="400" style="
+            <div class="info-card-modern-light animate-on-show panel-progreso-cupos" data-delay="400" style="
               background: #f8fafc;
               border: 1px solid #e2e8f0;
               border-radius: 24px;
@@ -273,6 +273,7 @@
               transition: all 0.3s ease;
               position: relative;
               overflow: hidden;
+              cursor: pointer;
             " onmouseover="this.style.boxShadow='0 10px 25px -5px rgba(16,185,129,0.2), 0 0 20px rgba(16,185,129,0.3)'; this.style.borderColor='#10b981'" onmouseout="this.style.boxShadow='none'; this.style.borderColor='#e2e8f0'">
               <div class="card-shine-light"></div>
               <div class="d-flex align-items-center gap-2 mb-4">

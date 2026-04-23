@@ -5,9 +5,10 @@ const categoriasReportes = [
         bgColor: "rgba(13,110,253,0.9)", lightColor: "rgba(13,110,253,0.5)",
         darkColor: "rgba(0,80,200,0.95)", bodyBgColor: "rgba(13,110,253,0.06)",
         reportes: [
-            { id: 1, nombre: "Total de Participantes",   funcion: 'cargarTotalParticipantes' },
-            { id: 2, nombre: "Participantes Aprobados",  funcion: 'cargarParticipantesAprobados' },
-            { id: 9, nombre: "Participantes por Ámbito", funcion: 'cargarParticipantesPorAmbito' }
+            { id: 1,  nombre: "Total de Participantes",          funcion: 'cargarTotalParticipantes' },
+            { id: 2,  nombre: "Participantes Aprobados",         funcion: 'cargarParticipantesAprobados' },
+            { id: 9,  nombre: "Participantes por Ámbito",        funcion: 'cargarParticipantesPorAmbito' },
+            { id: 12, nombre: "Trayectoria de Participantes",    funcion: 'cargarTrayectoriaParticipantes' }
         ]
     },
     {

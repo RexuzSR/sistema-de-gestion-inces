@@ -140,6 +140,23 @@ try {
         echo json_encode(getResumenGlobal($conn));
         break;
 
+        case 'trayectoria_resumen':
+            echo json_encode(getTrayectoriaResumen($conn));
+            break;
+
+        case 'trayectoria_participantes':
+            echo json_encode(getTrayectoriaParticipantes($conn));
+            break;
+
+        case 'detalle_participante':
+            $cedula = intval($_GET['cedula'] ?? 0);
+            if ($cedula <= 0) {
+                echo json_encode(['error' => 'Cédula no válida']);
+                break;
+            }
+            echo json_encode(getDetalleParticipante($conn, $cedula));
+            break;
+
         default:
             http_response_code(400);
             echo json_encode(['error' => "Acción '$accion' no reconocida"]);
@@ -828,4 +845,144 @@ function getResumenGlobal(PDO $conn): array {
         'docentes'      => (int)$docentes,
         'pct_metas'     => round($promedioMeta, 1)
     ];
+}
+
+/**
+ * Resumen de 4 KPI cards para el reporte Trayectoria de Participantes:
+ *  - total:       total de participantes registrados en el sistema
+ *  - activos:     participantes con estado = 'Activo'
+ *  - registrados: participantes que tienen al menos una inscripción en tb_participante_curso
+ *  - sin_curso:   participantes SIN ninguna inscripción en tb_participante_curso
+ */
+function getTrayectoriaResumen(PDO $conn): array {
+ 
+    // Total general
+    $stmt  = $conn->query("SELECT COUNT(*) FROM tb_participante");
+    $total = intval($stmt->fetchColumn());
+ 
+    // Participantes que existen en tb_participante Y tienen
+    // al menos 1 inscripción en tb_participante_curso
+    $stmt    = $conn->query("
+        SELECT COUNT(DISTINCT pc.id_participante)
+        FROM   tb_participante_curso pc
+        INNER JOIN tb_participante p ON p.id_participante = pc.id_participante
+    ");
+    $activos = intval($stmt->fetchColumn());
+ 
+    // Sin ninguna inscripción válida
+    $sin_curso = max(0, $total - $activos);
+ 
+    return [
+        'total'     => $total,
+        'activos'   => $activos,
+        'sin_curso' => $sin_curso,
+    ];
+}
+ 
+/**
+ * Lista completa de participantes para la tabla.
+ * Incluye has_curso (1/0) para el filtro de cards.
+ */
+function getTrayectoriaParticipantes(PDO $conn): array {
+    $stmt = $conn->query("
+        SELECT
+            p.cedula,
+            p.primer_nombre,
+            p.primer_apellido,
+            p.genero,
+            p.edad,
+            p.correo,
+            p.fecha_registro,
+            p.estado,
+            p.grado_institucion,
+            (
+                SELECT t.numero_de_telefono
+                FROM   tb_telefono t
+                WHERE  t.id_participante = p.id_participante
+                  AND  t.tipo_de_telefono = 'Móvil'
+                ORDER BY t.id_telefono ASC
+                LIMIT  1
+            ) AS telefono,
+            CASE WHEN EXISTS (
+                SELECT 1
+                FROM   tb_participante_curso pc
+                WHERE  pc.id_participante = p.id_participante
+            ) THEN 1 ELSE 0 END AS has_curso
+        FROM  tb_participante p
+        ORDER BY p.primer_apellido ASC, p.primer_nombre ASC
+    ");
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getDetalleParticipante(PDO $conn, int $cedula): array {
+ 
+    // ── Datos personales + discapacidad ──────────────────────────────
+    $stmt = $conn->prepare("
+        SELECT
+            p.cedula,
+            p.primer_nombre,
+            p.segundo_nombre,
+            p.primer_apellido,
+            p.segundo_apellido,
+            p.edad,
+            p.fecha_nacimiento,
+            p.fecha_registro,
+            p.correo,
+            p.estado,
+            p.genero,
+            p.grado_institucion,
+            d.nombre_discapacidad
+        FROM tb_participante p
+        LEFT JOIN tb_discapacidad d ON d.id_discapacidad = p.id_discapacidad
+        WHERE p.cedula = :cedula
+        LIMIT 1
+    ");
+    $stmt->execute([':cedula' => $cedula]);
+    $persona = $stmt->fetch(PDO::FETCH_ASSOC);
+ 
+    if (!$persona) return ['error' => 'Participante no encontrado'];
+ 
+    // Obtener id_participante para las demás consultas
+    $stmtId = $conn->prepare("SELECT id_participante FROM tb_participante WHERE cedula = :cedula LIMIT 1");
+    $stmtId->execute([':cedula' => $cedula]);
+    $idParticipante = intval($stmtId->fetchColumn());
+ 
+    // ── Teléfonos ────────────────────────────────────────────────────
+    $stmt = $conn->prepare("
+        SELECT numero_de_telefono, tipo_de_telefono
+        FROM   tb_telefono
+        WHERE  id_participante = :id
+        ORDER BY id_telefono ASC
+    ");
+    $stmt->execute([':id' => $idParticipante]);
+    $persona['telefonos'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+ 
+    // ── Cursos (para tabla y gráfica Gantt) ──────────────────────────
+    $stmt = $conn->prepare("
+        SELECT
+            c.id_curso,
+            c.nombre_curso,
+            c.turno,
+            pc.fecha_inscripcion,
+            pc.FechaInicio       AS fecha_inicio,
+            pc.FechaFin          AS fecha_fin,
+            pc.estatus_participante,
+            e.nombre_estatusCurso AS estatus_curso,
+            a.nombre_ambito,
+            af.nombre_areaFormativa AS area_formativa,
+            m.nombre_modalidad,
+            c.horas_totales
+        FROM   tb_participante_curso pc
+        JOIN   tb_curso c  ON c.id_curso = pc.id_curso
+        LEFT JOIN tb_estatuscurso  e  ON e.id_estatusCurso  = c.id_estatusCurso
+        LEFT JOIN tb_ambito        a  ON a.id_ambito        = c.id_ambito
+        LEFT JOIN tb_areaformativa af ON af.id_areaFormativa = c.id_areaFormativa
+        LEFT JOIN tb_modalidad     m  ON m.id_modalidad      = c.id_modalidad
+        WHERE  pc.id_participante = :id
+        ORDER BY pc.FechaInicio ASC
+    ");
+    $stmt->execute([':id' => $idParticipante]);
+    $persona['cursos'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+ 
+    return $persona;
 }
