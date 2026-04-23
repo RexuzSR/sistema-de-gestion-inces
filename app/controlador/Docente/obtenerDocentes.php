@@ -72,7 +72,8 @@ try {
     
     // Aplicar búsqueda si se proporciona
     if ($search !== null) {
-        $conditions[] = "(d.cedula LIKE :search OR 
+        $conditions[] = "(d.id_docente LIKE :search OR 
+                         d.cedula LIKE :search OR 
                          CONCAT(d.primer_nombre, ' ', COALESCE(d.segundo_nombre, '')) LIKE :search OR 
                          CONCAT(d.primer_apellido, ' ', COALESCE(d.segundo_apellido, '')) LIKE :search OR 
                          d.primer_nombre LIKE :search OR 

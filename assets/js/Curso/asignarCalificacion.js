@@ -90,7 +90,8 @@ $(document).ready(function () {
 
                 estadoActualCurso = parseInt(s);
 
-                $('#btnGuardar').prop('disabled', !culminado);
+                // Inicialmente deshabilitado, se habilitará en validarNotasCompletas si aplica
+                $('#btnGuardar').prop('disabled', true);
                 $('#btnFinalizar').prop('disabled', !enProceso);
                 $('#btnReiniciarCurso').prop('disabled', !(diferido || culminado));
 
@@ -126,8 +127,6 @@ $(document).ready(function () {
                                             <option value="Aprobado"     ${estado==='Aprobado'    ?'selected':''}>Aprobado</option>
                                             <option value="Reprobado"    ${estado==='Reprobado'   ?'selected':''}>Reprobado</option>
                                             <option value="Ausente"      ${estado==='Ausente'     ?'selected':''}>Ausente</option>
-                                            <option value="Pendiente"    ${estado==='Pendiente'   ?'selected':''}>Pendiente</option>
-                                            <option value="En formación" ${estado==='En formación'?'selected':''}>En formación</option>
                                         </select>
                                     </div>
                                 </div>
@@ -138,9 +137,43 @@ $(document).ready(function () {
                 $('#contadorEstudiantes').text(
                     `${participantes ? participantes.length : 0} estudiante${participantes && participantes.length !== 1 ? 's' : ''}`
                 );
+                
+                // Validar estado inicial de las notas
+                validarNotasCompletas();
+                
                 $('#cursoModal').modal('show');
             })
             .catch(err => { console.error(err); toastr.error('Error al cargar los participantes'); });
+    });
+
+    // =========================================================
+    // VALIDACIÓN DE NOTAS COMPLETAS
+    // =========================================================
+    function validarNotasCompletas() {
+        if (estadoActualCurso !== 5) {
+            $('#btnGuardar').prop('disabled', true);
+            return;
+        }
+
+        let todasCompletas = true;
+        const selects = $('.estado-select');
+        
+        if (selects.length === 0) {
+            todasCompletas = false;
+        } else {
+            selects.each(function() {
+                if ($(this).val() === "") {
+                    todasCompletas = false;
+                    return false;
+                }
+            });
+        }
+
+        $('#btnGuardar').prop('disabled', !todasCompletas);
+    }
+
+    $(document).on('change', '.estado-select', function() {
+        validarNotasCompletas();
     });
 
     // =========================================================

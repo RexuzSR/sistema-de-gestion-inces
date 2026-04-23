@@ -433,6 +433,9 @@ class docente {
                     SELECT 
                         c.id_curso,
                         c.nombre_curso, 
+                        c.turno AS horario,
+                        c.fecha_inicio,
+                        c.fecha_fin,
                         ec.nombre_estatusCurso AS estado,
                         dc.fecha_asignacion
                     FROM tb_docente_curso dc

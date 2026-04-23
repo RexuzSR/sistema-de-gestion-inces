@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (contenedorDocente) {
                       contenedorDocente.setAttribute('data-docente-id', d.id_docente || '');
+                      contenedorDocente.setAttribute('data-docente-cedula', d.cedula || '');
                       // Cambiamos el hover para indicar que se verá el perfil
                       contenedorDocente.title = "Ver perfil del docente";
                     }
@@ -109,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (contenedorDocente) {
                       contenedorDocente.removeAttribute('data-docente-id');
+                      contenedorDocente.removeAttribute('data-docente-cedula');
                       // Cambiamos el hover para indicar que se asignará uno nuevo
                       contenedorDocente.title = "Asignar docente al curso";
                     }
@@ -124,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   const contenedorDocente = document.getElementById('contenedor-docente-view');
                   if (contenedorDocente) {
                     contenedorDocente.removeAttribute('data-docente-id');
+                    contenedorDocente.removeAttribute('data-docente-cedula');
                     contenedorDocente.title = "Asignar docente al curso";
                     contenedorDocente.setAttribute('data-curso-id', cursoId);
                   }
@@ -189,6 +192,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
               // Cargar los participantes
               cargarParticipantesCurso(cursoId); // Renombrado para evitar conflicto
+
+              // CERRAR MODAL DOCENTE SI ESTÁ ABIERTO (para evitar solapamiento)
+              const modalDocente = $('#modal-viewDocente');
+              if (modalDocente.length && modalDocente.hasClass('show')) {
+                modalDocente.modal('hide');
+                // Pequeña espera para que finalice la animación de cierre antes de abrir el otro
+                setTimeout(() => {
+                  $('#modal-viewCurso').modal('show');
+                }, 400);
+              } else {
+                $('#modal-viewCurso').modal('show');
+              }
 
             } else {
               console.error('Error en datos:', data.message);
@@ -295,6 +310,7 @@ function manejarClicDocente() {
   if (!contenedor) return;
 
   const docenteId = contenedor.getAttribute('data-docente-id');
+  const docenteCedula = contenedor.getAttribute('data-docente-cedula');
   const cursoId = contenedor.getAttribute('data-curso-id');
 
   // Cerrar el modal actual de detalle de curso para abrir el otro
@@ -337,11 +353,13 @@ function manejarClicDocente() {
           }).catch(err => {
             toastr.error('Solo disponible en sección de Docentes');
             // Redirigir a ventana docente como fallback
-            window.location.href = `docente.php?buscar=${docenteId}`;
+            // USAMOS CÉDULA EN LUGAR DE ID PARA EL BUSCADOR
+            window.location.href = `docente.php?buscar=${docenteCedula || docenteId}`;
           });
       } else {
         // Si el modal no está importado en cursos.php, saltaremos allá directamente:
-        window.location.href = `docente.php?buscar=${docenteId}`;
+        // USAMOS CÉDULA EN LUGAR DE ID PARA EL BUSCADOR
+        window.location.href = `docente.php?buscar=${docenteCedula || docenteId}`;
       }
     }, 400);
   } else if (cursoId) {
@@ -382,6 +400,12 @@ function manejarClicDocente() {
       }, 400); // Dar tiempo a que finalice la animación de cierre del primer modal
     }
   }
+}
+
+// ========== VER PERFIL DOCENTE (Boton específico) ==========
+function verPerfilDocente() {
+  // Simplemente llamamos a manejarClicDocente ya que tiene la lógica de redirección/modal
+  manejarClicDocente();
 }
 
 // ========== INICIALIZAR Y ASIGNAR DOCENTE A CURSO DESDE el modal de ver curso ==========
