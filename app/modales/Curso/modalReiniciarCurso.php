@@ -109,7 +109,7 @@
               </div>
               <div class="col-12 col-md-6">
                 <label for="nuevaFechaInicio" class="form-label fw-semibold" style="color: #1e293b;">Nueva Fecha de Inicio <span class="text-danger">*</span></label>
-                <input type="date" class="form-control border-2" id="nuevaFechaInicio" required style="border-color: #cbd5e1; border-radius: 8px;">
+                <input type="text" class="form-control border-2" id="nuevaFechaInicio" required placeholder="Seleccione una fecha" autocomplete="off" style="border-color: #cbd5e1; border-radius: 8px;">
                 <div id="textoInicioMinimo" class="form-text text-muted">Inicio mínimo 7 días después de hoy.</div>
                 <div class="text-danger small mt-1" id="errorFechaInicio" style="display:none;"></div>
               </div>

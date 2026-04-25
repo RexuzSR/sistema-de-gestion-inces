@@ -464,10 +464,6 @@ $(document).ready(function () {
                 $('#errorFechaInicio').text('La fecha de inicio debe ser al menos 7 días después de hoy.').show();
                 $('#nuevaFechaInicio').addClass('is-invalid');
                 ok = false;
-            } else if (ini.getDay() === 0 || ini.getDay() === 6) {
-                $('#errorFechaInicio').text('La fecha de inicio no puede ser sábado ni domingo.').show();
-                $('#nuevaFechaInicio').addClass('is-invalid');
-                ok = false;
             } else {
                 $('#errorFechaInicio').hide().text('');
                 $('#nuevaFechaInicio').removeClass('is-invalid');
@@ -476,8 +472,7 @@ $(document).ready(function () {
         if (iniStr && finStr) {
             const ini = new Date(iniStr + 'T00:00:00');
             const fin = new Date(finStr + 'T00:00:00');
-            if (fin < ini)                          { $('#errorFechaFin').text('La fecha fin no puede ser anterior al inicio.').show(); ok = false; }
-            if ((fin-ini)/86400000 < 21)            { $('#errorFechaFin').text('Mínimo 3 semanas (21 días) entre fechas.').show(); ok = false; }
+            if (fin < ini) { $('#errorFechaFin').text('La fecha fin no puede ser anterior al inicio.').show(); ok = false; }
         }
         return ok;
     }
@@ -492,27 +487,26 @@ $(document).ready(function () {
         }
 
         const ini = new Date(iniStr + 'T00:00:00');
-        if (ini.getDay() === 0 || ini.getDay() === 6) {
-            $('#errorFechaInicio').text('La fecha de inicio no puede ser sábado ni domingo.').show();
-            $(this).addClass('is-invalid');
-            $('#nuevaFechaFin').attr('min', '');
-            $('#nuevaFechaFin').val('');
-            validarFechasReinicio();
-            return;
-        }
-
-        const limite = new Date(ini); limite.setDate(limite.getDate() + 9);
-        const minFin = new Date(ini); minFin.setDate(minFin.getDate() + 21);
         const pad = n => String(n).padStart(2, '0');
         const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 
+        $('#errorFechaInicio').hide().text('');
+        $(this).removeClass('is-invalid');
+
+        const limite = new Date(ini); limite.setDate(limite.getDate() + 9);
         $('#fechaLimiteInicio').val(fmt(limite));
-        $('#nuevaFechaFin').attr('min', fmt(minFin));
-        if ($('#nuevaFechaFin').val() && new Date($('#nuevaFechaFin').val() + 'T00:00:00') < minFin) {
-            $('#nuevaFechaFin').val('');
+
+        // Auto-calcular fecha de fin a partir de horas totales y horas por clase
+        const hpc = parseInt($('#horas_por_clase_Reinicio').val(), 10);
+        const ht = parseInt($('#horas_totales_Reinicio').val(), 10);
+        if ([4,5].includes(hpc) && isFinite(ht) && ht > 0) {
+            const nuevaFin = calcularFechaFinReinicio(iniStr, ht, hpc);
+            if (nuevaFin) {
+                $('#nuevaFechaFin').val(nuevaFin);
+            }
         }
 
-        actualizarFinSegunHorasReinicio();
+        // Recalcular horas totales con las nuevas fechas
         calcularHorasTotalesReinicio();
         validarFechasReinicio();
     });
@@ -603,13 +597,28 @@ $(document).ready(function () {
             $('#nuevaFechaInicio, #nuevaFechaFin, #fechaLimiteInicio, #horas_totales_Reinicio').val('');
             $('#id_modalidad_Reinicio, #id_sectoreconomico_Reinicio, #id_subtipo_Reinicio, #id_ambito_Reinicio, #turno_Reinicio, #horas_por_clase_Reinicio').val('');
             $('#min_participantes_Reinicio, #max_participantes_Reinicio').val('');
-            $('#nuevaFechaInicio').attr('min', minInicioStr);
-            $('#nuevaFechaFin').attr('min', minInicioStr);
             $('#textoInicioMinimo').text('Inicio mínimo: ' + minInicioStr + '. No puede ser sábado ni domingo.');
             $('#errorFechaInicio, #errorFechaFin').hide().text('');
             $('.text-danger.small').hide();
             $('.form-control').removeClass('is-invalid');
             $('#chkMantenerParticipantes').prop('checked', false);
+
+            // Inicializar flatpickr (deshabilita sábados y domingos en el calendario)
+            const fpInput = document.getElementById('nuevaFechaInicio');
+            if (fpInput._flatpickr) fpInput._flatpickr.destroy();
+            flatpickr(fpInput, {
+                locale: 'es',
+                dateFormat: 'Y-m-d',
+                minDate: minInicioStr,
+                disable: [
+                    function(date) {
+                        return (date.getDay() === 0 || date.getDay() === 6);
+                    }
+                ],
+                onChange: function(selectedDates, dateStr) {
+                    $('#nuevaFechaInicio').trigger('change');
+                }
+            });
 
             const idCurso = $(this).data('idCurso');
             if (idCurso) {

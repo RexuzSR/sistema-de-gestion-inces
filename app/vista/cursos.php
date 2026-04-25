@@ -52,7 +52,7 @@ $query_modalidades = "SELECT id_modalidad, nombre_modalidad FROM tb_modalidad";
 $result_modalidades = $conn->query($query_modalidades);
 
 // Consultar opciones para el selector de Estado desde tb_estatuscurso
-$query_estados = "SELECT id_estatusCurso, nombre_estatusCurso FROM tb_estatuscurso";
+$query_estados = "SELECT id_estatusCurso, nombre_estatusCurso FROM tb_estatuscurso WHERE nombre_estatusCurso != 'En pausa'";
 $result_estados = $conn->query($query_estados);
 
 // Preparar los datos primero
@@ -89,6 +89,9 @@ if (!empty($imagenUsuario)) {
     <link rel="stylesheet" href="../../assets/css/crud.css">
     <link rel="stylesheet" href="../../assets/css/curso.css">
     <link rel="icon" href="../../assets/img/inces-logo.png" type="image/png">
+    <!-- Flatpickr (datepicker que permite deshabilitar fines de semana) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <title>Cursos</title>
     <style>
@@ -255,6 +258,8 @@ if (!empty($imagenUsuario)) {
     <script src="../../assets/js/Curso/verCurso.js"></script>
     <script src="../../assets/js/Curso/editarCurso.js"></script>
     <script src="../../assets/js/Curso/AsignarParticipante.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="../../assets/js/Curso/asignarCalificacion.js"></script>
     <script src="../../assets/js/Curso/eliminarCurso.js"></script>
     <script src="../../assets/js/Curso/agregarCurso.js"></script>

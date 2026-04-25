@@ -258,7 +258,7 @@ function mostrarHistorial(datos) {
                     <th>Fecha y Hora</th>
                     <th>Tipo</th>
                     <th>Descripción</th>
-                    <th>Tabla</th>
+
                     <th>Usuario</th>
                 </tr>
             </thead>
@@ -276,7 +276,7 @@ function mostrarHistorial(datos) {
                 <td class="fecha-hora">${fechaFormato}</td>
                 <td><span class="badge-tipo ${tipoClase}">${registro.tipo_actividad}</span></td>
                 <td>${registro.descripcion || '—'}</td>
-                <td><small>${registro.tabla_afectada || '—'}</small></td>
+
                 <td>
                     <div class="usuario-info">
                         <div class="usuario-avatar">${iniciales}</div>
