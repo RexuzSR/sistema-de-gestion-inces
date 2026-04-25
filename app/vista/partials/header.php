@@ -165,5 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<!-- Configuración de reportes para el buscador global -->
+<script src="/Sistema%20de%20Gestion%20Inces/assets/js/partials/categorias_reportes.js"></script>
 <!-- Buscador global — debe cargarse después del script de dropdowns -->
-<script src="../../assets/js/partials/buscador.js"></script>
+<script src="/Sistema%20de%20Gestion%20Inces/assets/js/partials/buscador.js"></script>
