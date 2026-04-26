@@ -346,6 +346,24 @@ $(document).ready(function () {
                     return;
                 }
 
+                // Nueva validación por fecha de inicio
+                const hoy = new Date();
+                const anio = hoy.getFullYear();
+                const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                const dia = String(hoy.getDate()).padStart(2, '0');
+                const hoyStr = `${anio}-${mes}-${dia}`;
+
+                if (cursoInfo.fecha_inicio && cursoInfo.fecha_inicio <= hoyStr) {
+                    $seccion.html(`
+                    <div class="text-center py-5 bg-light rounded-3">
+                        <i class="bi bi-calendar-x display-6 text-danger"></i>
+                        <h6 class="text-danger mt-3 mb-0">Curso Iniciado</h6>
+                        <small class="text-muted">La fecha de inicio (${cursoInfo.fecha_inicio}) ya pasó. No se pueden modificar participantes.</small>
+                    </div>
+                `);
+                    return;
+                }
+
                 // Cargar participantes inscritos
                 $.ajax({
                     url: '../../app/controlador/Curso/obtenerInscritos.php',
@@ -424,13 +442,27 @@ $(document).ready(function () {
                         .addClass(`badge bg-${color}`)
                         .text(response.estado_texto);
 
-                    // Deshabilitar acciones si el curso no está en estado 1 (En espera)
-                    if (parseInt(response.id_estatusCurso) !== 1) {
+                    // Deshabilitar acciones si el curso no está en estado 1 (En espera) o si ya inició
+                    const hoy = new Date();
+                    const anio = hoy.getFullYear();
+                    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                    const dia = String(hoy.getDate()).padStart(2, '0');
+                    const hoyStr = `${anio}-${mes}-${dia}`;
+
+                    const cursoIniciado = response.fecha_inicio && response.fecha_inicio <= hoyStr;
+
+                    if (parseInt(response.id_estatusCurso) !== 1 || cursoIniciado) {
                         $('#busqueda-participantes').prop('disabled', true).addClass('opacity-50');
                         $('.btn-agregar').prop('disabled', true).addClass('opacity-50');
+                        
+                        if (cursoIniciado) {
+                            $('#estado-curso').after('<span class="badge bg-danger ms-2">Iniciado</span>');
+                        }
                     } else {
                         $('#busqueda-participantes').prop('disabled', false).removeClass('opacity-50');
                         $('.btn-agregar').prop('disabled', false).removeClass('opacity-50');
+                        // Eliminar badge de iniciado si existe
+                        $('#estado-curso').next('.bg-danger:contains("Iniciado")').remove();
                     }
                 } else {
                     console.error('No se pudo obtener la información del curso o formato inválido');

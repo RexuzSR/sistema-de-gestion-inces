@@ -965,6 +965,12 @@ class Curso {
                 throw new Exception("Curso no disponible para asignaciones");
             }
 
+            // Nueva validación: No permitir inscripciones si la fecha de inicio ya pasó
+            $hoy = date('Y-m-d');
+            if ($curso['fecha_inicio'] <= $hoy) {
+                throw new Exception("No se pueden inscribir participantes en un curso que ya ha iniciado.");
+            }
+
             if ($curso['num_inscritos'] >= $curso['max_participantes']) {
                 throw new Exception("El curso ha alcanzado el máximo de participantes");
             }
@@ -1065,6 +1071,17 @@ class Curso {
             $id_participante = $info['id_participante'];
             $id_curso = $info['id_curso'];
 
+            // Nueva validación: No permitir eliminación si la fecha de inicio ya pasó
+            $sqlCurso = "SELECT fecha_inicio FROM tb_curso WHERE id_curso = :id_curso";
+            $stmtCurso = $this->conn->prepare($sqlCurso);
+            $stmtCurso->execute([':id_curso' => $id_curso]);
+            $fecha_inicio = $stmtCurso->fetchColumn();
+
+            $hoy = date('Y-m-d');
+            if ($fecha_inicio <= $hoy) {
+                throw new Exception("No se pueden eliminar participantes de un curso que ya ha iniciado.");
+            }
+
             // 2. Eliminar registro
             $sqlDelete = "DELETE FROM tb_participante_curso 
                         WHERE id_participante_curso = :id";
@@ -1125,7 +1142,7 @@ class Curso {
 
     public function obtenerInfoCurso($id_curso) {
         try {
-            $sql = "SELECT num_inscritos, max_participantes, id_estatusCurso 
+            $sql = "SELECT num_inscritos, max_participantes, id_estatusCurso, fecha_inicio 
                     FROM tb_curso 
                     WHERE id_curso = :id_curso";
             

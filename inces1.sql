@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 13-04-2026 a las 07:34:33
+-- Tiempo de generación: 27-04-2026 a las 01:44:59
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -114,9 +114,19 @@ INSERT INTO `tb_curso` (`id_curso`, `nombre_curso`, `fecha_inicio`, `fecha_limit
 (108, 'constructor', '2026-03-17', '2026-03-26', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 0, 2, 'Unidad Curricular', 5, 2, 3, 1, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 00:35:51', '2026-03-31 03:09:21'),
 (109, 'EstadosComprobar', '2026-03-17', '2026-03-26', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 6, 2, 'Unidad Curricular', 5, 2, 3, 8, 2, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 04:14:04', '2026-03-31 03:09:21'),
 (110, 'constructoras', '2026-03-17', '2026-03-06', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 0, 1, 'Unidad Curricular', 5, 2, 3, 8, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 06:39:52', '2026-03-31 03:09:21'),
-(111, 'constructoras', '2026-03-24', '2026-04-02', '2026-04-14', 80.00, 5.00, 0.00, 50, 12, 0, 2, 'Unidad Curricular', 2, 2, 1, 8, 3, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2026-03-14 21:33:32', '2026-03-24 01:51:41'),
-(113, 'constructorass', '2026-04-06', '2026-04-15', '2026-04-24', 60.00, 4.00, 0.00, 40, 12, 2, 2, 'Unidad Curricular', 2, 1, 3, 8, 2, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-26 22:31:04', '2026-04-08 14:49:12'),
-(114, 'constructoresasd', '2026-04-20', '2026-04-29', '2026-05-13', 70.00, 4.00, 0.00, 40, 12, 0, 2, 'Unidad Curricular', 1, 2, 3, 1, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-04-10 08:39:01', NULL);
+(111, 'constructoras', '2026-03-24', '2026-04-02', '2026-04-14', 80.00, 5.00, 0.00, 50, 12, 0, 2, 'Unidad Curricular', 5, 2, 1, 8, 3, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2026-03-14 21:33:32', '2026-04-26 23:43:08'),
+(113, 'constructorass', '2026-04-06', '2026-04-15', '2026-04-24', 60.00, 4.00, 0.00, 40, 12, 2, 2, 'Unidad Curricular', 5, 1, 3, 8, 2, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-26 22:31:04', '2026-04-26 23:43:08'),
+(114, 'constructoresasd', '2026-04-20', '2026-04-29', '2026-05-13', 70.00, 4.00, 0.00, 40, 12, 0, 2, 'Unidad Curricular', 2, 2, 3, 1, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-04-10 08:39:01', '2026-04-26 23:22:45'),
+(400, 'Seguridad y Salud Laboral (Culminado 2024)', '2024-01-10', '2024-01-20', '2024-04-05', 80.00, 4.00, 80.00, 25, 10, 12, 1, 'Unidad Curricular', 5, 2, 3, 5, 3, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2024-01-05 07:00:00', '2026-04-26 23:42:55'),
+(401, 'Ofimática Básica (Culminado 2024)', '2024-06-10', '2024-06-20', '2024-09-15', 60.00, 4.00, 60.00, 30, 10, 12, 3, 'Unidad Curricular', 5, 3, 1, 9, 4, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2024-05-25 09:00:00', '2026-04-26 23:42:55'),
+(402, 'Atención y Servicio al Cliente (En espera)', '2024-03-01', '2024-03-10', '2024-05-20', 70.00, 5.00, 0.00, 35, 10, 13, 1, 'Unidad Curricular', 5, 1, 2, 8, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2024-02-15 08:30:00', '2026-04-26 23:43:08'),
+(403, 'Inglés Básico – Módulo 1 (Diferido)', '2024-08-01', '2024-08-10', '2024-10-10', 40.00, 4.00, 0.00, 20, 8, 4, 2, 'Unidad Curricular', 5, 3, 3, 6, 4, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2024-07-15 10:00:00', '2026-04-26 23:43:08'),
+(404, 'Panadería Básica (Diferido)', '2024-09-01', '2024-09-10', '2024-11-15', 50.00, 5.00, 0.00, 22, 10, 4, 1, 'Unidad Curricular', 5, 2, 1, 1, 2, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2024-08-18 09:00:00', '2026-04-26 23:43:09'),
+(405, 'Técnicas de Estudio (Diferido)', '2024-10-01', '2024-10-05', '2024-12-10', 30.00, 3.00, 0.00, 25, 10, 4, 2, 'Unidad Curricular', 5, 1, 3, 6, 5, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2024-09-20 11:00:00', '2026-04-26 23:43:09'),
+(406, 'Redacción Básica (Diferido)', '2024-04-10', '2024-04-15', '2024-06-10', 35.00, 3.50, 0.00, 20, 8, 3, 1, 'Unidad Curricular', 5, 2, 2, 10, 2, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2024-03-25 14:00:00', '2026-04-26 23:43:10'),
+(407, 'Historia Contemporánea (Diferido)', '2024-11-05', '2024-11-12', '2025-01-15', 45.00, 4.50, 0.00, 22, 10, 3, 2, 'Unidad Curricular', 5, 1, 3, 6, 3, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2024-10-28 08:00:00', '2026-04-26 23:43:10'),
+(408, 'Matemática Aplicada (Diferido)', '2024-07-01', '2024-07-10', '2024-09-05', 40.00, 4.00, 0.00, 22, 10, 3, 1, 'Unidad Curricular', 5, 2, 3, 5, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2024-06-15 09:30:00', '2026-04-26 23:43:10'),
+(409, 'Contabilidad para Emprendedores (Diferido)', '2024-05-02', '2024-05-10', '2024-07-20', 50.00, 5.00, 0.00, 20, 8, 2, 3, 'Unidad Curricular', 5, 1, 2, 6, 1, NULL, NULL, 'Tarde', 'Programa de Formación Productiva (PFP)', '2024-04-18 14:00:00', '2026-04-26 23:43:10');
 
 -- --------------------------------------------------------
 
@@ -293,7 +303,8 @@ INSERT INTO `tb_historial` (`id_historial`, `tipo_actividad`, `descripcion`, `ta
 (48, 'Crear', 'Se creó la meta: Inscritos (5000)', 'tb_metas', 22, 16, '2026-04-10 03:25:24'),
 (49, 'Login', 'Usuario ADMIN inició sesión', 'tb_usuario', 11, 11, '2026-04-12 03:59:43'),
 (50, 'Login', 'Usuario ADMIN inició sesión', 'tb_usuario', 11, 11, '2026-04-12 04:33:39'),
-(51, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-04-13 05:04:56');
+(51, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-04-13 05:04:56'),
+(52, 'Login', 'Usuario ADMIN inició sesión', 'tb_usuario', 11, 11, '2026-04-26 23:43:10');
 
 -- --------------------------------------------------------
 
@@ -326,7 +337,15 @@ INSERT INTO `tb_metas` (`id_meta`, `id_ambito`, `meta_objetivo`, `estudiantes_fo
 (18, 1, 20, 0, 'Aprobados', '2026-01-01', '2026-01-31', 'Cerrada', '2026-01-31 15:00:26', 0, NULL),
 (19, 1, 800, 0, 'Aprobados', '2026-03-01', '2026-03-28', 'Cerrada', '2026-03-14 17:59:43', 0, NULL),
 (21, NULL, 100, 0, 'Aprobados', '2026-04-10', '2026-07-09', 'Activa', '2026-04-10 02:49:54', 0, NULL),
-(22, NULL, 5000, 0, 'Inscritos', '2026-04-10', '2026-07-09', 'Activa', '2026-04-10 03:25:20', 0, NULL);
+(22, NULL, 5000, 0, 'Inscritos', '2026-04-10', '2026-07-09', 'Activa', '2026-04-10 03:25:20', 0, NULL),
+(40, 1, 500, 120, 'Aprobados', '2024-01-01', '2024-06-30', 'Activa', '2024-01-02 07:00:00', 1, '2024-S1'),
+(41, 2, 300, 300, 'Inscritos', '2024-01-01', '2024-03-31', 'Cerrada', '2024-01-03 08:00:00', 2, '2024-T1'),
+(42, 3, 200, 85, 'Aprobados', '2024-04-01', '2024-09-30', 'Activa', '2024-04-01 07:30:00', 3, '2024-S2'),
+(43, 4, 150, 150, 'Inscritos', '2024-04-01', '2024-06-30', 'Cerrada', '2024-04-02 09:00:00', 4, '2024-T2'),
+(44, 5, 400, 210, 'Aprobados', '2024-07-01', '2024-12-31', 'Activa', '2024-07-01 08:00:00', 5, '2024-S3'),
+(45, 1, 600, 600, 'Inscritos', '2024-07-01', '2024-09-30', 'Cerrada', '2024-07-02 10:00:00', 1, '2024-T3'),
+(46, 2, 250, 90, 'Aprobados', '2024-10-01', '2025-03-31', 'Activa', '2024-10-01 07:00:00', 2, '2024-S4'),
+(47, 3, 180, 180, 'Inscritos', '2024-10-01', '2024-12-31', 'Cerrada', '2024-10-02 09:30:00', 3, '2024-T4');
 
 -- --------------------------------------------------------
 
@@ -492,8 +511,68 @@ INSERT INTO `tb_participante` (`id_participante`, `primer_nombre`, `segundo_nomb
 (348, 'Alexander', 'Jose', 'Nolazco', 'Gonzales', 30655942, 60, 'example@gmail.com', '1965-04-15', '2026-03-07', 'En sistema', 'Primaria', 'Masculino', 3),
 (349, 'Alexander', 'Del Valle', 'Rivas', 'Rengel', 30635742, 45, 'example@gmail.com', '1980-04-10', '2026-03-07', 'En sistema', 'Bachillerato', 'Femenino', 2),
 (350, 'Trinity', 'Angel Ys', 'Rivas', 'Diouh', 30638942, 65, 'example@gmail.com', '1960-04-15', '2026-03-07', 'En sistema', 'Primaria', 'Femenino', 2),
-(351, 'Jorge', 'Del Valle', 'Sucre', 'Cumana', 7894561, 15, 'example@gmail.com', '2010-06-09', '2026-03-14', 'Diferido', 'Bachillerato', 'Masculino', 4),
-(352, 'Alexander', 'Del Valle', 'Serrada', 'Martinez', 30635956, 51, 'examplee@gmail.com', '1975-03-26', '2026-03-26', 'Diferido', 'Bachillerato', 'Masculino', 3);
+(351, 'Jorge', 'Del Valle', 'Sucre', 'Cumana', 7894561, 15, 'example@gmail.com', '2010-06-09', '2026-03-14', 'En sistema', 'Bachillerato', 'Masculino', 4),
+(352, 'Alexander', 'Del Valle', 'Serrada', 'Martinez', 30635956, 51, 'examplee@gmail.com', '1975-03-26', '2026-03-26', 'En sistema', 'Bachillerato', 'Masculino', 3),
+(500, 'Luisa', 'Fernanda', 'Martinez', 'Blanco', 20000001, 25, 'lfer01@mail.com', '1999-02-10', '2024-01-10', 'En formaci?n', 'Universidad', 'Femenino', 1),
+(501, 'Pedro', 'Luis', 'Gomez', 'Vera', 20000002, 30, 'plg02@mail.com', '1994-06-15', '2024-01-10', 'En formaci?n', 'Bachillerato', 'Masculino', 2),
+(502, 'Ana', 'Maria', 'Diaz', 'Castro', 20000003, 27, 'amd03@mail.com', '1997-09-20', '2024-01-10', 'En formaci?n', 'Universidad', 'Femenino', 1),
+(503, 'Carlos', 'Alberto', 'Rojas', 'Mendoza', 20000004, 35, 'car04@mail.com', '1989-03-05', '2024-01-10', 'En formaci?n', 'Primaria', 'Masculino', 3),
+(504, 'Sofia', 'Isabel', 'Perez', 'Lara', 20000005, 23, 'sip05@mail.com', '2001-07-12', '2024-01-10', 'En formaci?n', 'Universidad', 'Femenino', 4),
+(505, 'Miguel', 'Angel', 'Torres', 'Reyes', 20000006, 42, 'mig06@mail.com', '1982-11-22', '2024-01-10', 'En formaci?n', 'Bachillerato', 'Masculino', 1),
+(506, 'Carmen', 'Andrea', 'Suarez', 'Morales', 20000007, 29, 'cas07@mail.com', '1995-08-14', '2024-01-10', 'En formaci?n', 'Universidad', 'Femenino', 2),
+(507, 'Jose', 'Gregorio', 'Herrera', 'Vega', 20000008, 33, 'jgh08@mail.com', '1991-05-18', '2024-01-10', 'En formaci?n', 'Bachillerato', 'Masculino', 1),
+(508, 'Rosa', 'Elena', 'Flores', 'Acosta', 20000009, 38, 'ref09@mail.com', '1986-01-30', '2024-01-10', 'En formaci?n', 'Primaria', 'Femenino', 3),
+(509, 'Manuel', 'Jose', 'Ortiz', 'Garcia', 20000010, 45, 'mjo10@mail.com', '1979-09-07', '2024-01-10', 'En formaci?n', 'Primaria', 'Masculino', 4),
+(510, 'Gabriela', 'Cecilia', 'Ramirez', 'Molina', 20000011, 31, 'gcr11@mail.com', '1993-12-05', '2024-02-05', 'Inactivo', 'Universidad', 'Femenino', 2),
+(511, 'Hector', 'Luis', 'Vargas', 'Campos', 20000012, 40, 'hlv12@mail.com', '1984-06-25', '2024-02-05', 'Inactivo', 'Bachillerato', 'Masculino', 1),
+(512, 'Beatriz', 'Alejandra', 'Castro', 'Rivas', 20000013, 27, 'bac13@mail.com', '1997-01-14', '2024-02-05', 'Inactivo', 'Universidad', 'Femenino', 3),
+(513, 'Mario', 'Enrique', 'Guzman', 'Pinto', 20000014, 52, 'meg14@mail.com', '1972-10-11', '2024-02-05', 'Inactivo', 'Primaria', 'Masculino', 4),
+(514, 'Lorena', 'Marcela', 'Fuentes', 'Santana', 20000015, 36, 'lmf15@mail.com', '1988-03-22', '2024-02-05', 'Inactivo', 'Bachillerato', 'Femenino', 2),
+(515, 'Diego', 'Mauricio', 'Parra', 'Cruz', 20000016, 29, 'dmp16@mail.com', '1995-07-07', '2024-02-05', 'Inactivo', 'Universidad', 'Masculino', 1),
+(516, 'Monica', 'Ximena', 'Leon', 'Espinoza', 20000017, 44, 'mxl17@mail.com', '1980-09-19', '2024-02-05', 'Inactivo', 'Primaria', 'Femenino', 3),
+(517, 'Andres', 'Felipe', 'Navarro', 'Serrano', 20000018, 33, 'afn18@mail.com', '1991-04-30', '2024-02-05', 'Inactivo', 'Bachillerato', 'Masculino', 1),
+(518, 'Natalia', 'Rocio', 'Ibarra', 'Rios', 20000019, 26, 'nri19@mail.com', '1998-08-12', '2024-02-05', 'Inactivo', 'Universidad', 'Femenino', 2),
+(519, 'Ernesto', 'Raul', 'Mejia', 'Giraldo', 20000020, 48, 'erm20@mail.com', '1976-12-01', '2024-02-05', 'Inactivo', 'Primaria', 'Masculino', 4),
+(520, 'Paola', 'Andrea', 'Cortes', 'Urrea', 20000021, 24, 'pac21@mail.com', '2000-05-09', '2024-03-12', 'Disponible', 'Universidad', 'Femenino', 1),
+(521, 'Oscar', 'Andres', 'Lozano', 'Ossa', 20000022, 37, 'oal22@mail.com', '1987-11-03', '2024-03-12', 'Disponible', 'Bachillerato', 'Masculino', 3),
+(522, 'Cristina', 'Beatriz', 'Duarte', 'Velez', 20000023, 41, 'cbd23@mail.com', '1983-06-18', '2024-03-12', 'Disponible', 'Primaria', 'Femenino', 2),
+(523, 'Javier', 'Ignacio', 'Zapata', 'Arango', 20000024, 28, 'jiz24@mail.com', '1996-02-25', '2024-03-12', 'Disponible', 'Universidad', 'Masculino', 1),
+(524, 'Valentina', 'Carolina', 'Narvaez', 'Bermudez', 20000025, 33, 'vcn25@mail.com', '1991-10-13', '2024-03-12', 'En sistema', 'Bachillerato', 'Femenino', 4),
+(525, 'Roberto', 'Carlos', 'Ayala', 'Restrepo', 20000026, 46, 'rca26@mail.com', '1978-07-29', '2024-03-12', 'En sistema', 'Primaria', 'Masculino', 2),
+(526, 'Adriana', 'Lucia', 'Palacios', 'Mora', 20000027, 29, 'alp27@mail.com', '1995-12-08', '2024-03-12', 'En sistema', 'Universidad', 'Femenino', 1),
+(527, 'German', 'Antonio', 'Hurtado', 'Cano', 20000028, 55, 'gah28@mail.com', '1969-03-15', '2024-03-12', 'En sistema', 'Primaria', 'Masculino', 3),
+(528, 'Sandra', 'Milena', 'Rincon', 'Galvis', 20000029, 38, 'smr29@mail.com', '1986-08-20', '2024-03-12', 'En sistema', 'Bachillerato', 'Femenino', 2),
+(529, 'Felipe', 'Santiago', 'Avila', 'Pabon', 20000030, 31, 'fsa30@mail.com', '1993-04-05', '2024-03-12', 'En sistema', 'Universidad', 'Masculino', 4),
+(530, 'Marcela', 'Johana', 'Ruiz', 'Pineda', 20000031, 27, 'mjr31@mail.com', '1997-05-22', '2024-04-20', 'En sistema', 'Universidad', 'Femenino', 1),
+(531, 'Alberto', 'Jose', 'Beltran', 'Londoño', 20000032, 42, 'ajb32@mail.com', '1982-01-17', '2024-04-20', 'En sistema', 'Bachillerato', 'Masculino', 2),
+(532, 'Nelly', 'Patricia', 'Ochoa', 'Gil', 20000033, 35, 'npo33@mail.com', '1989-09-03', '2024-04-20', 'En sistema', 'Primaria', 'Femenino', 3),
+(533, 'Esteban', 'David', 'Cardenas', 'Franco', 20000034, 30, 'edc34@mail.com', '1994-11-11', '2024-04-20', 'En sistema', 'Universidad', 'Masculino', 1),
+(534, 'Diana', 'Carolina', 'Paz', 'Moreno', 20000035, 40, 'dcp35@mail.com', '1984-06-14', '2024-04-20', 'En sistema', 'Bachillerato', 'Femenino', 4),
+(535, 'Armando', 'Rafael', 'Tovar', 'Soto', 20000036, 49, 'art36@mail.com', '1975-03-28', '2024-04-20', 'En sistema', 'Primaria', 'Masculino', 2),
+(536, 'Veronica', 'Alejandra', 'Mendoza', 'Zamora', 20000037, 28, 'vam37@mail.com', '1996-07-09', '2024-04-20', 'En sistema', 'Universidad', 'Femenino', 1),
+(537, 'Cesar', 'Augusto', 'Paredes', 'Osorio', 20000038, 37, 'cap38@mail.com', '1987-12-19', '2024-04-20', 'En sistema', 'Bachillerato', 'Masculino', 3),
+(538, 'Gloria', 'Esperanza', 'Quintana', 'Carvajal', 20000039, 44, 'geq39@mail.com', '1980-05-02', '2024-04-20', 'En sistema', 'Primaria', 'Femenino', 2),
+(539, 'Jaime', 'Alonso', 'Caicedo', 'Tamayo', 20000040, 32, 'jac40@mail.com', '1992-10-18', '2024-04-20', 'En sistema', 'Universidad', 'Masculino', 4),
+(540, 'Catalina', 'Isabel', 'Rico', 'Guerra', 20000041, 26, 'cir41@mail.com', '1998-01-30', '2024-06-08', 'En sistema', 'Universidad', 'Femenino', 1),
+(541, 'Ramiro', 'Ernesto', 'Bautista', 'Rueda', 20000042, 51, 'reb42@mail.com', '1973-09-14', '2024-06-08', 'En sistema', 'Primaria', 'Masculino', 3),
+(542, 'Sonia', 'Maribel', 'Villamil', 'Uribe', 20000043, 34, 'smv43@mail.com', '1990-06-21', '2024-06-08', 'En sistema', 'Bachillerato', 'Femenino', 2),
+(543, 'Gonzalo', 'Javier', 'Piedrahita', 'Cordoba', 20000044, 29, 'gjp44@mail.com', '1995-02-17', '2024-06-08', 'En sistema', 'Universidad', 'Masculino', 1),
+(544, 'Marina', 'Teresa', 'Correa', 'Orozco', 20000045, 47, 'mtc45@mail.com', '1977-12-03', '2024-06-08', 'En sistema', 'Primaria', 'Femenino', 4),
+(545, 'Humberto', 'Andres', 'Vergara', 'Acevedo', 20000046, 33, 'hav46@mail.com', '1991-08-22', '2024-06-08', 'En sistema', 'Bachillerato', 'Masculino', 2),
+(546, 'Andrea', 'Liliana', 'Saenz', 'Barrera', 20000047, 28, 'als47@mail.com', '1996-05-11', '2024-06-08', 'En sistema', 'Universidad', 'Femenino', 1),
+(547, 'Ivan', 'Jose', 'Andrade', 'Vidal', 20000048, 41, 'ija48@mail.com', '1983-04-06', '2024-06-08', 'En sistema', 'Bachillerato', 'Masculino', 3),
+(548, 'Liliana', 'Maria', 'Diaz', 'Espino', 20000049, 36, 'lmd49@mail.com', '1988-11-02', '2024-06-08', 'En sistema', 'Universidad', 'Femenino', 2),
+(549, 'Nicolas', 'Felipe', 'Cuevas', 'Mesa', 20000050, 45, 'nfc50@mail.com', '1979-07-18', '2024-06-08', 'En sistema', 'Primaria', 'Masculino', 4),
+(550, 'Paula', 'Andrea', 'Benitez', 'Murillo', 20000051, 22, 'pab51@mail.com', '2002-09-09', '2024-08-01', 'En sistema', 'Universidad', 'Femenino', 1),
+(551, 'Rafael', 'Eduardo', 'Mojica', 'Valencia', 20000052, 39, 'rem52@mail.com', '1985-01-25', '2024-08-01', 'En sistema', 'Bachillerato', 'Masculino', 2),
+(552, 'Alejandra', 'Patricia', 'Barragan', 'Heredia', 20000053, 31, 'apb53@mail.com', '1993-03-30', '2024-08-01', 'En sistema', 'Universidad', 'Femenino', 3),
+(553, 'Julio', 'Cesar', 'Fajardo', 'Segura', 20000054, 48, 'jcf54@mail.com', '1976-12-14', '2024-08-01', 'En sistema', 'Primaria', 'Masculino', 4),
+(554, 'Camila', 'Fernanda', 'Olarte', 'Restrepo', 20000055, 27, 'cfo55@mail.com', '1997-04-17', '2024-08-01', 'En sistema', 'Universidad', 'Femenino', 1),
+(555, 'Alfonso', 'Ricardo', 'Rueda', 'Cala', 20000056, 53, 'arr56@mail.com', '1971-08-05', '2024-08-01', 'En sistema', 'Primaria', 'Masculino', 2),
+(556, 'Isabel', 'Cristina', 'Caballero', 'Bastidas', 20000057, 34, 'icc57@mail.com', '1990-10-28', '2024-08-01', 'En sistema', 'Bachillerato', 'Femenino', 3),
+(557, 'Rodrigo', 'Antonio', 'Jaramillo', 'Serrano', 20000058, 41, 'raj58@mail.com', '1983-06-09', '2024-08-01', 'En sistema', 'Universidad', 'Masculino', 1),
+(558, 'Victoria', 'Eugenia', 'Aguilar', 'Pardo', 20000059, 38, 'vea59@mail.com', '1986-02-14', '2024-08-01', 'En sistema', 'Bachillerato', 'Femenino', 4),
+(559, 'Samuel', 'David', 'Zuluaga', 'Rengifo', 20000060, 46, 'sdz60@mail.com', '1978-11-19', '2024-08-01', 'En sistema', 'Primaria', 'Masculino', 2);
 
 -- --------------------------------------------------------
 
@@ -549,8 +628,68 @@ INSERT INTO `tb_participante_curso` (`id_participante_curso`, `id_participante`,
 (479, 349, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'Pendiente'),
 (480, 346, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'Pendiente'),
 (481, 350, 109, '2026-03-08', '2026-03-17', '2026-03-30', 'Pendiente'),
-(482, 352, 113, '2026-03-27', '2026-04-06', '2026-04-24', 'En formación'),
-(483, 351, 113, '2026-03-27', '2026-04-06', '2026-04-24', 'En formación');
+(482, 352, 113, '2026-03-27', '2026-04-06', '2026-04-24', 'Pendiente'),
+(483, 351, 113, '2026-03-27', '2026-04-06', '2026-04-24', 'Pendiente'),
+(600, 500, 400, '2024-01-06', '2024-01-10', '2024-04-05', 'Aprobado'),
+(601, 501, 400, '2024-01-06', '2024-01-10', '2024-04-05', 'Aprobado'),
+(602, 502, 400, '2024-01-06', '2024-01-10', '2024-04-05', 'Aprobado'),
+(603, 503, 400, '2024-01-07', '2024-01-10', '2024-04-05', 'Aprobado'),
+(604, 504, 400, '2024-01-07', '2024-01-10', '2024-04-05', 'Aprobado'),
+(605, 505, 400, '2024-01-07', '2024-01-10', '2024-04-05', 'Aprobado'),
+(606, 506, 400, '2024-01-08', '2024-01-10', '2024-04-05', 'Aprobado'),
+(607, 507, 400, '2024-01-08', '2024-01-10', '2024-04-05', 'Aprobado'),
+(608, 508, 400, '2024-01-08', '2024-01-10', '2024-04-05', 'Aprobado'),
+(609, 509, 400, '2024-01-09', '2024-01-10', '2024-04-05', 'Reprobado'),
+(610, 510, 400, '2024-01-09', '2024-01-10', '2024-04-05', 'Aprobado'),
+(611, 511, 400, '2024-01-09', '2024-01-10', '2024-04-05', 'Aprobado'),
+(612, 512, 401, '2024-05-27', '2024-06-10', '2024-09-15', 'Aprobado'),
+(613, 513, 401, '2024-05-27', '2024-06-10', '2024-09-15', 'Aprobado'),
+(614, 514, 401, '2024-05-28', '2024-06-10', '2024-09-15', 'Reprobado'),
+(615, 515, 401, '2024-05-28', '2024-06-10', '2024-09-15', 'Aprobado'),
+(616, 516, 401, '2024-05-29', '2024-06-10', '2024-09-15', 'Aprobado'),
+(617, 517, 401, '2024-05-29', '2024-06-10', '2024-09-15', 'Aprobado'),
+(618, 518, 401, '2024-05-30', '2024-06-10', '2024-09-15', 'Aprobado'),
+(619, 519, 401, '2024-05-30', '2024-06-10', '2024-09-15', 'Aprobado'),
+(620, 520, 401, '2024-05-31', '2024-06-10', '2024-09-15', 'Aprobado'),
+(621, 521, 401, '2024-05-31', '2024-06-10', '2024-09-15', 'Aprobado'),
+(622, 522, 401, '2024-06-01', '2024-06-10', '2024-09-15', 'Aprobado'),
+(623, 523, 401, '2024-06-01', '2024-06-10', '2024-09-15', 'Reprobado'),
+(624, 524, 402, '2024-02-20', '2024-03-01', '2024-05-20', 'Pendiente'),
+(625, 525, 402, '2024-02-20', '2024-03-01', '2024-05-20', 'Pendiente'),
+(626, 526, 402, '2024-02-21', '2024-03-01', '2024-05-20', 'Pendiente'),
+(627, 527, 402, '2024-02-21', '2024-03-01', '2024-05-20', 'Pendiente'),
+(628, 528, 402, '2024-02-22', '2024-03-01', '2024-05-20', 'Pendiente'),
+(629, 529, 402, '2024-02-22', '2024-03-01', '2024-05-20', 'Pendiente'),
+(630, 530, 402, '2024-02-23', '2024-03-01', '2024-05-20', 'Pendiente'),
+(631, 531, 402, '2024-02-23', '2024-03-01', '2024-05-20', 'Pendiente'),
+(632, 532, 402, '2024-02-24', '2024-03-01', '2024-05-20', 'Pendiente'),
+(633, 533, 402, '2024-02-24', '2024-03-01', '2024-05-20', 'Pendiente'),
+(634, 534, 402, '2024-02-25', '2024-03-01', '2024-05-20', 'Pendiente'),
+(635, 535, 402, '2024-02-25', '2024-03-01', '2024-05-20', 'Pendiente'),
+(636, 536, 402, '2024-02-26', '2024-03-01', '2024-05-20', 'Pendiente'),
+(637, 537, 403, '2024-07-20', '2024-08-01', '2024-10-10', 'Pendiente'),
+(638, 538, 403, '2024-07-20', '2024-08-01', '2024-10-10', 'Pendiente'),
+(639, 539, 403, '2024-07-21', '2024-08-01', '2024-10-10', 'Pendiente'),
+(640, 540, 403, '2024-07-21', '2024-08-01', '2024-10-10', 'Pendiente'),
+(641, 541, 404, '2024-08-20', '2024-09-01', '2024-11-15', 'Pendiente'),
+(642, 542, 404, '2024-08-20', '2024-09-01', '2024-11-15', 'Pendiente'),
+(643, 543, 404, '2024-08-21', '2024-09-01', '2024-11-15', 'Pendiente'),
+(644, 544, 404, '2024-08-21', '2024-09-01', '2024-11-15', 'Pendiente'),
+(645, 545, 405, '2024-09-22', '2024-10-01', '2024-12-10', 'Pendiente'),
+(646, 546, 405, '2024-09-22', '2024-10-01', '2024-12-10', 'Pendiente'),
+(647, 547, 405, '2024-09-23', '2024-10-01', '2024-12-10', 'Pendiente'),
+(648, 548, 405, '2024-09-23', '2024-10-01', '2024-12-10', 'Pendiente'),
+(649, 549, 406, '2024-03-28', '2024-04-10', '2024-06-10', 'Pendiente'),
+(650, 550, 406, '2024-03-28', '2024-04-10', '2024-06-10', 'Pendiente'),
+(651, 551, 406, '2024-03-29', '2024-04-10', '2024-06-10', 'Pendiente'),
+(652, 552, 407, '2024-10-29', '2024-11-05', '2025-01-15', 'Pendiente'),
+(653, 553, 407, '2024-10-29', '2024-11-05', '2025-01-15', 'Pendiente'),
+(654, 554, 407, '2024-10-30', '2024-11-05', '2025-01-15', 'Pendiente'),
+(655, 555, 408, '2024-06-17', '2024-07-01', '2024-09-05', 'Pendiente'),
+(656, 556, 408, '2024-06-17', '2024-07-01', '2024-09-05', 'Pendiente'),
+(657, 557, 408, '2024-06-18', '2024-07-01', '2024-09-05', 'Pendiente'),
+(658, 558, 409, '2024-04-20', '2024-05-02', '2024-07-20', 'Pendiente'),
+(659, 559, 409, '2024-04-20', '2024-05-02', '2024-07-20', 'Pendiente');
 
 -- --------------------------------------------------------
 
@@ -1052,7 +1191,7 @@ ALTER TABLE `tb_areaformativa`
 -- AUTO_INCREMENT de la tabla `tb_curso`
 --
 ALTER TABLE `tb_curso`
-  MODIFY `id_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+  MODIFY `id_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=410;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_discapacidad`
@@ -1082,13 +1221,13 @@ ALTER TABLE `tb_estatuscurso`
 -- AUTO_INCREMENT de la tabla `tb_historial`
 --
 ALTER TABLE `tb_historial`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_metas`
 --
 ALTER TABLE `tb_metas`
-  MODIFY `id_meta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id_meta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_modalidad`
@@ -1112,13 +1251,13 @@ ALTER TABLE `tb_objetivos`
 -- AUTO_INCREMENT de la tabla `tb_participante`
 --
 ALTER TABLE `tb_participante`
-  MODIFY `id_participante` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=353;
+  MODIFY `id_participante` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=560;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_participante_curso`
 --
 ALTER TABLE `tb_participante_curso`
-  MODIFY `id_participante_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=484;
+  MODIFY `id_participante_curso` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=660;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_ppl`

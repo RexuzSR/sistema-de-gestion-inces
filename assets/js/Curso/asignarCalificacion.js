@@ -64,6 +64,7 @@ $(document).ready(function () {
 
     // Guarda el estado actual del curso mientras el modal está abierto
     let estadoActualCurso = null;
+    let cambiosSinGuardar = false;
 
     // =========================================================
     // ABRIR MODAL GESTIÓN (.button.config)
@@ -73,6 +74,8 @@ $(document).ready(function () {
         $('#btnFinalizar').data('id', idCurso);
         $('#btnGuardar').data('id', idCurso);
         $('#btnReiniciarCurso').data('id', idCurso);
+        
+        cambiosSinGuardar = false;
 
         fetch(`../../app/controlador/Curso/obtenerParticipantes.php?id_curso=${idCurso}`)
             .then(r => r.json())
@@ -173,6 +176,7 @@ $(document).ready(function () {
     }
 
     $(document).on('change', '.estado-select', function() {
+        cambiosSinGuardar = true;
         validarNotasCompletas();
     });
 
@@ -259,6 +263,7 @@ $(document).ready(function () {
                 data: JSON.stringify({id_curso: idCurso, participantes_notas: notas}),
                 success: function (resp) {
                     if (resp.success) {
+                        cambiosSinGuardar = false;
                         toastr.success('¡Notas guardadas correctamente!');
                         $('#confirmarGuardarModal').modal('hide');
                         // Reabrir modal para reflejar notas y habilitar Reiniciar
@@ -282,6 +287,11 @@ $(document).ready(function () {
     // =========================================================
     $('#btnReiniciarCurso').on('click', function () {
         const idCurso = $(this).data('id');
+
+        if (cambiosSinGuardar) {
+            toastr.warning('Hay cambios sin guardar en las calificaciones. Por favor, guarda los cambios antes de reiniciar el curso.');
+            return;
+        }
 
         if (estadoActualCurso === 5) {
             // --- CULMINADO ---
