@@ -24,6 +24,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('X-Content-Type-Options: nosniff');
 
 require_once '../../modelo/conexion.php';
+require_once __DIR__ . '/api_reportes_cursos_trayectoria.php';
 
 try {
     $conexion = new Conexion();
@@ -155,6 +156,23 @@ try {
                 break;
             }
             echo json_encode(getDetalleParticipante($conn, $cedula));
+            break;
+
+        case 'trayectoria_cursos_resumen':
+            echo json_encode(getTrayectoriaCursosResumen($conn));
+            break;
+
+        case 'trayectoria_cursos':
+            echo json_encode(getTrayectoriaCursos($conn));
+            break;
+
+        case 'detalle_curso_trayectoria':
+            $idCurso = intval($_GET['id_curso'] ?? 0);
+            if ($idCurso <= 0) {
+                echo json_encode(['error' => 'ID de curso no válido']);
+                break;
+            }
+            echo json_encode(getDetalleCursoTrayectoria($conn, $idCurso));
             break;
 
         default:
@@ -681,8 +699,7 @@ function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
                 CONCAT(p.primer_nombre, ' ', p.primer_apellido) as nombre_completo,
                 p.cedula,
                 c.nombre_curso,
-                pc.FechaFin as fecha_aprobacion,
-                pc.calificacion
+                pc.FechaFin as fecha_aprobacion
             FROM tb_participante_curso pc
             INNER JOIN tb_curso c ON c.id_curso = pc.id_curso
             INNER JOIN tb_participante p ON p.id_participante = pc.id_participante
@@ -690,6 +707,7 @@ function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
               pc.estatus_participante = 'Aprobado'
               AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
         ";
+
         $params = [
             ':fecha_inicio' => $fechaInicio,
             ':fecha_fin' => $fechaFin

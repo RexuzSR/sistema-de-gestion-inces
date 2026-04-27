@@ -86,6 +86,7 @@ $conn = null;
 <script src="../../assets/js/Reporte/RE-Curso-Total.js"></script>
 <script src="../../assets/js/Reporte/RE-Curso-MasParticipantes.js"></script>
 <script src="../../assets/js/Reporte/RE-Curso-MasRequerido.js"></script>
+<script src="../../assets/js/Reporte/RE-Curso-Trayectoria.js"></script>
 <script src="../../assets/js/Reporte/reportes-docentes.js"></script>
 <script src="../../assets/js/Reporte/RE-Docente-MasSolicitados.js"></script>
 <script src="../../assets/js/Reporte/RE-Docente-Total.js"></script>

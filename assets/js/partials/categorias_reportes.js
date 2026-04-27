@@ -18,9 +18,10 @@ var categoriasReportes = [
         bgColor: "rgba(25,135,84,0.9)", lightColor: "rgba(25,135,84,0.5)",
         darkColor: "rgba(15,100,60,0.95)", bodyBgColor: "rgba(25,135,84,0.06)",
         reportes: [
-            { id: 3, nombre: "Total de Cursos",              funcion: 'cargarTotalCursos' },
-            { id: 4, nombre: "Cursos con más Participantes", funcion: 'cargarCursosMasParticipantes' },
-            { id: 5, nombre: "Curso más Requerido",          funcion: 'cargarCursoMasRequerido' }
+            { id: 3,  nombre: "Total de Cursos",              funcion: 'cargarTotalCursos' },
+            { id: 4,  nombre: "Cursos con más Participantes", funcion: 'cargarCursosMasParticipantes' },
+            { id: 5,  nombre: "Curso más Requerido",          funcion: 'cargarCursoMasRequerido' },
+            { id: 13, nombre: "Trayectoria de Cursos",       funcion: 'cargarTrayectoriaCursos' }
         ]
     },
     {
