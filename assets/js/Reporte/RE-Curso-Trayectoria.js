@@ -438,27 +438,79 @@ function curTrayRenderChart(d) {
     const panel = document.getElementById('curTrayDetallePanel');
     const parts = d.participantes || [];
     
-    const mesesMap = {};
     const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    
+    let startYear, startMonth, endYear, endMonth;
+    if (d.fecha_inicio && d.fecha_inicio !== '0000-00-00') {
+        const [sy, sm] = d.fecha_inicio.split('-');
+        startYear = parseInt(sy, 10); startMonth = parseInt(sm, 10);
+    }
+    if (d.fecha_fin && d.fecha_fin !== '0000-00-00') {
+        const [ey, em] = d.fecha_fin.split('-');
+        endYear = parseInt(ey, 10); endMonth = parseInt(em, 10);
+    }
     
     parts.forEach(p => {
         if (!p.fecha_inscripcion || p.fecha_inscripcion === '0000-00-00') return;
         const [y, m] = p.fecha_inscripcion.split('-');
-        const key = `${y}-${m}`;
-        const nombreMes = `${mesesNombres[parseInt(m, 10)-1]} ${y}`;
-        
+        const py = parseInt(y, 10), pm = parseInt(m, 10);
+        if (!startYear || py < startYear || (py === startYear && pm < startMonth)) {
+            startYear = py; startMonth = pm;
+        }
+        if (!endYear || py > endYear || (py === endYear && pm > endMonth)) {
+            endYear = py; endMonth = pm;
+        }
+    });
+
+    if (!startYear) {
+        const now = new Date();
+        startYear = endYear = now.getFullYear();
+        startMonth = endMonth = now.getMonth() + 1;
+    }
+    if (!endYear) { endYear = startYear; endMonth = startMonth; }
+
+    const labels = [];
+    const dataPoints = [];
+    const pointColors = [];
+    const monthKeys = [];
+    const mesesMap = {};
+    
+    parts.forEach(p => {
+        if (!p.fecha_inscripcion || p.fecha_inscripcion === '0000-00-00') return;
+        const [y, m] = p.fecha_inscripcion.split('-');
+        const key = `${y}-${m.padStart(2, '0')}`;
         if (!mesesMap[key]) {
-            mesesMap[key] = { label: nombreMes, count: 0, sortKey: key, participantes: [] };
+            mesesMap[key] = { count: 0, participantes: [] };
         }
         mesesMap[key].count++;
         mesesMap[key].participantes.push(p);
     });
+
+    let curY = startYear, curM = startMonth;
+    while (curY < endYear || (curY === endYear && curM <= endMonth)) {
+        const key = `${curY}-${String(curM).padStart(2, '0')}`;
+        const nombreMes = `${mesesNombres[curM - 1]} ${curY}`;
+        
+        labels.push(nombreMes);
+        monthKeys.push(key);
+        
+        if (mesesMap[key]) {
+            mesesMap[key].label = nombreMes;
+            dataPoints.push(mesesMap[key].count);
+            pointColors.push('#0dcaf0');
+        } else {
+            mesesMap[key] = { label: nombreMes, count: 0, participantes: [] };
+            dataPoints.push(0);
+            pointColors.push('#adb5bd'); // Gray for no data
+        }
+        
+        curM++;
+        if (curM > 12) { curM = 1; curY++; }
+    }
     
-    const sortedKeys = Object.keys(mesesMap).sort();
-    
-    const labels = sortedKeys.map(k => mesesMap[k].label);
-    const dataPoints = sortedKeys.map(k => mesesMap[k].count);
-    
+    const fueDiferido = d.estatus === 'Diferido' || (d.nombre_curso || '').includes('(Diferido)');
+    const warningDiferido = fueDiferido ? `<div class="alert alert-warning mt-3 py-2 text-center" style="font-size:0.85rem;"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Atención:</strong> El curso muestra un estatus histórico o actual de Diferido.</div>` : '';
+
     panel.innerHTML = `
     <div class="card border-0 shadow-sm mb-4" style="border-radius:16px; overflow:hidden;">
         <div class="card-header bg-light border-0 p-4">
@@ -469,6 +521,7 @@ function curTrayRenderChart(d) {
                 </div>
                 ${curTrayBadgeEstatus(d.estatus)}
             </div>
+            ${warningDiferido}
         </div>
         <div class="card-body p-4">
             <h6 class="fw-bold mb-3 text-center text-muted text-uppercase" style="letter-spacing: 0.05em; font-size: 0.85rem;">
@@ -503,10 +556,10 @@ function curTrayRenderChart(d) {
                 borderColor: '#0dcaf0',
                 backgroundColor: gradient,
                 borderWidth: 2,
-                pointBackgroundColor: '#0dcaf0',
+                pointBackgroundColor: pointColors.length > 0 ? pointColors : '#0dcaf0',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointRadius: 5,
+                pointRadius: 6,
                 pointHoverRadius: 8,
                 fill: true,
                 tension: 0.4
@@ -518,8 +571,8 @@ function curTrayRenderChart(d) {
             onClick: (e, elements) => {
                 if (elements.length > 0) {
                     const index = elements[0].index;
-                    if (sortedKeys.length > 0) {
-                        const key = sortedKeys[index];
+                    if (monthKeys.length > 0) {
+                        const key = monthKeys[index];
                         const monthData = mesesMap[key];
                         curTrayRenderDetalle(d, monthData);
                     }
@@ -532,7 +585,8 @@ function curTrayRenderChart(d) {
                     title: { display: true, text: 'Participantes Inscritos', color: '#6c757d', font: { weight: 'bold' } }
                 },
                 x: {
-                    grid: { display: false }
+                    grid: { display: false },
+                    offset: true // This pushes points away from the Y-axis
                 }
             },
             plugins: {
