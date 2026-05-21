@@ -457,7 +457,9 @@ class Curso {
                         a.nombre_ambito,
                         c.fecha_creacion,
                         c.fecha_actualizacion,
-                        (SELECT COUNT(*) FROM tb_participante_curso pc WHERE pc.id_curso = c.id_curso) AS registros_participante_curso
+                        (SELECT COUNT(*) FROM tb_participante_curso pc WHERE pc.id_curso = c.id_curso) AS registros_participante_curso,
+                        (c.num_inscritos < IFNULL(c.min_participantes, 12)) AS sin_participantes_suficientes,
+                        NOT EXISTS (SELECT 1 FROM tb_docente_curso dc2 WHERE dc2.id_curso = c.id_curso) AS sin_docente
                     FROM tb_curso c
                     LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
                     LEFT JOIN tb_areaformativa af ON c.id_areaFormativa = af.id_areaFormativa
@@ -1169,7 +1171,7 @@ class Curso {
                     FROM tb_participante_curso pc
                     INNER JOIN tb_participante p ON pc.id_participante = p.id_participante
                     WHERE pc.id_curso = :id_curso
-                    AND pc.estatus_participante IN ('Pendiente', 'En formación')";
+                    AND pc.estatus_participante IN ('Pendiente', 'En formación', 'Aprobado', 'Reprobado', 'Ausente')";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_curso', $id_curso, PDO::PARAM_INT);

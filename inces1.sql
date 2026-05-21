@@ -108,7 +108,6 @@ CREATE TABLE `tb_curso` (
 --
 
 INSERT INTO `tb_curso` (`id_curso`, `nombre_curso`, `fecha_inicio`, `fecha_limite_inicio`, `fecha_fin`, `horas_totales`, `horas_por_clase`, `horas_completadas`, `max_participantes`, `min_participantes`, `num_inscritos`, `id_modalidad`, `tipo_formacion`, `id_estatusCurso`, `id_sectoreconomico`, `id_subtipo`, `id_areaFormativa`, `id_ambito`, `id_ppl`, `id_nombre_especifico`, `turno`, `programa_formacion`, `fecha_creacion`, `fecha_actualizacion`) VALUES
-(91, 'Prostitución-Avanzada', '2026-01-08', NULL, '2026-03-06', NULL, NULL, 0.00, 25, 10, 1, 1, 'Unidad Curricular', 5, NULL, NULL, 7, NULL, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-01-07 08:15:22', '2026-03-07 23:13:13'),
 (95, 'constructores', '2026-01-21', '2026-01-02', '2026-03-12', 60.00, 5.00, 0.00, 40, 10, 3, 2, 'Unidad Curricular', 5, 1, 3, 1, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-01-22 05:23:42', '2026-03-13 03:12:59'),
 (96, 'Ingles', '2026-01-22', '0000-00-00', '2026-02-12', 5.00, 4.00, 0.00, 40, 10, 3, 1, 'Unidad Curricular', 5, 3, 2, 6, 5, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-01-22 05:27:19', '2026-03-07 23:13:13'),
 (108, 'constructor', '2026-03-17', '2026-03-26', '2026-03-30', 40.00, 4.00, 0.00, 40, 12, 0, 2, 'Unidad Curricular', 5, 2, 3, 1, 1, NULL, NULL, 'Mañana', 'Programa de Formación Productiva (PFP)', '2026-03-08 00:35:51', '2026-03-31 03:09:21'),

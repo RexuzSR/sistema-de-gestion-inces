@@ -1,775 +1,890 @@
-// ========== REPORTE DE METAS ==========
-// Archivo: assets/js/Reporte/reportes-metas.js
-// Estilo visual unificado con el sistema de reportes INCES
+// ========== REPORTE: METAS POR AMBITO ==========
+// Archivo: reportes-metas.js
+// Funcion: cargarMetaPorAmbito
+// Conectado a: ../controlador/Reporte/api_reportes.php
 
-// Variables globales para filtros
-let currentFilterType = 'anual'; // 'trimestral' o 'anual'
-let currentAnio = new Date().getFullYear();
-let currentTrimestre = 1;
-let rawMetasData = []; // Almacenar datos originales sin procesar
+const API_URL_METAS = '../controlador/Reporte/api_reportes.php';
 
-// Función principal que espera el sistema de reportes
-function cargarMetaPorAmbito() {
-    cargarReporteMetas();
+let metasMensualesData   = [];
+let graficoMetasInstance = null;
+let cacheMetasAnuales    = {};
+let anioMetasBase        = null;
+
+let tiposActivosMetas  = new Set(['cumplimiento']);
+let aniosActivosMetas  = [];
+let tipoGraficoMetas   = 'line';
+const MAX_ANIOS_METAS   = 3;
+
+let panelActivoMetas   = null;
+let anioTablaMetas     = null;
+
+const COLOR_BASE_METAS = {
+    cumplimiento: [34, 197, 94],
+    noCumplidas:  [239, 68, 68],
+    cobertura:    [59, 130, 246]
+};
+
+const METAS_COLORES_AMBITO = [
+    { fill:'#3b82f6', light:'#eff6ff', border:'#bfdbfe', text:'#1d4ed8' },
+    { fill:'#22c55e', light:'#f0fdf4', border:'#bbf7d0', text:'#15803d' },
+    { fill:'#f59e0b', light:'#fffbeb', border:'#fde68a', text:'#b45309' },
+    { fill:'#ef4444', light:'#fef2f2', border:'#fecaca', text:'#b91c1c' },
+    { fill:'#8b5cf6', light:'#f5f3ff', border:'#ddd6fe', text:'#6d28d9' },
+    { fill:'#0891b2', light:'#ecfeff', border:'#a5f3fc', text:'#0e7490' },
+    { fill:'#ec4899', light:'#fdf2f8', border:'#fbcfe8', text:'#be185d' },
+    { fill:'#10b981', light:'#ecfdf5', border:'#a7f3d0', text:'#047857' },
+];
+
+function colorBordeMetas(tipo, idxAnio, totalAnios) {
+    const [r, g, b] = COLOR_BASE_METAS[tipo];
+    const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.50;
+    const h = v => Math.round(v * f).toString(16).padStart(2, '0');
+    return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-// Función de inicialización para compatibilidad
-function iniciarReporteMetas() {
-    cargarReporteMetas();
+function colorFillMetas(tipo, idxAnio, totalAnios, alpha = 0.18) {
+    const [r, g, b] = COLOR_BASE_METAS[tipo];
+    const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.50;
+    return `rgba(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)},${alpha})`;
 }
 
-async function cargarReporteMetas() {
-    const contentDiv = document.getElementById('reportContent');
-    if (!contentDiv) {
-        console.error('No se encontró el contenedor reportContent');
-        return;
+function obtenerNombresMesesMetas() {
+    return ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+}
+
+function obtenerAniosDisponiblesMetas() {
+    const hoy = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => hoy - i);
+}
+
+function destruirGraficoMetas() {
+    if (graficoMetasInstance?.destroy) {
+        graficoMetasInstance.destroy();
+        graficoMetasInstance = null;
+    }
+}
+
+function initTooltipsMetas(root) {
+    if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
+    root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+}
+
+async function fetchDatosAnualMetas(anio) {
+    if (cacheMetasAnuales[anio]) return cacheMetasAnuales[anio];
+
+    const res = await fetch(`${API_URL_METAS}?accion=metas_por_ambito&anio=${anio}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    cacheMetasAnuales[anio] = data;
+    return data;
+}
+
+function generarDatosAnualMetas(anio) {
+    return cacheMetasAnuales[anio] || [];
+}
+
+function procesarMetas(rawList, anio) {
+    const ambitoIdx = {};
+    let ci = 0;
+    
+    return rawList.map(m => {
+        const obj  = parseInt(m.meta_objetivo)       || 0;
+        const form = parseInt(m.estudiantes_formados) || 0;
+        const pct  = obj > 0 ? parseFloat(((form / obj) * 100).toFixed(2)) : 0;
+        const amb  = m.nombre_ambito || 'Sin ambito';
+        if (!(amb in ambitoIdx)) ambitoIdx[amb] = ci++;
+        const col  = METAS_COLORES_AMBITO[ambitoIdx[amb] % METAS_COLORES_AMBITO.length];
+
+        let periodo = m.periodo_tiempo || '';
+        if (!periodo && m.fecha_inicio && m.fecha_fin) {
+            const a = new Date(m.fecha_inicio), b = new Date(m.fecha_fin);
+            periodo = `${a.toLocaleDateString('es-ES')} – ${b.toLocaleDateString('es-ES')}`;
+        }
+        if (!periodo) periodo = '—';
+
+        const yi = m.fecha_inicio ? new Date(m.fecha_inicio).getFullYear() : null;
+        const yf = m.fecha_fin    ? new Date(m.fecha_fin).getFullYear()    : null;
+        let vigencia = '—';
+        if (yi && yf && yi !== yf) vigencia = `${yi} – ${yf}`;
+        else if (yi) vigencia = `${yi}`;
+        else if (yf) vigencia = `${yf}`;
+
+        const mesInicio = m.fecha_inicio ? new Date(m.fecha_inicio).getMonth() : null;
+        
+        return { 
+            id: m.id_meta || Math.random(), 
+            nombre_ambito: amb, 
+            tipo_objetivo: m.tipo_objetivo || 'Aprobados',
+            meta_objetivo: obj, 
+            estudiantes_formados: form, 
+            pct, 
+            estado: m.estado || 'Activa',
+            periodo_tiempo: periodo, 
+            vigencia, 
+            color: col, 
+            fecha_inicio: m.fecha_inicio, 
+            fecha_fin: m.fecha_fin,
+            mes: mesInicio,
+            anio: yi || anio
+        };
+    });
+}
+
+function calcularCumplimientoMensual(metas, anio) {
+    const meses = Array(12).fill().map(() => ({ objetivo: 0, formados: 0, pct: 0 }));
+    
+    metas.forEach(meta => {
+        if (meta.anio === anio && meta.mes !== null) {
+            meses[meta.mes].objetivo += meta.meta_objetivo;
+            meses[meta.mes].formados += meta.estudiantes_formados;
+        }
+    });
+    
+    meses.forEach((mes, idx) => {
+        if (mes.objetivo > 0) {
+            mes.pct = (mes.formados / mes.objetivo) * 100;
+        }
+        mes.mes = obtenerNombresMesesMetas()[idx];
+    });
+    
+    return meses;
+}
+
+async function cargarMetaPorAmbito() {
+    console.log('Iniciando cargarMetaPorAmbito...');
+    
+    // Implementar tabs si están disponibles (desde reportes.js)
+    if (typeof window.crearTabs === 'function') {
+        window.crearTabs(4, 11);
     }
     
-    // Mostrar loader con estilo moderno
+    const contentDiv  = document.getElementById('reportContent');
+    const categoriaId = window.currentCategoryId || 4;
+    const categorias  = window.categoriasReportes || [];
+    const categoria   = categorias.find(c => c.id === categoriaId) || { color: 'danger' };
+    const hoy         = new Date().getFullYear();
+    const aniosDisp    = obtenerAniosDisponiblesMetas();
+
+    destruirGraficoMetas();
+    cacheMetasAnuales     = {};
+    panelActivoMetas      = null;
+    anioMetasBase         = hoy;
+    anioTablaMetas        = hoy;
+    tiposActivosMetas     = new Set(['cumplimiento']);
+    aniosActivosMetas     = [hoy];
+    tipoGraficoMetas      = 'line';
+
+    const svgPlus = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
+    const svgX    = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
+
     contentDiv.innerHTML = `
-        <div class="text-center py-5">
-            <div class="rp-spinner mx-auto"></div>
-            <p class="mt-3 text-muted" style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">
-                Cargando datos de metas...
-            </p>
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-${categoria.color} text-white">
+            <h4 class="mb-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="me-2 mb-1">
+                    <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+                    <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2"/>
+                </svg>Metas Totales
+            </h4>
         </div>
-    `;
-    
-    const categoriasReportes = window.categoriasReportes || [];
-    const currentCategoryId = window.currentCategoryId;
-    const categoria = categoriasReportes.find(c => c.id === currentCategoryId) || { color: 'primary' };
+        <div class="card-body">
+
+            <div id="loadingMetas" class="text-center py-5">
+                <div class="spinner-border text-${categoria.color}" role="status"></div>
+                <p class="mt-3 text-muted" id="loadingMsgMetas">Cargando datos de metas...</p>
+            </div>
+
+            <div id="errorMetas" class="alert alert-danger" style="display:none;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorMsgMetas">Error al cargar los datos.</span>
+            </div>
+
+            <div id="contenidoMetas" style="display:none;">
+
+                <div id="kpiCardsMetas"></div>
+                <div id="panelDetalleWrapperMetas" style="display:none;" class="mb-3"></div>
+
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body py-3">
+                        <div class="d-flex flex-wrap align-items-start gap-3">
+
+                            <div style="flex:1 1 auto;min-width:220px;">
+                                <div class="rp-toolbar-label mb-2">Metrica a representar</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-sm btn-outline-success btn-tipo-meta active" data-tipo="cumplimiento">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>Cumplimiento
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger btn-tipo-meta" data-tipo="noCumplidas">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/><path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/></svg>No Cumplidas
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary btn-tipo-meta" data-tipo="cobertura">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>Cobertura
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btnLimpiarTiposMetas">${svgX} Limpiar</button>
+                                </div>
+                            </div>
+
+                            <div class="rp-vdivider d-none d-md-block"></div>
+
+                            <div style="flex:0 1 auto;min-width:200px;">
+                                <div class="rp-toolbar-label mb-2">
+                                    Anios a comparar
+                                    <span id="metasAnioLimiteAviso" class="badge bg-warning text-dark ms-1" style="display:none;font-size:.65rem;">max. ${MAX_ANIOS_METAS}</span>
+                                </div>
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    <select class="form-select form-select-sm" id="selectAnioMetasGrafico" style="width:90px;">
+                                        ${aniosDisp.map(a => `<option value="${a}">${a}</option>`).join('')}
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btnAddAnioMetasGrafico">${svgPlus} Agregar</button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btnLimpiarAniosMetas">Limpiar</button>
+                                </div>
+                                <div id="chipsAniosMetas" class="d-flex gap-1 flex-wrap mt-2"></div>
+                            </div>
+
+                            <div class="rp-vdivider d-none d-md-block"></div>
+
+                            <div style="flex:0 0 auto;">
+                                <div class="rp-toolbar-label mb-2">Tipo de grafica</div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-secondary btn-chart-type active" id="btnChartLineMetas" data-tipo="line" title="Lineas">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/></svg> Lineas
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary btn-chart-type" id="btnChartBarMetas" data-tipo="bar" title="Torres">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/></svg> Torres
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3 text-muted fw-semibold" id="tituloGraficoMetas"></h6>
+                        <div id="graficoWrapperMetas" class="rp-chart-wrap rp-chart-wrap--lg"></div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <h5 class="card-title mb-0">
+                                    Detalle de Metas — <span id="anioSeleccionadoMetas">${hoy}</span>
+                                </h5>
+                                <select id="selectAnioTablaMetas" class="form-select form-select-sm" style="width:110px;">
+                                    ${aniosDisp.map(a => `<option value="${a}" ${a===hoy?'selected':''}>${a}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <div id="tablaMetasContainer"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>`;
+
+    initTooltipsMetas(contentDiv);
+    await cargarDatosMetas(hoy, true);
+
+    document.getElementById('selectAnioTablaMetas')?.addEventListener('change', async (e) => {
+        const nuevoAnio = parseInt(e.target.value);
+        if (nuevoAnio > new Date().getFullYear()) return;
+        await cambiarAnioTablaMetas(nuevoAnio);
+    });
+}
+
+async function cargarDatosMetas(anio, esCargaInicial = false) {
+    const loadEl   = document.getElementById('loadingMetas');
+    const errorEl  = document.getElementById('errorMetas');
+    const contenEl = document.getElementById('contenidoMetas');
+
+    if (loadEl)   loadEl.style.display   = 'block';
+    if (errorEl)  errorEl.style.display  = 'none';
+    if (contenEl) contenEl.style.display = 'none';
+
+    const msgEl = document.getElementById('loadingMsgMetas');
+    if (msgEl) msgEl.textContent = `Cargando datos de metas del año ${anio}...`;
+
+    const estadoAntes = esCargaInicial ? null : {
+        tiposActivos: new Set(tiposActivosMetas),
+        aniosActivos: [...aniosActivosMetas]
+    };
 
     try {
-        const anioActual = new Date().getFullYear();
-        currentAnio = anioActual;
+        const rawData = await fetchDatosAnualMetas(anio);
+        const metasProcesadas = procesarMetas(rawData, anio);
+        const datosMensuales = calcularCumplimientoMensual(metasProcesadas, anio);
         
-        // Rutas posibles para la API
-        const rutasPosibles = [
-            '../../app/controlador/Reporte/api_reportes.php',
-            '../../../app/controlador/Reporte/api_reportes.php',
-            '/app/controlador/Reporte/api_reportes.php',
-            'app/controlador/Reporte/api_reportes.php'
-        ];
-        
-        let response = null;
-        let rutaUsada = '';
-        
-        for (const ruta of rutasPosibles) {
-            try {
-                const testResponse = await fetch(`${ruta}?accion=metas_por_ambito&anio=${anioActual}`);
-                if (testResponse.ok) {
-                    response = testResponse;
-                    rutaUsada = ruta;
-                    break;
-                }
-            } catch (e) {
-                // Continuar
+        metasMensualesData = datosMensuales;
+        anioMetasBase      = anio;
+        anioTablaMetas     = anio;
+
+        const resumen = buildResumenMetas(metasProcesadas);
+
+        if (loadEl)   loadEl.style.display   = 'none';
+        if (contenEl) contenEl.style.display = 'block';
+
+        document.getElementById('anioSeleccionadoMetas').textContent = anio;
+        const selectTabla = document.getElementById('selectAnioTablaMetas');
+        if (selectTabla) selectTabla.value = anio;
+
+        if (esCargaInicial) {
+            aniosActivosMetas = [anio];
+        } else {
+            tiposActivosMetas = estadoAntes.tiposActivos;
+            aniosActivosMetas = estadoAntes.aniosActivos;
+            if (!aniosActivosMetas.includes(anio)) {
+                aniosActivosMetas.push(anio);
+                aniosActivosMetas.sort((a, b) => b - a);
             }
         }
-        
-        if (!response) {
-            throw new Error('No se pudo conectar con la API');
+
+        renderKPIsMetas(resumen);
+        renderTablaMetas(metasProcesadas);
+        sincronizarChipsAniosMetas();
+        renderGraficoMetas();
+        inicializarControlesGraficoMetas();
+        if (panelActivoMetas) await renderPanelDetalleMetas(panelActivoMetas);
+
+    } catch (err) {
+        if (loadEl)  loadEl.style.display = 'none';
+        if (errorEl) {
+            errorEl.style.display = 'block';
+            document.getElementById('errorMsgMetas').textContent =
+                `Error al cargar los datos del año ${anio}: ${err.message}`;
         }
-        
-        const metasData = await response.json();
-        rawMetasData = metasData; // Guardar datos originales
-        
-        // Aplicar filtro inicial
-        const metasProcesadas = aplicarFiltroYTiempo(metasData);
-        
-        renderizarReporteMetas(contentDiv, metasProcesadas, categoria, anioActual);
-        
-    } catch (error) {
-        console.error('Error al cargar metas:', error);
-        contentDiv.innerHTML = `
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-danger text-white py-3">
-                    <h4 class="mb-0">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Error al cargar el reporte
-                    </h4>
-                </div>
-                <div class="card-body p-4">
-                    <div class="alert alert-danger">
-                        <i class="bi bi-x-circle me-2"></i>
-                        <strong>Error:</strong> ${error.message}
-                    </div>
-                    <button class="rp-btn rp-btn--ghost mt-3" onclick="reiniciarReporteMetas()">
-                        <i class="bi bi-arrow-repeat me-1"></i>Reiniciar Reporte
-                    </button>
-                </div>
-            </div>
-        `;
+        console.error('[RE-Metas] Error al cargar datos:', err);
     }
 }
 
-/**
- * Reinicia el reporte a sus valores por defecto
- */
-function reiniciarReporteMetas() {
-    currentFilterType = 'anual';
-    currentAnio = new Date().getFullYear();
-    currentTrimestre = 1;
-    cargarReporteMetas();
+function buildResumenMetas(metas) {
+    const total = metas.length;
+    const cumplidas = metas.filter(m => m.pct >= 100).length;
+    const noCumplidas = total - cumplidas;
+    const promedio = total ? metas.reduce((s, m) => s + m.pct, 0) / total : 0;
+    const totObj = metas.reduce((s, m) => s + m.meta_objetivo, 0);
+    const totForm = metas.reduce((s, m) => s + m.estudiantes_formados, 0);
+    const brecha = totObj - totForm;
+    
+    return { total, cumplidas, noCumplidas, promedio, totObj, totForm, brecha };
 }
 
-/**
- * Verifica si una meta pertenece a un año específico
- * Considera metas que abarcan múltiples años (ej: 2025-2026)
- */
-function metaPerteneceAnio(meta, anio) {
-    // Obtener año de inicio y fin de la meta
-    let anioInicio = null;
-    let anioFin = null;
-    
-    // Intentar obtener año de inicio
-    if (meta.anio) {
-        anioInicio = parseInt(meta.anio);
-        anioFin = parseInt(meta.anio);
-    }
-    
-    if (meta.fecha_inicio) {
-        const fechaInicio = new Date(meta.fecha_inicio);
-        if (!isNaN(fechaInicio)) {
-            anioInicio = fechaInicio.getFullYear();
+async function cambiarAnioTablaMetas(anio) {
+    if (anio === anioTablaMetas) return;
+
+    const loadEl  = document.getElementById('loadingMetas');
+    const errorEl = document.getElementById('errorMetas');
+    if (loadEl)  loadEl.style.display  = 'block';
+    if (errorEl) errorEl.style.display = 'none';
+    const msgEl = document.getElementById('loadingMsgMetas');
+    if (msgEl) msgEl.textContent = `Cargando datos del año ${anio}...`;
+
+    try {
+        const rawData = await fetchDatosAnualMetas(anio);
+        const metasProcesadas = procesarMetas(rawData, anio);
+        anioTablaMetas = anio;
+        document.getElementById('anioSeleccionadoMetas').textContent = anio;
+        renderKPIsMetas(buildResumenMetas(metasProcesadas));
+        renderTablaMetas(metasProcesadas);
+    } catch (err) {
+        if (errorEl) {
+            errorEl.style.display = 'block';
+            document.getElementById('errorMsgMetas').textContent = `Error al cargar ${anio}: ${err.message}`;
         }
+    } finally {
+        if (loadEl) loadEl.style.display = 'none';
     }
-    
-    if (meta.fecha_fin) {
-        const fechaFin = new Date(meta.fecha_fin);
-        if (!isNaN(fechaFin)) {
-            anioFin = fechaFin.getFullYear();
-        }
-    }
-    
-    // Si no hay fechas definidas, usar el año por defecto
-    if (!anioInicio && !anioFin) {
-        return anio === currentAnio;
-    }
-    
-    // Si solo hay año de inicio
-    if (anioInicio && !anioFin) {
-        return anioInicio === anio;
-    }
-    
-    // Si solo hay año de fin
-    if (!anioInicio && anioFin) {
-        return anioFin === anio;
-    }
-    
-    // Si hay ambos años (inicio y fin), verificar si el año está en el rango
-    if (anioInicio && anioFin) {
-        return anio >= anioInicio && anio <= anioFin;
-    }
-    
-    return false;
 }
 
-/**
- * Aplica filtro por tiempo (trimestral o anual)
- */
-function aplicarFiltroYTiempo(metasData) {
-    if (!Array.isArray(metasData) || metasData.length === 0) {
-        return [];
-    }
-    
-    if (currentFilterType === 'anual') {
-        // Filtrar por año actual - incluye metas que abarcan múltiples años
-        const metasFiltradas = metasData.filter(meta => {
-            return metaPerteneceAnio(meta, currentAnio);
-        });
-        return procesarMetasData(metasFiltradas);
-    } 
-    else if (currentFilterType === 'trimestral') {
-        // Filtrar por trimestre específico (1, 2, 3)
-        const metasFiltradas = metasData.filter(meta => {
-            // Primero verificar si la meta pertenece al año seleccionado
-            if (!metaPerteneceAnio(meta, currentAnio)) {
-                return false;
-            }
-            
-            // Luego verificar el trimestre
-            const trimestreMeta = obtenerTrimestre(meta);
-            return trimestreMeta === currentTrimestre;
-        });
-        return procesarMetasData(metasFiltradas);
-    }
-    
-    return procesarMetasData(metasData);
-}
+function renderKPIsMetas(data) {
+    const el = document.getElementById('kpiCardsMetas');
+    if (!el) return;
 
-/**
- * Obtiene el trimestre de una meta basado en sus fechas
- * Para metas que abarcan múltiples trimestres/años, retorna el trimestre de inicio
- */
-function obtenerTrimestre(meta) {
-    let fecha = null;
-    let fechaFin = null;
-    
-    // Intentar obtener fecha de inicio
-    if (meta.fecha_inicio) {
-        fecha = new Date(meta.fecha_inicio);
-    } else if (meta.fecha_creacion) {
-        fecha = new Date(meta.fecha_creacion);
-    } else if (meta.periodo_tiempo) {
-        // Intentar extraer trimestre del período
-        const periodo = meta.periodo_tiempo.toLowerCase();
-        if (periodo.includes('trimestre 1') || periodo.includes('1er trimestre') || periodo.includes('ene-mar')) return 1;
-        if (periodo.includes('trimestre 2') || periodo.includes('2do trimestre') || periodo.includes('abr-jun')) return 2;
-        if (periodo.includes('trimestre 3') || periodo.includes('3er trimestre') || periodo.includes('jul-sep')) return 3;
-        // Ignorar 4to trimestre
-        if (periodo.includes('trimestre 4') || periodo.includes('4to trimestre') || periodo.includes('oct-dic')) return null;
-    }
-    
-    // Para metas que abarcan múltiples períodos, usar la fecha de inicio para determinar el trimestre
-    if (fecha && !isNaN(fecha)) {
-        const mes = fecha.getMonth() + 1;
-        const trimestre = Math.ceil(mes / 3);
-        // Solo retornar trimestres 1, 2, 3 (excluir 4)
-        return trimestre === 4 ? null : trimestre;
-    }
-    
-    // Si hay fecha de fin pero no de inicio, usar la fecha de fin
-    if (meta.fecha_fin && !fecha) {
-        fechaFin = new Date(meta.fecha_fin);
-        if (fechaFin && !isNaN(fechaFin)) {
-            const mes = fechaFin.getMonth() + 1;
-            const trimestre = Math.ceil(mes / 3);
-            return trimestre === 4 ? null : trimestre;
-        }
-    }
-    
-    return null; // Sin trimestre definido o es trimestre 4
-}
+    const svgMeta   = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
+    const svgCheck  = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>`;
+    const svgGraph  = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/><path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/></svg>`;
+    const svgPeople = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/></svg>`;
+    const svgDown    = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
 
-/**
- * Actualiza el reporte al cambiar el filtro
- */
-function actualizarReportePorFiltro() {
-    const contentDiv = document.getElementById('reportContent');
-    if (!contentDiv) return;
-    
-    const categoriasReportes = window.categoriasReportes || [];
-    const currentCategoryId = window.currentCategoryId;
-    const categoria = categoriasReportes.find(c => c.id === currentCategoryId) || { color: 'primary' };
-    
-    const metasProcesadas = aplicarFiltroYTiempo(rawMetasData);
-    
-    // Verificar si no hay datos y mostrar opción de reinicio
-    if (!metasProcesadas || metasProcesadas.length === 0) {
-        contentDiv.innerHTML = `
-            <div class="rp-empty">
-                <div class="rp-empty-icon">
-                    <i class="bi bi-flag display-4 text-muted"></i>
-                </div>
-                <p class="rp-empty-title">No hay metas registradas</p>
-                <p class="rp-empty-desc">No se encontraron metas ${currentFilterType === 'anual' ? `para el año ${currentAnio}` : `para el Trimestre ${currentTrimestre} de ${currentAnio}`}</p>
-                <div class="d-flex gap-2 justify-content-center mt-3">
-                    <button class="rp-btn rp-btn--ghost" onclick="reiniciarReporteMetas()">
-                        <i class="bi bi-arrow-repeat me-1"></i>Reiniciar Reporte
-                    </button>
-                    <button class="rp-btn rp-btn--ghost" onclick="cambiarFiltroTiempo('anual')">
-                        <i class="bi bi-calendar-year me-1"></i>Ver Anual
-                    </button>
+    const cards = [
+        { tipo:'total',       valor: data.total,              label:'Metas Registradas',     sub:'en el año',                 color:'primary', svg: svgMeta   },
+        { tipo:'cumplidas',   valor: data.cumplidas,          label:'Metas Cumplidas',       sub:`${data.total>0?((data.cumplidas/data.total)*100).toFixed(1):0}% del total`, color:'success', svg: svgCheck  },
+        { tipo:'noCumplidas', valor: data.noCumplidas,        label:'Metas No Cumplidas',    sub:`${data.total>0?((data.noCumplidas/data.total)*100).toFixed(1):0}% del total`, color:'danger',  svg: svgPeople },
+        { tipo:'promedio',    valor: `${data.promedio.toFixed(1)}%`, label:'Promedio de Cumplimiento', sub:'general de metas',   color:'warning', svg: svgGraph  }
+    ];
+
+    el.innerHTML = `<div class="row mb-1">${cards.map(c => `
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-3 kpi-card kpi-card-meta" role="button" data-tipo="${c.tipo}">
+                <div class="card-body text-center py-3">
+                    <span class="text-${c.color}">${c.svg}</span>
+                    <h2 class="fw-bold text-${c.color} mt-2 mb-0">
+                        ${typeof c.valor === 'number' ? c.valor.toLocaleString() : c.valor}
+                    </h2>
+                    <p class="rp-kpi-card-label">${c.label}</p>
+                    <p class="rp-kpi-card-sub">${c.sub}</p>
+                    <span class="badge bg-${c.color} bg-opacity-10 text-${c.color} small" id="badgePanelMeta-${c.tipo}">
+                        ${svgDown}Ver detalles
+                    </span>
                 </div>
             </div>
-        `;
+        </div>`).join('')}</div>`;
+
+    el.querySelectorAll('.kpi-card-meta').forEach(card =>
+        card.addEventListener('click', () => togglePanelDetalleMetas(card.dataset.tipo))
+    );
+}
+
+async function togglePanelDetalleMetas(tipo) {
+    const wrapper = document.getElementById('panelDetalleWrapperMetas');
+    if (!wrapper) return;
+
+    const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
+    const svgUp   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
+
+    ['total','cumplidas','noCumplidas','promedio'].forEach(t => {
+        const b = document.getElementById(`badgePanelMeta-${t}`);
+        if (b) b.innerHTML = `${svgDown}Ver detalles`;
+    });
+
+    if (panelActivoMetas === tipo) {
+        wrapper.style.display = 'none';
+        panelActivoMetas = null;
         return;
     }
-    
-    renderizarReporteMetas(contentDiv, metasProcesadas, categoria, currentAnio);
+
+    panelActivoMetas = tipo;
+    wrapper.innerHTML = `<div class="text-center py-4"><div class="spinner-border text-secondary"></div><p class="mt-2 text-muted">Cargando detalles...</p></div>`;
+    wrapper.style.display = 'block';
+
+    await renderPanelDetalleMetas(tipo);
+
+    const badge = document.getElementById(`badgePanelMeta-${tipo}`);
+    if (badge) badge.innerHTML = `${svgUp}Ocultar`;
+    setTimeout(() => wrapper.scrollIntoView({ behavior:'smooth', block:'center' }), 50);
 }
 
-/**
- * Renderiza el reporte de metas con estilo moderno
- */
-function renderizarReporteMetas(contentDiv, metasProcesadas, categoria, anioActual) {
-    // Calcular estadísticas generales
-    const totalMetas = metasProcesadas.length;
-    const metasCumplidas = metasProcesadas.filter(m => m.porcentaje_cumplimiento >= 100).length;
-    const promedioCumplimiento = metasProcesadas.reduce((sum, m) => sum + m.porcentaje_cumplimiento, 0) / totalMetas;
-    const totalObjetivo = metasProcesadas.reduce((sum, m) => sum + m.meta_objetivo, 0);
-    const totalFormados = metasProcesadas.reduce((sum, m) => sum + m.estudiantes_formados, 0);
+async function renderPanelDetalleMetas(tipo) {
+    const wrapper = document.getElementById('panelDetalleWrapperMetas');
+    if (!wrapper) return;
+
+    const anio = anioTablaMetas || new Date().getFullYear();
     
-    // Agrupar por ámbito (para anual: suma de todas las metas del ámbito)
-    const metasPorAmbito = {};
-    metasProcesadas.forEach(meta => {
-        if (!metasPorAmbito[meta.nombre_ambito]) {
-            metasPorAmbito[meta.nombre_ambito] = {
-                nombre: meta.nombre_ambito,
-                color: meta.color,
-                metas: [],
-                totalObjetivo: 0,
-                totalFormados: 0
-            };
+    try {
+        const rawData = await fetchDatosAnualMetas(anio);
+        const metas = procesarMetas(rawData, anio);
+        
+        let listaMostrar = [];
+        let titulo = '';
+        let color = '';
+        
+        if (tipo === 'total') {
+            listaMostrar = metas;
+            titulo = 'Todas las Metas';
+            color = 'primary';
+        } else if (tipo === 'cumplidas') {
+            listaMostrar = metas.filter(m => m.pct >= 100);
+            titulo = 'Metas Cumplidas';
+            color = 'success';
+        } else if (tipo === 'noCumplidas') {
+            listaMostrar = metas.filter(m => m.pct < 100);
+            titulo = 'Metas No Cumplidas';
+            color = 'danger';
+        } else if (tipo === 'promedio') {
+            listaMostrar = [...metas].sort((a,b) => b.pct - a.pct);
+            titulo = 'Metas por Promedio de Cumplimiento';
+            color = 'warning';
         }
-        metasPorAmbito[meta.nombre_ambito].metas.push(meta);
-        metasPorAmbito[meta.nombre_ambito].totalObjetivo += meta.meta_objetivo;
-        metasPorAmbito[meta.nombre_ambito].totalFormados += meta.estudiantes_formados;
-    });
-    
-    // Determinar color de acento basado en categoría
-    const accentColor = getAccentColor(categoria.color);
-    
-    // Construir HTML con estilo moderno
-    let html = `
-        <div class="fade-in">
-            <!-- Cabecera del reporte estilo moderno -->
-            <div class="rp-report-header" style="background: linear-gradient(120deg, #0f1924 0%, #0c2340 55%, #0e2a4a 100%);">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="rp-header-icon-wrap">
-                        <i class="bi bi-flag-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <h5 class="rp-header-title mb-0">Reporte de Metas por Ámbito</h5>
-                        <p class="rp-header-subtitle mb-0">
-                            ${currentFilterType === 'anual' ? `Año ${anioActual}` : `Trimestre ${currentTrimestre} · ${anioActual}`} · ${totalMetas} metas registradas
-                        </p>
-                    </div>
-                </div>
-                <button class="rp-btn rp-btn--ghost" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);" onclick="reiniciarReporteMetas()">
-                    <i class="bi bi-arrow-repeat me-1"></i>Reiniciar
-                </button>
-            </div>
-            
-            <!-- Filtros de Tiempo -->
-            <div class="rp-filter-bar mt-3">
-                <div class="rp-filter-group">
-                    <label class="rp-filter-label">Filtrar por:</label>
-                    <div class="rp-filter-buttons">
-                        <button class="rp-filter-btn ${currentFilterType === 'anual' ? 'rp-filter-btn--active' : ''}" 
-                                onclick="cambiarFiltroTiempo('anual')">
-                            <i class="bi bi-calendar-year me-1"></i>Anual
-                        </button>
-                        <button class="rp-filter-btn ${currentFilterType === 'trimestral' ? 'rp-filter-btn--active' : ''}" 
-                                onclick="cambiarFiltroTiempo('trimestral')">
-                            <i class="bi bi-calendar-range me-1"></i>Trimestral
-                        </button>
-                    </div>
-                </div>
-                
-                ${currentFilterType === 'trimestral' ? `
-                <div class="rp-filter-group">
-                    <label class="rp-filter-label">Trimestre:</label>
-                    <div class="rp-filter-buttons">
-                        <button class="rp-filter-btn ${currentTrimestre === 1 ? 'rp-filter-btn--active' : ''}" 
-                                onclick="cambiarTrimestre(1)">
-                            <i class="bi bi-calendar-week me-1"></i>1er Trim
-                        </button>
-                        <button class="rp-filter-btn ${currentTrimestre === 2 ? 'rp-filter-btn--active' : ''}" 
-                                onclick="cambiarTrimestre(2)">
-                            <i class="bi bi-calendar-week me-1"></i>2do Trim
-                        </button>
-                        <button class="rp-filter-btn ${currentTrimestre === 3 ? 'rp-filter-btn--active' : ''}" 
-                                onclick="cambiarTrimestre(3)">
-                            <i class="bi bi-calendar-week me-1"></i>3er Trim
-                        </button>
-                    </div>
-                </div>
-                ` : ''}
-                
-                <div class="rp-filter-group">
-                    <label class="rp-filter-label">Año:</label>
-                    <select class="rp-filter-select" id="anioSelector" onchange="cambiarAnio(this.value)">
-                        ${generarOpcionesAnios(anioActual)}
-                    </select>
-                </div>
-            </div>
-            
-            <!-- KPIs Grid -->
-            <div class="rp-kpi-grid mt-3">
-                <div class="rp-kpi-card rp-kpi-card--primary" data-tipo="metas">
-                    <div class="rp-kpi-header">
-                        <div class="rp-kpi-icon bg-primary bg-opacity-10 text-primary">
-                            <i class="bi bi-flag-fill fs-5"></i>
-                        </div>
-                    </div>
-                    <div class="rp-kpi-value">${totalMetas}</div>
-                    <div class="rp-kpi-label">Metas Totales</div>
-                    <div class="rp-kpi-sub">Registradas en el sistema</div>
-                </div>
-                
-                <div class="rp-kpi-card rp-kpi-card--success" data-tipo="cumplidas">
-                    <div class="rp-kpi-header">
-                        <div class="rp-kpi-icon bg-success bg-opacity-10 text-success">
-                            <i class="bi bi-check-circle-fill fs-5"></i>
-                        </div>
-                    </div>
-                    <div class="rp-kpi-value">${metasCumplidas}</div>
-                    <div class="rp-kpi-label">Metas Cumplidas</div>
-                    <div class="rp-kpi-sub">${((metasCumplidas/totalMetas)*100).toFixed(1)}% del total</div>
-                </div>
-                
-                <div class="rp-kpi-card rp-kpi-card--cyan" data-tipo="promedio">
-                    <div class="rp-kpi-header">
-                        <div class="rp-kpi-icon bg-cyan bg-opacity-10 text-cyan">
-                            <i class="bi bi-graph-up fs-5"></i>
-                        </div>
-                    </div>
-                    <div class="rp-kpi-value">${promedioCumplimiento.toFixed(1)}%</div>
-                    <div class="rp-kpi-label">Promedio Cumplimiento</div>
-                    <div class="rp-kpi-sub">General de todas las metas</div>
-                    <div class="rp-kpi-bar-track mt-2">
-                        <div class="rp-kpi-bar-fill bg-cyan" style="width: ${Math.min(promedioCumplimiento, 100)}%"></div>
-                    </div>
-                </div>
-                
-                <div class="rp-kpi-card rp-kpi-card--warning" data-tipo="formados">
-                    <div class="rp-kpi-header">
-                        <div class="rp-kpi-icon bg-warning bg-opacity-10 text-warning">
-                            <i class="bi bi-people-fill fs-5"></i>
-                        </div>
-                    </div>
-                    <div class="rp-kpi-value">${totalFormados} / ${totalObjetivo}</div>
-                    <div class="rp-kpi-label">Estudiantes Formados</div>
-                    <div class="rp-kpi-sub">Meta objetivo general</div>
-                    <div class="rp-kpi-bar-track mt-2">
-                        <div class="rp-kpi-bar-fill bg-warning" style="width: ${totalObjetivo > 0 ? (totalFormados/totalObjetivo)*100 : 0}%"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Detalle por Ámbito -->
-            <div class="rp-section-title mt-4">
-                <span class="rp-section-label">Detalle por Ámbito</span>
-                <span class="rp-section-line"></span>
-            </div>
-    `;
-    
-    // Renderizar cada ámbito como tarjeta expandible
-    Object.values(metasPorAmbito).forEach((ambito, idx) => {
-        const porcentajeAmbito = ambito.totalObjetivo > 0 
-            ? (ambito.totalFormados / ambito.totalObjetivo) * 100 
-            : 0;
-        
-        const cardColor = ambito.color || getColorByIndex(idx);
-        const isExpanded = idx === 0; // Primero expandido por defecto
-        
-        html += `
-            <div class="rp-detail-panel mb-3" data-color="${cardColor}" data-ambito="${escapeHtml(ambito.nombre)}">
-                <div class="rp-detail-header" style="cursor: pointer;" onclick="toggleAmbitoDetail(this)">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rp-kpi-icon" style="background: rgba(var(--${cardColor}-rgb, 0.1)); width: 40px; height: 40px;">
-                            <i class="bi bi-building fs-5 text-${cardColor}"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">${escapeHtml(ambito.nombre)}</h6>
-                            <div class="rp-semaphore rp-semaphore--${getSemaphoreClass(porcentajeAmbito)} mt-1">
-                                <span class="rp-semaphore-dot"></span>
-                                <span class="small">${ambito.totalFormados} / ${ambito.totalObjetivo} estudiantes · ${porcentajeAmbito.toFixed(1)}% cumplido</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="rp-detail-close">
-                        <i class="bi bi-chevron-${isExpanded ? 'up' : 'down'} fs-6"></i>
-                    </div>
-                </div>
-                <div class="rp-detail-body" style="display: ${isExpanded ? 'block' : 'none'};">
-                    <div class="table-responsive">
-                        <table class="rp-table">
-                            <thead>
-                                <tr>
-                                    <th>Tipo de Meta</th>
-                                    <th>Objetivo</th>
-                                    <th>Formados</th>
-                                    <th>Progreso</th>
-                                    <th>Estado</th>
-                                    <th>Periodo</th>
-                                    <th>Vigencia</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-        `;
-        
-        ambito.metas.forEach(meta => {
-            const porcentaje = meta.porcentaje_cumplimiento;
-            let barraColor = 'primary';
-            if (porcentaje >= 100) barraColor = 'success';
-            else if (porcentaje >= 75) barraColor = 'cyan';
-            else if (porcentaje >= 50) barraColor = 'warning';
-            else barraColor = 'danger';
-            
-            const estadoBadge = meta.estado === 'Activa' 
-                ? '<span class="rp-badge rp-badge--ok">Activa</span>'
-                : '<span class="rp-badge rp-badge--neutral">Cerrada</span>';
-            
-            const tipoBadge = meta.tipo_objetivo === 'Aprobados'
-                ? '<span class="rp-badge rp-badge--info">Aprobados</span>'
-                : '<span class="rp-badge rp-badge--cyan">Inscritos</span>';
-            
-            // Mostrar período de vigencia de la meta
-            const vigencia = meta.vigencia || meta.periodo_tiempo || 'No definido';
-            
-            html += `
-                <tr>
-                    <td>${tipoBadge}</td>
-                    <td class="rp-cell-num">${meta.meta_objetivo}</td>
-                    <td class="rp-cell-num">${meta.estudiantes_formados}</td>
-                    <td>
-                        <div class="rp-inline-bar">
-                            <div class="rp-inline-bar-track">
-                                <div class="rp-inline-bar-fill bg-${barraColor}" style="width: ${Math.min(porcentaje, 100)}%"></div>
-                            </div>
-                            <span class="rp-inline-bar-pct">${porcentaje.toFixed(1)}%</span>
-                        </div>
-                    </td>
-                    <td>${estadoBadge}</td>
-                    <td><span class="rp-badge rp-badge--neutral">${escapeHtml(meta.periodo_tiempo || 'No definido')}</span></td>
-                    <td><span class="rp-badge rp-badge--info">${escapeHtml(vigencia)}</span></td>
-                </tr>
-            `;
-        });
-        
-        html += `
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="2"><strong>Progreso General del Ámbito</strong></td>
-                                    <td colspan="5">
-                                        <div class="rp-inline-bar">
-                                            <div class="rp-inline-bar-track">
-                                                <div class="rp-inline-bar-fill bg-${cardColor}" style="width: ${Math.min(porcentajeAmbito, 100)}%"></div>
-                                            </div>
-                                            <span class="rp-inline-bar-pct">${porcentajeAmbito.toFixed(1)}%</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    // Pie de página (sin botones de exportar/imprimir)
-    html += `
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                <div class="rp-tag-live">
-                    <span>Actualizado</span>
-                    <span>${new Date().toLocaleDateString('es-ES')}</span>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    contentDiv.innerHTML = html;
-    initTooltips(contentDiv);
-}
 
-/**
- * Genera opciones de años para el selector
- */
-function generarOpcionesAnios(anioActual) {
-    let options = '';
-    for (let i = anioActual - 2; i <= anioActual + 2; i++) {
-        options += `<option value="${i}" ${i === currentAnio ? 'selected' : ''}>${i}</option>`;
-    }
-    return options;
-}
+        if (!listaMostrar.length) {
+            wrapper.innerHTML = `
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                    No se encontraron metas para "${titulo}" en el año ${anio}.
+                </div>
+            </div>`;
+            return;
+        }
 
-/**
- * Cambia el filtro de tiempo (anual/trimestral)
- */
-function cambiarFiltroTiempo(tipo) {
-    currentFilterType = tipo;
-    if (tipo === 'anual') {
-        currentTrimestre = 1;
-    }
-    actualizarReportePorFiltro();
-}
+        const filas = listaMostrar.slice(0, 20).map(m => {
+            const barColor = m.pct >= 100 ? '#22c55e' : m.pct >= 75 ? '#0891b2' : m.pct >= 40 ? '#f59e0b' : '#ef4444';
+            return `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:.6rem .8rem;vertical-align:middle;">
+                    <span style="display:inline-flex;align-items:center;gap:.35rem;padding:.22em .7em;border-radius:6px;font-weight:600;background:${m.color.light};color:${m.color.text};border:1px solid ${m.color.border};font-size:.72rem;">
+                        ${m.nombre_ambito}
+                    </span>
+                 </td>
+                <td style="padding:.6rem .8rem;vertical-align:middle;">${m.tipo_objetivo}</td>
+                <td style="padding:.6rem .8rem;vertical-align:middle;text-align:right;font-weight:600;">${m.meta_objetivo.toLocaleString()}</td>
+                <td style="padding:.6rem .8rem;vertical-align:middle;text-align:right;font-weight:600;">${m.estudiantes_formados.toLocaleString()}</td>
+                <td style="padding:.6rem .8rem;vertical-align:middle;min-width:160px;">
+                    <div style="display:flex;align-items:center;gap:.5rem;">
+                        <div style="flex:1;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
+                            <div style="height:100%;width:${Math.min(m.pct,100)}%;background:${barColor};border-radius:99px;"></div>
+                        </div>
+                        <span style="font-family:monospace;font-size:.75rem;font-weight:700;color:${barColor};">${m.pct.toFixed(1)}%</span>
+                    </div>
+                 </td>
+                <td style="padding:.6rem .8rem;vertical-align:middle;">${m.estado}</td>
+             </tr>`;
+        }).join('');
 
-/**
- * Cambia el trimestre seleccionado (solo 1, 2, 3)
- */
-function cambiarTrimestre(trimestre) {
-    if (trimestre >= 1 && trimestre <= 3) {
-        currentTrimestre = trimestre;
-        actualizarReportePorFiltro();
+        wrapper.innerHTML = `
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                    <h6 class="mb-0 text-${color} d-flex align-items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>
+                        ${titulo}
+                        <span class="badge bg-${color} bg-opacity-10 text-${color} ms-1">${listaMostrar.length} metas</span>
+                    </h6>
+                    <small class="text-muted">Año ${anio}</small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="table-light">
+                            <tr><th>Ambito</th><th>Tipo</th><th class="text-end">Objetivo</th><th class="text-end">Formados</th><th>Progreso</th><th>Estado</th></tr>
+                        </thead>
+                        <tbody>${filas}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>`;
+    } catch (err) {
+        wrapper.innerHTML = `<div class="alert alert-warning">Error al cargar detalles: ${err.message}</div>`;
     }
 }
 
-/**
- * Cambia el año seleccionado
- */
-function cambiarAnio(anio) {
-    currentAnio = parseInt(anio);
-    actualizarReportePorFiltro();
-}
+function renderTablaMetas(metas) {
+    const container = document.getElementById('tablaMetasContainer');
+    if (!container) return;
 
-/**
- * Obtiene color de acento basado en categoría
- */
-function getAccentColor(categoriaColor) {
-    const colors = {
-        primary: '#3b82f6',
-        success: '#22c55e',
-        warning: '#f59e0b',
-        danger: '#ef4444',
-        info: '#0891b2',
-        secondary: '#64748b'
-    };
-    return colors[categoriaColor] || colors.primary;
-}
-
-/**
- * Obtiene clase de semáforo según porcentaje
- */
-function getSemaphoreClass(porcentaje) {
-    if (porcentaje >= 90) return 'ok';
-    if (porcentaje >= 60) return 'warn';
-    return 'danger';
-}
-
-/**
- * Obtiene color por índice para ámbitos sin color asignado
- */
-function getColorByIndex(index) {
-    const colors = ['primary', 'success', 'cyan', 'warning', 'danger', 'secondary'];
-    return colors[index % colors.length];
-}
-
-/**
- * Toggle para expandir/colapsar detalle de ámbito
- */
-function toggleAmbitoDetail(element) {
-    const panel = element.closest('.rp-detail-panel');
-    const body = panel.querySelector('.rp-detail-body');
-    const icon = element.querySelector('.rp-detail-close i');
-    
-    if (body.style.display === 'none') {
-        body.style.display = 'block';
-        icon.className = 'bi bi-chevron-up fs-6';
-        panel.style.boxShadow = 'var(--rp-shadow-md)';
-    } else {
-        body.style.display = 'none';
-        icon.className = 'bi bi-chevron-down fs-6';
-        panel.style.boxShadow = 'var(--rp-shadow-sm)';
+    if (!metas.length) {
+        container.innerHTML = `<div class="text-center py-5 text-muted">No hay metas registradas para este año.</div>`;
+        return;
     }
+
+    const filas = metas.map(m => {
+        const barColor = m.pct >= 100 ? '#22c55e' : m.pct >= 75 ? '#0891b2' : m.pct >= 40 ? '#f59e0b' : '#ef4444';
+        return `
+        <tr>
+            <td style="padding:.6rem .8rem;">
+                <span style="display:inline-flex;align-items:center;gap:.35rem;padding:.22em .7em;border-radius:6px;font-weight:600;background:${m.color.light};color:${m.color.text};border:1px solid ${m.color.border};font-size:.72rem;">
+                    ${m.nombre_ambito}
+                </span>
+              </td>
+            <td style="padding:.6rem .8rem;">${m.tipo_objetivo}</td>
+            <td style="padding:.6rem .8rem;text-align:right;font-weight:600;">${m.meta_objetivo.toLocaleString()}</td>
+            <td style="padding:.6rem .8rem;text-align:right;font-weight:600;">${m.estudiantes_formados.toLocaleString()}</td>
+            <td style="padding:.6rem .8rem;min-width:180px;">
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                    <div style="flex:1;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
+                        <div style="height:100%;width:${Math.min(m.pct,100)}%;background:${barColor};border-radius:99px;"></div>
+                    </div>
+                    <span style="font-family:monospace;font-size:.75rem;font-weight:700;color:${barColor};">${m.pct.toFixed(1)}%</span>
+                </div>
+              </td>
+            <td style="padding:.6rem .8rem;">
+                <span class="badge ${m.estado === 'Activa' ? 'bg-success' : 'bg-secondary'}">${m.estado}</span>
+              </td>
+            <td style="padding:.6rem .8rem;font-size:.75rem;">${m.periodo_tiempo}</td>
+        </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+    <div class="table-responsive">
+        <table class="table table-striped table-sm align-middle">
+            <thead class="table-light">
+                <tr><th>Ambito</th><th>Tipo</th><th class="text-end">Objetivo</th><th class="text-end">Formados</th><th>Progreso</th><th>Estado</th><th>Periodo</th></tr>
+            </thead>
+            <tbody>${filas}</tbody>
+        </table>
+    </div>`;
 }
 
-/**
- * Inicializa tooltips
- */
-function initTooltips(container) {
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        container.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-            new bootstrap.Tooltip(el);
-        });
-    }
+function getLabelTipoMeta(t) {
+    return { cumplimiento:'Cumplimiento (%)', noCumplidas:'No Cumplidas (%)', cobertura:'Cobertura (%)' }[t] || t;
 }
 
-/**
- * Procesa los datos de metas recibidos de la API
- */
-function procesarMetasData(metasData) {
-    if (!Array.isArray(metasData) || metasData.length === 0) {
-        console.warn('No se recibieron datos de metas');
-        return [];
+function aniosOrdenadosMetas() {
+    return [...aniosActivosMetas].sort((a, b) => b - a);
+}
+
+function renderGraficoMetas() {
+    const wrapper = document.getElementById('graficoWrapperMetas');
+    if (!wrapper) return;
+
+    if (!tiposActivosMetas.size || !aniosActivosMetas.length) {
+        destruirGraficoMetas();
+        wrapper.innerHTML = `
+            <div class="rp-chart-empty">
+                <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1z"/>
+                </svg>
+                <p class="rp-chart-empty-text">Seleccione al menos una metrica y un año para visualizar</p>
+            </div>`;
+        document.getElementById('tituloGraficoMetas').textContent = '';
+        return;
     }
-    
-    const colores = ['primary', 'success', 'cyan', 'warning', 'danger', 'secondary'];
-    const ambitoColorMap = {};
-    let colorIndex = 0;
-    
-    return metasData
-        .map(meta => {
-            const metaObjetivo = parseInt(meta.meta_objetivo) || 0;
-            const estudiantesFormados = parseInt(meta.estudiantes_formados) || 0;
+
+    if (!wrapper.querySelector('canvas')) {
+        wrapper.innerHTML = '<canvas id="canvasGraficoMetas"></canvas>';
+    }
+
+    destruirGraficoMetas();
+    const ctx     = wrapper.querySelector('canvas').getContext('2d');
+    const tipos   = ['cumplimiento', 'noCumplidas', 'cobertura'].filter(t => tiposActivosMetas.has(t));
+    const años    = aniosOrdenadosMetas();
+    const nAnios  = años.length;
+    const nTipos  = tipos.length;
+    const esBar   = tipoGraficoMetas === 'bar';
+    const labels  = obtenerNombresMesesMetas();
+
+    const datasets = [];
+
+    tipos.forEach((tipo, tipoIdx) => {
+        años.forEach((anio, anioIdx) => {
+            const datosMensuales = calcularCumplimientoMensual([], anio);
+            let datos = [];
             
-            let porcentaje = 0;
-            if (metaObjetivo > 0) {
-                porcentaje = (estudiantesFormados / metaObjetivo) * 100;
+            if (tipo === 'cumplimiento') {
+                datos = datosMensuales.map(m => m.pct);
+            } else if (tipo === 'noCumplidas') {
+                datos = datosMensuales.map(m => 100 - m.pct);
+            } else if (tipo === 'cobertura') {
+                datos = datosMensuales.map(m => m.pct);
             }
             
-            let periodo = meta.periodo_tiempo;
-            if (!periodo && meta.fecha_inicio && meta.fecha_fin) {
-                const fechaInicio = new Date(meta.fecha_inicio);
-                const fechaFin = new Date(meta.fecha_fin);
-                if (!isNaN(fechaInicio) && !isNaN(fechaFin)) {
-                    periodo = `${fechaInicio.toLocaleDateString('es-ES')} - ${fechaFin.toLocaleDateString('es-ES')}`;
-                    // Crear vigencia para mostrar el rango de años
-                    const anioInicio = fechaInicio.getFullYear();
-                    const anioFin = fechaFin.getFullYear();
-                    if (anioInicio !== anioFin) {
-                        meta.vigencia = `${anioInicio} - ${anioFin}`;
+            const colorBorde = colorBordeMetas(tipo, anioIdx, nAnios);
+            const colorFill  = colorFillMetas(tipo, anioIdx, nAnios, 0.25);
+            let label = getLabelTipoMeta(tipo);
+            if (nAnios > 1) label += ` ${anio}`;
+
+            let fillConf = false;
+            if (!esBar) {
+                if (nTipos === 1 && nAnios > 1) {
+                    if (anioIdx === nAnios - 1) {
+                        fillConf = { target: 'origin', above: colorFill };
                     } else {
-                        meta.vigencia = `${anioInicio}`;
+                        fillConf = { target: `+${nTipos}`, above: colorFill };
+                    }
+                } else if (nAnios === 1 && nTipos > 1) {
+                    const datosMeses = datos;
+                    const colorLinea = colorBorde;
+                    fillConf = false;
+                    
+                    if (tipoIdx === nTipos - 1) {
+                        fillConf = { target: 'origin', above: colorLinea };
+                    } else {
+                        fillConf = { target: `+1`, above: colorLinea };
                     }
                 }
-            } else if (!periodo) {
-                periodo = 'Periodo no definido';
-                meta.vigencia = 'No definida';
             }
-            
-            // Si no se estableció vigencia, crearla desde las fechas disponibles
-            if (!meta.vigencia) {
-                let anioInicio = null;
-                let anioFin = null;
-                
-                if (meta.fecha_inicio) {
-                    const fechaInicio = new Date(meta.fecha_inicio);
-                    if (!isNaN(fechaInicio)) anioInicio = fechaInicio.getFullYear();
+
+            datasets.push({
+                label,
+                data: datos,
+                borderColor: colorBorde,
+                backgroundColor: colorFill,
+                borderWidth: esBar ? 0 : 2.5,
+                fill: fillConf,
+                tension: esBar ? 0 : 0.4,
+                borderRadius: esBar ? 4 : 0,
+                pointBackgroundColor: colorBorde,
+                pointRadius: 4,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7,
+                spanGaps: false
+            });
+        });
+    });
+
+    let tituloTexto = '';
+    tipos.forEach((tipo, i) => {
+        tituloTexto += getLabelTipoMeta(tipo);
+        if (i < tipos.length - 1) tituloTexto += ', ';
+    });
+    tituloTexto += ` — ${años.join(', ')}`;
+    document.getElementById('tituloGraficoMetas').textContent = tituloTexto;
+
+    graficoMetasInstance = new Chart(ctx, {
+        type: tipoGraficoMetas,
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top' },
+                filler: { propagate: true },
+                tooltip: {
+                    mode: 'index', intersect: false,
+                    callbacks: {
+                        label: c => `${c.dataset.label}: ${c.parsed.y !== null ? c.parsed.y.toFixed(1) : 'Sin dato'}`
+                    }
                 }
-                if (meta.fecha_fin) {
-                    const fechaFin = new Date(meta.fecha_fin);
-                    if (!isNaN(fechaFin)) anioFin = fechaFin.getFullYear();
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { color: 'rgba(0,0,0,0.07)' },
+                    title: { display: true, text: 'Porcentaje (%)' }
+                },
+                x: {
+                    grid: { color: 'rgba(0,0,0,0.07)' }
                 }
-                
-                if (anioInicio && anioFin && anioInicio !== anioFin) {
-                    meta.vigencia = `${anioInicio} - ${anioFin}`;
-                } else if (anioInicio) {
-                    meta.vigencia = `${anioInicio}`;
-                } else if (anioFin) {
-                    meta.vigencia = `${anioFin}`;
-                } else if (meta.anio) {
-                    meta.vigencia = `${meta.anio}`;
+            },
+            interaction: { intersect: false, mode: 'index' }
+        }
+    });
+}
+
+function inicializarControlesGraficoMetas() {
+    document.querySelectorAll('.btn-tipo-meta').forEach(btn => {
+        const clon = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clon, btn);
+    });
+    document.querySelectorAll('.btn-tipo-meta').forEach(btn => {
+        btn.classList.toggle('active', tiposActivosMetas.has(btn.dataset.tipo));
+        btn.addEventListener('click', () => {
+            const tipo = btn.dataset.tipo;
+            tiposActivosMetas.has(tipo) ? tiposActivosMetas.delete(tipo) : tiposActivosMetas.add(tipo);
+            btn.classList.toggle('active', tiposActivosMetas.has(tipo));
+            renderGraficoMetas();
+        });
+    });
+
+    const btnLT = document.getElementById('btnLimpiarTiposMetas');
+    if (btnLT) {
+        const clon = btnLT.cloneNode(true);
+        btnLT.parentNode.replaceChild(clon, btnLT);
+        document.getElementById('btnLimpiarTiposMetas').addEventListener('click', () => {
+            tiposActivosMetas.clear();
+            document.querySelectorAll('.btn-tipo-meta').forEach(b => b.classList.remove('active'));
+            renderGraficoMetas();
+        });
+    }
+
+    document.querySelectorAll('.btn-chart-type').forEach(btn => {
+        const clon = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clon, btn);
+    });
+    document.querySelectorAll('.btn-chart-type').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tipo === tipoGraficoMetas);
+        if (btn.classList.contains('active')) {
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-secondary');
+        }
+        btn.addEventListener('click', () => {
+            tipoGraficoMetas = btn.dataset.tipo;
+            document.querySelectorAll('.btn-chart-type').forEach(b => {
+                b.classList.toggle('active', b.dataset.tipo === tipoGraficoMetas);
+                if (b.classList.contains('active')) {
+                    b.classList.remove('btn-outline-secondary');
+                    b.classList.add('btn-secondary');
                 } else {
-                    meta.vigencia = 'No definida';
+                    b.classList.remove('btn-secondary');
+                    b.classList.add('btn-outline-secondary');
                 }
+            });
+            renderGraficoMetas();
+        });
+    });
+
+    const btnAddA = document.getElementById('btnAddAnioMetasGrafico');
+    if (btnAddA) {
+        const clon = btnAddA.cloneNode(true);
+        btnAddA.parentNode.replaceChild(clon, btnAddA);
+        document.getElementById('btnAddAnioMetasGrafico').addEventListener('click', async () => {
+            const sel = document.getElementById('selectAnioMetasGrafico');
+            if (!sel) return;
+            const a = parseInt(sel.value);
+            if (a > new Date().getFullYear() || aniosActivosMetas.includes(a)) return;
+            if (aniosActivosMetas.length >= MAX_ANIOS_METAS) {
+                const aviso = document.getElementById('metasAnioLimiteAviso');
+                if (aviso) {
+                    aviso.style.display = 'inline-block';
+                    setTimeout(() => { aviso.style.display = 'none'; }, 2500);
+                }
+                return;
             }
-            
-            const ambito = meta.nombre_ambito || 'Sin ámbito asignado';
-            if (!ambitoColorMap[ambito]) {
-                ambitoColorMap[ambito] = colores[colorIndex % colores.length];
-                colorIndex++;
+            try {
+                await fetchDatosAnualMetas(a);
+                aniosActivosMetas.push(a);
+                aniosActivosMetas.sort((x, y) => y - x);
+                sincronizarChipsAniosMetas();
+                renderGraficoMetas();
+            } catch (err) {
+                console.warn(`[RE-Metas] No se pudo cargar año ${a}:`, err);
             }
-            
-            return {
-                id: meta.id_meta || Math.random(),
-                nombre_ambito: ambito,
-                tipo_objetivo: meta.tipo_objetivo || 'Aprobados',
-                meta_objetivo: metaObjetivo,
-                estudiantes_formados: estudiantesFormados,
-                porcentaje_cumplimiento: parseFloat(meta.porcentaje_cumplimiento) || porcentaje,
-                estado: meta.estado || 'Activa',
-                periodo_tiempo: periodo,
-                vigencia: meta.vigencia,
-                color: ambitoColorMap[ambito],
-                fecha_inicio: meta.fecha_inicio,
-                fecha_fin: meta.fecha_fin,
-                anio: meta.anio
-            };
+        });
+    }
+
+    const btnLA = document.getElementById('btnLimpiarAniosMetas');
+    if (btnLA) {
+        const clon = btnLA.cloneNode(true);
+        btnLA.parentNode.replaceChild(clon, btnLA);
+        document.getElementById('btnLimpiarAniosMetas').addEventListener('click', () => {
+            aniosActivosMetas = [];
+            sincronizarChipsAniosMetas();
+            renderGraficoMetas();
+        });
+    }
+
+    sincronizarChipsAniosMetas();
+}
+
+function sincronizarChipsAniosMetas() {
+    const chips = document.getElementById('chipsAniosMetas');
+    if (!chips) return;
+
+    chips.innerHTML = aniosActivosMetas.map(a =>
+        `<span class="rp-year-chip" data-anio="${a}" style="cursor:pointer;">
+            ${a}
+        </span>`
+    ).join('');
+
+    chips.querySelectorAll('.rp-year-chip').forEach(chip =>
+        chip.addEventListener('click', () => {
+            const anio = parseInt(chip.dataset.anio);
+            aniosActivosMetas = aniosActivosMetas.filter(x => x !== anio);
+            sincronizarChipsAniosMetas();
+            renderGraficoMetas();
         })
-        .sort((a, b) => b.porcentaje_cumplimiento - a.porcentaje_cumplimiento);
+    );
+
+    const sel = document.getElementById('selectAnioMetasGrafico');
+    if (sel) {
+        const prev = parseInt(sel.value);
+        sel.innerHTML = obtenerAniosDisponiblesMetas().map(a =>
+            `<option value="${a}" ${a===prev?'selected':''}>${a}</option>`
+        ).join('');
+    }
 }
 
-/**
- * Escapa caracteres HTML
- */
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+function limpiarRecursosMetas() {
+    destruirGraficoMetas();
+    metasMensualesData = [];
+    cacheMetasAnuales = {};
+    panelActivoMetas = null;
+    aniosActivosMetas = [];
+    tiposActivosMetas = new Set(['cumplimiento']);
+    tipoGraficoMetas = 'line';
+    anioMetasBase = null;
+    anioTablaMetas = null;
 }
 
-// Exponer funciones globalmente
-window.cargarMetaPorAmbito = cargarMetaPorAmbito;
-window.cargarReporteMetas = cargarReporteMetas;
-window.iniciarReporteMetas = iniciarReporteMetas;
-window.reiniciarReporteMetas = reiniciarReporteMetas;
-window.toggleAmbitoDetail = toggleAmbitoDetail;
-window.cambiarFiltroTiempo = cambiarFiltroTiempo;
-window.cambiarTrimestre = cambiarTrimestre;
-window.cambiarAnio = cambiarAnio;
+window.cargarMetaPorAmbito      = cargarMetaPorAmbito;
+window.limpiarRecursosMetas     = limpiarRecursosMetas;
+window.iniciarReporteMetas      = cargarMetaPorAmbito;
+
+console.log('reportes-metas.js cargado');

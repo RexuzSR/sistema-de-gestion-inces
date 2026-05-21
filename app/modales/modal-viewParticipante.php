@@ -526,6 +526,27 @@
                 "></div>
 
                 <div class="d-flex gap-2">
+                    <a id="btn-recorrido-participante" class="btn" onclick="window.location.href='reporte.php?cat=1&rep=12&id=' + document.getElementById('btn-historial-participante').getAttribute('data-id')" style="
+                        background: transparent;
+                        border: 2px solid #3b82f6;
+                        color: #3b82f6;
+                        padding: 8px 20px;
+                        border-radius: 12px;
+                        font-weight: 500;
+                        font-size: 0.85rem;
+                        transition: all 0.3s ease;
+                        text-decoration: none;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+                        cursor: pointer;
+                    " onmouseover="this.style.background='#3b82f6'; this.style.color='white'; this.style.boxShadow='0 0 25px rgba(59, 130, 246, 0.6)'" onmouseout="this.style.background='transparent'; this.style.color='#3b82f6'; this.style.boxShadow='0 0 15px rgba(59, 130, 246, 0.3)'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                        </svg>
+                        RECORRIDO
+                    </a>
                     <a id="btn-historial-participante" target="_blank" class="btn" data-id="" style="
                         background: transparent;
                         border: 2px solid #16a34a;

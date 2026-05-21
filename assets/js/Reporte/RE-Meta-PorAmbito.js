@@ -1,6 +1,6 @@
 // ========== REPORTE INDEPENDIENTE: META POR ÁMBITO ==========
 // Archivo: RE-Meta-PorAmbito.js
-// Función: cargarMetaPorAmbito (ID: 11)
+// Función: cargarMetaPorAmbito (ID: 11) - Metas Totales
 
 // Variables locales específicas de este reporte
 let metaPorAmbitoChart = null;
@@ -17,7 +17,7 @@ function cargarMetaPorAmbito() {
     contentDiv.innerHTML = `
         <div class="card shadow-lg border-0">
             <div class="card-header bg-${categoria.color} text-white">
-                <h4 class="mb-0"><i class="bi bi-building me-2"></i>Meta por Ámbito</h4>
+                <h4 class="mb-0"><i class="bi bi-building me-2"></i>Metas Totales</h4>
                 <p class="mb-0 mt-2 small opacity-75">Reporte de metas establecidas por cada ámbito de formación</p>
             </div>
             <div class="card-body">

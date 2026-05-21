@@ -77,21 +77,9 @@ $conn = null;
 <script src="../../assets/js/bootstrap.bundle.min.js"></script>
 <script src="../../assets/js/chart.js"></script>
 
-<!-- Buscador ya se carga en el header -->
 
-<script src="../../assets/js/Reporte/RE-Participante-Total.js"></script>
-<script src="../../assets/js/Reporte/RE-Participante-Aprobados.js"></script>
-<script src="../../assets/js/Reporte/RE-Participante-Ambito.js"></script>
-<script src="../../assets/js/Reporte/RE-Participante-Trayectoria.js"></script>
-<script src="../../assets/js/Reporte/RE-Curso-Total.js"></script>
-<script src="../../assets/js/Reporte/RE-Curso-MasParticipantes.js"></script>
-<script src="../../assets/js/Reporte/RE-Curso-MasRequerido.js"></script>
-<script src="../../assets/js/Reporte/RE-Curso-Trayectoria.js"></script>
-<script src="../../assets/js/Reporte/reportes-docentes.js"></script>
-<script src="../../assets/js/Reporte/RE-Docente-MasSolicitados.js"></script>
-<script src="../../assets/js/Reporte/RE-Docente-Total.js"></script>
-<script src="../../assets/js/Reporte/RE-Docente-Inactivos.js"></script>
-<script src="../../assets/js/Reporte/reportes-metas.js"></script>
+<!-- Los scripts de reportes se cargarán bajo demanda mediante reportes.js -->
+
 <script src="/Sistema%20de%20Gestion%20Inces/assets/js/Reporte/reportes.js"></script>
 <script src="../../assets/js/home.js"></script>
 <script src="../../assets/js/notifications.js"></script>

@@ -126,10 +126,10 @@ $(document).ready(function () {
                                     <div>
                                         <select class="form-select form-select-sm w-auto estado-select" style="max-width:140px;"
                                                 data-id="${p.id_participante_curso}" ${culminado ? '' : 'disabled'}>
-                                            <option value="" ${!estado?'selected':''}>Seleccionar</option>
-                                            <option value="Aprobado"     ${estado==='Aprobado'    ?'selected':''}>Aprobado</option>
-                                            <option value="Reprobado"    ${estado==='Reprobado'   ?'selected':''}>Reprobado</option>
-                                            <option value="Ausente"      ${estado==='Ausente'     ?'selected':''}>Ausente</option>
+                                            <option value="" ${!estado || (estado !== 'Aprobado' && estado !== 'Reprobado' && estado !== 'Ausente') ? 'selected' : ''}>Seleccionar</option>
+                                            <option value="Aprobado"  ${estado === 'Aprobado'  ? 'selected' : ''}>Aprobado</option>
+                                            <option value="Reprobado" ${estado === 'Reprobado' ? 'selected' : ''}>Reprobado</option>
+                                            <option value="Ausente"   ${estado === 'Ausente'   ? 'selected' : ''}>Ausente</option>
                                         </select>
                                     </div>
                                 </div>

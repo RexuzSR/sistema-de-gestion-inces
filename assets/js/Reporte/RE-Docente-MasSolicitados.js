@@ -6,10 +6,10 @@
 const API_URL_DOCENTES_SOL = '../controlador/Reporte/api_reportes.php';
 
 let docentesSolicitadosChart = null;
-let docentesSolicitadosData  = [];
-let anioDocentesSol          = new Date().getFullYear();
-let docSolTotalesActuales    = null;   // totales del año activo (para paneles de KPI)
-let docSolPanelActivo        = null;   // 'total'|'cursos'|'inactivos'|'top'|null
+let docentesSolicitadosData = [];
+let anioDocentesSol = new Date().getFullYear();
+let docSolTotalesActuales = null;   // totales del año activo (para paneles de KPI)
+let docSolPanelActivo = null;   // 'total'|'cursos'|'inactivos'|'top'|null
 
 // ─── Helper: fetch con manejo de errores ─────────────────────────────────────
 async function apiFetchSol(accion, params = {}) {
@@ -27,16 +27,16 @@ async function apiFetchSol(accion, params = {}) {
 
 // ─── Función principal ────────────────────────────────────────────────────────
 async function cargarDocentesMasSolicitados() {
-    const contentDiv  = document.getElementById('reportContent');
+    const contentDiv = document.getElementById('reportContent');
     const categoriaId = window.currentCategoryId || 3;
-    const categoria   = (window.categoriasReportes || []).find(c => c.id === categoriaId)
-                     || { color: 'warning', nombre: 'Docentes' };
+    const categoria = (window.categoriasReportes || []).find(c => c.id === categoriaId)
+        || { color: 'warning', nombre: 'Docentes' };
 
     // Reset de estado
     docentesSolicitadosChart = null;
-    docentesSolicitadosData  = [];
-    docSolTotalesActuales    = null;
-    docSolPanelActivo        = null;
+    docentesSolicitadosData = [];
+    docSolTotalesActuales = null;
+    docSolPanelActivo = null;
 
     contentDiv.innerHTML = `
         <div class="card shadow-lg border-0">
@@ -69,18 +69,18 @@ async function cargarDocentesMasSolicitados() {
 
     // Cargar años disponibles
     try {
-        const anios  = await apiFetchSol('anios_disponibles');
+        const anios = await apiFetchSol('anios_disponibles');
         const select = document.getElementById('selectAnioDocentesSol');
         if (select && Array.isArray(anios) && anios.length > 0) {
             anios.forEach(a => {
-                const opt       = document.createElement('option');
-                opt.value       = a;
+                const opt = document.createElement('option');
+                opt.value = a;
                 opt.textContent = a;
                 if (a === anioDocentesSol) opt.selected = true;
                 select.appendChild(opt);
             });
             select.addEventListener('change', e => {
-                anioDocentesSol   = parseInt(e.target.value);
+                anioDocentesSol = parseInt(e.target.value);
                 docSolPanelActivo = null;
                 cargarContenidoDocSol();
             });
@@ -92,17 +92,17 @@ async function cargarDocentesMasSolicitados() {
 
 // ─── Carga principal de contenido ────────────────────────────────────────────
 async function cargarContenidoDocSol() {
-    const loadEl  = document.getElementById('loadingDocentesSolicitados');
-    const contEl  = document.getElementById('contenidoDocentesSolicitados');
+    const loadEl = document.getElementById('loadingDocentesSolicitados');
+    const contEl = document.getElementById('contenidoDocentesSolicitados');
     const errorEl = document.getElementById('errorDocentesSolicitados');
-    const errMsg  = document.getElementById('errorMsgDocSol');
+    const errMsg = document.getElementById('errorMsgDocSol');
 
-    loadEl.style.display       = 'flex';
+    loadEl.style.display = 'flex';
     loadEl.style.flexDirection = 'column';
-    loadEl.style.alignItems    = 'center';
-    contEl.style.display       = 'none';
-    errorEl.style.display      = 'none';
-    docSolPanelActivo          = null;
+    loadEl.style.alignItems = 'center';
+    contEl.style.display = 'none';
+    errorEl.style.display = 'none';
+    docSolPanelActivo = null;
 
     if (docentesSolicitadosChart) {
         docentesSolicitadosChart.destroy();
@@ -116,13 +116,13 @@ async function cargarContenidoDocSol() {
         ]);
 
         docentesSolicitadosData = Array.isArray(ranking) ? ranking : [];
-        docSolTotalesActuales   = totalesObj?.totales || {};
+        docSolTotalesActuales = totalesObj?.totales || {};
         renderDocentesSolicitados(docentesSolicitadosData, totalesObj);
 
     } catch (err) {
-        loadEl.style.display  = 'none';
+        loadEl.style.display = 'none';
         errorEl.style.display = 'block';
-        errMsg.textContent    = `No se pudieron cargar los datos: ${err.message}`;
+        errMsg.textContent = `No se pudieron cargar los datos: ${err.message}`;
         console.error('[DocSol]', err);
     }
 }
@@ -133,19 +133,19 @@ function renderDocentesSolicitados(data, totalesObj) {
     const contEl = document.getElementById('contenidoDocentesSolicitados');
 
     const categoriaId = window.currentCategoryId || 3;
-    const categoria   = (window.categoriasReportes || []).find(c => c.id === categoriaId)
-                     || { color: 'warning' };
+    const categoria = (window.categoriasReportes || []).find(c => c.id === categoriaId)
+        || { color: 'warning' };
 
     loadEl.style.display = 'none';
     contEl.style.display = 'block';
 
-    const tot              = totalesObj?.totales || {};
-    const totalDocentes    = parseInt(tot.total      || 0);
-    const totalDisponible  = parseInt(tot.disponible || 0);
-    const totalAsignado    = parseInt(tot.asignado   || 0);
-    const totalInactivo    = parseInt(tot.inactivo   || 0);
-    const totalCursos      = data.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
-    const topDocente       = data.length > 0 ? data[0] : null;
+    const tot = totalesObj?.totales || {};
+    const totalDocentes = parseInt(tot.total || 0);
+    const totalDisponible = parseInt(tot.disponible || 0);
+    const totalAsignado = parseInt(tot.asignado || 0);
+    const totalInactivo = parseInt(tot.inactivo || 0);
+    const totalCursos = data.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
+    const topDocente = data.length > 0 ? data[0] : null;
 
     // Iconos SVG inline (misma técnica que RE-Docente-Total.js)
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
@@ -153,33 +153,33 @@ function renderDocentesSolicitados(data, totalesObj) {
     // KPI Cards — mismo marcado que RE-Docente-Total.js
     const kpiCards = [
         {
-            tipo:  'total',
+            tipo: 'total',
             valor: totalDocentes,
             label: 'Total Docentes',
-            sub:   `${totalDisponible} disponibles · ${totalAsignado} asignados`,
+            sub: `${totalDisponible} disponibles · ${totalAsignado} asignados`,
             color: 'primary'
         },
         {
-            tipo:  'cursos',
+            tipo: 'cursos',
             valor: totalCursos,
             label: 'Cursos Asignados',
-            sub:   `En el ranking top ${data.length}`,
+            sub: `En el ranking top ${data.length}`,
             color: 'success'
         },
         {
-            tipo:  'inactivos',
+            tipo: 'inactivos',
             valor: totalInactivo,
             label: 'Inactivos',
-            sub:   'Sin cursos activos',
+            sub: 'Sin cursos activos',
             color: 'danger'
         },
         {
-            tipo:  'top',
+            tipo: 'top',
             valor: topDocente
                 ? `${topDocente.primer_nombre} ${topDocente.primer_apellido}`
                 : '—',
             label: 'Más Solicitado',
-            sub:   topDocente
+            sub: topDocente
                 ? `${topDocente.cursos_asignados} cursos asignados`
                 : 'Sin datos',
             color: 'warning',
@@ -263,11 +263,11 @@ function renderDocentesSolicitados(data, totalesObj) {
                             </div>
                         </div>
                         ${data.length === 0
-                            ? `<div class="text-center py-4 text-muted">
+            ? `<div class="text-center py-4 text-muted">
                                    <i class="bi bi-inbox" style="font-size:2rem;"></i>
                                    <p class="mt-2">No hay docentes con cursos asignados en ${anioDocentesSol}.</p>
                                </div>`
-                            : `<div class="table-responsive">
+            : `<div class="table-responsive">
                                 <table class="table table-hover" id="tablaDocSol">
                                     <thead>
                                         <tr>
@@ -284,7 +284,7 @@ function renderDocentesSolicitados(data, totalesObj) {
                                     </tbody>
                                 </table>
                                </div>`
-                        }
+        }
                     </div>
                 </div>
             </div>
@@ -305,7 +305,7 @@ function docSolTogglePanel(tipo) {
     if (!wrapper) return;
 
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
-    const svgUp   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
+    const svgUp = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
 
     // Resetear badges
     ['total', 'cursos', 'inactivos', 'top'].forEach(t => {
@@ -316,7 +316,7 @@ function docSolTogglePanel(tipo) {
     // Si ya estaba abierto el mismo, cerrar
     if (docSolPanelActivo === tipo) {
         wrapper.style.display = 'none';
-        docSolPanelActivo     = null;
+        docSolPanelActivo = null;
         return;
     }
 
@@ -338,10 +338,10 @@ function docSolRenderPanel(tipo) {
     const t = docSolTotalesActuales || {};
 
     const cfgMap = {
-        total:    { titulo: 'Distribución de Docentes por Tipo y Estado', color: 'primary' },
-        cursos:   { titulo: 'Distribución de Cursos en el Ranking',       color: 'success' },
-        inactivos:{ titulo: 'Detalle de Docentes Inactivos',              color: 'danger'  },
-        top:      { titulo: 'Información del Docente Más Solicitado',     color: 'warning' }
+        total: { titulo: 'Distribución de Docentes por Tipo y Estado', color: 'primary' },
+        cursos: { titulo: 'Distribución de Cursos en el Ranking', color: 'success' },
+        inactivos: { titulo: 'Detalle de Docentes Inactivos', color: 'danger' },
+        top: { titulo: 'Información del Docente Más Solicitado', color: 'warning' }
     };
     const cfg = cfgMap[tipo] || { titulo: 'Detalle', color: 'secondary' };
 
@@ -349,12 +349,12 @@ function docSolRenderPanel(tipo) {
 
     // ── Panel: Total Docentes ─────────────────────────────────────────────────
     if (tipo === 'total') {
-        const totalActivos    = (parseInt(t.disponible)||0) + (parseInt(t.en_formacion)||0) + (parseInt(t.asignado)||0);
-        const totalGeneral    = parseInt(t.total) || 0;
-        const pctDisponible   = totalGeneral > 0 ? Math.round(((parseInt(t.disponible)||0)  / totalGeneral) * 100) : 0;
-        const pctAsignado     = totalGeneral > 0 ? Math.round(((parseInt(t.asignado)||0)    / totalGeneral) * 100) : 0;
-        const pctInactivo     = totalGeneral > 0 ? Math.round(((parseInt(t.inactivo)||0)    / totalGeneral) * 100) : 0;
-        const pctEnFormacion  = totalGeneral > 0 ? Math.round(((parseInt(t.en_formacion)||0)/ totalGeneral) * 100) : 0;
+        const totalActivos = (parseInt(t.disponible) || 0) + (parseInt(t.en_formacion) || 0) + (parseInt(t.asignado) || 0);
+        const totalGeneral = parseInt(t.total) || 0;
+        const pctDisponible = totalGeneral > 0 ? Math.round(((parseInt(t.disponible) || 0) / totalGeneral) * 100) : 0;
+        const pctAsignado = totalGeneral > 0 ? Math.round(((parseInt(t.asignado) || 0) / totalGeneral) * 100) : 0;
+        const pctInactivo = totalGeneral > 0 ? Math.round(((parseInt(t.inactivo) || 0) / totalGeneral) * 100) : 0;
+        const pctEnFormacion = totalGeneral > 0 ? Math.round(((parseInt(t.en_formacion) || 0) / totalGeneral) * 100) : 0;
 
         contenidoPanel = `
             <div class="row">
@@ -366,17 +366,17 @@ function docSolRenderPanel(tipo) {
                         </thead>
                         <tbody>
                             <tr><td><span class="badge bg-primary">Fijo</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.fijo)||0}</td>
-                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.fijo)||0)/totalGeneral)*100) : 0}%</td></tr>
+                                <td class="text-center fw-bold">${parseInt(t.fijo) || 0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.fijo) || 0) / totalGeneral) * 100) : 0}%</td></tr>
                             <tr><td><span class="badge bg-info text-dark">Contratado</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.contratado)||0}</td>
-                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.contratado)||0)/totalGeneral)*100) : 0}%</td></tr>
+                                <td class="text-center fw-bold">${parseInt(t.contratado) || 0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.contratado) || 0) / totalGeneral) * 100) : 0}%</td></tr>
                             <tr><td><span class="badge bg-success">PDL</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.pdl)||0}</td>
-                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.pdl)||0)/totalGeneral)*100) : 0}%</td></tr>
+                                <td class="text-center fw-bold">${parseInt(t.pdl) || 0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.pdl) || 0) / totalGeneral) * 100) : 0}%</td></tr>
                             <tr><td><span class="badge bg-secondary">Voluntario</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.voluntario)||0}</td>
-                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.voluntario)||0)/totalGeneral)*100) : 0}%</td></tr>
+                                <td class="text-center fw-bold">${parseInt(t.voluntario) || 0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.voluntario) || 0) / totalGeneral) * 100) : 0}%</td></tr>
                             <tr class="table-secondary fw-bold"><td>Total</td>
                                 <td class="text-center">${totalGeneral}</td><td class="text-center">100%</td></tr>
                         </tbody>
@@ -391,7 +391,7 @@ function docSolRenderPanel(tipo) {
                         <tbody>
                             <tr>
                                 <td><span class="badge bg-success">Disponible</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.disponible)||0}</td>
+                                <td class="text-center fw-bold">${parseInt(t.disponible) || 0}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
                                         <div class="progress flex-grow-1" style="height:6px;">
@@ -403,7 +403,7 @@ function docSolRenderPanel(tipo) {
                             </tr>
                             <tr>
                                 <td><span class="badge bg-warning text-dark">Asignado</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.asignado)||0}</td>
+                                <td class="text-center fw-bold">${parseInt(t.asignado) || 0}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
                                         <div class="progress flex-grow-1" style="height:6px;">
@@ -415,7 +415,7 @@ function docSolRenderPanel(tipo) {
                             </tr>
                             <tr>
                                 <td><span class="badge bg-info text-dark">En formación</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.en_formacion)||0}</td>
+                                <td class="text-center fw-bold">${parseInt(t.en_formacion) || 0}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
                                         <div class="progress flex-grow-1" style="height:6px;">
@@ -427,7 +427,7 @@ function docSolRenderPanel(tipo) {
                             </tr>
                             <tr>
                                 <td><span class="badge bg-danger">Inactivo</span></td>
-                                <td class="text-center fw-bold">${parseInt(t.inactivo)||0}</td>
+                                <td class="text-center fw-bold">${parseInt(t.inactivo) || 0}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-1">
                                         <div class="progress flex-grow-1" style="height:6px;">
@@ -440,7 +440,7 @@ function docSolRenderPanel(tipo) {
                             <tr class="table-secondary fw-bold">
                                 <td>Activos</td>
                                 <td class="text-center">${totalActivos}</td>
-                                <td><small class="text-muted">${totalGeneral > 0 ? Math.round((totalActivos/totalGeneral)*100) : 0}% del total</small></td>
+                                <td><small class="text-muted">${totalGeneral > 0 ? Math.round((totalActivos / totalGeneral) * 100) : 0}% del total</small></td>
                             </tr>
                         </tbody>
                     </table>
@@ -451,11 +451,11 @@ function docSolRenderPanel(tipo) {
                         </thead>
                         <tbody>
                             <tr><td>Masculino</td>
-                                <td class="text-center fw-bold">${parseInt(t.masculino)||0}</td>
-                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.masculino)||0)/totalGeneral)*100) : 0}%</td></tr>
+                                <td class="text-center fw-bold">${parseInt(t.masculino) || 0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.masculino) || 0) / totalGeneral) * 100) : 0}%</td></tr>
                             <tr><td>Femenino</td>
-                                <td class="text-center fw-bold">${parseInt(t.femenino)||0}</td>
-                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.femenino)||0)/totalGeneral)*100) : 0}%</td></tr>
+                                <td class="text-center fw-bold">${parseInt(t.femenino) || 0}</td>
+                                <td class="text-center">${totalGeneral > 0 ? Math.round(((parseInt(t.femenino) || 0) / totalGeneral) * 100) : 0}%</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -464,9 +464,9 @@ function docSolRenderPanel(tipo) {
 
     // ── Panel: Cursos en el ranking ───────────────────────────────────────────
     else if (tipo === 'cursos') {
-        const data       = docentesSolicitadosData;
+        const data = docentesSolicitadosData;
         const totalCursos = data.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
-        const maxCursos   = data.length > 0 ? parseInt(data[0].cursos_asignados || 1) : 1;
+        const maxCursos = data.length > 0 ? parseInt(data[0].cursos_asignados || 1) : 1;
 
         // Agrupar por tipo de docente
         const porTipo = {};
@@ -515,12 +515,12 @@ function docSolRenderPanel(tipo) {
                     <h6 class="fw-semibold mb-2">Carga por Docente (Top ${Math.min(10, data.length)})</h6>
                     <div style="max-height:280px;overflow-y:auto;">
                         ${data.slice(0, 10).map((d, idx) => {
-                            const cursos  = parseInt(d.cursos_asignados || 0);
-                            const pct     = maxCursos > 0 ? Math.round((cursos / maxCursos) * 100) : 0;
-                            const nivel   = cursos >= maxCursos * 0.7 ? 'danger'
-                                          : cursos >= maxCursos * 0.4 ? 'warning' : 'info';
-                            const iniciales = `${(d.primer_nombre||'')[0]||''}${(d.primer_apellido||'')[0]||''}`.toUpperCase();
-                            return `
+            const cursos = parseInt(d.cursos_asignados || 0);
+            const pct = maxCursos > 0 ? Math.round((cursos / maxCursos) * 100) : 0;
+            const nivel = cursos >= maxCursos * 0.7 ? 'danger'
+                : cursos >= maxCursos * 0.4 ? 'warning' : 'info';
+            const iniciales = `${(d.primer_nombre || '')[0] || ''}${(d.primer_apellido || '')[0] || ''}`.toUpperCase();
+            return `
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center flex-shrink-0 fw-bold"
                                      style="width:32px;height:32px;font-size:.7rem;">
@@ -536,7 +536,7 @@ function docSolRenderPanel(tipo) {
                                     </div>
                                 </div>
                             </div>`;
-                        }).join('')}
+        }).join('')}
                     </div>
                 </div>
             </div>`;
@@ -545,8 +545,8 @@ function docSolRenderPanel(tipo) {
     // ── Panel: Inactivos ──────────────────────────────────────────────────────
     else if (tipo === 'inactivos') {
         const totalInactivo = parseInt(t.inactivo) || 0;
-        const totalGeneral  = parseInt(t.total)    || 0;
-        const pct           = totalGeneral > 0 ? ((totalInactivo / totalGeneral) * 100).toFixed(1) : 0;
+        const totalGeneral = parseInt(t.total) || 0;
+        const pct = totalGeneral > 0 ? ((totalInactivo / totalGeneral) * 100).toFixed(1) : 0;
 
         // Docentes del ranking con estado Inactivo
         const inactivosEnRanking = docentesSolicitadosData.filter(
@@ -585,11 +585,11 @@ function docSolRenderPanel(tipo) {
                 <div class="col-md-7">
                     <h6 class="fw-semibold mb-2">Inactivos con asignaciones en ${anioDocentesSol}</h6>
                     ${inactivosEnRanking.length === 0
-                        ? `<div class="text-center py-3 text-muted">
+                ? `<div class="text-center py-3 text-muted">
                                <i class="bi bi-check-circle-fill text-success" style="font-size:1.8rem;"></i>
                                <p class="mt-2 small">Ningún docente del ranking tiene estado Inactivo.</p>
                            </div>`
-                        : `<div class="table-responsive">
+                : `<div class="table-responsive">
                                <table class="table table-sm table-bordered">
                                    <thead class="table-light">
                                        <tr><th>Docente</th><th class="text-center">Cursos</th><th>Tipo</th></tr>
@@ -599,19 +599,19 @@ function docSolRenderPanel(tipo) {
                                        <tr>
                                            <td>${d.primer_nombre} ${d.primer_apellido}</td>
                                            <td class="text-center fw-bold">${d.cursos_asignados}</td>
-                                           <td><span class="badge bg-secondary">${d.tipo_docente||'—'}</span></td>
+                                           <td><span class="badge bg-secondary">${d.tipo_docente || '—'}</span></td>
                                        </tr>`).join('')}
                                    </tbody>
                                </table>
                            </div>`
-                    }
+            }
                 </div>
             </div>`;
     }
 
     // ── Panel: Top Docente ────────────────────────────────────────────────────
     else if (tipo === 'top') {
-        const topDocente  = docentesSolicitadosData.length > 0 ? docentesSolicitadosData[0] : null;
+        const topDocente = docentesSolicitadosData.length > 0 ? docentesSolicitadosData[0] : null;
         const totalCursos = docentesSolicitadosData.reduce((s, d) => s + parseInt(d.cursos_asignados || 0), 0);
 
         if (!topDocente) {
@@ -620,15 +620,15 @@ function docSolRenderPanel(tipo) {
                 <p class="mt-2">No hay datos disponibles para ${anioDocentesSol}.</p>
             </div>`;
         } else {
-            const cursos      = parseInt(topDocente.cursos_asignados || 0);
-            const pctGlobal   = totalCursos > 0 ? ((cursos / totalCursos) * 100).toFixed(1) : 0;
-            const iniciales   = `${(topDocente.primer_nombre||'')[0]||''}${(topDocente.primer_apellido||'')[0]||''}`.toUpperCase();
-            const clsTipo     = { Fijo:'primary', Contratado:'info', PDL:'success', Voluntario:'secondary' };
-            const clsEst      = { Disponible:'success', Asignado:'warning', 'En formación':'info', Inactivo:'secondary' };
+            const cursos = parseInt(topDocente.cursos_asignados || 0);
+            const pctGlobal = totalCursos > 0 ? ((cursos / totalCursos) * 100).toFixed(1) : 0;
+            const iniciales = `${(topDocente.primer_nombre || '')[0] || ''}${(topDocente.primer_apellido || '')[0] || ''}`.toUpperCase();
+            const clsTipo = { Fijo: 'primary', Contratado: 'info', PDL: 'success', Voluntario: 'secondary' };
+            const clsEst = { Disponible: 'success', Asignado: 'warning', 'En formación': 'info', Inactivo: 'secondary' };
 
             // Posición relativa respecto a los demás docentes del ranking
             const ranking = docentesSolicitadosData.map((d, i) => ({
-                pos:    i + 1,
+                pos: i + 1,
                 nombre: `${d.primer_nombre} ${d.primer_apellido}`,
                 cursos: parseInt(d.cursos_asignados || 0)
             }));
@@ -642,8 +642,8 @@ function docSolRenderPanel(tipo) {
                             <div>
                                 <h5 class="mb-0 fw-bold">${topDocente.primer_nombre} ${topDocente.primer_apellido}</h5>
                                 <div class="d-flex gap-2 mt-1 flex-wrap">
-                                    <span class="badge bg-${clsTipo[topDocente.tipo_docente]||'secondary'}">${topDocente.tipo_docente||'—'}</span>
-                                    <span class="badge bg-${clsEst[topDocente.estado_docente]||'secondary'}">${topDocente.estado_docente||'—'}</span>
+                                    <span class="badge bg-${clsTipo[topDocente.tipo_docente] || 'secondary'}">${topDocente.tipo_docente || '—'}</span>
+                                    <span class="badge bg-${clsEst[topDocente.estado_docente] || 'secondary'}">${topDocente.estado_docente || '—'}</span>
                                     <span class="badge bg-warning text-dark"><i class="bi bi-trophy-fill me-1"></i>#1 del ranking</span>
                                 </div>
                             </div>
@@ -712,17 +712,17 @@ function docSolRenderPanel(tipo) {
 
 // ─── Fila de tabla ────────────────────────────────────────────────────────────
 function renderFilaDocSol(item, idx, totalCursos, totalDocentes, categoria) {
-    const cursos    = parseInt(item.cursos_asignados || 0);
+    const cursos = parseInt(item.cursos_asignados || 0);
     const maxCursos = docentesSolicitadosData.length > 0
-                      ? parseInt(docentesSolicitadosData[0].cursos_asignados || 1)
-                      : 1;
-    const pct       = Math.min(Math.round((cursos / maxCursos) * 100), 100);
-    const nivel     = cursos >= maxCursos * 0.7 ? 'Alto' : cursos >= maxCursos * 0.4 ? 'Moderado' : 'Básico';
-    const clsNivel  = nivel === 'Alto' ? 'bg-danger' : nivel === 'Moderado' ? 'bg-warning text-dark' : 'bg-info';
-    const clsPos    = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
-    const clsTipo   = { Fijo:'bg-primary', Contratado:'bg-info', PDL:'bg-success', Voluntario:'bg-secondary' };
-    const clsEst    = { Disponible:'bg-success', Asignado:'bg-warning text-dark', 'En formación':'bg-info', Inactivo:'bg-secondary' };
-    const iniciales = `${(item.primer_nombre||'')[0]||''}${(item.primer_apellido||'')[0]||''}`.toUpperCase();
+        ? parseInt(docentesSolicitadosData[0].cursos_asignados || 1)
+        : 1;
+    const pct = Math.min(Math.round((cursos / maxCursos) * 100), 100);
+    const nivel = cursos >= maxCursos * 0.7 ? 'Alto' : cursos >= maxCursos * 0.4 ? 'Moderado' : 'Básico';
+    const clsNivel = nivel === 'Alto' ? 'bg-danger' : nivel === 'Moderado' ? 'bg-warning text-dark' : 'bg-info';
+    const clsPos = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
+    const clsTipo = { Fijo: 'bg-primary', Contratado: 'bg-info', PDL: 'bg-success', Voluntario: 'bg-secondary' };
+    const clsEst = { Disponible: 'bg-success', Asignado: 'bg-warning text-dark', 'En formación': 'bg-info', Inactivo: 'bg-secondary' };
+    const iniciales = `${(item.primer_nombre || '')[0] || ''}${(item.primer_apellido || '')[0] || ''}`.toUpperCase();
 
     return `
     <tr style="cursor:pointer;" onclick="mostrarDetalleDocSolTabla(${idx})">
@@ -769,9 +769,9 @@ function renderGraficoDocSol(data, categoria) {
     if (top.length === 0) return;
 
     const tonosAmarillo = [
-        'rgba(255,235,59,.85)', 'rgba(255,214,0,.85)',  'rgba(255,193,7,.85)',
-        'rgba(255,167,38,.85)', 'rgba(255,143,0,.85)',  'rgba(255,111,0,.85)',
-        'rgba(255,80,0,.85)',   'rgba(230,60,0,.85)',
+        'rgba(255,235,59,.85)', 'rgba(255,214,0,.85)', 'rgba(255,193,7,.85)',
+        'rgba(255,167,38,.85)', 'rgba(255,143,0,.85)', 'rgba(255,111,0,.85)',
+        'rgba(255,80,0,.85)', 'rgba(230,60,0,.85)',
     ];
 
     docentesSolicitadosChart = new Chart(ctx, {
@@ -782,7 +782,7 @@ function renderGraficoDocSol(data, categoria) {
                 label: 'Cursos Asignados',
                 data: top.map(d => parseInt(d.cursos_asignados || 0)),
                 backgroundColor: top.map((_, i) => tonosAmarillo[i % tonosAmarillo.length]),
-                borderColor:     top.map((_, i) => tonosAmarillo[i % tonosAmarillo.length].replace('.85', '1')),
+                borderColor: top.map((_, i) => tonosAmarillo[i % tonosAmarillo.length].replace('.85', '1')),
                 borderWidth: 2,
                 borderRadius: 5,
             }]
@@ -816,7 +816,7 @@ function renderGraficoDocSol(data, categoria) {
                 y: {
                     beginAtZero: true,
                     ticks: { stepSize: 1, precision: 0 },
-                    title: { display: true, text: 'Cursos asignados', color: '#666', font: { size: 12 } },
+                    title: { display: true, text: 'Numero de cursos asignados', color: '#666', font: { size: 12 } },
                     grid: { color: 'rgba(0,0,0,.05)' }
                 },
                 x: {
@@ -834,15 +834,15 @@ function mostrarDetalleDocSol(idx) {
     const d = docentesSolicitadosData[idx];
     if (!d) return;
 
-    const cursos    = parseInt(d.cursos_asignados || 0);
-    const total     = docentesSolicitadosData.reduce((s, x) => s + parseInt(x.cursos_asignados || 0), 0);
+    const cursos = parseInt(d.cursos_asignados || 0);
+    const total = docentesSolicitadosData.reduce((s, x) => s + parseInt(x.cursos_asignados || 0), 0);
     const pctGlobal = total > 0 ? ((cursos / total) * 100).toFixed(1) : 0;
-    const iniciales = `${(d.primer_nombre||'')[0]||''}${(d.primer_apellido||'')[0]||''}`.toUpperCase();
-    const nivel     = cursos >= docentesSolicitadosData[0]?.cursos_asignados * 0.7 ? 'Alto'
-                    : cursos >= docentesSolicitadosData[0]?.cursos_asignados * 0.4 ? 'Moderado' : 'Básico';
-    const clsNivel  = nivel === 'Alto' ? 'danger' : nivel === 'Moderado' ? 'warning' : 'info';
-    const clsTipo   = { Fijo:'primary', Contratado:'info', PDL:'success', Voluntario:'secondary' };
-    const clsEst    = { Disponible:'success', Asignado:'warning', 'En formación':'info', Inactivo:'secondary' };
+    const iniciales = `${(d.primer_nombre || '')[0] || ''}${(d.primer_apellido || '')[0] || ''}`.toUpperCase();
+    const nivel = cursos >= docentesSolicitadosData[0]?.cursos_asignados * 0.7 ? 'Alto'
+        : cursos >= docentesSolicitadosData[0]?.cursos_asignados * 0.4 ? 'Moderado' : 'Básico';
+    const clsNivel = nivel === 'Alto' ? 'danger' : nivel === 'Moderado' ? 'warning' : 'info';
+    const clsTipo = { Fijo: 'primary', Contratado: 'info', PDL: 'success', Voluntario: 'secondary' };
+    const clsEst = { Disponible: 'success', Asignado: 'warning', 'En formación': 'info', Inactivo: 'secondary' };
 
     document.getElementById('tituloDetalleDocSol').textContent = `Detalle: ${d.primer_nombre}`;
 
@@ -854,8 +854,8 @@ function mostrarDetalleDocSol(idx) {
                 <div>
                     <h5 class="mb-0 fw-bold">${d.primer_nombre} ${d.primer_apellido}</h5>
                     <div class="d-flex gap-2 mt-1 flex-wrap">
-                        <span class="badge bg-${clsTipo[d.tipo_docente]||'secondary'}">${d.tipo_docente||'—'}</span>
-                        <span class="badge bg-${clsEst[d.estado_docente]||'secondary'}">${d.estado_docente||'—'}</span>
+                        <span class="badge bg-${clsTipo[d.tipo_docente] || 'secondary'}">${d.tipo_docente || '—'}</span>
+                        <span class="badge bg-${clsEst[d.estado_docente] || 'secondary'}">${d.estado_docente || '—'}</span>
                     </div>
                 </div>
             </div>
@@ -896,7 +896,7 @@ function mostrarDetalleDocSolTabla(idx) {
     mostrarDetalleDocSol(idx);
     if (idx < 8 && docentesSolicitadosChart) {
         const meta = docentesSolicitadosChart.getDatasetMeta(0);
-        const bar  = meta.data[idx];
+        const bar = meta.data[idx];
         if (bar) {
             const orig = bar.options.borderWidth;
             bar.options.borderWidth = 4;
@@ -915,8 +915,8 @@ function ordenarTablaDocSol(criterio, evt) {
     if (!tbody) return;
 
     const categoriaId = window.currentCategoryId || 3;
-    const categoria   = (window.categoriasReportes || []).find(c => c.id === categoriaId) || { color: 'warning' };
-    const filas       = Array.from(tbody.querySelectorAll('tr'));
+    const categoria = (window.categoriasReportes || []).find(c => c.id === categoriaId) || { color: 'warning' };
+    const filas = Array.from(tbody.querySelectorAll('tr'));
 
     filas.sort((a, b) => {
         if (criterio === 'nombre') {
@@ -933,7 +933,7 @@ function ordenarTablaDocSol(criterio, evt) {
 
     filas.forEach((fila, idx) => {
         const posCell = fila.querySelector('td:first-child');
-        const clsPos  = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
+        const clsPos = idx === 0 ? 'bg-warning text-dark' : idx === 1 ? 'bg-secondary' : idx === 2 ? 'bg-danger' : 'bg-light text-dark border';
         posCell.innerHTML = `
             <div class="d-flex align-items-center gap-1">
                 <span class="badge ${clsPos}">${idx + 1}</span>
@@ -951,17 +951,17 @@ function limpiarDocentesMasSolicitados() {
         docentesSolicitadosChart.destroy();
         docentesSolicitadosChart = null;
     }
-    docentesSolicitadosData  = [];
-    anioDocentesSol          = new Date().getFullYear();
-    docSolTotalesActuales    = null;
-    docSolPanelActivo        = null;
+    docentesSolicitadosData = [];
+    anioDocentesSol = new Date().getFullYear();
+    docSolTotalesActuales = null;
+    docSolPanelActivo = null;
 }
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 (function inyectarEstilosDocSol() {
     if (document.getElementById('_estDocSol')) return;
     const s = document.createElement('style');
-    s.id    = '_estDocSol';
+    s.id = '_estDocSol';
     s.textContent = `
         .kpi-card {
             transition: transform .25s, box-shadow .25s;
@@ -989,9 +989,9 @@ function limpiarDocentesMasSolicitados() {
 })();
 
 // ─── Registro global ──────────────────────────────────────────────────────────
-window.cargarDocentesMasSolicitados  = cargarDocentesMasSolicitados;
+window.cargarDocentesMasSolicitados = cargarDocentesMasSolicitados;
 window.limpiarDocentesMasSolicitados = limpiarDocentesMasSolicitados;
-window.ordenarTablaDocSol            = ordenarTablaDocSol;
-window.mostrarDetalleDocSolTabla     = mostrarDetalleDocSolTabla;
+window.ordenarTablaDocSol = ordenarTablaDocSol;
+window.mostrarDetalleDocSolTabla = mostrarDetalleDocSolTabla;
 
 console.log('RE-Docente-MasSolicitados.js cargado');

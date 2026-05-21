@@ -28,10 +28,9 @@ $(document).on('click', '.button.view', function () {
                 $('#sexo-view').text(participante.genero);
 
 
-                // Actualizar data-id USANDO .data() ⚠️
                 $('#modal-viewParticipante')
-                    .find('#btn-historial-participante, #btn-constancia-participante')
-                    .data('id', idParticipante); // Cambia .attr() por .data()
+                    .find('#btn-historial-participante, #btn-constancia-participante, #btn-recorrido-participante')
+                    .attr('data-id', idParticipante);
 
                 // Mostrar modal
                 $('#modal-viewParticipante').modal('show');

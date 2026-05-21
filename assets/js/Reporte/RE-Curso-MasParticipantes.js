@@ -3,9 +3,9 @@
 
 const API_URL_CMP = '../controlador/Reporte/api_reportes.php';
 
-let cmpChart          = null;
+let cmpChart = null;
 let cmpDatosCompletos = [];
-let anioCmp           = new Date().getFullYear();
+let anioCmp = new Date().getFullYear();
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 (function inyectarEstilosCmp() {
@@ -202,15 +202,15 @@ async function apiFetchCmp(accion, params = {}) {
 // ─── Clasificación ────────────────────────────────────────────────────────────
 function cmpClasificar(datos) {
     if (!datos || datos.length === 0) return null;
-    const vals   = datos.map(d => parseInt(d.total_participantes) || 0);
-    const prom   = vals.reduce((s, v) => s + v, 0) / vals.length;
-    const desv   = Math.sqrt(vals.reduce((s, v) => s + Math.pow(v - prom, 2), 0) / vals.length);
+    const vals = datos.map(d => parseInt(d.total_participantes) || 0);
+    const prom = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const desv = Math.sqrt(vals.reduce((s, v) => s + Math.pow(v - prom, 2), 0) / vals.length);
     const umbSup = prom + desv;
     const umbInf = Math.max(0, prom - desv);
     const clasificar = n => {
         if (n >= umbSup) return { estado: 'Muy Activo', clase: 'bg-danger' };
-        if (n >= umbInf) return { estado: 'Activo',     clase: 'bg-warning text-dark' };
-        return               { estado: 'Normal',        clase: 'bg-info' };
+        if (n >= umbInf) return { estado: 'Activo', clase: 'bg-warning text-dark' };
+        return { estado: 'Normal', clase: 'bg-info' };
     };
     return datos.map(c => {
         const cl = clasificar(parseInt(c.total_participantes) || 0);
@@ -224,7 +224,7 @@ function cmpDuracion(fi, ff) {
     const dias = Math.round((new Date(ff) - new Date(fi)) / 864e5);
     if (isNaN(dias) || dias < 0) return 'Sin información';
     if (dias === 0) return '1 día';
-    if (dias < 7)  return `${dias} día${dias !== 1 ? 's' : ''}`;
+    if (dias < 7) return `${dias} día${dias !== 1 ? 's' : ''}`;
     if (dias < 30) {
         const sem = Math.round(dias / 7);
         return `${sem} semana${sem !== 1 ? 's' : ''} (${dias} días)`;
@@ -236,9 +236,9 @@ function cmpDuracion(fi, ff) {
 // ─── Duración restante ────────────────────────────────────────────────────────
 function cmpDuracionRestante(fi, ff) {
     if (!fi || !ff) return { texto: 'Sin fechas registradas', clase: 'sin-fecha', icono: 'bi-calendar-x' };
-    const hoy    = new Date(); hoy.setHours(0,0,0,0);
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     const inicio = new Date(fi);
-    const fin    = new Date(ff);
+    const fin = new Date(ff);
     if (isNaN(inicio.getTime()) || isNaN(fin.getTime()))
         return { texto: 'Sin fechas registradas', clase: 'sin-fecha', icono: 'bi-calendar-x' };
     if (hoy < inicio) {
@@ -248,7 +248,7 @@ function cmpDuracionRestante(fi, ff) {
     if (hoy > fin) return { texto: 'Curso finalizado', clase: 'finalizado', icono: 'bi-check-circle-fill' };
     const dr = Math.round((fin - hoy) / 864e5);
     if (dr === 0) return { texto: 'Finaliza el día de hoy', clase: 'en-curso', icono: 'bi-flag-fill' };
-    if (dr < 7)   return { texto: `${dr} día${dr !== 1 ? 's' : ''} para culminar`, clase: 'en-curso', icono: 'bi-clock-fill' };
+    if (dr < 7) return { texto: `${dr} día${dr !== 1 ? 's' : ''} para culminar`, clase: 'en-curso', icono: 'bi-clock-fill' };
     if (dr < 30) {
         const sw = Math.round(dr / 7);
         return { texto: `${sw} semana${sw !== 1 ? 's' : ''} para culminar`, clase: 'en-curso', icono: 'bi-clock-fill' };
@@ -288,7 +288,7 @@ async function cargarCursosMasParticipantes() {
         </div>`;
 
     try {
-        const anios  = await apiFetchCmp('anios_disponibles');
+        const anios = await apiFetchCmp('anios_disponibles');
         const select = document.getElementById('selectAnioCmp');
         if (select && Array.isArray(anios) && anios.length > 0) {
             anios.forEach(a => {
@@ -299,19 +299,19 @@ async function cargarCursosMasParticipantes() {
             });
             select.addEventListener('change', e => { anioCmp = parseInt(e.target.value); cargarContenidoCmp(); });
         }
-    } catch (_) {}
+    } catch (_) { }
 
     cargarContenidoCmp();
 }
 
 async function cargarContenidoCmp() {
-    const loadEl  = document.getElementById('loadingCmp');
-    const contEl  = document.getElementById('contenidoCmp');
+    const loadEl = document.getElementById('loadingCmp');
+    const contEl = document.getElementById('contenidoCmp');
     const errorEl = document.getElementById('errorCmp');
-    const errMsg  = document.getElementById('errorMsgCmp');
+    const errMsg = document.getElementById('errorMsgCmp');
 
-    loadEl.style.cssText  = 'display:flex;flex-direction:column;align-items:center;';
-    contEl.style.display  = 'none';
+    loadEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;';
+    contEl.style.display = 'none';
     errorEl.style.display = 'none';
     if (cmpChart) { cmpChart.destroy(); cmpChart = null; }
 
@@ -324,9 +324,9 @@ async function cargarContenidoCmp() {
         loadEl.style.display = 'none';
         contEl.style.display = 'block';
     } catch (err) {
-        loadEl.style.display  = 'none';
+        loadEl.style.display = 'none';
         errorEl.style.display = 'block';
-        errMsg.textContent    = `No se pudieron cargar los datos: ${err.message}`;
+        errMsg.textContent = `No se pudieron cargar los datos: ${err.message}`;
         console.error('[CMP]', err);
     }
 }
@@ -342,13 +342,13 @@ function renderCmp(datos) {
     console.log('[CMP] Primer curso de muestra:', clasificados[0]);
 
     const totalPart = clasificados.reduce((s, c) => s + (parseInt(c.total_participantes) || 0), 0);
-    const promedio  = Math.round(totalPart / clasificados.length);
-    const top10     = [...clasificados]
+    const promedio = Math.round(totalPart / clasificados.length);
+    const top10 = [...clasificados]
         .sort((a, b) => (parseInt(b.total_participantes) || 0) - (parseInt(a.total_participantes) || 0))
         .slice(0, 10);
-    const topCurso  = top10[0] || null;
+    const topCurso = top10[0] || null;
 
-    const estatusOpts   = [...new Set(datos.map(c => c.estatus).filter(Boolean))].sort();
+    const estatusOpts = [...new Set(datos.map(c => c.estatus).filter(Boolean))].sort();
     const modalidadOpts = [...new Set(datos.map(c => c.modalidad).filter(Boolean))].sort();
 
     contEl.innerHTML = `
@@ -498,31 +498,31 @@ function renderCmp(datos) {
     `;
 
     // ── Estado interno ────────────────────────────────────────────────────────
-    const CMP_POR_PAGINA    = 10;
-    let cmpPagActual         = 1;
-    let cmpOrdenCol          = 'total_participantes';
-    let cmpOrdenDir          = 'desc';
-    let cmpDatosFilt         = [...clasificados];
-    let cmpCursoActivoId     = null;
+    const CMP_POR_PAGINA = 10;
+    let cmpPagActual = 1;
+    let cmpOrdenCol = 'total_participantes';
+    let cmpOrdenDir = 'desc';
+    let cmpDatosFilt = [...clasificados];
+    let cmpCursoActivoId = null;
 
     // ── Top 3 flip cards ──────────────────────────────────────────────────────
-    const top3      = top10.slice(0, 3);
+    const top3 = top10.slice(0, 3);
     const posLabels = ['1°', '2°', '3°'];
-    const posIcons  = [
-        { icon: 'bi-trophy-fill',  color: 'text-warning'   },
-        { icon: 'bi-award-fill',   color: 'text-secondary' },
-        { icon: 'bi-award',        color: 'text-danger'    },
+    const posIcons = [
+        { icon: 'bi-trophy-fill', color: 'text-warning' },
+        { icon: 'bi-award-fill', color: 'text-secondary' },
+        { icon: 'bi-award', color: 'text-danger' },
     ];
 
     const top3Container = document.getElementById('cmpTop3Cards');
     if (top3Container && top3.length > 0) {
         top3Container.innerHTML = top3.map((curso, i) => {
-            const part     = parseInt(curso.total_participantes || 0);
+            const part = parseInt(curso.total_participantes || 0);
             const pctTotal = totalPart > 0 ? ((part / totalPart) * 100).toFixed(1) : 0;
-            const ic       = posIcons[i];
-            const clsCla   = { 'Muy Activo':'bg-danger','Activo':'bg-warning text-dark','Normal':'bg-info' }[curso.clasificacion] || 'bg-secondary';
-            const nombreEsc = (curso.nombre_curso || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-            const idCurso   = parseInt(curso.id_curso) || 0;
+            const ic = posIcons[i];
+            const clsCla = { 'Muy Activo': 'bg-danger', 'Activo': 'bg-warning text-dark', 'Normal': 'bg-info' }[curso.clasificacion] || 'bg-secondary';
+            const nombreEsc = (curso.nombre_curso || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const idCurso = parseInt(curso.id_curso) || 0;
 
             return `
             <div class="col-md-4">
@@ -554,9 +554,9 @@ function renderCmp(datos) {
                             </div>
                             <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-people-fill text-primary me-1"></i>Participantes</span><strong>${part.toLocaleString()}</strong></div>
                             <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-pie-chart text-warning me-1"></i>% del total</span><strong class="text-warning">${pctTotal}%</strong></div>
-                            <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-tag text-secondary me-1"></i>Estatus</span><span class="badge bg-secondary">${curso.estatus||'N/D'}</span></div>
-                            <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-layers text-info me-1"></i>Modalidad</span><span class="badge bg-info">${curso.modalidad||'N/D'}</span></div>
-                            <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-clock text-muted me-1"></i>Duración</span><span>${cmpDuracion(curso.fecha_inicio,curso.fecha_fin)}</span></div>
+                            <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-tag text-secondary me-1"></i>Estatus</span><span class="badge bg-secondary">${curso.estatus || 'N/D'}</span></div>
+                            <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-layers text-info me-1"></i>Modalidad</span><span class="badge bg-info">${curso.modalidad || 'N/D'}</span></div>
+                            <div class="cmp-back-row"><span class="cmp-back-label"><i class="bi bi-clock text-muted me-1"></i>Duración</span><span>${cmpDuracion(curso.fecha_inicio, curso.fecha_fin)}</span></div>
                             <div class="mt-auto pt-2 text-center"><small class="text-muted">${pctTotal}% del total de participantes</small></div>
                         </div>
                     </div>
@@ -566,7 +566,7 @@ function renderCmp(datos) {
     }
 
     // ── Flip: gira la card y abre detalles SIN auto-scroll ────────────────────
-    window.cmpFlipClick = function(el, idCurso, nombreCurso) {
+    window.cmpFlipClick = function (el, idCurso, nombreCurso) {
         el.classList.toggle('cmp-flip--flipped');
         const curso = clasificados.find(c => parseInt(c.id_curso) === idCurso);
         if (curso) {
@@ -577,9 +577,9 @@ function renderCmp(datos) {
 
     // ── Paleta ────────────────────────────────────────────────────────────────
     const tonosAzulCmp = [
-        'rgba(13,110,253,.90)','rgba(11,94,215,.88)','rgba(9,79,181,.86)',
+        'rgba(13,110,253,.90)', 'rgba(11,94,215,.88)', 'rgba(9,79,181,.86)',
         'rgba(7,64,150,.84)', 'rgba(5,51,122,.82)', 'rgba(4,42,101,.80)',
-        'rgba(3,34,84,.78)',  'rgba(2,27,68,.76)',  'rgba(1,20,52,.74)',
+        'rgba(3,34,84,.78)', 'rgba(2,27,68,.76)', 'rgba(1,20,52,.74)',
         'rgba(0,14,40,.72)',
     ];
     function generarPaletaCmp(n) {
@@ -622,13 +622,13 @@ function renderCmp(datos) {
             return;
         }
         contenedor.innerHTML = participantes.map(p => {
-            const nombre    = (`${p.primer_nombre||''} ${p.primer_apellido||''}`).trim() || 'Sin nombre';
-            const iniciales = nombre.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-            const estatus   = p.estatus_participante || '';
-            const clasBadge = estatus==='Aprobado'       ? 'bg-success'
-                            : estatus==='En formación'   ? 'bg-primary'
-                            : estatus==='Ausente'||estatus==='Reprobado' ? 'bg-danger'
-                            : 'bg-secondary';
+            const nombre = (`${p.primer_nombre || ''} ${p.primer_apellido || ''}`).trim() || 'Sin nombre';
+            const iniciales = nombre.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+            const estatus = p.estatus_participante || '';
+            const clasBadge = estatus === 'Aprobado' ? 'bg-success'
+                : estatus === 'En formación' ? 'bg-primary'
+                    : estatus === 'Ausente' || estatus === 'Reprobado' ? 'bg-danger'
+                        : 'bg-secondary';
             return `
                 <div class="cmp-part-item">
                     <div class="cmp-part-avatar">${iniciales}</div>
@@ -656,32 +656,32 @@ function renderCmp(datos) {
         }
         cmpCursoActivoId = idCurso;
 
-        const part       = parseInt(d.total_participantes || 0);
-        const maxPart    = parseInt(top10[0]?.total_participantes || 1);
-        const pctGlobal  = totalPart > 0 ? ((part / totalPart) * 100).toFixed(1) : 0;
-        const diffPart   = maxPart - part;
-        const diffPct    = maxPart > 0 ? (((maxPart - part) / maxPart) * 100).toFixed(1) : '0.0';
+        const part = parseInt(d.total_participantes || 0);
+        const maxPart = parseInt(top10[0]?.total_participantes || 1);
+        const pctGlobal = totalPart > 0 ? ((part / totalPart) * 100).toFixed(1) : 0;
+        const diffPart = maxPart - part;
+        const diffPct = maxPart > 0 ? (((maxPart - part) / maxPart) * 100).toFixed(1) : '0.0';
         const esMasActivo = (part === maxPart);
-        const iniciales  = (d.nombre_curso||'XX').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-        const clsCla     = { 'Muy Activo':'danger','Activo':'warning','Normal':'info' }[d.clasificacion] || 'secondary';
-        const colorBorde = clsCla==='danger' ? '#dc3545' : clsCla==='warning' ? '#ffc107' : '#0dcaf0';
-        const durRest    = cmpDuracionRestante(d.fecha_inicio, d.fecha_fin);
-        const fechaIniStr = d.fecha_inicio ? new Date(d.fecha_inicio).toLocaleDateString('es-VE',{day:'2-digit',month:'long',year:'numeric'}) : 'Sin información';
-        const fechaFinStr = d.fecha_fin    ? new Date(d.fecha_fin).toLocaleDateString('es-VE',  {day:'2-digit',month:'long',year:'numeric'}) : 'Sin información';
+        const iniciales = (d.nombre_curso || 'XX').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+        const clsCla = { 'Muy Activo': 'danger', 'Activo': 'warning', 'Normal': 'info' }[d.clasificacion] || 'secondary';
+        const colorBorde = clsCla === 'danger' ? '#dc3545' : clsCla === 'warning' ? '#ffc107' : '#0dcaf0';
+        const durRest = cmpDuracionRestante(d.fecha_inicio, d.fecha_fin);
+        const fechaIniStr = d.fecha_inicio ? new Date(d.fecha_inicio).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Sin información';
+        const fechaFinStr = d.fecha_fin ? new Date(d.fecha_fin).toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Sin información';
 
         const wrapper = document.getElementById('cmpDetalleWrapper');
-        const card    = document.getElementById('cmpDetalleCard');
+        const card = document.getElementById('cmpDetalleCard');
         if (wrapper) { wrapper.classList.remove('cmp-detalle-visible'); void wrapper.offsetWidth; wrapper.classList.add('cmp-detalle-visible'); }
         if (card) card.style.borderLeftColor = colorBorde;
 
         // Actualizar gráfico
         if (cmpChart && chartIdx >= 0) {
             cmpActiveIndex = chartIdx;
-            const tot    = cmpChart.data.datasets[0].data.length;
+            const tot = cmpChart.data.datasets[0].data.length;
             const paleta = generarPaletaCmp(tot);
-            cmpChart.data.datasets[0].backgroundColor = paleta.map((c,i) => i===chartIdx ? 'rgba(253,126,20,.95)' : c);
-            cmpChart.data.datasets[0].borderColor     = paleta.map((c,i) => i===chartIdx ? 'rgba(200,90,0,1)' : c.replace(/[\d.]+\)$/,'1)'));
-            cmpChart.data.datasets[0].borderWidth     = Array.from({length:tot},(_,i) => i===chartIdx ? 3 : 2);
+            cmpChart.data.datasets[0].backgroundColor = paleta.map((c, i) => i === chartIdx ? 'rgba(253,126,20,.95)' : c);
+            cmpChart.data.datasets[0].borderColor = paleta.map((c, i) => i === chartIdx ? 'rgba(200,90,0,1)' : c.replace(/[\d.]+\)$/, '1)'));
+            cmpChart.data.datasets[0].borderWidth = Array.from({ length: tot }, (_, i) => i === chartIdx ? 3 : 2);
             cmpChart.update('none');
         }
 
@@ -715,7 +715,7 @@ function renderCmp(datos) {
                         <div>
                             <div class="fw-bold lh-sm" style="font-size:1rem;">${d.nombre_curso}</div>
                             <div class="d-flex gap-1 flex-wrap mt-1">
-                                <span class="badge bg-secondary" style="font-size:.82rem;">${d.estatus||'N/D'}</span>
+                                <span class="badge bg-secondary" style="font-size:.82rem;">${d.estatus || 'N/D'}</span>
                                 <span class="badge bg-${clsCla}" style="font-size:.82rem;">${d.clasificacion}</span>
                             </div>
                         </div>
@@ -770,7 +770,7 @@ function renderCmp(datos) {
                         </div>
                         <div class="cmp-fecha-row">
                             <span class="cmp-fecha-label"><i class="bi bi-hourglass-split text-secondary"></i>Duración total del curso</span>
-                            <span class="badge bg-light text-dark border" style="font-size:.85rem;">${cmpDuracion(d.fecha_inicio,d.fecha_fin)}</span>
+                            <span class="badge bg-light text-dark border" style="font-size:.85rem;">${cmpDuracion(d.fecha_inicio, d.fecha_fin)}</span>
                         </div>
                         <div class="cmp-fecha-row">
                             <span class="cmp-fecha-label"><i class="bi bi-clock-fill text-primary"></i>Tiempo restante</span>
@@ -782,7 +782,7 @@ function renderCmp(datos) {
 
                     <!-- Modalidad -->
                     <div class="cmp-metric-card">
-                        <div class="cmp-metric-value text-info" style="font-size:1.2rem;">${d.modalidad||'N/D'}</div>
+                        <div class="cmp-metric-value text-info" style="font-size:1.2rem;">${d.modalidad || 'N/D'}</div>
                         <div class="cmp-metric-label">Modalidad de Impartición</div>
                     </div>
                 </div>
@@ -790,8 +790,8 @@ function renderCmp(datos) {
 
         // ── Toggle diferencia — bug fix: sin animación CSS, control manual ──
         const toggleEl = document.getElementById('cmpDiffToggle');
-        const innerEl  = document.getElementById('cmpDiffInner');
-        const valorEl  = document.getElementById('cmpDiffValor');
+        const innerEl = document.getElementById('cmpDiffInner');
+        const valorEl = document.getElementById('cmpDiffValor');
 
         if (toggleEl && innerEl && valorEl && !esMasActivo) {
             let diffState = false; // false = porcentaje, true = participantes
@@ -817,7 +817,7 @@ function renderCmp(datos) {
 
         // Cargar participantes usando id_curso numérico
         const partScroll = document.getElementById('cmpPartScroll');
-        const partCount  = document.getElementById('cmpPartCount');
+        const partCount = document.getElementById('cmpPartCount');
 
         if (!idCurso || idCurso <= 0) {
             if (partCount) partCount.textContent = '0';
@@ -839,43 +839,43 @@ function renderCmp(datos) {
     // ── Tabla ─────────────────────────────────────────────────────────────────
     function renderTabla() {
         const maxPart = cmpDatosFilt.length > 0
-            ? Math.max(...cmpDatosFilt.map(c => parseInt(c.total_participantes)||0)) : 1;
+            ? Math.max(...cmpDatosFilt.map(c => parseInt(c.total_participantes) || 0)) : 1;
 
-        const ordenados = [...cmpDatosFilt].sort((a,b) => {
-            const dir = cmpOrdenDir==='asc' ? 1 : -1;
-            switch(cmpOrdenCol) {
-                case 'nombre_curso':        return dir*(a.nombre_curso||'').localeCompare(b.nombre_curso||'');
-                case 'total_participantes': return dir*((parseInt(a.total_participantes)||0)-(parseInt(b.total_participantes)||0));
-                case 'estatus':             return dir*(a.estatus||'').localeCompare(b.estatus||'');
-                case 'modalidad':           return dir*(a.modalidad||'').localeCompare(b.modalidad||'');
-                case 'clasificacion': { const p={'Muy Activo':3,'Activo':2,'Normal':1}; return dir*((p[a.clasificacion]||0)-(p[b.clasificacion]||0)); }
+        const ordenados = [...cmpDatosFilt].sort((a, b) => {
+            const dir = cmpOrdenDir === 'asc' ? 1 : -1;
+            switch (cmpOrdenCol) {
+                case 'nombre_curso': return dir * (a.nombre_curso || '').localeCompare(b.nombre_curso || '');
+                case 'total_participantes': return dir * ((parseInt(a.total_participantes) || 0) - (parseInt(b.total_participantes) || 0));
+                case 'estatus': return dir * (a.estatus || '').localeCompare(b.estatus || '');
+                case 'modalidad': return dir * (a.modalidad || '').localeCompare(b.modalidad || '');
+                case 'clasificacion': { const p = { 'Muy Activo': 3, 'Activo': 2, 'Normal': 1 }; return dir * ((p[a.clasificacion] || 0) - (p[b.clasificacion] || 0)); }
                 default: return 0;
             }
         });
 
-        const total  = ordenados.length;
-        const inicio = (cmpPagActual-1)*CMP_POR_PAGINA;
-        const fin    = Math.min(inicio+CMP_POR_PAGINA,total);
-        const tbody  = document.getElementById('cmpTbody');
+        const total = ordenados.length;
+        const inicio = (cmpPagActual - 1) * CMP_POR_PAGINA;
+        const fin = Math.min(inicio + CMP_POR_PAGINA, total);
+        const tbody = document.getElementById('cmpTbody');
         if (!tbody) return;
 
-        tbody.innerHTML = ordenados.slice(inicio,fin).length===0
+        tbody.innerHTML = ordenados.slice(inicio, fin).length === 0
             ? `<tr><td colspan="7" class="text-center py-5 text-muted">
                    <i class="bi bi-inbox" style="font-size:2.2rem;opacity:.35;"></i>
                    <p class="mt-2 mb-0" style="font-size:.95rem;">No se encontraron cursos.</p>
                </td></tr>`
-            : ordenados.slice(inicio,fin).map((item,idx) => {
-                const num    = inicio+idx+1;
-                const part   = parseInt(item.total_participantes||0);
-                const pct    = maxPart>0 ? Math.min(Math.round((part/maxPart)*100),100) : 0;
-                const clsPos = num===1?'bg-warning text-dark':num===2?'bg-secondary':num===3?'bg-danger':'bg-light text-dark border';
-                const idC    = parseInt(item.id_curso) || 0;
+            : ordenados.slice(inicio, fin).map((item, idx) => {
+                const num = inicio + idx + 1;
+                const part = parseInt(item.total_participantes || 0);
+                const pct = maxPart > 0 ? Math.min(Math.round((part / maxPart) * 100), 100) : 0;
+                const clsPos = num === 1 ? 'bg-warning text-dark' : num === 2 ? 'bg-secondary' : num === 3 ? 'bg-danger' : 'bg-light text-dark border';
+                const idC = parseInt(item.id_curso) || 0;
                 return `
                 <tr style="cursor:pointer;font-size:.93rem;" onclick="cmpClickFila(${idC})">
                     <td>
                         <div class="d-flex align-items-center gap-1">
                             <span class="badge ${clsPos}">${num}</span>
-                            ${num===1?'<i class="bi bi-fire text-danger"></i>':''}
+                            ${num === 1 ? '<i class="bi bi-fire text-danger"></i>' : ''}
                         </div>
                     </td>
                     <td><strong title="${item.nombre_curso}">${item.nombre_curso}</strong></td>
@@ -887,161 +887,161 @@ function renderCmp(datos) {
                             </div>
                         </div>
                     </td>
-                    <td><span class="badge bg-secondary">${item.estatus||'N/D'}</span></td>
-                    <td>${item.modalidad||'N/D'}</td>
-                    <td><span class="badge bg-light text-dark border" style="font-size:.82rem;">${cmpDuracion(item.fecha_inicio,item.fecha_fin)}</span></td>
+                    <td><span class="badge bg-secondary">${item.estatus || 'N/D'}</span></td>
+                    <td>${item.modalidad || 'N/D'}</td>
+                    <td><span class="badge bg-light text-dark border" style="font-size:.82rem;">${cmpDuracion(item.fecha_inicio, item.fecha_fin)}</span></td>
                     <td><span class="badge ${item.claseBadge}">${item.clasificacion}</span></td>
                 </tr>`;
             }).join('');
 
         const infoPag = document.getElementById('cmpInfoPag');
-        if (infoPag) infoPag.textContent = total>0 ? `Mostrando ${inicio+1}–${fin} de ${total} cursos` : 'Sin resultados';
+        if (infoPag) infoPag.textContent = total > 0 ? `Mostrando ${inicio + 1}–${fin} de ${total} cursos` : 'Sin resultados';
 
-        const pag       = document.getElementById('cmpPaginacion');
-        const totalPags = Math.ceil(total/CMP_POR_PAGINA);
+        const pag = document.getElementById('cmpPaginacion');
+        const totalPags = Math.ceil(total / CMP_POR_PAGINA);
         if (!pag) return;
-        if (totalPags<=1) { pag.innerHTML=''; return; }
+        if (totalPags <= 1) { pag.innerHTML = ''; return; }
 
-        let html = `<li class="page-item ${cmpPagActual===1?'disabled':''}"><a class="page-link cmpPageBtn" href="#" data-p="${cmpPagActual-1}">«</a></li>`;
-        for(let i=1;i<=totalPags;i++) {
-            if(i===1||i===totalPags||Math.abs(i-cmpPagActual)<=2)
-                html+=`<li class="page-item ${i===cmpPagActual?'active':''}"><a class="page-link cmpPageBtn" href="#" data-p="${i}">${i}</a></li>`;
-            else if(Math.abs(i-cmpPagActual)===3)
-                html+=`<li class="page-item disabled"><span class="page-link">…</span></li>`;
+        let html = `<li class="page-item ${cmpPagActual === 1 ? 'disabled' : ''}"><a class="page-link cmpPageBtn" href="#" data-p="${cmpPagActual - 1}">«</a></li>`;
+        for (let i = 1; i <= totalPags; i++) {
+            if (i === 1 || i === totalPags || Math.abs(i - cmpPagActual) <= 2)
+                html += `<li class="page-item ${i === cmpPagActual ? 'active' : ''}"><a class="page-link cmpPageBtn" href="#" data-p="${i}">${i}</a></li>`;
+            else if (Math.abs(i - cmpPagActual) === 3)
+                html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
         }
-        html+=`<li class="page-item ${cmpPagActual===totalPags?'disabled':''}"><a class="page-link cmpPageBtn" href="#" data-p="${cmpPagActual+1}">»</a></li>`;
-        pag.innerHTML=html;
+        html += `<li class="page-item ${cmpPagActual === totalPags ? 'disabled' : ''}"><a class="page-link cmpPageBtn" href="#" data-p="${cmpPagActual + 1}">»</a></li>`;
+        pag.innerHTML = html;
 
-        pag.querySelectorAll('.cmpPageBtn[data-p]').forEach(a=>{
-            a.addEventListener('click',e=>{
+        pag.querySelectorAll('.cmpPageBtn[data-p]').forEach(a => {
+            a.addEventListener('click', e => {
                 e.preventDefault();
-                const np=parseInt(a.dataset.p);
-                if(np>=1&&np<=totalPags&&np!==cmpPagActual){ cmpPagActual=np; renderTabla(); }
+                const np = parseInt(a.dataset.p);
+                if (np >= 1 && np <= totalPags && np !== cmpPagActual) { cmpPagActual = np; renderTabla(); }
             });
         });
     }
 
-    document.querySelectorAll('.cmpSortLink').forEach(a=>{
-        a.addEventListener('click',e=>{
+    document.querySelectorAll('.cmpSortLink').forEach(a => {
+        a.addEventListener('click', e => {
             e.preventDefault();
-            const col=a.dataset.col;
-            cmpOrdenDir=(cmpOrdenCol===col)?(cmpOrdenDir==='asc'?'desc':'asc'):(col==='total_participantes'?'desc':'asc');
-            cmpOrdenCol=col;
-            document.querySelectorAll('.cmpSortLink i').forEach(i=>i.className='bi bi-arrow-down-up ms-1');
-            const ico=a.querySelector('i');
-            if(ico) ico.className=`bi bi-arrow-${cmpOrdenDir==='asc'?'up':'down'} ms-1`;
-            cmpPagActual=1; renderTabla();
+            const col = a.dataset.col;
+            cmpOrdenDir = (cmpOrdenCol === col) ? (cmpOrdenDir === 'asc' ? 'desc' : 'asc') : (col === 'total_participantes' ? 'desc' : 'asc');
+            cmpOrdenCol = col;
+            document.querySelectorAll('.cmpSortLink i').forEach(i => i.className = 'bi bi-arrow-down-up ms-1');
+            const ico = a.querySelector('i');
+            if (ico) ico.className = `bi bi-arrow-${cmpOrdenDir === 'asc' ? 'up' : 'down'} ms-1`;
+            cmpPagActual = 1; renderTabla();
         });
     });
 
-    window.cmpFiltrarTabla = function() {
-        const fEst=(document.getElementById('cmpFiltroEstatus')?.value)||'';
-        const fMod=(document.getElementById('cmpFiltroModalidad')?.value)||'';
-        const fCla=(document.getElementById('cmpFiltroClasif')?.value)||'';
-        const fBus=((document.getElementById('cmpFiltroBusqueda')?.value)||'').toLowerCase().trim();
-        cmpDatosFilt=clasificados.filter(c=>{
-            if(fEst&&c.estatus!==fEst)return false;
-            if(fMod&&c.modalidad!==fMod)return false;
-            if(fCla&&c.clasificacion!==fCla)return false;
-            if(fBus&&!(c.nombre_curso||'').toLowerCase().includes(fBus))return false;
+    window.cmpFiltrarTabla = function () {
+        const fEst = (document.getElementById('cmpFiltroEstatus')?.value) || '';
+        const fMod = (document.getElementById('cmpFiltroModalidad')?.value) || '';
+        const fCla = (document.getElementById('cmpFiltroClasif')?.value) || '';
+        const fBus = ((document.getElementById('cmpFiltroBusqueda')?.value) || '').toLowerCase().trim();
+        cmpDatosFilt = clasificados.filter(c => {
+            if (fEst && c.estatus !== fEst) return false;
+            if (fMod && c.modalidad !== fMod) return false;
+            if (fCla && c.clasificacion !== fCla) return false;
+            if (fBus && !(c.nombre_curso || '').toLowerCase().includes(fBus)) return false;
             return true;
         });
-        cmpPagActual=1; renderTabla();
+        cmpPagActual = 1; renderTabla();
     };
-    window.cmpLimpiarFiltros = function() {
-        ['cmpFiltroEstatus','cmpFiltroModalidad','cmpFiltroClasif','cmpFiltroBusqueda']
-            .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-        cmpDatosFilt=[...clasificados]; cmpPagActual=1; renderTabla();
+    window.cmpLimpiarFiltros = function () {
+        ['cmpFiltroEstatus', 'cmpFiltroModalidad', 'cmpFiltroClasif', 'cmpFiltroBusqueda']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        cmpDatosFilt = [...clasificados]; cmpPagActual = 1; renderTabla();
     };
-    window.cmpClickFila = function(idCurso) {
-        const curso=clasificados.find(c=>parseInt(c.id_curso)===idCurso);
-        if(!curso)return;
-        const chartIdx=top10.findIndex(c=>parseInt(c.id_curso)===idCurso);
+    window.cmpClickFila = function (idCurso) {
+        const curso = clasificados.find(c => parseInt(c.id_curso) === idCurso);
+        if (!curso) return;
+        const chartIdx = top10.findIndex(c => parseInt(c.id_curso) === idCurso);
         mostrarDetalleCmp(curso, chartIdx, true);
     };
-    window.cmpCerrarDetalle = function() {
-        const wrapper=document.getElementById('cmpDetalleWrapper');
-        if(wrapper)wrapper.classList.remove('cmp-detalle-visible');
-        cmpCursoActivoId=null;
-        if(cmpChart){
-            const tot=cmpChart.data.datasets[0].data.length;
-            const paleta=generarPaletaCmp(tot);
-            cmpChart.data.datasets[0].backgroundColor=paleta;
-            cmpChart.data.datasets[0].borderColor=paleta.map(c=>c.replace(/[\d.]+\)$/,'1)'));
-            cmpChart.data.datasets[0].borderWidth=Array(tot).fill(2);
+    window.cmpCerrarDetalle = function () {
+        const wrapper = document.getElementById('cmpDetalleWrapper');
+        if (wrapper) wrapper.classList.remove('cmp-detalle-visible');
+        cmpCursoActivoId = null;
+        if (cmpChart) {
+            const tot = cmpChart.data.datasets[0].data.length;
+            const paleta = generarPaletaCmp(tot);
+            cmpChart.data.datasets[0].backgroundColor = paleta;
+            cmpChart.data.datasets[0].borderColor = paleta.map(c => c.replace(/[\d.]+\)$/, '1)'));
+            cmpChart.data.datasets[0].borderWidth = Array(tot).fill(2);
             cmpChart.update('none');
         }
-        cmpActiveIndex=-1;
+        cmpActiveIndex = -1;
     };
 
     renderTabla();
 
     // ── Gráfico: todos los cursos ─────────────────────────────────────────────
-    (function initChart(){
-        const canvasEl=document.getElementById('graficoCmp');
-        if(!canvasEl)return;
-        if(cmpChart){cmpChart.destroy();cmpChart=null;}
+    (function initChart() {
+        const canvasEl = document.getElementById('graficoCmp');
+        if (!canvasEl) return;
+        if (cmpChart) { cmpChart.destroy(); cmpChart = null; }
 
-        const todosOrdenados=[...clasificados].sort((a,b)=>(parseInt(b.total_participantes)||0)-(parseInt(a.total_participantes)||0));
-        const paleta=generarPaletaCmp(todosOrdenados.length);
+        const todosOrdenados = [...clasificados].sort((a, b) => (parseInt(b.total_participantes) || 0) - (parseInt(a.total_participantes) || 0));
+        const paleta = generarPaletaCmp(todosOrdenados.length);
 
-        cmpChart=new Chart(canvasEl,{
-            type:'bar',
-            data:{
-                labels:todosOrdenados.map(c=>{const n=c.nombre_curso||'';return n.length>20?n.substring(0,18)+'…':n;}),
-                datasets:[{
-                    label:'Participantes',
-                    data:todosOrdenados.map(c=>parseInt(c.total_participantes)||0),
-                    backgroundColor:paleta,
-                    borderColor:paleta.map(c=>c.replace(/[\d.]+\)$/,'1)')),
-                    borderWidth:2, borderRadius:5,
+        cmpChart = new Chart(canvasEl, {
+            type: 'bar',
+            data: {
+                labels: todosOrdenados.map(c => { const n = c.nombre_curso || ''; return n.length > 20 ? n.substring(0, 18) + '…' : n; }),
+                datasets: [{
+                    label: 'Participantes',
+                    data: todosOrdenados.map(c => parseInt(c.total_participantes) || 0),
+                    backgroundColor: paleta,
+                    borderColor: paleta.map(c => c.replace(/[\d.]+\)$/, '1)')),
+                    borderWidth: 2, borderRadius: 5,
                 }]
             },
-            options:{
-                responsive:true, maintainAspectRatio:false,
-                plugins:{
-                    legend:{display:false},
-                    tooltip:{
-                        callbacks:{
-                            title(items){return todosOrdenados[items[0].dataIndex]?.nombre_curso||'';},
-                            label(ctx){
-                                const d=todosOrdenados[ctx.dataIndex];
-                                return[
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title(items) { return todosOrdenados[items[0].dataIndex]?.nombre_curso || ''; },
+                            label(ctx) {
+                                const d = todosOrdenados[ctx.dataIndex];
+                                return [
                                     `Participantes: ${ctx.raw.toLocaleString()}`,
-                                    `Estatus: ${d?.estatus||'N/D'}`,
-                                    `Modalidad: ${d?.modalidad||'N/D'}`,
-                                    `Estado: ${d?.clasificacion||'N/D'}`,
+                                    `Estatus: ${d?.estatus || 'N/D'}`,
+                                    `Modalidad: ${d?.modalidad || 'N/D'}`,
+                                    `Estado: ${d?.clasificacion || 'N/D'}`,
                                 ];
                             }
                         },
-                        backgroundColor:'rgba(0,0,0,.85)',
-                        padding:12,cornerRadius:6,
-                        titleFont:{size:13},bodyFont:{size:12}
+                        backgroundColor: 'rgba(0,0,0,.85)',
+                        padding: 12, cornerRadius: 6,
+                        titleFont: { size: 13 }, bodyFont: { size: 12 }
                     }
                 },
-                scales:{
-                    y:{
-                        beginAtZero:true,
-                        ticks:{callback:v=>v.toLocaleString(),font:{size:12}},
-                        title:{display:true,text:'Participantes',color:'#475569',font:{size:13}},
-                        grid:{color:'rgba(0,0,0,.05)'}
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString(), font: { size: 12 } },
+                        title: { display: true, text: 'Numero de Participantes', color: '#475569', font: { size: 13 } },
+                        grid: { color: 'rgba(0,0,0,.05)' }
                     },
-                    x:{
-                        title:{display:true,text:'Cursos',color:'#475569',font:{size:13}},
-                        grid:{display:false},
-                        ticks:{maxRotation:35,font:{size:11}}
+                    x: {
+                        title: { display: true, text: 'Cursos', color: '#475569', font: { size: 13 } },
+                        grid: { display: false },
+                        ticks: { maxRotation: 35, font: { size: 11 } }
                     }
                 },
-                animation:{duration:900,easing:'easeOutQuart'}
+                animation: { duration: 900, easing: 'easeOutQuart' }
             }
         });
 
-        canvasEl.addEventListener('click',function(event){
-            const elements=cmpChart.getElementsAtEventForMode(event,'nearest',{intersect:true},false);
-            if(elements&&elements.length>0){
-                const idx=elements[0].index;
-                const curso=todosOrdenados[idx];
-                if(curso) mostrarDetalleCmp(curso, idx, true);
+        canvasEl.addEventListener('click', function (event) {
+            const elements = cmpChart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, false);
+            if (elements && elements.length > 0) {
+                const idx = elements[0].index;
+                const curso = todosOrdenados[idx];
+                if (curso) mostrarDetalleCmp(curso, idx, true);
             }
         });
     })();
@@ -1050,9 +1050,9 @@ function renderCmp(datos) {
 
 // ─── Limpieza ─────────────────────────────────────────────────────────────────
 function limpiarCursosMasParticipantes() {
-    if(cmpChart){cmpChart.destroy();cmpChart=null;}
-    cmpDatosCompletos=[];
-    anioCmp=new Date().getFullYear();
+    if (cmpChart) { cmpChart.destroy(); cmpChart = null; }
+    cmpDatosCompletos = [];
+    anioCmp = new Date().getFullYear();
     delete window.cmpFiltrarTabla;
     delete window.cmpLimpiarFiltros;
     delete window.cmpClickFila;
@@ -1060,7 +1060,7 @@ function limpiarCursosMasParticipantes() {
     delete window.cmpFlipClick;
 }
 
-window.cargarCursosMasParticipantes  = cargarCursosMasParticipantes;
+window.cargarCursosMasParticipantes = cargarCursosMasParticipantes;
 window.limpiarCursosMasParticipantes = limpiarCursosMasParticipantes;
 
 console.log('RE-Curso-MasParticipantes.js cargado');

@@ -1049,7 +1049,7 @@ function _opcionesCursoChart(esCircular, esPolar) {
             }}}
         },
         scales: (esCircular || esPolar) ? {} : {
-            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.07)' }, title: { display: true, text: 'Participantes' } },
+            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.07)' }, title: { display: true, text: 'Número Participantes', color: '#64748b', font: { size: 11, weight: 600 } } },
             x: { grid: { color: 'rgba(0,0,0,0.07)' } }
         }
     };
@@ -1160,7 +1160,7 @@ function renderGraficasCursos(cursos) {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `Participantes: ${c.parsed.y.toLocaleString()}` } } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.07)' }, title: { display: true, text: 'Participantes' } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.07)' }, title: { display: true, text: 'Número Participantes', color: '#64748b', font: { size: 11, weight: 600 } } },
                     x: { grid: { color: 'rgba(0,0,0,0.07)' } }
                 }
             }
@@ -1304,7 +1304,7 @@ function renderGraficoAprob() {
             },
             scales: {
                 x: { grid: { color: 'rgba(0,0,0,0.07)' } },
-                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.07)' }, title: { display: true, text: 'Participantes' } }
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.07)' }, title: { display: true, text: 'Número Participantes', color: '#64748b', font: { size: 11, weight: 600 } } }
             },
             interaction: { intersect: false, mode: 'index' }
         }

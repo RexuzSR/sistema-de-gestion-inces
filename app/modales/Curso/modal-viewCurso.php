@@ -149,6 +149,35 @@
                 border: 1px solid #0281fe;
                 box-shadow: 0 0 10px rgba(2, 129, 254, 0.3);
               ">Estado: -</span>
+
+              <!-- Motivos de diferimiento -->
+              <div id="motivos-diferido-view" class="d-none mt-2 w-100">
+                <div style="
+                  border: 1.5px solid #f59e0b;
+                  background: #fffbeb;
+                  border-radius: 12px;
+                  padding: 10px 16px;
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 8px;
+                  align-items: center;
+                ">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                    viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2" style="flex-shrink:0;">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  </svg>
+                  <span style="color:#92400e; font-weight:600; font-size:0.85rem;">Motivo(s) de diferimiento:</span>
+                  <span id="motivo-sin-participantes" class="d-none" style="
+                    background:#fef3c7; color:#92400e; border:1px solid #f59e0b;
+                    border-radius:20px; padding:3px 12px; font-size:0.8rem; font-weight:500;
+                  ">⚠ Participantes insuficientes</span>
+                  <span id="motivo-sin-docente" class="d-none" style="
+                    background:#fef3c7; color:#92400e; border:1px solid #f59e0b;
+                    border-radius:20px; padding:3px 12px; font-size:0.8rem; font-weight:500;
+                  ">⚠ Sin docente asignado</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -582,12 +611,11 @@
         </button>
         
         <div class="d-flex gap-2">
-          <button class="btn futuristic-button-outline-light" id="btn-recordatorio" onclick="enviarRecordatorioMasivo()">
+          <button class="btn futuristic-button-outline-light" id="btn-recorrido-curso" onclick="window.location.href='reporte.php?cat=2&rep=13&id=' + document.getElementById('btn-matricula-pdf').getAttribute('data-id')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 2L11 13"></path>
-              <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
             </svg>
-            RECORDATORIO
+            RECORRIDO
           </button>
           
           <button class="btn futuristic-button-primary-light" id="btn-matricula-pdf" data-id="">

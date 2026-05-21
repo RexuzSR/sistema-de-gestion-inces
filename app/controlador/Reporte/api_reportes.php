@@ -237,9 +237,9 @@ function selectDemo(string $alias = 'p'): string {
         SUM(CASE WHEN $alias.genero = 'Femenino'  THEN 1 ELSE 0 END) AS femenino,
         SUM(CASE WHEN $alias.id_discapacidad IS NOT NULL AND $alias.id_discapacidad <> 1 THEN 1 ELSE 0 END) AS con_disc,
         SUM(CASE WHEN $alias.id_discapacidad IS NULL OR $alias.id_discapacidad = 1 THEN 1 ELSE 0 END) AS sin_disc,
-        SUM(CASE WHEN $alias.edad BETWEEN 15 AND 17 THEN 1 ELSE 0 END) AS adolescente,
-        SUM(CASE WHEN $alias.edad BETWEEN 18 AND 59 THEN 1 ELSE 0 END) AS adulto,
-        SUM(CASE WHEN $alias.edad >= 60             THEN 1 ELSE 0 END) AS adulto_mayor
+        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) BETWEEN 15 AND 17 THEN 1 ELSE 0 END) AS adolescente,
+        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) BETWEEN 18 AND 59 THEN 1 ELSE 0 END) AS adulto,
+        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) >= 60             THEN 1 ELSE 0 END) AS adulto_mayor
     ";
 }
 

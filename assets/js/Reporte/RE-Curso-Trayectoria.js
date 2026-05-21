@@ -417,6 +417,144 @@ function curTrayRenderPaginacion(totalPags) {
 }
 
 let curTrayChartInstance = null;
+let curTrayMesesState = null;
+let curTraySelectedMonthKey = null;
+let curTrayCursoDetalle = null;
+
+const CUR_TRAY_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function curTrayParseDate(f) {
+    if (!f || f === '0000-00-00') return null;
+    const [y, m, d] = f.split('-').map(Number);
+    if (!y || !m) return null;
+    return new Date(y, m - 1, d || 1);
+}
+
+function curTrayDiffDays(a, b) {
+    if (!a || !b) return 0;
+    return Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
+}
+
+function curTrayBuildMesesData(d) {
+    const parts = d.participantes || [];
+    let start = curTrayParseDate(d.fecha_inicio);
+    let end = curTrayParseDate(d.fecha_fin);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    parts.forEach(p => {
+        const fi = curTrayParseDate(p.fecha_inscripcion);
+        if (!fi) return;
+        if (!start || fi < start) start = fi;
+        if (!end || fi > end) end = fi;
+    });
+
+    if (!start) start = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    if (!end) end = new Date(start);
+
+    const mesesMap = {};
+    parts.forEach(p => {
+        if (!p.fecha_inscripcion || p.fecha_inscripcion === '0000-00-00') return;
+        const [y, m] = p.fecha_inscripcion.split('-');
+        const key = `${y}-${m.padStart(2, '0')}`;
+        if (!mesesMap[key]) mesesMap[key] = { count: 0, participantes: [], label: '' };
+        mesesMap[key].count++;
+        mesesMap[key].participantes.push(p);
+    });
+
+    const labels = [];
+    const monthKeys = [];
+    const dataPoints = [];
+    const pointColors = [];
+    let curY = start.getFullYear();
+    let curM = start.getMonth() + 1;
+    const endY = end.getFullYear();
+    const endM = end.getMonth() + 1;
+    let guard = 0;
+
+    while (curY < endY || (curY === endY && curM <= endM)) {
+        if (++guard > 120) break;
+        const key = `${curY}-${String(curM).padStart(2, '0')}`;
+        const nombreMes = `${CUR_TRAY_MESES[curM - 1]} ${curY}`;
+        labels.push(nombreMes);
+        monthKeys.push(key);
+        if (!mesesMap[key]) mesesMap[key] = { label: nombreMes, count: 0, participantes: [] };
+        else mesesMap[key].label = nombreMes;
+        dataPoints.push(mesesMap[key].count);
+        pointColors.push(mesesMap[key].count > 0 ? '#0891b2' : '#cbd5e1');
+        curM++;
+        if (curM > 12) { curM = 1; curY++; }
+    }
+
+    const totalInscritos = parts.length;
+    const mesesConDatos = Object.values(mesesMap).filter(m => m.count > 0);
+    let peakKey = null;
+    let peakCount = 0;
+    Object.entries(mesesMap).forEach(([k, v]) => {
+        if (v.count > peakCount) { peakCount = v.count; peakKey = k; }
+    });
+
+    const duracionDias = curTrayDiffDays(start, end);
+    const transcurridos = curTrayDiffDays(start, hoy);
+    const pctTiempo = duracionDias > 0 ? Math.min(100, Math.round((transcurridos / duracionDias) * 100)) : 0;
+    const cupoPct = d.max_participantes > 0
+        ? Math.round((totalInscritos / d.max_participantes) * 100) : 0;
+
+    let pctHoy = null;
+    if (start && end && hoy >= start && hoy <= end && duracionDias > 0) {
+        pctHoy = Math.round((transcurridos / duracionDias) * 100);
+    }
+
+    return {
+        labels, monthKeys, dataPoints, pointColors, mesesMap,
+        start, end, hoy, totalInscritos, mesesConDatos: mesesConDatos.length,
+        peakKey, peakCount, duracionDias, pctTiempo, cupoPct, pctHoy,
+    };
+}
+
+function curTrayNarrativaTexto(d, stats) {
+    const est = (d.estatus || '').toLowerCase();
+    const periodo = `${curTrayFecha(d.fecha_inicio)} — ${curTrayFecha(d.fecha_fin)}`;
+    let fase = '';
+
+    if (est.includes('espera')) {
+        fase = 'El curso está <strong>en espera</strong> de iniciar. Aún no ha comenzado el periodo lectivo programado.';
+    } else if (est.includes('proceso')) {
+        fase = `El curso está <strong>en proceso</strong>. Lleva aproximadamente <strong>${stats.pctTiempo}%</strong> del periodo transcurrido (${periodo}).`;
+    } else if (est.includes('culminado')) {
+        fase = `El curso <strong>culminó</strong> su periodo (${periodo}). Puedes revisar mes a mes cómo se fueron inscribiendo los participantes.`;
+    } else if (est.includes('diferido')) {
+        fase = 'Este curso fue <strong>diferido</strong>. Revisa las inscripciones por mes para entender su actividad histórica.';
+    } else if (est.includes('pausa')) {
+        fase = 'El curso está <strong>en pausa</strong>. Las inscripciones registradas reflejan la actividad hasta este punto.';
+    } else {
+        fase = `Periodo del curso: <strong>${periodo}</strong>.`;
+    }
+
+    if (stats.totalInscritos === 0) {
+        return `${fase} Hasta ahora <strong>no hay participantes inscritos</strong> registrados en el sistema para este curso.`;
+    }
+
+    const pico = stats.peakKey && stats.mesesMap[stats.peakKey]
+        ? stats.mesesMap[stats.peakKey].label : null;
+
+    let insc = `Hay <strong>${stats.totalInscritos}</strong> participante(s) inscrito(s)`;
+    if (stats.mesesConDatos === 1) insc += ' concentrados en un solo mes';
+    else if (stats.mesesConDatos > 1) insc += ` distribuidos en <strong>${stats.mesesConDatos} meses</strong>`;
+    if (pico && stats.peakCount > 0) insc += `; el mayor pico fue en <strong>${pico}</strong> (${stats.peakCount} inscripción${stats.peakCount !== 1 ? 'es' : ''})`;
+    insc += '.';
+
+    return `${fase} ${insc} Selecciona un mes abajo o haz clic en la gráfica para ver quiénes se inscribieron.`;
+}
+
+function curTrayEscape(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 async function curTrayAbrirDetalle(id) {
     const panel = document.getElementById('curTrayDetallePanel');
@@ -434,259 +572,317 @@ async function curTrayAbrirDetalle(id) {
     }
 }
 
+function curTraySelectMonth(key) {
+    if (!curTrayMesesState || !curTrayCursoDetalle) return;
+    curTraySelectedMonthKey = key;
+
+    document.querySelectorAll('.ct-month-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.monthKey === key);
+    });
+
+    if (curTrayChartInstance && curTrayMesesState) {
+        const colors = curTrayMesesState.dataPoints.map((v, i) =>
+            curTrayMesesState.monthKeys[i] === key ? '#0e7490' : (v > 0 ? '#0891b2' : '#e2e8f0'));
+        curTrayChartInstance.data.datasets[0].backgroundColor = colors;
+        curTrayChartInstance.data.datasets[0].borderColor = colors.map(c => (c === '#e2e8f0' ? '#cbd5e1' : c));
+        curTrayChartInstance.update('none');
+    }
+
+    const monthData = key ? curTrayMesesState.mesesMap[key] : null;
+    curTrayRenderDetalle(curTrayCursoDetalle, monthData);
+}
+
+function curTrayRenderLifecycleHtml(d, stats) {
+    const { start, end, hoy, pctTiempo, peakKey, mesesMap } = stats;
+    if (!start || !end) return '';
+
+    const totalMs = end - start || 1;
+    const pctFill = Math.min(100, pctTiempo);
+    let pctToday = null;
+    if (hoy >= start && hoy <= end) {
+        pctToday = Math.round(((hoy - start) / totalMs) * 100);
+    }
+
+    const pos = (date) => {
+        if (!date || date < start) return 0;
+        if (date > end) return 100;
+        return Math.round(((date - start) / totalMs) * 100);
+    };
+
+    const posStart = 0;
+    const posEnd = 100;
+    const posPeak = peakKey && mesesMap[peakKey]?.count > 0
+        ? (() => {
+            const [y, m] = peakKey.split('-').map(Number);
+            const peakDate = new Date(y, m - 1, 15);
+            return pos(peakDate);
+        })() : null;
+
+    const peakLabel = peakKey && mesesMap[peakKey]
+        ? `Pico: ${mesesMap[peakKey].label}` : '';
+
+    return `
+        <div class="ct-lifecycle">
+            <div class="ct-lifecycle-title"><i class="bi bi-signpost-split me-1"></i> Línea de tiempo del curso</div>
+            <div class="ct-lifecycle-track">
+                <div class="ct-lifecycle-fill" style="width:${pctFill}%;"></div>
+                ${pctToday != null ? `<div class="ct-lifecycle-today" style="left:${pctToday}%;"></div>` : ''}
+                <div class="ct-lifecycle-node" style="left:${posStart}%;">
+                    <span class="ct-lifecycle-dot start"></span>
+                    <span class="ct-lifecycle-label">Inicio<br>${curTrayFecha(d.fecha_inicio)}</span>
+                </div>
+                ${posPeak != null ? `
+                <div class="ct-lifecycle-node" style="left:${posPeak}%;">
+                    <span class="ct-lifecycle-dot peak"></span>
+                    <span class="ct-lifecycle-label">${curTrayEscape(peakLabel)}</span>
+                </div>` : ''}
+                <div class="ct-lifecycle-node" style="left:${posEnd}%;">
+                    <span class="ct-lifecycle-dot end"></span>
+                    <span class="ct-lifecycle-label">Fin<br>${curTrayFecha(d.fecha_fin)}</span>
+                </div>
+            </div>
+        </div>`;
+}
+
 function curTrayRenderChart(d) {
     const panel = document.getElementById('curTrayDetallePanel');
-    const parts = d.participantes || [];
-    
-    const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    
-    let startYear, startMonth, endYear, endMonth;
-    if (d.fecha_inicio && d.fecha_inicio !== '0000-00-00') {
-        const [sy, sm] = d.fecha_inicio.split('-');
-        startYear = parseInt(sy, 10); startMonth = parseInt(sm, 10);
-    }
-    if (d.fecha_fin && d.fecha_fin !== '0000-00-00') {
-        const [ey, em] = d.fecha_fin.split('-');
-        endYear = parseInt(ey, 10); endMonth = parseInt(em, 10);
-    }
-    
-    parts.forEach(p => {
-        if (!p.fecha_inscripcion || p.fecha_inscripcion === '0000-00-00') return;
-        const [y, m] = p.fecha_inscripcion.split('-');
-        const py = parseInt(y, 10), pm = parseInt(m, 10);
-        if (!startYear || py < startYear || (py === startYear && pm < startMonth)) {
-            startYear = py; startMonth = pm;
-        }
-        if (!endYear || py > endYear || (py === endYear && pm > endMonth)) {
-            endYear = py; endMonth = pm;
-        }
-    });
+    curTrayCursoDetalle = d;
+    curTraySelectedMonthKey = null;
 
-    if (!startYear) {
-        const now = new Date();
-        startYear = endYear = now.getFullYear();
-        startMonth = endMonth = now.getMonth() + 1;
-    }
-    if (!endYear) { endYear = startYear; endMonth = startMonth; }
+    const stats = curTrayBuildMesesData(d);
+    curTrayMesesState = stats;
 
-    const labels = [];
-    const dataPoints = [];
-    const pointColors = [];
-    const monthKeys = [];
-    const mesesMap = {};
-    
-    parts.forEach(p => {
-        if (!p.fecha_inscripcion || p.fecha_inscripcion === '0000-00-00') return;
-        const [y, m] = p.fecha_inscripcion.split('-');
-        const key = `${y}-${m.padStart(2, '0')}`;
-        if (!mesesMap[key]) {
-            mesesMap[key] = { count: 0, participantes: [] };
-        }
-        mesesMap[key].count++;
-        mesesMap[key].participantes.push(p);
-    });
-
-    let curY = startYear, curM = startMonth;
-    while (curY < endYear || (curY === endYear && curM <= endMonth)) {
-        const key = `${curY}-${String(curM).padStart(2, '0')}`;
-        const nombreMes = `${mesesNombres[curM - 1]} ${curY}`;
-        
-        labels.push(nombreMes);
-        monthKeys.push(key);
-        
-        if (mesesMap[key]) {
-            mesesMap[key].label = nombreMes;
-            dataPoints.push(mesesMap[key].count);
-            pointColors.push('#0dcaf0');
-        } else {
-            mesesMap[key] = { label: nombreMes, count: 0, participantes: [] };
-            dataPoints.push(0);
-            pointColors.push('#adb5bd'); // Gray for no data
-        }
-        
-        curM++;
-        if (curM > 12) { curM = 1; curY++; }
-    }
-    
     const fueDiferido = d.estatus === 'Diferido' || (d.nombre_curso || '').includes('(Diferido)');
-    const warningDiferido = fueDiferido ? `<div class="alert alert-warning mt-3 py-2 text-center" style="font-size:0.85rem;"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Atención:</strong> El curso muestra un estatus histórico o actual de Diferido.</div>` : '';
+    const warningDiferido = fueDiferido
+        ? `<div class="alert alert-warning mx-3 mt-2 mb-0 py-2 small"><i class="bi bi-exclamation-triangle-fill me-2"></i>Curso con estatus <strong>Diferido</strong>.</div>`
+        : '';
+
+    const chipsHtml = stats.monthKeys.map(key => {
+        const m = stats.mesesMap[key];
+        const active = key === curTraySelectedMonthKey ? ' active' : '';
+        const has = m.count > 0 ? ' has-data' : '';
+        return `<button type="button" class="ct-month-chip${active}${has}" data-month-key="${key}">
+            ${curTrayEscape(m.label)}<span class="chip-count">${m.count}</span>
+        </button>`;
+    }).join('');
+
+    const narrativa = curTrayNarrativaTexto(d, stats);
 
     panel.innerHTML = `
-    <div class="card border-0 shadow-sm mb-4" style="border-radius:16px; overflow:hidden;">
-        <div class="card-header bg-light border-0 p-4">
-            <div class="d-flex justify-content-between align-items-center">
+    <div class="ct-journey-card mb-4">
+        <div class="ct-journey-header">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
-                    <h5 class="mb-1 fw-bold text-dark">${d.nombre_curso}</h5>
-                    <span class="text-muted small fw-mono">ID: ${d.id_curso}</span>
+                    <h5 class="mb-1 fw-bold text-dark">${curTrayEscape(d.nombre_curso)}</h5>
+                    <div class="text-muted small">
+                        <span class="me-3"><i class="bi bi-hash"></i>ID ${d.id_curso}</span>
+                        <span class="me-3"><i class="bi bi-mortarboard me-1"></i>${curTrayEscape(d.nombre_modalidad ?? '—')}</span>
+                        <span><i class="bi bi-person-workspace me-1"></i>${curTrayEscape(d.docente ?? 'Sin docente')}</span>
+                    </div>
                 </div>
                 ${curTrayBadgeEstatus(d.estatus)}
             </div>
             ${warningDiferido}
         </div>
-        <div class="card-body p-4">
-            <h6 class="fw-bold mb-3 text-center text-muted text-uppercase" style="letter-spacing: 0.05em; font-size: 0.85rem;">
-                <i class="bi bi-graph-up text-info me-2"></i>Inscripciones por Mes
-            </h6>
-            <div style="position: relative; height: 300px; width: 100%;">
-                <canvas id="curTrayCanvas"></canvas>
+
+        <div class="ct-journey-kpis">
+            <div class="ct-journey-kpi">
+                <div class="val">${stats.duracionDias}</div>
+                <div class="lbl">Días de trayectoria</div>
             </div>
-            <p class="text-center text-muted small mt-3"><i class="bi bi-info-circle me-1"></i>Haz clic en un punto de la gráfica para ver los participantes inscritos en ese mes.</p>
+            <div class="ct-journey-kpi">
+                <div class="val">${stats.totalInscritos}</div>
+                <div class="lbl">Inscritos totales</div>
+            </div>
+            <div class="ct-journey-kpi">
+                <div class="val">${stats.cupoPct}%</div>
+                <div class="lbl">Cupo usado (${stats.totalInscritos}/${d.max_participantes ?? '—'})</div>
+            </div>
+            <div class="ct-journey-kpi">
+                <div class="val">${stats.peakCount || '—'}</div>
+                <div class="lbl">Pico mensual</div>
+            </div>
         </div>
-    </div>
-    <div id="curTrayDetalleMesPanel" style="display:none;" class="fade-in"></div>
-    `;
-    
-    const ctx = document.getElementById('curTrayCanvas').getContext('2d');
-    
-    if (curTrayChartInstance) {
-        curTrayChartInstance.destroy();
-    }
-    
-    let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(13, 202, 240, 0.4)');
-    gradient.addColorStop(1, 'rgba(13, 202, 240, 0.0)');
-    
+
+        <div class="ct-narrative-box">${narrativa}</div>
+
+        ${curTrayRenderLifecycleHtml(d, stats)}
+
+        <div class="px-3 pb-2">
+            <div class="ct-lifecycle-title mb-2"><i class="bi bi-calendar3 me-1"></i> Inscripciones por mes — selecciona para ver participantes</div>
+            <div class="ct-month-chips" id="curTrayMonthChips">${chipsHtml || '<span class="text-muted small">Sin meses en el periodo</span>'}</div>
+        </div>
+
+        <div class="ct-chart-wrap">
+            <canvas id="curTrayCanvas"></canvas>
+        </div>
+        <p class="text-center text-muted small pb-3 mb-0 px-3">
+            <i class="bi bi-hand-index-thumb me-1"></i>Clic en un mes o en la barra para ver quiénes se inscribieron.
+        </p>
+
+        <div id="curTrayDetalleMesPanel" style="display:none;"></div>
+    </div>`;
+
+    document.getElementById('curTrayMonthChips')?.querySelectorAll('.ct-month-chip').forEach(btn => {
+        btn.addEventListener('click', () => curTraySelectMonth(btn.dataset.monthKey));
+    });
+
+    const canvas = document.getElementById('curTrayCanvas');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const ctx = canvas.getContext('2d');
+    if (curTrayChartInstance) curTrayChartInstance.destroy();
+
+    const maxY = Math.max(3, ...stats.dataPoints, 1);
+    const barColors = stats.dataPoints.map((v, i) =>
+        stats.monthKeys[i] === curTraySelectedMonthKey ? '#0e7490' : (v > 0 ? '#0891b2' : '#e2e8f0')
+    );
+
     curTrayChartInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
-            labels: labels.length > 0 ? labels : ['Sin inscripciones'],
+            labels: stats.labels.length ? stats.labels : ['Sin periodo'],
             datasets: [{
-                label: 'Inscritos',
-                data: dataPoints.length > 0 ? dataPoints : [0],
-                borderColor: '#0dcaf0',
-                backgroundColor: gradient,
-                borderWidth: 2,
-                pointBackgroundColor: pointColors.length > 0 ? pointColors : '#0dcaf0',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 8,
-                fill: true,
-                tension: 0.4
-            }]
+                label: 'Inscripciones',
+                data: stats.dataPoints.length ? stats.dataPoints : [0],
+                backgroundColor: barColors,
+                borderColor: barColors.map(c => c === '#e2e8f0' ? '#cbd5e1' : c),
+                borderWidth: 1,
+                borderRadius: 6,
+                maxBarThickness: 48,
+            }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            onClick: (e, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    if (monthKeys.length > 0) {
-                        const key = monthKeys[index];
-                        const monthData = mesesMap[key];
-                        curTrayRenderDetalle(d, monthData);
-                    }
+            onClick: (_e, elements) => {
+                if (elements.length > 0 && stats.monthKeys.length) {
+                    curTraySelectMonth(stats.monthKeys[elements[0].index]);
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: { precision: 0, stepSize: 1 },
-                    title: { display: true, text: 'Participantes Inscritos', color: '#6c757d', font: { weight: 'bold' } }
+                    suggestedMax: maxY,
+                    ticks: { stepSize: 1, precision: 0 },
+                    title: {
+                        display: true,
+                        text: 'Nuevas inscripciones en el mes',
+                        color: '#64748b',
+                        font: { weight: '600', size: 11 },
+                    },
+                    grid: { color: '#f1f5f9' },
                 },
                 x: {
                     grid: { display: false },
-                    offset: true // This pushes points away from the Y-axis
-                }
+                    ticks: { maxRotation: 45, minRotation: 0, font: { size: 10 } },
+                },
             },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return ` ${context.raw} Participante(s) (Clic para detalles)`;
-                        }
-                    }
-                }
-            }
-        }
+                        label: (ctx) => ` ${ctx.raw} inscripción${ctx.raw !== 1 ? 'es' : ''} — clic para ver lista`,
+                    },
+                },
+            },
+        },
     });
+
+    if (stats.peakKey && stats.mesesMap[stats.peakKey]?.count > 0) {
+        curTraySelectMonth(stats.peakKey);
+    } else {
+        const firstWithData = stats.monthKeys.find(k => stats.mesesMap[k]?.count > 0);
+        if (firstWithData) curTraySelectMonth(firstWithData);
+    }
 }
 
 function curTrayRenderDetalle(d, monthData = null) {
     const panel = document.getElementById('curTrayDetalleMesPanel');
-    panel.style.display = 'block';
-    
+    if (!panel) return;
+
     const parts = monthData ? monthData.participantes : (d.participantes || []);
-    const titleText = monthData ? `Participantes inscritos en ${monthData.label}` : 'Todos los participantes';
-    
+    const titleText = monthData
+        ? `Inscritos en ${monthData.label}`
+        : 'Todos los participantes del curso';
+
+    if (!monthData && parts.length === 0) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'block';
+
     const aprobados = parts.filter(p => p.estatus_participante === 'Aprobado').length;
-    const reprobados = parts.filter(p => ['Reprobado','Ausente'].includes(p.estatus_participante)).length;
-    const enFormacion = parts.filter(p => p.estatus_participante === 'En formación' || p.estatus_participante === 'Pendiente').length;
+    const reprobados = parts.filter(p => ['Reprobado', 'Ausente'].includes(p.estatus_participante)).length;
+    const enFormacion = parts.filter(p => ['En formación', 'Pendiente'].includes(p.estatus_participante)).length;
 
     panel.innerHTML = `
-    <div class="card border-0 shadow-sm" style="border-radius:16px; overflow:hidden;">
-        <div class="card-header bg-light border-0 p-4">
-            <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-people-fill me-2 text-primary"></i>${titleText}</h5>
+    <div class="ct-participants-panel p-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h6 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-people-fill text-primary me-2"></i>${curTrayEscape(titleText)}
+                <span class="badge bg-primary ms-2">${parts.length}</span>
+            </h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="curTrayVerTodosBtn">
+                Ver todos los inscritos
+            </button>
         </div>
-        <div class="card-body p-4">
-            <div class="row g-4 mb-4">
-                <div class="col-md-3">
-                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Docente</label>
-                    <div class="fw-bold"><i class="bi bi-person-workspace me-2"></i>${d.docente ?? 'No asignado'}</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Modalidad</label>
-                    <div class="fw-bold"><i class="bi bi-mortarboard me-2"></i>${d.nombre_modalidad ?? '—'}</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Periodo</label>
-                    <div class="fw-bold"><i class="bi bi-calendar-range me-2"></i>${curTrayFecha(d.fecha_inicio)} al ${curTrayFecha(d.fecha_fin)}</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="text-muted small text-uppercase fw-bold d-block mb-1">Ámbito</label>
-                    <div class="fw-bold"><i class="bi bi-geo-alt me-2"></i>${d.nombre_ambito ?? '—'}</div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-4">
+                <div class="ct-journey-kpi py-2">
+                    <div class="val text-success" style="font-size:1.1rem;">${aprobados}</div>
+                    <div class="lbl">Aprobados</div>
                 </div>
             </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="p-3 bg-light rounded-3 text-center border">
-                        <div class="fs-4 fw-bold text-success">${aprobados}</div>
-                        <div class="text-muted small">Aprobados</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 bg-light rounded-3 text-center border">
-                        <div class="fs-4 fw-bold text-danger">${reprobados}</div>
-                        <div class="text-muted small">Retirados/Reprobados</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-3 bg-light rounded-3 text-center border">
-                        <div class="fs-4 fw-bold text-primary">${enFormacion}</div>
-                        <div class="text-muted small">En formación/Pendientes</div>
-                    </div>
+            <div class="col-4">
+                <div class="ct-journey-kpi py-2">
+                    <div class="val text-danger" style="font-size:1.1rem;">${reprobados}</div>
+                    <div class="lbl">Reprob./Ausente</div>
                 </div>
             </div>
+            <div class="col-4">
+                <div class="ct-journey-kpi py-2">
+                    <div class="val text-primary" style="font-size:1.1rem;">${enFormacion}</div>
+                    <div class="lbl">En formación</div>
+                </div>
+            </div>
+        </div>
 
-            <h6 class="fw-bold mb-3 mt-4">Lista de Participantes</h6>
-            <div class="table-responsive rounded-3 border">
-                <table class="table table-sm table-striped hover align-middle mb-0" style="font-size:0.85rem;">
-                    <thead class="table-light">
+        <div class="table-responsive rounded-3 border bg-white">
+            <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Nombre</th>
+                        <th class="text-center">Inscripción</th>
+                        <th class="text-center">Estatus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${parts.length === 0
+                        ? '<tr><td colspan="4" class="text-center py-4 text-muted">Nadie se inscribió en este mes</td></tr>'
+                        : parts.map(p => `
                         <tr>
-                            <th>Cédula</th>
-                            <th>Nombre y Apellido</th>
-                            <th class="text-center">Inscripción</th>
-                            <th class="text-center">Estatus</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${parts.length === 0 ? '<tr><td colspan="4" class="text-center py-3">No hay participantes inscritos</td></tr>' : 
-                          parts.map(p => `
-                            <tr>
-                                <td class="fw-bold">${p.cedula}</td>
-                                <td>${p.primer_nombre} ${p.primer_apellido}</td>
-                                <td class="text-center">${curTrayFecha(p.fecha_inscripcion)}</td>
-                                <td class="text-center">${curTrayBadgeParticipante(p.estatus_participante)}</td>
-                            </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>
+                            <td class="fw-semibold">${p.cedula ?? '—'}</td>
+                            <td>${curTrayEscape(`${p.primer_nombre || ''} ${p.primer_apellido || ''}`.trim())}</td>
+                            <td class="text-center">${curTrayFecha(p.fecha_inscripcion)}</td>
+                            <td class="text-center">${curTrayBadgeParticipante(p.estatus_participante)}</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>
         </div>
     </div>`;
-    
-    setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+
+    document.getElementById('curTrayVerTodosBtn')?.addEventListener('click', () => {
+        curTraySelectedMonthKey = null;
+        document.querySelectorAll('.ct-month-chip').forEach(b => b.classList.remove('active'));
+        if (curTrayChartInstance) curTrayChartInstance.setActiveElements([]);
+        curTrayRenderDetalle(d, null);
+    });
+
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
 }
 
 function curTrayInicializarBusqueda() {

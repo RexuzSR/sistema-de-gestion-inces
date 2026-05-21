@@ -9,20 +9,20 @@
 const API_DOC = '../controlador/Reporte/api_reportes.php';
 
 // ── Estado del módulo ─────────────────────────────────────────────────────────
-let docGrafico           = null;       // instancia Chart.js activa
-let docCacheAnios        = {};         // { 2026: { totales, asignacionesMes } }
-let docAniosGrafico      = [];         // años seleccionados para el gráfico
-let docTipoGrafico       = 'line';     // 'line' | 'bar'
-let docAnioTabla         = null;       // año activo en la tabla mensual
-let docAnioBase          = null;       // año cargado al inicializar
-let docPanelActivo       = null;       // 'total'|'activos'|'asignados'|'retirados'|null
-let docAniosPanel        = [];         // años seleccionados en el panel de detalle
-let docTotalesActuales   = null;       // totales del año base (para paneles)
-const DOC_MAX_ANIOS      = 3;
+let docGrafico = null;       // instancia Chart.js activa
+let docCacheAnios = {};         // { 2026: { totales, asignacionesMes } }
+let docAniosGrafico = [];         // años seleccionados para el gráfico
+let docTipoGrafico = 'line';     // 'line' | 'bar'
+let docAnioTabla = null;       // año activo en la tabla mensual
+let docAnioBase = null;       // año cargado al inicializar
+let docPanelActivo = null;       // 'total'|'activos'|'asignados'|'retirados'|null
+let docAniosPanel = [];         // años seleccionados en el panel de detalle
+let docTotalesActuales = null;       // totales del año base (para paneles)
+const DOC_MAX_ANIOS = 3;
 
 // ── Helper fetch ──────────────────────────────────────────────────────────────
 async function docFetch(params) {
-    const qs  = new URLSearchParams(params).toString();
+    const qs = new URLSearchParams(params).toString();
     const res = await fetch(`${API_DOC}?${qs}`);
     if (!res.ok) throw new Error(`Error HTTP ${res.status}`);
     const data = await res.json();
@@ -40,7 +40,7 @@ async function docFetchAnio(anio) {
 
 // ── Nombres de meses ──────────────────────────────────────────────────────────
 function docNombresMeses() {
-    return ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 }
 
 // ── Colores del gráfico ───────────────────────────────────────────────────────
@@ -49,12 +49,12 @@ const DOC_COLOR_BASE = [56, 189, 248]; // azul-celeste
 function docColorBorde(idxAnio, totalAnios) {
     const [r, g, b] = DOC_COLOR_BASE;
     const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.45;
-    return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`;
+    return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`;
 }
 function docColorFill(idxAnio, totalAnios, alpha = 0.18) {
     const [r, g, b] = DOC_COLOR_BASE;
     const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.45;
-    return `rgba(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)},${alpha})`;
+    return `rgba(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)},${alpha})`;
 }
 
 // ============================================================
@@ -64,18 +64,18 @@ function cargarTotalDocentes() {
     const contentDiv = document.getElementById('reportContent');
 
     // Reset de estado
-    docGrafico         = null;
-    docCacheAnios      = {};
-    docAniosGrafico    = [];
-    docTipoGrafico     = 'line';
-    docAnioTabla       = null;
-    docAnioBase        = null;
-    docPanelActivo     = null;
-    docAniosPanel      = [];
+    docGrafico = null;
+    docCacheAnios = {};
+    docAniosGrafico = [];
+    docTipoGrafico = 'line';
+    docAnioTabla = null;
+    docAnioBase = null;
+    docPanelActivo = null;
+    docAniosPanel = [];
     docTotalesActuales = null;
 
     const svgPlus = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
-    const svgX    = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
+    const svgX = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
 
     contentDiv.innerHTML = `
     <div class="card shadow-lg border-0">
@@ -207,22 +207,22 @@ function cargarTotalDocentes() {
 async function docInit() {
     try {
         const aniosDisp = await docFetch({ accion: 'anios_disponibles' });
-        const anios     = Array.isArray(aniosDisp) ? aniosDisp : [new Date().getFullYear()];
-        const anioHoy   = anios[0];
+        const anios = Array.isArray(aniosDisp) ? aniosDisp : [new Date().getFullYear()];
+        const anioHoy = anios[0];
 
-        docAnioBase     = anioHoy;
-        docAnioTabla    = anioHoy;
+        docAnioBase = anioHoy;
+        docAnioTabla = anioHoy;
         docAniosGrafico = [anioHoy];
-        docAniosPanel   = [anioHoy];
+        docAniosPanel = [anioHoy];
 
         // Poblar selects de año
         const optsAnios = anios.map(a => `<option value="${a}">${a}</option>`).join('');
-        const selGraf   = document.getElementById('docSelAnioGrafico');
-        const selTabla  = document.getElementById('docSelAnioTabla');
-        if (selGraf)  selGraf.innerHTML  = optsAnios;
+        const selGraf = document.getElementById('docSelAnioGrafico');
+        const selTabla = document.getElementById('docSelAnioTabla');
+        if (selGraf) selGraf.innerHTML = optsAnios;
         if (selTabla) {
             selTabla.innerHTML = optsAnios;
-            selTabla.value     = anioHoy;
+            selTabla.value = anioHoy;
         }
 
         // Cargar datos del año actual
@@ -248,7 +248,7 @@ async function docInit() {
         });
 
         document.getElementById('docAnioTablaLabel').textContent = anioHoy;
-        document.getElementById('docLoading').style.display  = 'none';
+        document.getElementById('docLoading').style.display = 'none';
         document.getElementById('docContenido').style.display = 'block';
 
     } catch (err) {
@@ -268,38 +268,38 @@ function docRenderKPIs(t) {
     const el = document.getElementById('docKPIs');
     if (!el || !t) return;
 
-    const totalActivos   = (parseInt(t.disponible)||0) + (parseInt(t.en_formacion)||0) + (parseInt(t.asignado)||0);
+    const totalActivos = (parseInt(t.disponible) || 0) + (parseInt(t.en_formacion) || 0) + (parseInt(t.asignado) || 0);
     const totalRetirados = parseInt(t.inactivo) || 0;
 
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
 
     const cards = [
         {
-            tipo:  'total',
+            tipo: 'total',
             valor: parseInt(t.total) || 0,
             label: 'Total Docentes',
-            sub:   'registrados en el sistema',
+            sub: 'registrados en el sistema',
             color: 'primary'
         },
         {
-            tipo:  'activos',
+            tipo: 'activos',
             valor: totalActivos,
             label: 'Docentes Activos',
-            sub:   'disponibles, en formación y asignados',
+            sub: 'disponibles, en formación y asignados',
             color: 'success'
         },
         {
-            tipo:  'asignados',
+            tipo: 'asignados',
             valor: parseInt(t.asignado) || 0,
             label: 'Asignados',
-            sub:   'con cursos activos',
+            sub: 'con cursos activos',
             color: 'warning'
         },
         {
-            tipo:  'retirados',
+            tipo: 'retirados',
             valor: totalRetirados,
             label: 'Inactivos',
-            sub:   'estado Inactivo',
+            sub: 'estado Inactivo',
             color: 'danger'
         }
     ];
@@ -329,9 +329,9 @@ function docTogglePanel(tipo) {
     if (!wrapper) return;
 
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
-    const svgUp   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
+    const svgUp = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
 
-    ['total','activos','asignados','retirados'].forEach(t => {
+    ['total', 'activos', 'asignados', 'retirados'].forEach(t => {
         const b = document.getElementById(`docBadge-${t}`);
         if (b) b.innerHTML = `${svgDown}Ver detalle`;
     });
@@ -354,23 +354,23 @@ function docTogglePanel(tipo) {
 const DOC_PANEL_CFG = {
     total: {
         titulo: 'Distribución por Tipo y Género',
-        color:  'primary',
-        tipo:   'breakdown'
+        color: 'primary',
+        tipo: 'breakdown'
     },
     activos: {
         titulo: 'Distribución por Estado',
-        color:  'success',
-        tipo:   'estado'
+        color: 'success',
+        tipo: 'estado'
     },
     asignados: {
         titulo: 'Asignaciones por Mes (comparativo multi-año)',
-        color:  'warning',
-        tipo:   'mensual'
+        color: 'warning',
+        tipo: 'mensual'
     },
     retirados: {
         titulo: 'Docentes Inactivos',
-        color:  'danger',
-        tipo:   'inactivos'
+        color: 'danger',
+        tipo: 'inactivos'
     }
 };
 
@@ -379,7 +379,7 @@ async function docRenderPanel(tipo) {
     if (!wrapper) return;
 
     const cfg = DOC_PANEL_CFG[tipo];
-    const t   = docTotalesActuales;
+    const t = docTotalesActuales;
 
     wrapper.innerHTML = `
         <div class="card border-0 shadow-sm mb-3 rp-card-top" data-color="${cfg.color}">
@@ -400,11 +400,11 @@ async function docRenderPanel(tipo) {
                     <table class="table table-sm table-bordered">
                         <thead class="table-light"><tr><th>Tipo</th><th class="text-center">Cantidad</th></tr></thead>
                         <tbody>
-                            <tr><td>Fijo</td><td class="text-center fw-bold">${parseInt(t?.fijo)||0}</td></tr>
-                            <tr><td>Contratado</td><td class="text-center fw-bold">${parseInt(t?.contratado)||0}</td></tr>
-                            <tr><td>PDL</td><td class="text-center fw-bold">${parseInt(t?.pdl)||0}</td></tr>
-                            <tr><td>Voluntario</td><td class="text-center fw-bold">${parseInt(t?.voluntario)||0}</td></tr>
-                            <tr class="table-secondary fw-bold"><td>Total</td><td class="text-center">${parseInt(t?.total)||0}</td></tr>
+                            <tr><td>Fijo</td><td class="text-center fw-bold">${parseInt(t?.fijo) || 0}</td></tr>
+                            <tr><td>Contratado</td><td class="text-center fw-bold">${parseInt(t?.contratado) || 0}</td></tr>
+                            <tr><td>PDL</td><td class="text-center fw-bold">${parseInt(t?.pdl) || 0}</td></tr>
+                            <tr><td>Voluntario</td><td class="text-center fw-bold">${parseInt(t?.voluntario) || 0}</td></tr>
+                            <tr class="table-secondary fw-bold"><td>Total</td><td class="text-center">${parseInt(t?.total) || 0}</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -413,8 +413,8 @@ async function docRenderPanel(tipo) {
                     <table class="table table-sm table-bordered">
                         <thead class="table-light"><tr><th>Género</th><th class="text-center">Cantidad</th></tr></thead>
                         <tbody>
-                            <tr><td>Masculino</td><td class="text-center fw-bold">${parseInt(t?.masculino)||0}</td></tr>
-                            <tr><td>Femenino</td><td class="text-center fw-bold">${parseInt(t?.femenino)||0}</td></tr>
+                            <tr><td>Masculino</td><td class="text-center fw-bold">${parseInt(t?.masculino) || 0}</td></tr>
+                            <tr><td>Femenino</td><td class="text-center fw-bold">${parseInt(t?.femenino) || 0}</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -423,7 +423,7 @@ async function docRenderPanel(tipo) {
 
     // ── Distribución por estado ────────────────────────────────────────────────
     else if (cfg.tipo === 'estado') {
-        const totalActivos = (parseInt(t?.disponible)||0) + (parseInt(t?.en_formacion)||0) + (parseInt(t?.asignado)||0);
+        const totalActivos = (parseInt(t?.disponible) || 0) + (parseInt(t?.en_formacion) || 0) + (parseInt(t?.asignado) || 0);
         contenidoPanel = `
             <table class="table table-sm table-bordered">
                 <thead class="table-light">
@@ -432,18 +432,18 @@ async function docRenderPanel(tipo) {
                 <tbody>
                     <tr>
                         <td><span class="badge bg-success">Disponible</span></td>
-                        <td class="text-center fw-bold">${parseInt(t?.disponible)||0}</td>
-                        <td>${totalActivos > 0 ? Math.round(((parseInt(t?.disponible)||0)/totalActivos)*100) : 0}%</td>
+                        <td class="text-center fw-bold">${parseInt(t?.disponible) || 0}</td>
+                        <td>${totalActivos > 0 ? Math.round(((parseInt(t?.disponible) || 0) / totalActivos) * 100) : 0}%</td>
                     </tr>
                     <tr>
                         <td><span class="badge bg-primary">Asignado</span></td>
-                        <td class="text-center fw-bold">${parseInt(t?.asignado)||0}</td>
-                        <td>${totalActivos > 0 ? Math.round(((parseInt(t?.asignado)||0)/totalActivos)*100) : 0}%</td>
+                        <td class="text-center fw-bold">${parseInt(t?.asignado) || 0}</td>
+                        <td>${totalActivos > 0 ? Math.round(((parseInt(t?.asignado) || 0) / totalActivos) * 100) : 0}%</td>
                     </tr>
                     <tr>
                         <td><span class="badge bg-warning">En formación</span></td>
-                        <td class="text-center fw-bold">${parseInt(t?.en_formacion)||0}</td>
-                        <td>${totalActivos > 0 ? Math.round(((parseInt(t?.en_formacion)||0)/totalActivos)*100) : 0}%</td>
+                        <td class="text-center fw-bold">${parseInt(t?.en_formacion) || 0}</td>
+                        <td>${totalActivos > 0 ? Math.round(((parseInt(t?.en_formacion) || 0) / totalActivos) * 100) : 0}%</td>
                     </tr>
                     <tr class="table-secondary fw-bold">
                         <td>Total activos</td>
@@ -463,14 +463,14 @@ async function docRenderPanel(tipo) {
             await Promise.all(docAniosPanel.map(a => docFetchAnio(a)));
         } catch (e) { /* se manejará vacío */ }
 
-        const meses            = docNombresMeses();
-        const totalesPorAnio   = new Array(docAniosPanel.length).fill(0);
+        const meses = docNombresMeses();
+        const totalesPorAnio = new Array(docAniosPanel.length).fill(0);
 
         const filas = meses.map((mes, i) => {
             let row = `<tr><td><strong>${mes}</strong></td>`;
             docAniosPanel.forEach((a, idx) => {
                 const asig = docCacheAnios[a]?.asignacionesMes || [];
-                const v    = asig[i]?.nuevos ?? null;
+                const v = asig[i]?.nuevos ?? null;
                 if (v !== null) totalesPorAnio[idx] += v;
                 row += `<td class="text-center">${v !== null ? v.toLocaleString() : '<span class="text-muted">—</span>'}</td>`;
             });
@@ -481,23 +481,23 @@ async function docRenderPanel(tipo) {
             <tr class="rp-row-total-tp">
                 <td>Total</td>
                 ${docAniosPanel.map((_, idx) =>
-                    `<td class="text-center">${totalesPorAnio[idx] > 0 ? totalesPorAnio[idx].toLocaleString() : '—'}</td>`
-                ).join('')}
+            `<td class="text-center">${totalesPorAnio[idx] > 0 ? totalesPorAnio[idx].toLocaleString() : '—'}</td>`
+        ).join('')}
             </tr>`;
 
-        const allAnios  = Object.keys(docCacheAnios).map(Number).sort((a, b) => b - a);
+        const allAnios = Object.keys(docCacheAnios).map(Number).sort((a, b) => b - a);
         const aniosFalt = allAnios.filter(a => !docAniosPanel.includes(a));
 
         contenidoPanel = `
             <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
                 ${aniosFalt.length > 0
-                    ? `<select class="form-select form-select-sm" id="docPanelSelAnio" style="width:auto;">
+                ? `<select class="form-select form-select-sm" id="docPanelSelAnio" style="width:auto;">
                            ${aniosFalt.map(a => `<option value="${a}">${a}</option>`).join('')}
                        </select>
                        <button class="btn btn-sm btn-outline-warning" id="docPanelBtnAdd">
                            ${svgPl}Agregar año
                        </button>`
-                    : `<span class="text-muted small">Todos los años disponibles añadidos</span>`}
+                : `<span class="text-muted small">Todos los años disponibles añadidos</span>`}
             </div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped table-hover align-middle mb-0 rp-table-fixed">
@@ -533,7 +533,7 @@ async function docRenderPanel(tipo) {
                 <i class="bi bi-person-x-fill fs-4 mt-1"></i>
                 <div>
                     <h5 class="mb-1">
-                        ${parseInt(t?.inactivo)||0} docente${parseInt(t?.inactivo) !== 1 ? 's' : ''} con estado Inactivo
+                        ${parseInt(t?.inactivo) || 0} docente${parseInt(t?.inactivo) !== 1 ? 's' : ''} con estado Inactivo
                     </h5>
                     <p class="mb-0">
                         Estos docentes están registrados en el sistema pero su estado actual
@@ -606,10 +606,10 @@ function docRenderGrafico() {
     }
 
     docDestruirGrafico();
-    const ctx    = wrapper.querySelector('canvas').getContext('2d');
-    const meses  = docNombresMeses();
+    const ctx = wrapper.querySelector('canvas').getContext('2d');
+    const meses = docNombresMeses();
     const nAnios = docAniosGrafico.length;
-    const esBar  = docTipoGrafico === 'bar';
+    const esBar = docTipoGrafico === 'bar';
 
     // En modo línea, mostrar Dic del año anterior como punto de partida
     const labels = esBar
@@ -621,7 +621,7 @@ function docRenderGrafico() {
     const aniosOrdenados = [...docAniosGrafico].sort((a, b) => b - a);
 
     const datasets = aniosOrdenados.map((anio, idx) => {
-        const asig    = docCacheAnios[anio]?.asignacionesMes || [];
+        const asig = docCacheAnios[anio]?.asignacionesMes || [];
         const valores = asig.map(m => m.nuevos);
 
         let datos;
@@ -634,38 +634,38 @@ function docRenderGrafico() {
 
         const colorB = docColorBorde(idx, nAnios);
         const colorF = docColorFill(idx, nAnios, esBar ? 0.7 : 0.18);
-        const label  = nAnios > 1 ? `Asignaciones ${anio}` : `Asignaciones`;
+        const label = nAnios > 1 ? `Asignaciones ${anio}` : `Asignaciones`;
 
         // Fill — misma lógica que RE-Participante-Total.js (un solo tipo, multi-año)
         const fillConf = esBar ? false : (
             idx === nAnios - 1
                 ? { target: 'origin', above: colorF }
-                : { target: '+1',     above: colorF }
+                : { target: '+1', above: colorF }
         );
 
         const ds = {
             label,
-            data:            datos,
-            borderColor:     colorB,
+            data: datos,
+            borderColor: colorB,
             backgroundColor: colorF,
-            borderWidth:     esBar ? 0 : 2,
-            fill:            fillConf,
-            tension:         esBar ? 0 : 0.4,
-            borderRadius:    esBar ? 4 : 0,
-            spanGaps:        false,
-            order:           idx
+            borderWidth: esBar ? 0 : 2,
+            fill: fillConf,
+            tension: esBar ? 0 : 0.4,
+            borderRadius: esBar ? 4 : 0,
+            spanGaps: false,
+            order: idx
         };
 
         if (!esBar) {
             ds.segment = {
-                borderDash:  c => c.p0DataIndex === 0 ? [5, 4] : undefined,
+                borderDash: c => c.p0DataIndex === 0 ? [5, 4] : undefined,
                 borderColor: c => c.p0DataIndex === 0 ? colorB + '88' : colorB
             };
             ds.pointBackgroundColor = c => c.dataIndex === 0 ? colorB + '55' : colorB;
-            ds.pointBorderColor     = '#fff';
-            ds.pointBorderWidth     = 2;
-            ds.pointRadius          = c => c.dataIndex === 0 ? 3 : 4;
-            ds.pointHoverRadius     = 7;
+            ds.pointBorderColor = '#fff';
+            ds.pointBorderWidth = 2;
+            ds.pointRadius = c => c.dataIndex === 0 ? 3 : 4;
+            ds.pointHoverRadius = 7;
         }
 
         return ds;
@@ -675,12 +675,12 @@ function docRenderGrafico() {
         type: docTipoGrafico,
         data: { labels, datasets },
         options: {
-            responsive:          true,
+            responsive: true,
             maintainAspectRatio: false,
-            animation:           { duration: 500 },
+            animation: { duration: 500 },
             plugins: {
-                legend:  { display: nAnios > 1, position: 'top' },
-                filler:  { propagate: true },
+                legend: { display: nAnios > 1, position: 'top' },
+                filler: { propagate: true },
                 tooltip: {
                     mode: 'index', intersect: false,
                     callbacks: {
@@ -690,17 +690,17 @@ function docRenderGrafico() {
             },
             scales: {
                 x: {
-                    grid:  { color: 'rgba(0,0,0,0.05)' },
+                    grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: {
                         color: c => (!esBar && c.index === 0) ? 'rgba(150,150,150,0.6)' : undefined,
-                        font:  c => (!esBar && c.index === 0) ? { style: 'italic' } : {}
+                        font: c => (!esBar && c.index === 0) ? { style: 'italic' } : {}
                     }
                 },
                 y: {
                     beginAtZero: true,
-                    title:  { display: true, text: 'Asignaciones' },
-                    grid:   { color: 'rgba(0,0,0,0.05)' },
-                    ticks:  { callback: v => v.toLocaleString() }
+                    title: { display: true, text: 'Numero de Asignaciones' },
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { callback: v => v.toLocaleString() }
                 }
             },
             interaction: { intersect: false, mode: 'index' }
@@ -748,7 +748,7 @@ function docInitControlesGrafico(aniosDisp) {
         }
         try {
             await docFetchAnio(a);
-            if (docTipoGrafico === 'line') await docFetchAnio(a - 1).catch(() => {});
+            if (docTipoGrafico === 'line') await docFetchAnio(a - 1).catch(() => { });
             docAniosGrafico = [...docAniosGrafico, a].sort((x, y) => y - x);
             actualizarChips();
             docRenderGrafico();
@@ -770,9 +770,9 @@ function docInitControlesGrafico(aniosDisp) {
             docTipoGrafico = btn.dataset.tipo;
             document.querySelectorAll('.docBtnTipo').forEach(b => {
                 const activo = b.dataset.tipo === docTipoGrafico;
-                b.classList.toggle('btn-secondary',         activo);
+                b.classList.toggle('btn-secondary', activo);
                 b.classList.toggle('btn-outline-secondary', !activo);
-                b.classList.toggle('active',                activo);
+                b.classList.toggle('active', activo);
             });
             docRenderGrafico();
         });
@@ -796,8 +796,8 @@ function docRenderTabla(asignacionesMes) {
 
     const filas = asignacionesMes.map((mes, idx) => {
         const sinDato = mes.nuevos === null;
-        const vN      = sinDato ? null : (mes.nuevos || 0);
-        const acum    = mes.totalAcumulado !== null ? mes.totalAcumulado : null;
+        const vN = sinDato ? null : (mes.nuevos || 0);
+        const acum = mes.totalAcumulado !== null ? mes.totalAcumulado : null;
         if (vN !== null) totAsig += vN;
 
         let varHtml = '<span class="text-muted">—</span>';
@@ -807,10 +807,10 @@ function docRenderTabla(asignacionesMes) {
                 const vAnt = anterior.nuevos || 0;
                 if (vAnt > 0) {
                     const diff = vN - vAnt;
-                    const pct  = ((diff / vAnt) * 100).toFixed(1);
-                    const col  = diff > 0 ? 'text-success' : diff < 0 ? 'text-danger' : 'text-muted';
-                    const ico  = diff > 0 ? svgUp : diff < 0 ? svgDw : svgDs;
-                    varHtml    = `<span class="${col}">${ico}${diff > 0 ? '+' : ''}${diff} <small>(${diff >= 0 ? '+' : ''}${pct}%)</small></span>`;
+                    const pct = ((diff / vAnt) * 100).toFixed(1);
+                    const col = diff > 0 ? 'text-success' : diff < 0 ? 'text-danger' : 'text-muted';
+                    const ico = diff > 0 ? svgUp : diff < 0 ? svgDw : svgDs;
+                    varHtml = `<span class="${col}">${ico}${diff > 0 ? '+' : ''}${diff} <small>(${diff >= 0 ? '+' : ''}${pct}%)</small></span>`;
                 } else {
                     varHtml = '<span class="text-muted">Sin referencia</span>';
                 }
@@ -841,17 +841,17 @@ function docRenderTabla(asignacionesMes) {
 // ============================================================
 function limpiarTotalDocentes() {
     docDestruirGrafico();
-    docCacheAnios      = {};
-    docAniosGrafico    = [];
-    docTipoGrafico     = 'line';
-    docAnioTabla       = null;
-    docAnioBase        = null;
-    docPanelActivo     = null;
-    docAniosPanel      = [];
+    docCacheAnios = {};
+    docAniosGrafico = [];
+    docTipoGrafico = 'line';
+    docAnioTabla = null;
+    docAnioBase = null;
+    docPanelActivo = null;
+    docAniosPanel = [];
     docTotalesActuales = null;
 }
 
 // ── Registrar en window ───────────────────────────────────────────────────────
-window.cargarTotalDocentes  = cargarTotalDocentes;
+window.cargarTotalDocentes = cargarTotalDocentes;
 window.limpiarTotalDocentes = limpiarTotalDocentes;
 console.log('RE-Docente-Total.js cargado — conectado a CSS centralizado');

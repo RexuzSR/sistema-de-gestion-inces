@@ -1,7 +1,10 @@
 <!-- Modal de Visualización de Metas - Header Mejorado -->
 <div class="modal fade" id="modal-viewMeta" tabindex="-1" aria-hidden="true" aria-labelledby="label-modal-viewMeta" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-lg" id="modalDialogMeta">
         <div class="modal-content rounded-4 border-0 overflow-hidden">
+            
+            <!-- CONTENEDOR DE DETALLES -->
+            <div id="viewMetaDetails">
 
             <!-- HEADER SÓLIDO CON GRADIENTE AZUL PROFUNDO -->
             <div class="modal-header border-0 p-4" id="modalHeader" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
@@ -223,7 +226,7 @@
             <div class="modal-footer border-0 p-3 bg-light">
                 <div class="d-flex justify-content-between w-100">
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary px-3" id="quickViewParticipants">
+                        <button type="button" class="btn btn-outline-secondary px-3" id="quickViewParticipants" title="Ver participantes que alimentan esta meta">
                             <i class="bi bi-people me-1"></i>
                             <span class="badge bg-primary ms-1" id="participantCount">0</span>
                         </button>
@@ -241,6 +244,84 @@
                     </div>
                 </div>
             </div>
+
+            </div> <!-- Fin de viewMetaDetails -->
+
+            <!-- CONTENEDOR DE PREVISUALIZACIÓN (tema claro) -->
+            <div id="viewMetaPreview" class="d-none meta-preview-light">
+                
+                <div class="modal-header border-bottom p-3 px-4 d-flex align-items-center justify-content-between meta-preview-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-link text-secondary p-0 text-decoration-none" id="btnBackToMeta" title="Volver a Detalles">
+                            <i class="bi bi-arrow-left fs-4"></i>
+                        </button>
+                        <div>
+                            <h5 class="modal-title fw-bold text-dark mb-0" id="previewTitle">¿Qué alimenta esta meta?</h5>
+                            <p class="text-secondary mb-0 small" id="previewSubtitle">Meta #00 - Tipo: Aprobados</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-success btn-sm px-3 d-flex align-items-center gap-2" id="btnPreviewExport">
+                            <i class="bi bi-file-earmark-excel"></i>
+                            <span>Exportar Excel</span>
+                        </button>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                </div>
+
+                <!-- BODY: Cursos → Participantes → Previsualización (flujo admin) -->
+                <div class="modal-body p-0 drive-preview-body">
+                    <div class="drive-preview-toolbar px-3 py-2 d-flex align-items-center gap-3 flex-wrap">
+                        <div class="input-group drive-search flex-grow-1" style="max-width: 440px;">
+                            <span class="input-group-text border-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control border-0" id="searchParticipantPreview" placeholder="Buscar curso, participante o cédula...">
+                        </div>
+                        <div class="drive-preview-stats d-flex gap-2 ms-md-auto flex-wrap">
+                            <span class="drive-stat-pill"><i class="bi bi-journal-bookmark-fill me-1"></i><strong id="previewCourseCountBadge">0</strong> cursos</span>
+                            <span class="drive-stat-pill"><i class="bi bi-people-fill me-1"></i><strong id="previewCountBadge">0</strong> participantes</span>
+                            <span class="drive-stat-pill"><i class="bi bi-flag-fill me-1"></i>Meta: <strong id="previewMetaGoal">0</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="drive-breadcrumb px-3 py-2" id="previewBreadcrumb">
+                        <span class="text-secondary small">Meta</span>
+                        <i class="bi bi-chevron-right mx-1 text-secondary" style="font-size: 0.65rem;"></i>
+                        <span class="small text-dark fw-medium" id="previewBreadcrumbText">Resumen</span>
+                    </div>
+
+                    <div class="drive-preview-layout drive-preview-layout-3col">
+                        <!-- 1. Cursos que aportan a la meta -->
+                        <aside class="drive-panel drive-courses-panel">
+                            <div class="drive-panel-head px-3 py-2">
+                                <i class="bi bi-journal-bookmark me-1"></i> Cursos
+                            </div>
+                            <div class="drive-panel-list" id="previewCourseList" role="listbox" aria-label="Cursos que alimentan la meta"></div>
+                        </aside>
+
+                        <!-- 2. Participantes del curso seleccionado -->
+                        <aside class="drive-panel drive-students-panel">
+                            <div class="drive-panel-head px-3 py-2 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-people me-1"></i> <span id="previewStudentPanelTitle">Participantes</span></span>
+                                <span class="badge rounded-pill bg-primary" id="previewStudentPanelCount">0</span>
+                            </div>
+                            <div class="drive-panel-list" id="previewStudentList" role="listbox" aria-label="Participantes del curso"></div>
+                        </aside>
+
+                        <!-- 3. Vista previa (resumen / curso / participante) -->
+                        <main class="drive-preview-canvas" id="previewStudentCanvas" aria-live="polite">
+                            <div class="drive-canvas-content" id="previewCanvasContent"></div>
+                        </main>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top p-3 px-4 meta-preview-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" id="btnBackToMetaFooter">
+                        <i class="bi bi-arrow-left me-2"></i>Volver a Detalles
+                    </button>
+                </div>
+
+            </div> <!-- Fin de viewMetaPreview -->
 
         </div>
     </div>
@@ -460,6 +541,444 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* ===== Previsualización meta — tema claro ===== */
+.meta-preview-light {
+    background: #f8fafc;
+}
+
+.meta-preview-header,
+.meta-preview-footer {
+    background: #fff;
+}
+
+.modal-drive-preview {
+    max-width: min(1140px, 96vw);
+}
+
+.modal-drive-preview .drive-preview-body {
+    min-height: min(70vh, 560px);
+}
+
+.drive-preview-body {
+    background: #f8fafc;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+}
+
+.drive-preview-toolbar {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.drive-search .input-group-text {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-right: none;
+}
+
+.drive-search .form-control {
+    background: #fff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-left: none;
+}
+
+.drive-search .form-control:focus {
+    background: #fff;
+    color: #1e293b;
+    box-shadow: none;
+    border-color: #cbd5e1;
+}
+
+.drive-search .form-control::placeholder {
+    color: #94a3b8;
+}
+
+.drive-stat-pill {
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+}
+
+.drive-stat-pill strong {
+    color: #0f172a;
+}
+
+.drive-breadcrumb {
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.drive-preview-layout {
+    display: flex;
+    flex: 1;
+    min-height: 460px;
+    overflow: hidden;
+}
+
+.drive-preview-layout-3col .drive-courses-panel {
+    width: 240px;
+    min-width: 200px;
+}
+
+.drive-preview-layout-3col .drive-students-panel {
+    width: 260px;
+    min-width: 220px;
+}
+
+.drive-panel {
+    background: #fff;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+}
+
+.drive-panel-head {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.drive-panel-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.drive-course-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.7rem 0.75rem;
+    margin-bottom: 0.25rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #334155;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.drive-course-item:hover {
+    background: #f1f5f9;
+}
+
+.drive-course-item.active {
+    background: #eff6ff;
+    box-shadow: inset 3px 0 0 #2563eb;
+}
+
+.drive-course-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.drive-course-item.active .drive-course-icon {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+}
+
+.drive-course-count {
+    font-size: 0.7rem;
+    background: #dbeafe;
+    color: #1d4ed8;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.drive-students-hint {
+    padding: 1.25rem 1rem;
+    text-align: center;
+    color: #64748b;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.drive-overview-hero {
+    text-align: center;
+    padding: 1rem 0 1.5rem;
+    border-bottom: 1px dashed #e2e8f0;
+    margin-bottom: 1.5rem;
+}
+
+.drive-overview-hero h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.drive-overview-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.drive-overview-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.drive-overview-card .num {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1d4ed8;
+    line-height: 1;
+}
+
+.drive-overview-card .lbl {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+}
+
+.drive-course-sheet .course-contrib-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.drive-course-sheet .course-contrib-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.875rem;
+}
+
+.drive-canvas-hint {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    color: #1e40af;
+    margin-top: 1rem;
+}
+
+.drive-file-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.25rem;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #334155;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drive-file-item:hover {
+    background: #f1f5f9;
+}
+
+.drive-file-item.active {
+    background: #eff6ff;
+    box-shadow: inset 3px 0 0 #2563eb;
+}
+
+.drive-file-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.drive-file-meta {
+    min-width: 0;
+    flex: 1;
+}
+
+.drive-file-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.drive-file-sub {
+    font-size: 0.75rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.drive-preview-canvas {
+    flex: 1;
+    background: #f1f5f9;
+    overflow-y: auto;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.drive-canvas-empty {
+    margin: auto;
+    text-align: center;
+    color: #64748b;
+    padding: 2rem;
+}
+
+.drive-canvas-empty i {
+    font-size: 3.5rem;
+    opacity: 0.35;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.drive-canvas-content {
+    width: 100%;
+    max-width: 640px;
+    margin: 1.5rem auto;
+    padding: 0 1.5rem 1.5rem;
+}
+
+.drive-doc-sheet {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+}
+
+.drive-doc-header {
+    padding: 1.75rem 2rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+}
+
+.drive-doc-header h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.25rem;
+}
+
+.drive-doc-header .doc-subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+.drive-doc-body {
+    padding: 1.5rem 2rem 2rem;
+}
+
+.drive-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem 1.5rem;
+}
+
+.drive-field label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+}
+
+.drive-field .value {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.drive-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.drive-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.drive-status-chip.aprobado {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.drive-status-chip.pendiente {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.drive-status-chip.otro {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.drive-list-loading,
+.drive-list-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 992px) {
+    .drive-preview-layout-3col {
+        flex-direction: column;
+    }
+    .drive-preview-layout-3col .drive-courses-panel,
+    .drive-preview-layout-3col .drive-students-panel {
+        width: 100%;
+        max-height: 180px;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .drive-overview-cards {
+        grid-template-columns: 1fr;
+    }
+    .drive-field-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Responsive */
@@ -764,13 +1283,28 @@ function loadMetaData(data) {
         // Gráfico
         if (typeof Chart !== 'undefined') createDonaChart(data);
         
-        // Guardar datos para exportación
+        // Mostrar u ocultar el botón de editar según si la meta está vencida o cerrada
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isVencida = data.fecha_fin ? (new Date(data.fecha_fin + 'T00:00:00') < today) : false;
+        const btnEditar = document.getElementById('btnEditarMeta');
+        if (btnEditar) {
+            if (data.estado === 'Cerrada' || isVencida) {
+                btnEditar.style.display = 'none';
+            } else {
+                btnEditar.style.display = 'block';
+            }
+        }
+
+        // Guardar datos para exportación y vista de participantes
         window._currentMetaData = data;
         
     } catch (error) {
         console.error('Error cargando datos:', error);
     }
 }
+
+window.loadMetaData = loadMetaData;
 
 function mostrarAlertas(data) {
     const alertContainer = document.getElementById('alertContainer');
@@ -889,13 +1423,7 @@ async function exportMetaReport(metaData) {
     try {
         showExportLoading('Generando reporte...');
         
-        const participantes = await fetchParticipants(metaData);
-        
-        if (!participantes?.length) {
-            hideExportLoading();
-            alert('No hay participantes');
-            return;
-        }
+        const participantes = await fetchParticipants(metaData) || [];
         
         if (typeof XLSX === 'undefined') {
             hideExportLoading();
@@ -905,31 +1433,92 @@ async function exportMetaReport(metaData) {
         
         const wb = XLSX.utils.book_new();
         
-        const summary = [
-            ['REPORTE DE META'],
-            ['Fecha:', new Date().toLocaleString('es-ES')],
-            [],
-            ['Meta:', metaData.id_meta],
-            ['Objetivo:', metaData.meta_objetivo],
-            ['Participantes:', participantes.length],
-            ['Porcentaje:', metaData.porcentaje_cumplimiento + '%']
+        // Calcular valores calculados precisos
+        const totalObjetivo = parseInt(metaData.meta_objetivo) || 0;
+        const totalFormados = participantes.length;
+        const faltante = Math.max(0, totalObjetivo - totalFormados);
+        const pctLogrado = totalObjetivo > 0 ? (totalFormados / totalObjetivo) : 0;
+        
+        // Construir datos del Resumen estructurado
+        const summaryData = [
+            [], // Fila 1 en blanco
+            ['REPORTE DETALLADO DE META - INCES'], // Fila 2 (Título)
+            [], // Fila 3 en blanco
+            ['DATOS GENERALES DE LA META'], // Fila 4 (Subtítulo de Sección)
+            ['ID Meta:', { v: parseInt(metaData.id_meta) || metaData.id_meta, t: 'n', z: '0' }],
+            ['Objetivo / Descripción:', metaData.meta_objetivo || '-'],
+            ['Tipo de Objetivo:', metaData.tipo_objetivo || 'Aprobados'],
+            ['Ámbito Geográfico:', metaData.ambito_nombre || metaData.nombre_ambito || '-'],
+            ['Estatus de la Meta:', metaData.estado || 'Activa'],
+            ['Estatus de Cumplimiento:', metaData.estado_cumplimiento || 'En progreso'],
+            [], // Fila 11 en blanco
+            ['CRONOGRAMA DE EJECUCIÓN'], // Fila 12 (Subtítulo de Sección)
+            ['Fecha de Inicio:', formatDate(metaData.fecha_inicio)],
+            ['Fecha de Vencimiento:', formatDate(metaData.fecha_fin)],
+            [], // Fila 15 en blanco
+            ['MÉTRICAS Y AVANCE DE CUMPLIMIENTO'], // Fila 16 (Subtítulo de Sección)
+            ['Meta Objetivo:', { v: totalObjetivo, t: 'n', z: '#,##0' }],
+            ['Estudiantes Formados:', { v: totalFormados, t: 'n', z: '#,##0' }],
+            ['Faltante para la Meta:', { v: faltante, t: 'n', z: '#,##0' }],
+            ['Porcentaje Logrado:', { v: pctLogrado, t: 'n', z: '0.00%' }],
+            [], // Fila 21 en blanco
+            ['INFORMACIÓN DE EXPORTACIÓN'], // Fila 22 (Subtítulo de Sección)
+            ['Fecha de Generación:', new Date().toLocaleString('es-ES')]
         ];
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), 'Resumen');
         
-        const headers = ['ID', 'Cédula', 'Nombre', 'Curso', 'Estado'];
-        const rows = participantes.map(p => [
-            p.id_participante,
-            p.cedula,
-            `${p.primer_nombre || ''} ${p.primer_apellido || ''}`.trim(),
-            p.nombre_curso || '-',
-            p.estatus_participante || '-'
-        ]);
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, ...rows]), 'Participantes');
+        const ws_resumen = XLSX.utils.aoa_to_sheet(summaryData);
         
-        XLSX.writeFile(wb, `Meta_${metaData.id_meta}_${Date.now()}.xlsx`);
+        // Aplicar fusiones (merges) para títulos y secciones
+        ws_resumen['!merges'] = [
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },   // Título A2:C2
+            { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } },   // Sección A4:C4
+            { s: { r: 11, c: 0 }, e: { r: 11, c: 2 } }, // Sección A12:C12
+            { s: { r: 15, c: 0 }, e: { r: 15, c: 2 } }, // Sección A16:C16
+            { s: { r: 21, c: 0 }, e: { r: 21, c: 2 } }  // Sección A22:C22
+        ];
+        
+        // Ajustar anchos de columnas para Resumen
+        ws_resumen['!cols'] = [
+            { wch: 30 }, // Columna A (Etiquetas)
+            { wch: 45 }  // Columna B (Valores)
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, ws_resumen, 'Resumen');
+        
+        // Construir datos de Participantes
+        const headers = ['ID Participante', 'Cédula de Identidad', 'Nombre Completo', 'Curso Realizado', 'Estatus del Participante'];
+        const rows = participantes.map(p => {
+            const n = normalizeParticipant(p);
+            return [
+                parseInt(n.id_participante) || n.id_participante,
+                n.cedula !== '' ? n.cedula : '-',
+                participantFullName(n),
+                n.nombre_curso || '-',
+                n.estatus_participante || '-'
+            ];
+        });
+        
+        const participantsData = [headers, ...rows];
+        const ws_participantes = XLSX.utils.aoa_to_sheet(participantsData);
+        
+        // Auto-ajustar anchos de columnas para Participantes
+        const maxLens = [];
+        participantsData.forEach(row => {
+            row.forEach((val, colIdx) => {
+                const len = val ? String(val).length : 0;
+                maxLens[colIdx] = Math.max(maxLens[colIdx] || 12, len + 3);
+            });
+        });
+        ws_participantes['!cols'] = maxLens.map(w => ({ wch: w }));
+        
+        XLSX.utils.book_append_sheet(wb, ws_participantes, 'Participantes');
+        
+        // Formatear nombre del archivo
+        const todayStr = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `Reporte_Meta_${metaData.id_meta}_${todayStr}.xlsx`);
         
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('Error al exportar: ' + error.message);
     } finally {
         hideExportLoading();
     }
@@ -937,13 +1526,20 @@ async function exportMetaReport(metaData) {
 
 async function fetchParticipants(metaData) {
     try {
-        const url = `../apis/get-meta-participants.php?id_meta=${metaData.id_meta}&tipo_objetivo=${encodeURIComponent(metaData.tipo_objetivo || 'Inscritos')}`;
+        const url = `../../app/controlador/Metas/obtenerParticipantesMeta.php?id_meta=${encodeURIComponent(metaData.id_meta)}`;
         const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const result = await response.json();
-        return result.participantes || result.data || [];
+        if (!result.success) {
+            throw new Error(result.message || 'Error al obtener participantes');
+        }
+        const list = result.participantes || result.data || [];
+        return list.map(normalizeParticipant);
     } catch (e) {
         console.error('Error en fetchParticipants:', e);
-        return [];
+        throw e;
     }
 }
 
@@ -971,17 +1567,576 @@ function hideExportLoading() {
     if (overlay) overlay.style.display = 'none';
 }
 
+// ==================== PREVISUALIZADOR: CURSOS → PARTICIPANTES → FICHA ====================
+
+let allPreviewParticipants = [];
+let previewCoursesGrouped = [];
+let previewMetaContext = null;
+let previewSelectedCourseIdx = -1; // índice en previewCoursesGrouped
+let previewSelectedStudentIdx = -1; // índice dentro del curso seleccionado
+
+function normalizeParticipant(raw) {
+    if (!raw || typeof raw !== 'object') return {};
+    const get = (...keys) => {
+        for (const k of keys) {
+            if (raw[k] !== undefined && raw[k] !== null && raw[k] !== '') return raw[k];
+        }
+        return '';
+    };
+    return {
+        id_participante: get('id_participante', 'ID_PARTICIPANTE'),
+        cedula: get('cedula', 'CEDULA'),
+        primer_nombre: get('primer_nombre', 'PRIMER_NOMBRE'),
+        segundo_nombre: get('segundo_nombre', 'SEGUNDO_NOMBRE'),
+        primer_apellido: get('primer_apellido', 'PRIMER_APELLIDO'),
+        segundo_apellido: get('segundo_apellido', 'SEGUNDO_APELLIDO'),
+        genero: get('genero', 'GENERO'),
+        correo: get('correo', 'CORREO'),
+        id_curso: get('id_curso', 'ID_CURSO'),
+        nombre_curso: get('nombre_curso', 'NOMBRE_CURSO'),
+        estatus_participante: get('estatus_participante', 'ESTATUS_PARTICIPANTE'),
+        fecha_inscripcion: get('fecha_inscripcion', 'FECHA_INSCRIPCION'),
+        fecha_fin_curso: get('fecha_fin_curso', 'FECHA_FIN_CURSO'),
+    };
+}
+
+function courseGroupKey(p) {
+    if (p.id_curso) return 'c_' + p.id_curso;
+    const nombre = (p.nombre_curso || '').trim();
+    return nombre ? 'n_' + nombre : 'general';
+}
+
+function groupParticipantsByCourse(participants) {
+    const map = new Map();
+    for (const raw of participants) {
+        const p = normalizeParticipant(raw);
+        const key = courseGroupKey(p);
+        const nombre = (p.nombre_curso || '').trim() || 'Registro general (sin curso)';
+        if (!map.has(key)) {
+            map.set(key, {
+                key,
+                id_curso: p.id_curso || null,
+                nombre,
+                participantes: [],
+            });
+        }
+        map.get(key).participantes.push(p);
+    }
+    return Array.from(map.values()).sort((a, b) => {
+        if (a.key === 'general') return 1;
+        if (b.key === 'general') return -1;
+        return a.nombre.localeCompare(b.nombre, 'es');
+    });
+}
+
+function getSelectedCourse() {
+    if (previewSelectedCourseIdx < 0 || previewSelectedCourseIdx >= previewCoursesGrouped.length) return null;
+    return previewCoursesGrouped[previewSelectedCourseIdx];
+}
+
+function updatePreviewBreadcrumb() {
+    const el = document.getElementById('previewBreadcrumbText');
+    if (!el) return;
+    const parts = ['Resumen'];
+    const course = getSelectedCourse();
+    if (course) parts.push(course.nombre);
+    if (course && previewSelectedStudentIdx >= 0 && course.participantes[previewSelectedStudentIdx]) {
+        parts.push(participantFullName(course.participantes[previewSelectedStudentIdx]));
+    }
+    el.textContent = parts.join(' › ');
+}
+
+function countByStatus(participantes) {
+    const counts = {};
+    participantes.forEach(p => {
+        const s = p.estatus_participante || 'Sin estatus';
+        counts[s] = (counts[s] || 0) + 1;
+    });
+    return counts;
+}
+
+function renderMetaOverview() {
+    const meta = previewMetaContext || {};
+    const totalCursos = previewCoursesGrouped.length;
+    const totalParticipantes = allPreviewParticipants.length;
+    const tipo = meta.tipo_objetivo || 'Aprobados';
+    const ambito = meta.ambito_nombre || meta.nombre_ambito || 'Global';
+    const tipoHelp = {
+        'Aprobados': 'Participantes con estatus <strong>Aprobado</strong> cuyo fin de curso cae dentro del periodo de la meta.',
+        'Inscritos': 'Participantes <strong>inscritos</strong> en cursos del ámbito durante el periodo de la meta.',
+        'Ingresados': 'Personas <strong>registradas</strong> en el sistema en el periodo (sin vínculo a un curso específico).',
+        'Masculino': 'Participantes <strong>masculinos</strong> registrados en el periodo.',
+        'Femenino': 'Participantes <strong>femeninos</strong> registrados en el periodo.',
+    };
+
+    return `
+        <div class="drive-doc-sheet">
+            <div class="drive-doc-header">
+                <h3 class="mb-1">Origen del cumplimiento</h3>
+                <p class="doc-subtitle mb-0">Meta #${escapeHtml(meta.id_meta)} · ${escapeHtml(tipo)} · ${escapeHtml(ambito)}</p>
+            </div>
+            <div class="drive-doc-body">
+                <div class="drive-overview-hero">
+                    <p class="text-secondary mb-2 small">Como administrador, aquí ves <strong>qué cursos</strong> aportan participantes y <strong>quiénes</strong> son.</p>
+                </div>
+                <div class="drive-overview-cards">
+                    <div class="drive-overview-card">
+                        <div class="num">${totalCursos}</div>
+                        <div class="lbl">Cursos que alimentan</div>
+                    </div>
+                    <div class="drive-overview-card">
+                        <div class="num">${totalParticipantes}</div>
+                        <div class="lbl">Participantes contados</div>
+                    </div>
+                    <div class="drive-overview-card">
+                        <div class="num">${escapeHtml(meta.meta_objetivo ?? '0')}</div>
+                        <div class="lbl">Meta objetivo</div>
+                    </div>
+                </div>
+                <p class="mb-2"><strong>Criterio de conteo:</strong></p>
+                <p class="text-secondary small mb-0">${tipoHelp[tipo] || 'Según el tipo de objetivo configurado en la meta.'}</p>
+                <div class="drive-canvas-hint mt-3">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Seleccione un <strong>curso</strong> en el panel izquierdo para ver sus participantes. Luego elija una persona para ver su ficha.
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderCourseDetail(course) {
+    const statusCounts = countByStatus(course.participantes);
+    const statusHtml = Object.entries(statusCounts)
+        .map(([s, n]) => `<li><span>${escapeHtml(s)}</span><span class="badge bg-light text-dark">${n}</span></li>`)
+        .join('');
+
+    const listPreview = course.participantes.slice(0, 8).map(p => {
+        const name = participantFullName(p);
+        const cedula = p.cedula !== '' && p.cedula != null ? String(p.cedula) : '—';
+        return `<li><span>${escapeHtml(name)} <span class="text-secondary">(CI ${escapeHtml(cedula)})</span></span></li>`;
+    }).join('');
+
+    const more = course.participantes.length > 8
+        ? `<li class="text-secondary small">… y ${course.participantes.length - 8} más (ver panel central)</li>`
+        : '';
+
+    return `
+        <div class="drive-doc-sheet drive-course-sheet">
+            <div class="drive-doc-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="drive-course-icon" style="width:48px;height:48px;font-size:1.25rem;">
+                        <i class="bi bi-journal-bookmark-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-1">${escapeHtml(course.nombre)}</h3>
+                        <p class="doc-subtitle mb-0">
+                            ${course.participantes.length} participante${course.participantes.length !== 1 ? 's' : ''} aportan a esta meta
+                            ${course.id_curso ? ' · ID curso ' + escapeHtml(course.id_curso) : ''}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="drive-doc-body">
+                <p class="fw-semibold mb-2">Desglose por estatus</p>
+                <ul class="course-contrib-list mb-4">${statusHtml || '<li class="text-secondary">Sin datos de estatus</li>'}</ul>
+                <p class="fw-semibold mb-2">Participantes de este curso</p>
+                <ul class="course-contrib-list">${listPreview}${more}</ul>
+                <div class="drive-canvas-hint">
+                    <i class="bi bi-hand-index-thumb me-1"></i>
+                    Elija un participante en el panel central para ver su ficha completa.
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderPreviewCanvas() {
+    const canvas = document.getElementById('previewCanvasContent');
+    if (!canvas) return;
+
+    const course = getSelectedCourse();
+    if (!course) {
+        canvas.innerHTML = renderMetaOverview();
+        updatePreviewBreadcrumb();
+        return;
+    }
+
+    if (previewSelectedStudentIdx >= 0 && course.participantes[previewSelectedStudentIdx]) {
+        const p = course.participantes[previewSelectedStudentIdx];
+        canvas.innerHTML = renderStudentDetail(
+            p,
+            previewSelectedStudentIdx,
+            course.participantes.length,
+            course.nombre
+        );
+    } else {
+        canvas.innerHTML = renderCourseDetail(course);
+    }
+    updatePreviewBreadcrumb();
+}
+
+function participantFullName(p) {
+    return [
+        p.primer_nombre,
+        p.segundo_nombre,
+        p.primer_apellido,
+        p.segundo_apellido,
+    ].filter(Boolean).join(' ').trim() || 'Sin nombre';
+}
+
+function participantInitials(p) {
+    const n = (p.primer_nombre || '').charAt(0);
+    const a = (p.primer_apellido || '').charAt(0);
+    return (n + a).toUpperCase() || '?';
+}
+
+function formatPreviewDate(value) {
+    if (!value) return '—';
+    try {
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return String(value);
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+        return String(value);
+    }
+}
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function statusChipClass(estatus) {
+    const e = (estatus || '').toLowerCase();
+    if (e.includes('aprobado')) return 'aprobado';
+    if (e.includes('pendiente')) return 'pendiente';
+    return 'otro';
+}
+
+function renderStudentDetail(p, index, total, courseName) {
+    const name = participantFullName(p);
+    const cedula = p.cedula !== '' && p.cedula !== null ? String(p.cedula) : '—';
+    const estatus = p.estatus_participante || '—';
+    const chipClass = statusChipClass(estatus);
+    const cursoLabel = courseName || p.nombre_curso || '—';
+
+    return `
+        <div class="drive-doc-sheet">
+            <div class="drive-doc-header">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <h3>${escapeHtml(name)}</h3>
+                        <p class="doc-subtitle mb-0">
+                            Participante #${escapeHtml(p.id_participante)} · ${index + 1} de ${total} en
+                            <strong>${escapeHtml(cursoLabel)}</strong>
+                        </p>
+                    </div>
+                    <span class="drive-status-chip ${chipClass}">
+                        <i class="bi bi-circle-fill" style="font-size: 0.45rem;"></i>
+                        ${escapeHtml(estatus)}
+                    </span>
+                </div>
+            </div>
+            <div class="drive-doc-body">
+                <div class="drive-field-grid">
+                    <div class="drive-field">
+                        <label>Cédula de identidad</label>
+                        <div class="value">${escapeHtml(cedula)}</div>
+                    </div>
+                    <div class="drive-field">
+                        <label>Género</label>
+                        <div class="value">${escapeHtml(p.genero || '—')}</div>
+                    </div>
+                    <div class="drive-field full-width">
+                        <label>Correo electrónico</label>
+                        <div class="value">${escapeHtml(p.correo || '—')}</div>
+                    </div>
+                    <div class="drive-field full-width">
+                        <label>Curso que aporta a la meta</label>
+                        <div class="value">${escapeHtml(cursoLabel)}</div>
+                    </div>
+                    <div class="drive-field">
+                        <label>Fecha de inscripción</label>
+                        <div class="value">${escapeHtml(formatPreviewDate(p.fecha_inscripcion))}</div>
+                    </div>
+                    <div class="drive-field">
+                        <label>Fecha fin de curso</label>
+                        <div class="value">${escapeHtml(formatPreviewDate(p.fecha_fin_curso))}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function selectPreviewCourse(courseIdx) {
+    previewSelectedCourseIdx = (courseIdx === null || courseIdx === undefined || Number.isNaN(courseIdx)) ? -1 : courseIdx;
+    previewSelectedStudentIdx = -1;
+
+    document.querySelectorAll('.drive-course-item').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.courseIdx, 10) === previewSelectedCourseIdx);
+    });
+
+    const course = getSelectedCourse();
+    const titleEl = document.getElementById('previewStudentPanelTitle');
+    const countEl = document.getElementById('previewStudentPanelCount');
+    const listEl = document.getElementById('previewStudentList');
+
+    if (!course) {
+        if (titleEl) titleEl.textContent = 'Participantes';
+        if (countEl) countEl.textContent = '0';
+        if (listEl) {
+            listEl.innerHTML = `
+                <div class="drive-students-hint">
+                    <i class="bi bi-journal-bookmark d-block fs-4 mb-2 opacity-50"></i>
+                    Elija un curso para ver quiénes aportan a la meta
+                </div>`;
+        }
+        renderPreviewCanvas();
+        return;
+    }
+
+    if (titleEl) {
+        const short = course.nombre.length > 28 ? course.nombre.slice(0, 26) + '…' : course.nombre;
+        titleEl.textContent = short;
+        titleEl.title = course.nombre;
+    }
+    if (countEl) countEl.textContent = String(course.participantes.length);
+
+    if (listEl) {
+        if (!course.participantes.length) {
+            listEl.innerHTML = `<div class="drive-list-empty">Este curso no tiene participantes en el periodo.</div>`;
+        } else {
+            listEl.innerHTML = course.participantes.map((p, i) => {
+                const name = participantFullName(p);
+                const cedula = p.cedula !== '' && p.cedula != null ? String(p.cedula) : '—';
+                return `
+                    <button type="button" class="drive-file-item${i === previewSelectedStudentIdx ? ' active' : ''}"
+                        data-student-idx="${i}" role="option">
+                        <div class="drive-file-avatar">${escapeHtml(participantInitials(p))}</div>
+                        <div class="drive-file-meta">
+                            <div class="drive-file-name">${escapeHtml(name)}</div>
+                            <div class="drive-file-sub">CI ${escapeHtml(cedula)} · ${escapeHtml(p.estatus_participante || '—')}</div>
+                        </div>
+                    </button>`;
+            }).join('');
+
+            listEl.querySelectorAll('.drive-file-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectPreviewStudent(parseInt(btn.dataset.studentIdx, 10));
+                });
+            });
+        }
+    }
+
+    renderPreviewCanvas();
+}
+
+function selectPreviewStudent(index) {
+    const course = getSelectedCourse();
+    if (!course || index < 0 || index >= course.participantes.length) {
+        previewSelectedStudentIdx = -1;
+        document.querySelectorAll('#previewStudentList .drive-file-item').forEach(el => el.classList.remove('active'));
+        renderPreviewCanvas();
+        return;
+    }
+
+    previewSelectedStudentIdx = index;
+    document.querySelectorAll('#previewStudentList .drive-file-item').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+    });
+
+    renderPreviewCanvas();
+    document.querySelector(`#previewStudentList .drive-file-item[data-student-idx="${index}"]`)
+        ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function renderPreviewCourseList(courses) {
+    const listEl = document.getElementById('previewCourseList');
+    const courseCountEl = document.getElementById('previewCourseCountBadge');
+    const partCountEl = document.getElementById('previewCountBadge');
+    if (!listEl) return;
+
+    const totalParts = courses.reduce((s, c) => s + c.participantes.length, 0);
+    if (courseCountEl) courseCountEl.textContent = String(courses.length);
+    if (partCountEl) partCountEl.textContent = String(totalParts);
+
+    if (!courses.length) {
+        listEl.innerHTML = `<div class="drive-list-empty">Ningún curso aporta participantes con el criterio actual.</div>`;
+        selectPreviewCourse(-1);
+        return;
+    }
+
+    listEl.innerHTML = courses.map((c, idx) => `
+        <button type="button" class="drive-course-item${idx === previewSelectedCourseIdx ? ' active' : ''}"
+            data-course-idx="${idx}" role="option" title="${escapeHtml(c.nombre)}">
+            <div class="drive-course-icon"><i class="bi bi-journal-bookmark-fill"></i></div>
+            <div class="drive-file-meta">
+                <div class="drive-file-name">${escapeHtml(c.nombre)}</div>
+                <div class="drive-file-sub">
+                    <span class="drive-course-count">${c.participantes.length}</span>
+                    participante${c.participantes.length !== 1 ? 's' : ''}
+                </div>
+            </div>
+        </button>
+    `).join('');
+
+    listEl.querySelectorAll('.drive-course-item').forEach(btn => {
+        btn.addEventListener('click', () => selectPreviewCourse(parseInt(btn.dataset.courseIdx, 10)));
+    });
+}
+
+function renderPreviewDrive(participants) {
+    allPreviewParticipants = participants || [];
+    previewCoursesGrouped = groupParticipantsByCourse(allPreviewParticipants);
+
+    if (previewSelectedCourseIdx < 0 || previewSelectedCourseIdx >= previewCoursesGrouped.length) {
+        previewSelectedCourseIdx = -1;
+        previewSelectedStudentIdx = -1;
+    } else {
+        const course = getSelectedCourse();
+        if (course && (previewSelectedStudentIdx < 0 || previewSelectedStudentIdx >= course.participantes.length)) {
+            previewSelectedStudentIdx = -1;
+        }
+    }
+
+    renderPreviewCourseList(previewCoursesGrouped);
+    selectPreviewCourse(previewSelectedCourseIdx);
+}
+
+/** @deprecated alias */
+function renderPreviewTable(participants) {
+    renderPreviewDrive(participants);
+}
+
 // ==================== ACCIONES RÁPIDAS ====================
 
+function openParticipantsPreview(data) {
+        if (!data) {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('Espere a que carguen los datos de la meta');
+            } else {
+                alert('Espere a que carguen los datos de la meta');
+            }
+            return;
+        }
+
+        const viewMetaDetails = document.getElementById('viewMetaDetails');
+        const viewMetaPreview = document.getElementById('viewMetaPreview');
+        const modalDialog = document.getElementById('modalDialogMeta');
+
+        previewMetaContext = data;
+        const searchInput = document.getElementById('searchParticipantPreview');
+        if (searchInput) searchInput.value = '';
+        allPreviewParticipants = [];
+        previewCoursesGrouped = [];
+        previewSelectedCourseIdx = -1;
+        previewSelectedStudentIdx = -1;
+
+        document.getElementById('previewSubtitle').textContent =
+            `Meta #${data.id_meta} · ${data.tipo_objetivo || 'Aprobados'} · ${data.ambito_nombre || 'Global'}`;
+        document.getElementById('previewMetaGoal').textContent = data.meta_objetivo || '0';
+
+        const loadingHtml = `
+            <div class="drive-list-loading py-5 text-center">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <p class="mt-2 mb-0 small">Cargando...</p>
+            </div>`;
+        const courseListEl = document.getElementById('previewCourseList');
+        const listEl = document.getElementById('previewStudentList');
+        const canvas = document.getElementById('previewCanvasContent');
+        if (courseListEl) courseListEl.innerHTML = loadingHtml;
+        if (listEl) listEl.innerHTML = loadingHtml;
+        if (canvas) canvas.innerHTML = loadingHtml;
+
+        // Intercambiar vistas internamente en el mismo modal sin alterar backdrop
+        if (viewMetaDetails && viewMetaPreview && modalDialog) {
+            viewMetaDetails.classList.add('d-none');
+            viewMetaPreview.classList.remove('d-none');
+            modalDialog.classList.remove('modal-lg');
+            modalDialog.classList.add('modal-xl', 'modal-drive-preview');
+        }
+
+        // Cargar participantes de forma asíncrona
+        fetchParticipants(data).then(participantes => {
+            allPreviewParticipants = participantes || [];
+            renderPreviewDrive(allPreviewParticipants);
+        }).catch(err => {
+            console.error(err);
+            if (listEl) {
+                listEl.innerHTML = `
+                    <div class="drive-list-empty text-danger">
+                        <i class="bi bi-exclamation-triangle d-block fs-4 mb-2"></i>
+                        Error al cargar participantes.
+                    </div>`;
+            }
+        });
+}
+
 function initQuickActions() {
-    document.getElementById('quickViewParticipants')?.addEventListener('click', () => {
-        alert('Funcionalidad: Ver lista de participantes');
+    document.getElementById('quickViewParticipants')?.addEventListener('click', function () {
+        const data = window._currentMetaData || window._metaToShow;
+        openParticipantsPreview(data);
     });
-    
-    document.getElementById('quickExport')?.addEventListener('click', () => {
-        if (window._currentMetaData) exportMetaReport(window._currentMetaData);
+
+    // Filtro buscador cliente-side
+    document.getElementById('searchParticipantPreview')?.addEventListener('input', function (e) {
+        const query = e.target.value.toLowerCase().trim();
+        previewSelectedCourseIdx = -1;
+        previewSelectedStudentIdx = -1;
+
+        if (!query) {
+            renderPreviewDrive(allPreviewParticipants);
+            return;
+        }
+
+        const filtered = allPreviewParticipants.filter(p => {
+            const fullName = participantFullName(p).toLowerCase();
+            const cedula = String(p.cedula ?? '').toLowerCase();
+            const curso = (p.nombre_curso || '').toLowerCase();
+            return fullName.includes(query) || cedula.includes(query) || curso.includes(query);
+        });
+
+        renderPreviewDrive(filtered);
+
+        // Si hay un solo curso en el resultado, abrirlo para agilizar la revisión
+        if (previewCoursesGrouped.length === 1) {
+            selectPreviewCourse(0);
+        }
+    });
+
+    // Botones para volver al modal de detalles de la meta
+    const goBack = () => {
+        const viewMetaDetails = document.getElementById('viewMetaDetails');
+        const viewMetaPreview = document.getElementById('viewMetaPreview');
+        const modalDialog = document.getElementById('modalDialogMeta');
+
+        if (viewMetaDetails && viewMetaPreview && modalDialog) {
+            viewMetaPreview.classList.add('d-none');
+            viewMetaDetails.classList.remove('d-none');
+            modalDialog.classList.remove('modal-xl', 'modal-drive-preview');
+            modalDialog.classList.add('modal-lg');
+        }
+        previewSelectedCourseIdx = -1;
+        previewSelectedStudentIdx = -1;
+    };
+
+    document.getElementById('btnBackToMeta')?.addEventListener('click', goBack);
+    document.getElementById('btnBackToMetaFooter')?.addEventListener('click', goBack);
+
+    // Botones de exportación
+    const triggerExport = () => {
+        const data = window._currentMetaData;
+        if (data) exportMetaReport(data);
         else alert('No hay datos para exportar');
-    });
+    };
+
+    document.getElementById('btnPreviewExport')?.addEventListener('click', triggerExport);
+    document.getElementById('quickExport')?.addEventListener('click', triggerExport);
 }
 
 // ==================== INICIALIZACIÓN ====================
@@ -995,11 +2150,24 @@ function initModal() {
             metaProgressChart.destroy();
             metaProgressChart = null;
         }
+        // Asegurar de reiniciar a la vista de detalles al cerrar el modal
+        const viewMetaDetails = document.getElementById('viewMetaDetails');
+        const viewMetaPreview = document.getElementById('viewMetaPreview');
+        const modalDialog = document.getElementById('modalDialogMeta');
+        if (viewMetaDetails && viewMetaPreview && modalDialog) {
+            viewMetaPreview.classList.add('d-none');
+            viewMetaDetails.classList.remove('d-none');
+            modalDialog.classList.remove('modal-xl', 'modal-drive-preview');
+            modalDialog.classList.add('modal-lg');
+        }
+        previewSelectedCourseIdx = -1;
+        previewSelectedStudentIdx = -1;
     });
     
     modal.addEventListener('shown.bs.modal', () => {
-        if (window._metaToShow) {
-            loadMetaData(window._metaToShow);
+        const pending = window._metaToShow;
+        if (pending) {
+            loadMetaData(pending);
             window._metaToShow = null;
         }
     });
@@ -1007,10 +2175,10 @@ function initModal() {
     document.getElementById('btnEditarMeta')?.addEventListener('click', () => {
         const data = window._currentMetaData;
         if (!data) return;
-
+ 
         const viewModalEl = document.getElementById('modal-viewMeta');
         const viewModal = bootstrap.Modal.getInstance(viewModalEl);
-
+ 
         const onHidden = () => {
             viewModalEl.removeEventListener('hidden.bs.modal', onHidden);
             if (typeof loadEditMetaData === 'function') {
@@ -1021,7 +2189,7 @@ function initModal() {
                 new bootstrap.Modal(editModalEl).show();
             }
         };
-
+ 
         viewModalEl.addEventListener('hidden.bs.modal', onHidden);
         if (viewModal) viewModal.hide();
     });
@@ -1038,10 +2206,17 @@ function initModal() {
 }
 
 window.showMetaModal = (metaData) => {
-    window._metaToShow = metaData;
-    new bootstrap.Modal(document.getElementById('modal-viewMeta')).show();
+    window._currentMetaData = metaData;
+    window._metaToShow = null;
+    const modalEl = document.getElementById('modal-viewMeta');
+    loadMetaData(metaData);
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 };
 
-document.addEventListener('DOMContentLoaded', initModal);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initModal);
+} else {
+    initModal();
+}
 console.log('✅ Modal con Header Mejorado cargado correctamente');
 </script>

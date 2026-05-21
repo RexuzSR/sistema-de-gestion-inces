@@ -11,7 +11,7 @@ function cargarTotalCursos() {
     const categoria = categoriasReportes.find(c => c.id === currentCategoryId);
     const fechaActual = obtenerFechaActual();
     const añosDisponibles = obtenerAñosDisponibles();
-    
+
     contentDiv.innerHTML = `
         <div class="card shadow-lg border-0">
             <div class="card-header bg-${categoria.color} text-white">
@@ -25,9 +25,9 @@ function cargarTotalCursos() {
                             <div class="col-md-4">
                                 <label for="selectAnioTotalCursos" class="form-label">Seleccionar Año:</label>
                                 <select id="selectAnioTotalCursos" class="form-select">
-                                    ${añosDisponibles.map(año => 
-                                        `<option value="${año}" ${año === fechaActual.año ? 'selected' : ''}>${año}</option>`
-                                    ).join('')}
+                                    ${añosDisponibles.map(año =>
+        `<option value="${año}" ${año === fechaActual.año ? 'selected' : ''}>${año}</option>`
+    ).join('')}
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -35,9 +35,9 @@ function cargarTotalCursos() {
                                 <select id="selectMesTotalCursos" class="form-select">
                                     <option value="todos">Todos los Meses</option>
                                     ${obtenerNombresMeses().map((mes, index) => {
-                                        const mesNumero = index + 1;
-                                        return `<option value="${mesNumero}">${mes}</option>`;
-                                    }).join('')}
+        const mesNumero = index + 1;
+        return `<option value="${mesNumero}">${mes}</option>`;
+    }).join('')}
                                 </select>
                             </div>
                         </div>
@@ -59,14 +59,14 @@ function cargarTotalCursos() {
             </div>
         </div>
     `;
-    
+
     // Event listeners
-    document.getElementById('btnAplicarFiltrosTotalCursos')?.addEventListener('click', function() {
+    document.getElementById('btnAplicarFiltrosTotalCursos')?.addEventListener('click', function () {
         const anio = parseInt(document.getElementById('selectAnioTotalCursos').value);
         const mes = document.getElementById('selectMesTotalCursos').value;
         cargarDatosTotalCursos(anio, mes);
     });
-    
+
     // Cargar datos iniciales
     cargarDatosTotalCursos(fechaActual.año, 'todos');
 }
@@ -74,11 +74,11 @@ function cargarTotalCursos() {
 function cargarDatosTotalCursos(anio, mesFiltro) {
     const loadingElement = document.getElementById('loadingTotalCursos');
     const contenidoElement = document.getElementById('contenidoTotalCursos');
-    
+
     // Simular carga de datos (REEMPLAZAR CON TU API)
     setTimeout(() => {
         mostrarTotalCursos(anio, mesFiltro);
-        
+
         loadingElement.style.display = 'none';
         contenidoElement.style.display = 'block';
     }, 1000);
@@ -86,7 +86,7 @@ function cargarDatosTotalCursos(anio, mesFiltro) {
 
 function mostrarTotalCursos(anio, mesFiltro) {
     const contenidoElement = document.getElementById('contenidoTotalCursos');
-    
+
     // Datos de ejemplo
     const cursosData = [
         {
@@ -195,12 +195,12 @@ function mostrarTotalCursos(anio, mesFiltro) {
             descripcion: "Fundamentos de ciberseguridad, pruebas de penetración y hacking ético. Herramientas y metodologías actuales."
         }
     ];
-    
+
     // Calcular totales
     const totalCursos = cursosData.reduce((sum, item) => sum + item.cantidadCursos, 0);
     const totalActivos = cursosData.reduce((sum, item) => sum + item.cursosActivos, 0);
     const promedioParticipantes = Math.round(cursosData.reduce((sum, item) => sum + item.participantesPromedio, 0) / cursosData.length);
-    
+
     contenidoElement.innerHTML = `
         <div class="row">
             <div class="col-md-3">
@@ -377,7 +377,7 @@ function mostrarTotalCursos(anio, mesFiltro) {
                                                                 <span class="fw-bold">${curso.estadisticas.satisfaccion}/5</span>
                                                             </div>
                                                             <div class="progress mb-3" style="height: 8px;">
-                                                                <div class="progress-bar bg-warning" style="width: ${(curso.estadisticas.satisfaccion/5)*100}%"></div>
+                                                                <div class="progress-bar bg-warning" style="width: ${(curso.estadisticas.satisfaccion / 5) * 100}%"></div>
                                                             </div>
                                                             
                                                             <div class="d-flex justify-content-between mb-2">
@@ -412,12 +412,12 @@ function mostrarTotalCursos(anio, mesFiltro) {
             </div>
         </div>
     `;
-    
+
     // Inicializar accordion de Bootstrap
     setTimeout(() => {
         const accordionElements = document.querySelectorAll('.accordion-button');
         accordionElements.forEach(element => {
-            element.addEventListener('click', function() {
+            element.addEventListener('click', function () {
                 // Cerrar otros accordions si es necesario
                 if (this.getAttribute('aria-expanded') === 'true') {
                     const parentAccordion = this.closest('.accordion');
@@ -441,7 +441,7 @@ function cargarCursosMasParticipantes() {
     const categoria = categoriasReportes.find(c => c.id === currentCategoryId);
     const fechaActual = obtenerFechaActual();
     const añosDisponibles = obtenerAñosDisponibles();
-    
+
     contentDiv.innerHTML = `
         <div class="card shadow-lg border-0">
             <div class="card-header bg-${categoria.color} text-white">
@@ -458,7 +458,7 @@ function cargarCursosMasParticipantes() {
             </div>
         </div>
     `;
-    
+
     // Cargar datos iniciales
     cargarDatosCursosMasParticipantes(fechaActual.año, 'todos', 'todas');
 }
@@ -466,7 +466,7 @@ function cargarCursosMasParticipantes() {
 function cargarDatosCursosMasParticipantes(anio, mesFiltro, categoriaFiltro) {
     const loadingElement = document.getElementById('loadingCursosMasParticipantes');
     const contenidoElement = document.getElementById('contenidoCursosMasParticipantes');
-    
+
     // Simular carga de datos (REEMPLAZAR CON TU API)
     setTimeout(() => {
         // Datos de ejemplo - REEMPLAZA CON TU API
@@ -480,21 +480,21 @@ function cargarDatosCursosMasParticipantes(anio, mesFiltro, categoriaFiltro) {
             { curso: 'DevOps', participantes: 150, activos: 100, duracion: '48 horas', instructor: 'Miguel Ruiz' },
             { curso: 'Inteligencia Artificial', participantes: 190, activos: 130, duracion: '55 horas', instructor: 'Sofía Castro' }
         ];
-        
+
         // Datos para el slider de popularidad - basado en periodos de tiempo reales
         const fechaActual = new Date();
         const ultimoMes = new Date(fechaActual);
         ultimoMes.setMonth(fechaActual.getMonth() - 1);
-        
+
         const ultimos3Meses = new Date(fechaActual);
         ultimos3Meses.setMonth(fechaActual.getMonth() - 3);
-        
+
         const ultimos6Meses = new Date(fechaActual);
         ultimos6Meses.setMonth(fechaActual.getMonth() - 6);
-        
+
         const ultimoAno = new Date(fechaActual);
         ultimoAno.setFullYear(fechaActual.getFullYear() - 1);
-        
+
         // Datos simulados para popularidad por periodos
         const popularidadData = {
             ultimoMes: {
@@ -538,9 +538,9 @@ function cargarDatosCursosMasParticipantes(anio, mesFiltro, categoriaFiltro) {
                 descripcion: 'Curso con mayor demanda anual'
             }
         };
-        
+
         mostrarCursosMasParticipantes(cursosData, popularidadData, anio, mesFiltro, categoriaFiltro);
-        
+
         loadingElement.style.display = 'none';
         contenidoElement.style.display = 'block';
     }, 1000);
@@ -548,13 +548,13 @@ function cargarDatosCursosMasParticipantes(anio, mesFiltro, categoriaFiltro) {
 
 function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, categoriaFiltro) {
     const contenidoElement = document.getElementById('contenidoCursosMasParticipantes');
-    
+
     const totalParticipantesActivos = data.reduce((sum, item) => sum + item.activos, 0);
     const promedioPorCurso = Math.round(data.reduce((sum, item) => sum + item.activos, 0) / data.length);
-    
+
     // Obtener las claves de los periodos
     const periodos = ['ultimoMes', 'ultimos3Meses', 'ultimos6Meses', 'ultimoAno'];
-    
+
     contenidoElement.innerHTML = `
         <!-- Slider de popularidad -->
         <div class="row mb-4">
@@ -578,8 +578,8 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
                             <!-- Slides del carousel -->
                             <div class="carousel-inner">
                                 ${periodos.map((periodo, index) => {
-                                    const periodoData = popularidadData[periodo];
-                                    return `
+        const periodoData = popularidadData[periodo];
+        return `
                                         <div class="carousel-item ${index === 0 ? 'active' : ''}" data-periodo-index="${index}">
                                             <div class="row align-items-center">
                                                 <div class="col-md-8">
@@ -634,7 +634,7 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
                                             </div>
                                         </div>
                                     `;
-                                }).join('')}
+    }).join('')}
                             </div>
                             
                             <!-- Controles del carousel -->
@@ -651,8 +651,8 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
                         <!-- Indicadores de navegación adicionales -->
                         <div class="row mt-3" id="botonesPeriodo">
                             ${periodos.map((periodo, index) => {
-                                const periodoData = popularidadData[periodo];
-                                return `
+        const periodoData = popularidadData[periodo];
+        return `
                                     <div class="col-md-3 text-center">
                                         <button type="button" 
                                                 class="btn btn-sm ${index === 0 ? 'btn-primary' : 'btn-outline-primary'} btn-periodo"
@@ -661,7 +661,7 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
                                         </button>
                                     </div>
                                 `;
-                            }).join('')}
+    }).join('')}
                         </div>
                     </div>
                 </div>
@@ -706,9 +706,9 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
                     <div class="col-md-4">
                         <label for="selectAnioCursosParticipantes" class="form-label">Seleccionar Año:</label>
                         <select id="selectAnioCursosParticipantes" class="form-select" onchange="actualizarGraficaCursos()">
-                            ${obtenerAñosDisponibles().map(año => 
-                                `<option value="${año}" ${año === anio ? 'selected' : ''}>${año}</option>`
-                            ).join('')}
+                            ${obtenerAñosDisponibles().map(año =>
+        `<option value="${año}" ${año === anio ? 'selected' : ''}>${año}</option>`
+    ).join('')}
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -716,9 +716,9 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
                         <select id="selectMesCursosParticipantes" class="form-select" onchange="actualizarGraficaCursos()">
                             <option value="todos" ${mesFiltro === 'todos' ? 'selected' : ''}>Todos los Meses</option>
                             ${obtenerNombresMeses().map((mes, index) => {
-                                const mesNumero = index + 1;
-                                return `<option value="${mesNumero}" ${mesFiltro === mesNumero.toString() ? 'selected' : ''}>${mes}</option>`;
-                            }).join('')}
+        const mesNumero = index + 1;
+        return `<option value="${mesNumero}" ${mesFiltro === mesNumero.toString() ? 'selected' : ''}>${mes}</option>`;
+    }).join('')}
                         </select>
                     </div>
                     <div class="col-md-4">
@@ -842,13 +842,13 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
             }
         </style>
     `;
-    
+
     // Crear gráfico
     crearGraficaCursosParticipantes(data, anio, mesFiltro, categoriaFiltro);
-    
+
     // Inicializar el carousel con sincronización de botones
     inicializarCarouselPopularidad();
-    
+
     // Inicializar el slideshow manual
     setTimeout(() => {
         inicializarSlideshow();
@@ -859,18 +859,18 @@ function mostrarCursosMasParticipantes(data, popularidadData, anio, mesFiltro, c
 function crearGraficaCursosParticipantes(data, anio, mesFiltro, categoriaFiltro) {
     const ctx = document.getElementById('graficoCursosMasParticipantes')?.getContext('2d');
     if (!ctx) return;
-    
+
     // Destruir gráfico anterior si existe
     if (chartInstances['graficoCursosMasParticipantes']) {
         chartInstances['graficoCursosMasParticipantes'].destroy();
     }
-    
+
     // Filtrar datos si es necesario
     let datosFiltrados = [...data];
-    
+
     // Aquí iría la lógica de filtrado real según año, mes y categoría
     // Por ahora solo mostramos todos los datos
-    
+
     // Determinar color basado en filtros
     let colorPrincipal;
     if (categoriaFiltro === 'programacion') {
@@ -886,7 +886,7 @@ function crearGraficaCursosParticipantes(data, anio, mesFiltro, categoriaFiltro)
     } else {
         colorPrincipal = 'rgba(54, 162, 235, 0.8)';
     }
-    
+
     chartInstances['graficoCursosMasParticipantes'] = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -948,10 +948,10 @@ function crearGraficaCursosParticipantes(data, anio, mesFiltro, categoriaFiltro)
                 },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             const curso = datosFiltrados[context.dataIndex];
-                            const label = context.dataset.label === 'Participantes Activos' ? 
-                                `Activos: ${curso.activos} (${Math.round((curso.activos/curso.participantes)*100)}% del total)` :
+                            const label = context.dataset.label === 'Participantes Activos' ?
+                                `Activos: ${curso.activos} (${Math.round((curso.activos / curso.participantes) * 100)}% del total)` :
                                 `Total: ${curso.participantes}`;
                             return label;
                         }
@@ -967,11 +967,11 @@ function actualizarGraficaCursos() {
     const anio = parseInt(document.getElementById('selectAnioCursosParticipantes')?.value || new Date().getFullYear());
     const mes = document.getElementById('selectMesCursosParticipantes')?.value || 'todos';
     const categoria = document.getElementById('selectCategoriaCursosParticipantes')?.value || 'todas';
-    
+
     // Simular recarga de datos con filtros
     const loadingElement = document.getElementById('loadingCursosMasParticipantes');
     const contenidoElement = document.getElementById('contenidoCursosMasParticipantes');
-    
+
     // Mostrar loading
     const graficaContainer = document.querySelector('#graficoCursosMasParticipantes')?.parentElement;
     if (graficaContainer) {
@@ -984,7 +984,7 @@ function actualizarGraficaCursos() {
             </div>
         `;
     }
-    
+
     setTimeout(() => {
         // Simular datos filtrados (en realidad deberías hacer una llamada API aquí)
         const cursosFiltrados = [
@@ -994,10 +994,10 @@ function actualizarGraficaCursos() {
             { curso: 'Ciberseguridad', participantes: 200, activos: 140, duracion: '42 horas', instructor: 'Laura Sánchez' },
             { curso: 'Inteligencia Artificial', participantes: 190, activos: 130, duracion: '55 horas', instructor: 'Sofía Castro' }
         ];
-        
+
         // Actualizar gráfica con datos filtrados
         crearGraficaCursosParticipantes(cursosFiltrados, anio, mes, categoria);
-        
+
         // Actualizar texto de filtros en la gráfica
         const tituloGrafica = document.querySelector('#graficoCursosMasParticipantes')?.closest('.card-body').querySelector('.text-center');
         if (tituloGrafica) {
@@ -1022,10 +1022,10 @@ function inicializarCarouselPopularidad() {
             wrap: true,
             keyboard: true
         });
-        
+
         // Obtener todos los botones de periodo
         const botonesPeriodo = document.querySelectorAll('.btn-periodo');
-        
+
         // Función para actualizar el botón activo
         function actualizarBotonActivo(index) {
             botonesPeriodo.forEach((btn, i) => {
@@ -1038,27 +1038,27 @@ function inicializarCarouselPopularidad() {
                 }
             });
         }
-        
+
         // Evento cuando el carousel cambia de slide
-        carouselElement.addEventListener('slid.bs.carousel', function(event) {
+        carouselElement.addEventListener('slid.bs.carousel', function (event) {
             const activeIndex = Array.from(carouselElement.querySelectorAll('.carousel-item')).indexOf(event.relatedTarget);
             actualizarBotonActivo(activeIndex);
         });
-        
+
         // Agregar eventos a los botones de periodo
         botonesPeriodo.forEach((boton, index) => {
-            boton.addEventListener('click', function() {
+            boton.addEventListener('click', function () {
                 // Ir al slide correspondiente
                 carousel.to(index);
                 actualizarBotonActivo(index);
-                
+
                 // Reiniciar slideshow después de clic manual
                 iniciarSlideshowAutomatico();
             });
         });
-        
+
         // Agregar controles de teclado
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowLeft') {
                 carousel.prev();
                 iniciarSlideshowAutomatico();
@@ -1067,11 +1067,11 @@ function inicializarCarouselPopularidad() {
                 iniciarSlideshowAutomatico();
             }
         });
-        
+
         // Inicializar el botón activo al primer slide
         setTimeout(() => {
             actualizarBotonActivo(0);
-            
+
             // Iniciar slideshow automático después de 2 segundos
             setTimeout(() => {
                 iniciarSlideshowAutomatico();
@@ -1083,12 +1083,12 @@ function inicializarCarouselPopularidad() {
 function iniciarSlideshowAutomatico() {
     const carouselElement = document.getElementById('carouselPopularidad');
     if (!carouselElement || typeof bootstrap === 'undefined') return;
-    
+
     // Limpiar intervalo anterior
     if (slideshowInterval) {
         clearInterval(slideshowInterval);
     }
-    
+
     // Iniciar nuevo intervalo
     slideshowInterval = setInterval(() => {
         const carousel = bootstrap.Carousel.getInstance(carouselElement);
@@ -1102,7 +1102,7 @@ function iniciarSlideshowAutomatico() {
 function cargarCursoMasRequerido() {
     const contentDiv = document.getElementById('reportContent');
     const categoria = categoriasReportes.find(c => c.id === currentCategoryId);
-    
+
     contentDiv.innerHTML = `
         <div class="card shadow-lg border-0">
             <div class="card-header bg-${categoria.color} text-white">
@@ -1422,12 +1422,12 @@ function cargarCursoMasRequerido() {
             }
         </style>
     `;
-    
+
     // Event listeners
-    document.getElementById('btnActualizarReporte')?.addEventListener('click', function() {
+    document.getElementById('btnActualizarReporte')?.addEventListener('click', function () {
         cargarDatosCursoMasRequerido();
     });
-    
+
     // Cargar datos iniciales (últimos 90 días - 3 meses)
     cargarDatosCursoMasRequerido();
 }
@@ -1438,13 +1438,13 @@ function cargarDatosCursoMasRequerido() {
     const estadisticas = document.getElementById('estadisticasSolicitudes');
     const filtros = document.getElementById('filtrosSimplificados');
     const tablaRanking = document.getElementById('tablaRankingCompleto');
-    
+
     // Obtener período seleccionado
     const periodoSelect = document.getElementById('selectPeriodoAnalisis');
     const diasAnalisis = periodoSelect ? parseInt(periodoSelect.value) : 90; // 90 días por defecto (3 meses)
     const categoriaSelect = document.getElementById('selectCategoriaAnalisis');
     const categoriaAnalisis = categoriaSelect ? categoriaSelect.value : 'todas';
-    
+
     // Ocultar secciones y mostrar loading
     if (contenedorTop3) contenedorTop3.style.display = 'none';
     if (estadisticas) estadisticas.style.display = 'none';
@@ -1454,100 +1454,100 @@ function cargarDatosCursoMasRequerido() {
         loadingElement.style.display = 'block';
         loadingElement.querySelector('p').textContent = `Analizando datos de los últimos ${diasAnalisis} días...`;
     }
-    
+
     // Simular carga de datos (REEMPLAZAR CON TU API)
     setTimeout(() => {
         // Obtener fecha actual y calcular fecha de inicio
         const fechaFin = new Date();
         const fechaInicio = new Date();
         fechaInicio.setDate(fechaInicio.getDate() - diasAnalisis);
-        
+
         // Datos simulados basados en participantes y crecimiento de los últimos días
         const cursosData = [
-            { 
-                curso: 'Inteligencia Artificial Aplicada', 
-                participantes: 185, 
+            {
+                curso: 'Inteligencia Artificial Aplicada',
+                participantes: 185,
                 crecimiento: 42,  // Porcentaje de crecimiento
                 duracion: '60 horas',
                 instructor: 'Dr. Carlos Rodríguez',
                 categoria: 'tecnologia',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Machine Learning Avanzado', 
-                participantes: 165, 
+            {
+                curso: 'Machine Learning Avanzado',
+                participantes: 165,
                 crecimiento: 35,
                 duracion: '55 horas',
                 instructor: 'Dra. Sofía Castro',
                 categoria: 'tecnologia',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Desarrollo Web Full Stack', 
-                participantes: 155, 
+            {
+                curso: 'Desarrollo Web Full Stack',
+                participantes: 155,
                 crecimiento: 28,
                 duracion: '70 horas',
                 instructor: 'Ing. Ana López',
                 categoria: 'desarrollo',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Ciberseguridad y Hacking Ético', 
-                participantes: 140, 
+            {
+                curso: 'Ciberseguridad y Hacking Ético',
+                participantes: 140,
                 crecimiento: 55,
                 duracion: '65 horas',
                 instructor: 'Lic. Laura Sánchez',
                 categoria: 'tecnologia',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Blockchain y Criptomonedas', 
-                participantes: 125, 
+            {
+                curso: 'Blockchain y Criptomonedas',
+                participantes: 125,
                 crecimiento: 65,
                 duracion: '50 horas',
                 instructor: 'Mtro. Miguel Ruiz',
                 categoria: 'tecnologia',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Data Science con Python', 
-                participantes: 135, 
+            {
+                curso: 'Data Science con Python',
+                participantes: 135,
                 crecimiento: 38,
                 duracion: '45 horas',
                 instructor: 'Dr. Juan Pérez',
                 categoria: 'tecnologia',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Diseño UX/UI Avanzado', 
-                participantes: 115, 
+            {
+                curso: 'Diseño UX/UI Avanzado',
+                participantes: 115,
                 crecimiento: 25,
                 duracion: '40 horas',
                 instructor: 'Diseñadora María García',
                 categoria: 'diseno',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'DevOps y CI/CD', 
-                participantes: 105, 
+            {
+                curso: 'DevOps y CI/CD',
+                participantes: 105,
                 crecimiento: 22,
                 duracion: '48 horas',
                 instructor: 'Ing. Pedro Martínez',
                 categoria: 'desarrollo',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'IoT y Sistemas Embebidos', 
-                participantes: 95, 
+            {
+                curso: 'IoT y Sistemas Embebidos',
+                participantes: 95,
                 crecimiento: 35,
                 duracion: '52 horas',
                 instructor: 'Ing. Roberto Díaz',
                 categoria: 'tecnologia',
                 tendencia: 'creciente'
             },
-            { 
-                curso: 'Realidad Virtual y Aumentada', 
-                participantes: 85, 
+            {
+                curso: 'Realidad Virtual y Aumentada',
+                participantes: 85,
                 crecimiento: 48,
                 duracion: '58 horas',
                 instructor: 'Lic. Patricia Morales',
@@ -1555,33 +1555,33 @@ function cargarDatosCursoMasRequerido() {
                 tendencia: 'creciente'
             }
         ];
-        
+
         // Filtrar por categoría si no es "todas"
         let datosFiltrados = cursosData;
         if (categoriaAnalisis !== 'todas') {
             datosFiltrados = cursosData.filter(curso => curso.categoria === categoriaAnalisis);
         }
-        
+
         // Encontrar valores máximos para normalización
         const maxParticipantes = Math.max(...datosFiltrados.map(c => c.participantes));
         const maxCrecimiento = Math.max(...datosFiltrados.map(c => c.crecimiento));
-        
+
         // Calcular score para cada curso (fórmula ajustada para 0-100)
         datosFiltrados.forEach(curso => {
             // Normalizar participantes (0-100)
             const participantesNormalizado = (curso.participantes / maxParticipantes) * 100;
-            
+
             // Normalizar crecimiento (0-100)
             const crecimientoNormalizado = (curso.crecimiento / maxCrecimiento) * 100;
-            
+
             // Calcular score (60% participantes + 40% crecimiento) - Más peso al crecimiento reciente
             // Esto produce un valor entre 0-100
             curso.score = Math.round((participantesNormalizado * 0.6) + (crecimientoNormalizado * 0.4));
         });
-        
+
         // Ordenar por score (de mayor a menor)
         datosFiltrados.sort((a, b) => b.score - a.score);
-        
+
         // Calcular estadísticas
         const totalCursos = datosFiltrados.length;
         const totalParticipantes = datosFiltrados.reduce((sum, item) => sum + item.participantes, 0);
@@ -1589,7 +1589,7 @@ function cargarDatosCursoMasRequerido() {
         const totalCrecimiento = datosFiltrados.reduce((sum, item) => sum + item.crecimiento, 0);
         const promedioCrecimiento = Math.round(totalCrecimiento / totalCursos);
         const promedioScore = Math.round(datosFiltrados.reduce((sum, item) => sum + item.score, 0) / totalCursos);
-        
+
         // Mostrar los datos
         mostrarCursoMasRequerido(datosFiltrados, {
             fechaInicio: fechaInicio.toLocaleDateString(),
@@ -1600,7 +1600,7 @@ function cargarDatosCursoMasRequerido() {
             promedioScore,
             diasAnalisis
         });
-        
+
         // Mostrar secciones
         if (loadingElement) loadingElement.style.display = 'none';
         if (contenedorTop3) contenedorTop3.style.display = 'block';
@@ -1618,38 +1618,38 @@ function mostrarCursoMasRequerido(cursosData, estadisticas) {
         document.getElementById('participantesPrimero').textContent = cursosData[0].participantes;
         document.getElementById('crecimientoPrimero').textContent = cursosData[0].crecimiento;
         document.getElementById('scorePrimero').textContent = cursosData[0].score;
-        
+
         // Segundo curso
         document.getElementById('cursoSegundo').textContent = cursosData[1].curso;
         document.getElementById('participantesSegundo').textContent = cursosData[1].participantes;
         document.getElementById('crecimientoSegundo').textContent = cursosData[1].crecimiento;
         document.getElementById('scoreSegundo').textContent = cursosData[1].score;
-        
+
         // Tercer curso
         document.getElementById('cursoTercero').textContent = cursosData[2].curso;
         document.getElementById('participantesTercero').textContent = cursosData[2].participantes;
         document.getElementById('crecimientoTercero').textContent = cursosData[2].crecimiento;
         document.getElementById('scoreTercero').textContent = cursosData[2].score;
     }
-    
+
     // Actualizar estadísticas
     document.getElementById('totalAnalizado').textContent = estadisticas.totalCursos;
     document.getElementById('promedioScore').textContent = estadisticas.promedioScore;
     document.getElementById('crecimientoPromedio').textContent = `${estadisticas.promedioCrecimiento}%`;
     document.getElementById('participantesPromedio').textContent = estadisticas.promedioParticipantes;
-    
+
     // Actualizar título del reporte
     const headerSubtitle = document.querySelector('.card-header p.small');
     if (headerSubtitle) {
-        headerSubtitle.textContent = `Reporte basado en los últimos ${estadisticas.diasAnalisis} días (${Math.round(estadisticas.diasAnalisis/30)} meses) - Análisis para determinar qué cursos reabrir`;
+        headerSubtitle.textContent = `Reporte basado en los últimos ${estadisticas.diasAnalisis} días (${Math.round(estadisticas.diasAnalisis / 30)} meses) - Análisis para determinar qué cursos reabrir`;
     }
-    
+
     // Actualizar texto en tabla
     const tablaTitle = document.querySelector('#tablaRankingCompleto p.text-muted');
     if (tablaTitle) {
         tablaTitle.textContent = `Ordenado por índice de requerimiento (basado en últimos ${estadisticas.diasAnalisis} días)`;
     }
-    
+
     // Generar tabla de ranking
     const tablaBody = document.getElementById('tablaRankingBody');
     if (tablaBody) {
@@ -1714,14 +1714,14 @@ function obtenerNombreMes(numeroMes) {
 function inicializarSlideshow() {
     const slides = document.querySelectorAll('.carousel-item');
     const indicators = document.querySelectorAll('.carousel-indicators button');
-    
+
     if (slides.length === 0) return;
-    
+
     // Reiniciar el slideshow
     if (slideshowInterval) {
         clearInterval(slideshowInterval);
     }
-    
+
     // Mostrar el primer slide activo
     slides.forEach((slide, index) => {
         slide.classList.remove('active');
@@ -1730,20 +1730,20 @@ function inicializarSlideshow() {
             indicators[index].setAttribute('aria-current', 'false');
         }
     });
-    
+
     slides[0].classList.add('active');
     if (indicators[0]) {
         indicators[0].classList.add('active');
         indicators[0].setAttribute('aria-current', 'true');
     }
-    
+
     // Configurar el intervalo después de 2 segundos de inactividad
     setTimeout(() => {
         slideshowInterval = setInterval(() => {
             cambiarSlide(1); // Cambiar al siguiente slide
         }, slideshowDelay);
     }, 2000);
-    
+
     // Configurar eventos para los controles
     document.querySelectorAll('.carousel-control-prev').forEach(control => {
         control.addEventListener('click', () => {
@@ -1751,14 +1751,14 @@ function inicializarSlideshow() {
             reiniciarIntervalo();
         });
     });
-    
+
     document.querySelectorAll('.carousel-control-next').forEach(control => {
         control.addEventListener('click', () => {
             cambiarSlide(1);
             reiniciarIntervalo();
         });
     });
-    
+
     // Configurar eventos para los indicadores
     indicators.forEach((indicator, index) => {
         indicator.addEventListener('click', () => {
@@ -1772,12 +1772,12 @@ function inicializarSlideshow() {
 function cambiarSlide(direction) {
     const slides = document.querySelectorAll('.carousel-item');
     const indicators = document.querySelectorAll('.carousel-indicators button');
-    
+
     if (slides.length === 0) return;
-    
+
     // Calcular nuevo índice
     currentSlideIndex = (currentSlideIndex + direction + slides.length) % slides.length;
-    
+
     // Mostrar el slide
     mostrarSlide(currentSlideIndex);
 }
@@ -1785,19 +1785,19 @@ function cambiarSlide(direction) {
 function mostrarSlide(index) {
     const slides = document.querySelectorAll('.carousel-item');
     const indicators = document.querySelectorAll('.carousel-indicators button');
-    
+
     slides.forEach(slide => slide.classList.remove('active'));
     indicators.forEach(indicator => {
         indicator.classList.remove('active');
         indicator.setAttribute('aria-current', 'false');
     });
-    
+
     slides[index].classList.add('active');
     if (indicators[index]) {
         indicators[index].classList.add('active');
         indicators[index].setAttribute('aria-current', 'true');
     }
-    
+
     currentSlideIndex = index;
 }
 
@@ -1806,7 +1806,7 @@ function reiniciarIntervalo() {
     if (slideshowInterval) {
         clearInterval(slideshowInterval);
     }
-    
+
     // Iniciar nuevo intervalo después de 5 segundos
     setTimeout(() => {
         slideshowInterval = setInterval(() => {

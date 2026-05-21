@@ -132,6 +132,12 @@ $(document).ready(function () {
             const cumplimientoTexto = m.estado_cumplimiento || 'En progreso';
             const estadoClass = getEstadoClass(m.estado_cumplimiento);
             
+            // Determinar si la meta está vencida
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isVencida = m.fecha_fin ? (new Date(m.fecha_fin + 'T00:00:00') < today) : false;
+            const canEditOrDelete = m.estado !== 'Cerrada' && !isVencida;
+            
             rows += `
                 <tr style="--row-index: ${index};">
                     <td class="font-weight-semibold">${m.id_meta}</td>
@@ -144,13 +150,13 @@ $(document).ready(function () {
                     <td><span class="status-badge ${estadoClass}">${cumplimientoTexto}</span></td>
                     <td>
                         <div class="actions-container">
-                            <button class="button-action view" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-viewMeta" title="Ver detalles">
+                            <button class="button-action view" data-id="${m.id_meta}" title="Ver detalles">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill text-white" viewBox="0 0 16 16">
                                     <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/>
                                     <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/>
                                 </svg>
                             </button>
-                            ${m.estado !== 'Cerrada' ? `
+                            ${canEditOrDelete ? `
                                 <button class="button-action edit" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-editMeta" title="Editar">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-wide text-white" viewBox="0 0 16 16">
                                         <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
@@ -260,46 +266,28 @@ $(document).ready(function () {
         });
     });
 
-    // Abrir modal ver
-    $(document).on('click', '.button-action.view', function () {
+    // Abrir modal ver (cargar datos antes de mostrar para que funcionen acciones del footer)
+    $(document).on('click', '.button-action.view', function (e) {
+        e.preventDefault();
         const id = $(this).data('id');
         $.get('../../app/controlador/Metas/verMeta.php', { id }, function (res) {
             try { res = JSON.parse(res); } catch (err) {}
             if (res.success) {
                 const m = res.data;
-                $('#view_id_meta').text(m.id_meta);
-                $('#view_meta_objetivo').text(m.meta_objetivo);
-                $('#view_tipo_objetivo').text(m.tipo_objetivo || 'Aprobados');
-                $('#view_estudiantes_formados').text(m.estudiantes_formados);
-                $('#view_ambito').text(m.ambito_nombre || '');
-                $('#view_fecha_inicio').text(m.fecha_inicio);
-                $('#view_fecha_fin').text(m.fecha_fin);
-                
-                const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
-                const safePct = Math.min(Math.max(pct, 0), 100);
-                const progressHtml = `
-                    <div class="progress-container">
-                        <div class="progress-bar-custom ${getProgressClass(pct)}" style="width: ${safePct}%;">
-                            <span class="progress-text">
-                                ${safePct.toFixed(2)}%
-                            </span>
-                        </div>
-                    </div>
-                `;
-                
-                $('#view_porcentaje_cumplimiento').html(progressHtml);
-                
-                const estadoTexto = getEstadoText(m.estado);
-                const estadoClass = getEstadoClass(m.estado, m.estado_cumplimiento);
-                $('#view_estado_cumplimiento').attr('class', 'status-badge ' + estadoClass).text(m.estado_cumplimiento || 'En Proceso');
-                $('#view_estado').text(estadoTexto);
-                $('#view_created_at').text(m.created_at);
-                
-                // Guardar datos para que el modal los procese cuando esté completamente mostrado
-                try { window._metaToShow = m; } catch (e) { console.error('set _metaToShow', e); }
+                if (typeof window.showMetaModal === 'function') {
+                    window.showMetaModal(m);
+                } else if (typeof window.loadMetaData === 'function') {
+                    window._currentMetaData = m;
+                    window.loadMetaData(m);
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-viewMeta')).show();
+                } else {
+                    toastr.error('No se pudo abrir el detalle de la meta');
+                }
             } else {
                 toastr.error(res.message || 'No se encontró la meta');
             }
+        }).fail(function () {
+            toastr.error('Error al cargar la meta');
         });
     });
 

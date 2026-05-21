@@ -5,26 +5,26 @@
 
 const API_URL_TC = '../controlador/Reporte/api_reportes.php';
 
-let datosMensualesCursos    = [];
-let graficoCursosInstance   = null;
+let datosMensualesCursos = [];
+let graficoCursosInstance = null;
 let cacheDatosAnualesCursos = {};
 let cacheCursosMasParticipantes = {};
-let anioCursosBase          = null;
+let anioCursosBase = null;
 
-let tiposActivosCursos  = new Set(['nuevos']);
-let aniosActivosCursos  = [];
-let tipoGraficoCursos   = 'line';
-const MAX_ANIOS_CURSOS  = 3;
+let tiposActivosCursos = new Set(['nuevos']);
+let aniosActivosCursos = [];
+let tipoGraficoCursos = 'line';
+const MAX_ANIOS_CURSOS = 3;
 
-let panelActivoCursos  = null;
+let panelActivoCursos = null;
 let añosGlobalesCursos = [];
-let anioTablaCursos    = null;
+let anioTablaCursos = null;
 
 const COLOR_BASE_CURSOS = {
-    nuevos:     [23,  162, 184],
-    activos:    [40,  167,  69],
-    culminados: [220,  53,  69],
-    enEspera:   [255, 193,   7]
+    nuevos: [23, 162, 184],
+    activos: [40, 167, 69],
+    culminados: [220, 53, 69],
+    enEspera: [255, 193, 7]
 };
 
 // ── Helpers visuales ─────────────────────────────────────────────────
@@ -39,12 +39,12 @@ function colorBordeCursos(tipo, idxAnio, totalAnios) {
 function colorFillCursos(tipo, idxAnio, totalAnios, alpha = 0.18) {
     const [r, g, b] = COLOR_BASE_CURSOS[tipo];
     const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.50;
-    return `rgba(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)},${alpha})`;
+    return `rgba(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)},${alpha})`;
 }
 
 function obtenerNombresMesesCursos() {
-    return ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 }
 
 function obtenerAñosDisponiblesCursos() {
@@ -79,12 +79,12 @@ async function fetchDatosAnuoCursos(anio) {
     const mapped = data.map(m => {
         const esFuturo = m.nuevos === null;
         return {
-            mes:            m.mes,
-            mesNumero:      m.mesNumero,
-            nuevos:         m.nuevos,
-            activos:        esFuturo ? null : (m.activos   ?? 0),
-            culminados:     esFuturo ? null : (m.retirados ?? 0),
-            enEspera:       esFuturo ? null : (m.en_espera ?? 0),
+            mes: m.mes,
+            mesNumero: m.mesNumero,
+            nuevos: m.nuevos,
+            activos: esFuturo ? null : (m.activos ?? 0),
+            culminados: esFuturo ? null : (m.retirados ?? 0),
+            enEspera: esFuturo ? null : (m.en_espera ?? 0),
             totalAcumulado: m.totalAcumulado
         };
     });
@@ -192,8 +192,8 @@ function cerrarModalDetalleCurso() {
 }
 
 function abrirModalDetalleCurso(cursoData) {
-    document.getElementById('tcModal-nombre').textContent  = cursoData.nombre_curso || '—';
-    document.getElementById('tcModal-estatus').textContent = cursoData.estatus      || '—';
+    document.getElementById('tcModal-nombre').textContent = cursoData.nombre_curso || '—';
+    document.getElementById('tcModal-estatus').textContent = cursoData.estatus || '—';
 
     const rowHtml = (l, v) => `
         <div class="rp-tc-info-row">
@@ -203,15 +203,15 @@ function abrirModalDetalleCurso(cursoData) {
 
     const fmtFecha = s => {
         if (!s) return '—';
-        try { return new Date(s).toLocaleDateString('es-ES', { year:'numeric', month:'short', day:'numeric' }); }
+        try { return new Date(s).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }); }
         catch { return s; }
     };
 
     document.getElementById('tcModal-infoBasica').innerHTML = [
-        rowHtml('Modalidad',    cursoData.modalidad),
-        rowHtml('Estatus',      cursoData.estatus),
-        rowHtml('Inicio',       fmtFecha(cursoData.fecha_inicio)),
-        rowHtml('Culminación',  fmtFecha(cursoData.fecha_fin))
+        rowHtml('Modalidad', cursoData.modalidad),
+        rowHtml('Estatus', cursoData.estatus),
+        rowHtml('Inicio', fmtFecha(cursoData.fecha_inicio)),
+        rowHtml('Culminación', fmtFecha(cursoData.fecha_fin))
     ].join('');
 
     document.getElementById('tcModal-infoParticipacion').innerHTML = [
@@ -249,26 +249,26 @@ function abrirModalDetalleCurso(cursoData) {
 
 async function cargarTotalCursos() {
     console.log('🚀 Iniciando cargarTotalCursos...');
-    const contentDiv  = document.getElementById('reportContent');
+    const contentDiv = document.getElementById('reportContent');
     const categoriaId = window.currentCategoryId || 2;
-    const categorias  = window.categoriasReportes || [];
-    const categoria   = categorias.find(c => c.id === categoriaId) || { color: 'success' };
-    const hoy         = new Date().getFullYear();
-    const añosDisp    = obtenerAñosDisponiblesCursos();
+    const categorias = window.categoriasReportes || [];
+    const categoria = categorias.find(c => c.id === categoriaId) || { color: 'success' };
+    const hoy = new Date().getFullYear();
+    const añosDisp = obtenerAñosDisponiblesCursos();
 
     destruirGraficoCursos();
-    cacheDatosAnualesCursos     = {};
+    cacheDatosAnualesCursos = {};
     cacheCursosMasParticipantes = {};
-    panelActivoCursos           = null;
-    añosGlobalesCursos          = [hoy];
-    anioCursosBase              = hoy;
-    anioTablaCursos             = hoy;
-    tiposActivosCursos          = new Set(['nuevos']);
-    aniosActivosCursos          = [hoy];
-    tipoGraficoCursos           = 'line';
+    panelActivoCursos = null;
+    añosGlobalesCursos = [hoy];
+    anioCursosBase = hoy;
+    anioTablaCursos = hoy;
+    tiposActivosCursos = new Set(['nuevos']);
+    aniosActivosCursos = [hoy];
+    tipoGraficoCursos = 'line';
 
     const svgPlus = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
-    const svgX    = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
+    const svgX = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
 
     contentDiv.innerHTML = `
     ${renderModalDetalleCurso()}
@@ -376,7 +376,7 @@ async function cargarTotalCursos() {
                                     Registro Mensual — <span id="anioSeleccionadoCursos">${hoy}</span>
                                 </h5>
                                 <select id="selectAnioTablaCursos" class="form-select form-select-sm" style="width:110px;">
-                                    ${añosDisp.map(a => `<option value="${a}" ${a===hoy?'selected':''}>${a}</option>`).join('')}
+                                    ${añosDisp.map(a => `<option value="${a}" ${a === hoy ? 'selected' : ''}>${a}</option>`).join('')}
                                 </select>
                             </div>
                         </div>
@@ -421,12 +421,12 @@ async function cargarTotalCursos() {
 // ── Carga de datos del año seleccionado ───────────────────────────────
 
 async function cargarDatosTC(anio, esCargaInicial = false) {
-    const loadEl   = document.getElementById('loadingTC');
-    const errorEl  = document.getElementById('errorTC');
+    const loadEl = document.getElementById('loadingTC');
+    const errorEl = document.getElementById('errorTC');
     const contenEl = document.getElementById('contenidoTC');
 
-    if (loadEl)   loadEl.style.display   = 'block';
-    if (errorEl)  errorEl.style.display  = 'none';
+    if (loadEl) loadEl.style.display = 'block';
+    if (errorEl) errorEl.style.display = 'none';
     if (contenEl) contenEl.style.display = 'none';
 
     const msgEl = document.getElementById('loadingMsgTC');
@@ -438,16 +438,16 @@ async function cargarDatosTC(anio, esCargaInicial = false) {
     };
 
     try {
-        const datos    = await fetchDatosAnuoCursos(anio);
+        const datos = await fetchDatosAnuoCursos(anio);
         datosMensualesCursos = datos;
-        anioCursosBase       = anio;
-        anioTablaCursos      = anio;
+        anioCursosBase = anio;
+        anioTablaCursos = anio;
 
         const conDatos = datos.filter(m => m.nuevos !== null);
-        const ultimo   = conDatos[conDatos.length - 1];
-        const resumen  = buildResumenCursos(conDatos, ultimo);
+        const ultimo = conDatos[conDatos.length - 1];
+        const resumen = buildResumenCursos(conDatos, ultimo);
 
-        if (loadEl)   loadEl.style.display   = 'none';
+        if (loadEl) loadEl.style.display = 'none';
         if (contenEl) contenEl.style.display = 'block';
 
         document.getElementById('anioSeleccionadoCursos').textContent = anio;
@@ -477,7 +477,7 @@ async function cargarDatosTC(anio, esCargaInicial = false) {
         if (panelActivoCursos) await renderPanelDetalleCursos(panelActivoCursos);
 
     } catch (err) {
-        if (loadEl)  loadEl.style.display = 'none';
+        if (loadEl) loadEl.style.display = 'none';
         if (errorEl) {
             errorEl.style.display = 'block';
             document.getElementById('errorMsgTC').textContent =
@@ -488,23 +488,25 @@ async function cargarDatosTC(anio, esCargaInicial = false) {
 }
 
 function buildResumenCursos(conDatos, ultimo) {
-    const totalNuevos     = conDatos.reduce((s, m) => s + (m.nuevos     || 0), 0);
+    const totalNuevos = conDatos.reduce((s, m) => s + (m.nuevos || 0), 0);
     const totalCulminados = conDatos.reduce((s, m) => s + (m.culminados || 0), 0);
-    const activos         = ultimo?.activos  || 0;
-    const enEspera        = ultimo?.enEspera || 0;
+    const activos = ultimo?.activos || 0;
+    const enEspera = ultimo?.enEspera || 0;
     const tasaCompletitud = totalNuevos > 0
         ? ((totalCulminados / totalNuevos) * 100).toFixed(1)
         : '—';
-    return { totalNuevos, activos, totalCulminados, enEspera, tasaCompletitud,
-             totalAcumulado: ultimo?.totalAcumulado || 0 };
+    return {
+        totalNuevos, activos, totalCulminados, enEspera, tasaCompletitud,
+        totalAcumulado: ultimo?.totalAcumulado || 0
+    };
 }
 
 async function cambiarAnioTablaCursos(anio) {
     if (anio === anioTablaCursos) return;
 
-    const loadEl  = document.getElementById('loadingTC');
+    const loadEl = document.getElementById('loadingTC');
     const errorEl = document.getElementById('errorTC');
-    if (loadEl)  loadEl.style.display  = 'block';
+    if (loadEl) loadEl.style.display = 'block';
     if (errorEl) errorEl.style.display = 'none';
     const msgEl = document.getElementById('loadingMsgTC');
     if (msgEl) msgEl.textContent = `Cargando datos del año ${anio}...`;
@@ -513,8 +515,8 @@ async function cambiarAnioTablaCursos(anio) {
         const datosAnio = await fetchDatosAnuoCursos(anio);
         anioTablaCursos = anio;
         document.getElementById('anioSeleccionadoCursos').textContent = anio;
-        const conDatos  = datosAnio.filter(m => m.nuevos !== null);
-        const ultimo    = conDatos[conDatos.length - 1];
+        const conDatos = datosAnio.filter(m => m.nuevos !== null);
+        const ultimo = conDatos[conDatos.length - 1];
         renderKPIsCursos(buildResumenCursos(conDatos, ultimo));
         renderTablaMensualCursos(datosAnio);
     } catch (err) {
@@ -533,17 +535,17 @@ function renderKPIsCursos(data) {
     const el = document.getElementById('kpiCardsCursos');
     if (!el) return;
 
-    const svgNuevo  = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
+    const svgNuevo = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
     const svgActivo = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>`;
-    const svgCulm   = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/><path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/></svg>`;
+    const svgCulm = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/><path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/></svg>`;
     const svgEspera = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/></svg>`;
-    const svgDown   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
+    const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
 
     const cards = [
-        { tipo:'nuevos',          valor: data.totalNuevos,           label:'Nuevos Cursos',      sub:'creados en el año',           color:'primary', svg: svgNuevo  },
-        { tipo:'activos',         valor: data.activos,               label:'Cursos Activos',      sub:'en proceso (último mes)',     color:'success', svg: svgActivo },
-        { tipo:'culminados',      valor: data.totalCulminados,       label:'Cursos Culminados',   sub:'finalizados en el año',       color:'danger',  svg: svgCulm   },
-        { tipo:'tasaCompletitud', valor: `${data.tasaCompletitud}%`, label:'Tasa de Completitud', sub:'culminados vs nuevos',        color:'warning', svg: svgEspera }
+        { tipo: 'nuevos', valor: data.totalNuevos, label: 'Nuevos Cursos', sub: 'creados en el año', color: 'primary', svg: svgNuevo },
+        { tipo: 'activos', valor: data.activos, label: 'Cursos Activos', sub: 'en proceso (último mes)', color: 'success', svg: svgActivo },
+        { tipo: 'culminados', valor: data.totalCulminados, label: 'Cursos Culminados', sub: 'finalizados en el año', color: 'danger', svg: svgCulm },
+        { tipo: 'tasaCompletitud', valor: `${data.tasaCompletitud}%`, label: 'Tasa de Completitud', sub: 'culminados vs nuevos', color: 'warning', svg: svgEspera }
     ];
 
     el.innerHTML = `<div class="row mb-1">${cards.map(c => `
@@ -575,9 +577,9 @@ async function togglePanelDetalleCursos(tipo) {
     if (!wrapper) return;
 
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
-    const svgUp   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
+    const svgUp = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
 
-    ['nuevos','activos','culminados','tasaCompletitud'].forEach(t => {
+    ['nuevos', 'activos', 'culminados', 'tasaCompletitud'].forEach(t => {
         const b = document.getElementById(`badgePanelCurso-${t}`);
         if (b) b.innerHTML = `${svgDown}${t === 'tasaCompletitud' ? 'Ver tabla' : 'Ver cursos'}`;
     });
@@ -596,14 +598,14 @@ async function togglePanelDetalleCursos(tipo) {
 
     const badge = document.getElementById(`badgePanelCurso-${tipo}`);
     if (badge) badge.innerHTML = `${svgUp}Ocultar`;
-    setTimeout(() => wrapper.scrollIntoView({ behavior:'smooth', block:'center' }), 50);
+    setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
 }
 
 const CFG_PANEL_CURSOS = {
-    nuevos:          { titulo:'Cursos con más participantes', color:'primary', svgPath:'<path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>' },
-    activos:         { titulo:'Cursos en Proceso',            color:'success', svgPath:'<path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>' },
-    culminados:      { titulo:'Cursos Culminados',            color:'danger',  svgPath:'<path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/><path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/>' },
-    tasaCompletitud: { titulo:'Tasa de Completitud',          color:'warning', svgPath:'<path d="M2 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>' }
+    nuevos: { titulo: 'Cursos con más participantes', color: 'primary', svgPath: '<path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>' },
+    activos: { titulo: 'Cursos en Proceso', color: 'success', svgPath: '<path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>' },
+    culminados: { titulo: 'Cursos Culminados', color: 'danger', svgPath: '<path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0"/><path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0z"/>' },
+    tasaCompletitud: { titulo: 'Tasa de Completitud', color: 'warning', svgPath: '<path d="M2 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/>' }
 };
 
 async function renderPanelDetalleCursos(tipo) {
@@ -614,7 +616,7 @@ async function renderPanelDetalleCursos(tipo) {
 
     try {
         const cursos = await fetchCursosMasParticipantes(anio, 30);
-        const cfg    = CFG_PANEL_CURSOS[tipo];
+        const cfg = CFG_PANEL_CURSOS[tipo];
 
         // Filtrar según tipo
         let listaMostrar;
@@ -629,7 +631,7 @@ async function renderPanelDetalleCursos(tipo) {
         if (tipo === 'tasaCompletitud') {
             // Vista tabla de completitud
             const fmtF = s => {
-                try { return new Date(s).toLocaleDateString('es-ES',{year:'numeric',month:'short',day:'numeric'}); }
+                try { return new Date(s).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }); }
                 catch { return s || '—'; }
             };
             const filas = cursos.map(c => `
@@ -637,7 +639,7 @@ async function renderPanelDetalleCursos(tipo) {
                     <td class="fw-semibold rp-tc-cell-trunc" title="${c.nombre_curso}">${c.nombre_curso}</td>
                     <td><span class="badge bg-light text-dark border">${c.estatus || '—'}</span></td>
                     <td>${c.modalidad || '—'}</td>
-                    <td class="text-center">${parseInt(c.total_participantes||0).toLocaleString()}</td>
+                    <td class="text-center">${parseInt(c.total_participantes || 0).toLocaleString()}</td>
                     <td>${fmtF(c.fecha_inicio)} → ${fmtF(c.fecha_fin)}</td>
                 </tr>`).join('');
 
@@ -681,7 +683,7 @@ async function renderPanelDetalleCursos(tipo) {
         }
 
         const fmtF = s => {
-            try { return new Date(s).toLocaleDateString('es-ES',{month:'short',day:'numeric'}); }
+            try { return new Date(s).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }); }
             catch { return s || '—'; }
         };
 
@@ -702,7 +704,7 @@ async function renderPanelDetalleCursos(tipo) {
                         </div>
                         <div class="d-flex justify-content-between align-items-center mb-2" style="font-size:.78rem;">
                             <span class="text-muted">Participantes:</span>
-                            <strong class="text-${cfg.color}">${parseInt(c.total_participantes||0).toLocaleString()}</strong>
+                            <strong class="text-${cfg.color}">${parseInt(c.total_participantes || 0).toLocaleString()}</strong>
                         </div>
                         <button class="btn btn-sm btn-outline-${cfg.color} w-100 btn-ver-curso-tc" data-curso-idx="${idx}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>Ver detalle
@@ -754,18 +756,18 @@ function renderTablaMensualCursos(datos) {
     let totNuevos = 0, totActivos = 0, totCulm = 0, totEspera = 0, acum = 0;
 
     const filas = datos.map((mes, idx) => {
-        const sd       = mes.nuevos === null;
-        const vNuevos  = sd ? null : (mes.nuevos     || 0);
-        const vActivos = sd ? null : (mes.activos    || 0);
-        const vCulm    = sd ? null : (mes.culminados || 0);
-        const vEspera  = sd ? null : (mes.enEspera   || 0);
+        const sd = mes.nuevos === null;
+        const vNuevos = sd ? null : (mes.nuevos || 0);
+        const vActivos = sd ? null : (mes.activos || 0);
+        const vCulm = sd ? null : (mes.culminados || 0);
+        const vEspera = sd ? null : (mes.enEspera || 0);
 
         if (!sd) {
-            acum        += vNuevos;
-            totNuevos   += vNuevos;
-            totActivos  += vActivos;
-            totCulm     += vCulm;
-            totEspera   += vEspera;
+            acum += vNuevos;
+            totNuevos += vNuevos;
+            totActivos += vActivos;
+            totCulm += vCulm;
+            totEspera += vEspera;
         }
 
         let crec = '<span class="text-muted">—</span>';
@@ -775,8 +777,8 @@ function renderTablaMensualCursos(datos) {
             if (antIdx >= 0) {
                 const vAnt = antArr[antIdx].nuevos || 0;
                 if (vAnt > 0) {
-                    const diff  = vNuevos - vAnt;
-                    const pct   = ((diff / vAnt) * 100).toFixed(1);
+                    const diff = vNuevos - vAnt;
+                    const pct = ((diff / vAnt) * 100).toFixed(1);
                     const color = diff > 0 ? 'text-success' : diff < 0 ? 'text-danger' : 'text-muted';
                     const icono = diff > 0 ? svgUp : diff < 0 ? svgDw : svgDs;
                     const signo = diff > 0 ? '+' : '';
@@ -816,7 +818,7 @@ function renderTablaMensualCursos(datos) {
 // ── Gráfico ───────────────────────────────────────────────────────────
 
 function getLabelTipoCurso(t) {
-    return { nuevos:'Nuevos', activos:'Activos', culminados:'Culminados', enEspera:'En espera' }[t] || t;
+    return { nuevos: 'Nuevos', activos: 'Activos', culminados: 'Culminados', enEspera: 'En espera' }[t] || t;
 }
 
 function aniosOrdenadosCursos() {
@@ -846,14 +848,14 @@ function renderGraficoCursos() {
     }
 
     destruirGraficoCursos();
-    const ctx     = wrapper.querySelector('canvas').getContext('2d');
-    const tipos   = ['nuevos','activos','culminados','enEspera'].filter(t => tiposActivosCursos.has(t));
-    const años    = aniosOrdenadosCursos();
-    const nAnios  = años.length;
-    const nTipos  = tipos.length;
+    const ctx = wrapper.querySelector('canvas').getContext('2d');
+    const tipos = ['nuevos', 'activos', 'culminados', 'enEspera'].filter(t => tiposActivosCursos.has(t));
+    const años = aniosOrdenadosCursos();
+    const nAnios = años.length;
+    const nTipos = tipos.length;
     const unoTipo = nTipos === 1;
     const unoAnio = nAnios === 1;
-    const esBar   = tipoGraficoCursos === 'bar';
+    const esBar = tipoGraficoCursos === 'bar';
     const usarDic = unoTipo && !esBar;
 
     const labels = usarDic
@@ -863,8 +865,8 @@ function renderGraficoCursos() {
     // Para unoAnio en línea, ordenar tipos por promedio descendente (mayor al fondo = área más grande)
     const tiposOrdenados = (unoAnio && !esBar) ? [...tipos].sort((a, b) => {
         const datos = generarDatosAnuoCursos(años[0]);
-        const avg = t => datos.filter(m => m[t] !== null).reduce((s, m) => s + (m[t]||0), 0) /
-                        (datos.filter(m => m[t] !== null).length || 1);
+        const avg = t => datos.filter(m => m[t] !== null).reduce((s, m) => s + (m[t] || 0), 0) /
+            (datos.filter(m => m[t] !== null).length || 1);
         return avg(b) - avg(a);
     }) : tipos;
 
@@ -872,10 +874,10 @@ function renderGraficoCursos() {
 
     tiposOrdenados.forEach((tipo, tipoIdx) => {
         años.forEach((anio, anioIdx) => {
-            const datosAnio  = generarDatosAnuoCursos(anio);
+            const datosAnio = generarDatosAnuoCursos(anio);
             const colorBorde = colorBordeCursos(tipo, anioIdx, nAnios);
-            const colorFill  = colorFillCursos(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.18));
-            const datos      = usarDic
+            const colorFill = colorFillCursos(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.18));
+            const datos = usarDic
                 ? [getDicAnteriorCursos(tipo, anio), ...datosAnio.map(m => m[tipo])]
                 : datosAnio.map(m => m[tipo]);
             let label = getLabelTipoCurso(tipo);
@@ -898,32 +900,32 @@ function renderGraficoCursos() {
 
             const ds = {
                 label,
-                data:             datos,
-                borderColor:      colorBorde,
-                backgroundColor:  colorFill,
-                borderWidth:      esBar ? 0 : (unoTipo && unoAnio ? 2.5 : 2),
-                fill:             esBar ? false : fillConf,
-                tension:          esBar ? 0 : 0.4,
-                borderRadius:     esBar ? 4 : 0,
-                spanGaps:         false,
-                order:            tipoIdx * 100 + anioIdx
+                data: datos,
+                borderColor: colorBorde,
+                backgroundColor: colorFill,
+                borderWidth: esBar ? 0 : (unoTipo && unoAnio ? 2.5 : 2),
+                fill: esBar ? false : fillConf,
+                tension: esBar ? 0 : 0.4,
+                borderRadius: esBar ? 4 : 0,
+                spanGaps: false,
+                order: tipoIdx * 100 + anioIdx
             };
 
             if (!esBar) {
                 if (usarDic) {
                     ds.segment = {
-                        borderDash:  c => c.p0DataIndex === 0 ? [5,4] : undefined,
+                        borderDash: c => c.p0DataIndex === 0 ? [5, 4] : undefined,
                         borderColor: c => c.p0DataIndex === 0 ? colorBorde + '88' : colorBorde
                     };
                     ds.pointBackgroundColor = c => c.dataIndex === 0 ? colorBorde + '55' : colorBorde;
-                    ds.pointRadius          = c => c.dataIndex === 0 ? 3 : 4;
+                    ds.pointRadius = c => c.dataIndex === 0 ? 3 : 4;
                 } else {
                     ds.pointBackgroundColor = colorBorde;
-                    ds.pointRadius          = 4;
+                    ds.pointRadius = 4;
                 }
-                ds.pointBorderColor  = '#fff';
-                ds.pointBorderWidth  = 2;
-                ds.pointHoverRadius  = 7;
+                ds.pointBorderColor = '#fff';
+                ds.pointBorderWidth = 2;
+                ds.pointHoverRadius = 7;
             }
 
             datasets.push(ds);
@@ -937,11 +939,11 @@ function renderGraficoCursos() {
         type: tipoGraficoCursos,
         data: { labels, datasets },
         options: {
-            responsive:          true,
+            responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend:  { display: true, position: 'top' },
-                filler:  { propagate: true },
+                legend: { display: true, position: 'top' },
+                filler: { propagate: true },
                 tooltip: {
                     mode: 'index', intersect: false,
                     callbacks: {
@@ -955,14 +957,14 @@ function renderGraficoCursos() {
                     grid: { color: 'rgba(0,0,0,0.07)' },
                     ticks: {
                         color: c => (usarDic && c.index === 0) ? 'rgba(140,140,140,0.55)' : undefined,
-                        font:  c => (usarDic && c.index === 0) ? { style: 'italic' } : {}
+                        font: c => (usarDic && c.index === 0) ? { style: 'italic' } : {}
                     }
                 },
                 y: {
                     stacked: false,
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.07)' },
-                    title: { display: true, text: 'Cursos' }
+                    title: { display: true, text: 'Numero de Cursos' }
                 }
             },
             interaction: { intersect: false, mode: 'index' }
@@ -1043,7 +1045,7 @@ function inicializarControlesGraficoCursos() {
                 await fetchDatosAnuoCursos(a);
                 // Pre-cargar año anterior para el punto Dic anterior
                 if (!cacheDatosAnualesCursos[a - 1]) {
-                    try { await fetchDatosAnuoCursos(a - 1); } catch (_) {}
+                    try { await fetchDatosAnuoCursos(a - 1); } catch (_) { }
                 }
                 aniosActivosCursos.push(a);
                 aniosActivosCursos.sort((x, y) => y - x);
@@ -1094,7 +1096,7 @@ function sincronizarChipsAniosCursos() {
     if (sel) {
         const prev = parseInt(sel.value);
         sel.innerHTML = obtenerAñosDisponiblesCursos().map(a =>
-            `<option value="${a}" ${a===prev?'selected':''}>${a}</option>`
+            `<option value="${a}" ${a === prev ? 'selected' : ''}>${a}</option>`
         ).join('');
     }
 }
@@ -1103,21 +1105,21 @@ function sincronizarChipsAniosCursos() {
 
 function limpiarRecursosTotalCursos() {
     destruirGraficoCursos();
-    datosMensualesCursos        = [];
-    cacheDatosAnualesCursos     = {};
+    datosMensualesCursos = [];
+    cacheDatosAnualesCursos = {};
     cacheCursosMasParticipantes = {};
-    panelActivoCursos           = null;
-    añosGlobalesCursos          = [];
-    aniosActivosCursos          = [];
-    tiposActivosCursos          = new Set(['nuevos']);
-    tipoGraficoCursos           = 'line';
-    anioCursosBase              = null;
-    anioTablaCursos             = null;
+    panelActivoCursos = null;
+    añosGlobalesCursos = [];
+    aniosActivosCursos = [];
+    tiposActivosCursos = new Set(['nuevos']);
+    tipoGraficoCursos = 'line';
+    anioCursosBase = null;
+    anioTablaCursos = null;
     cerrarModalDetalleCurso();
 }
 
 // ── Registro global ───────────────────────────────────────────────────
-window.cargarTotalCursos          = cargarTotalCursos;
+window.cargarTotalCursos = cargarTotalCursos;
 window.limpiarRecursosTotalCursos = limpiarRecursosTotalCursos;
 
 console.log('✅ RE-Curso-Total.js cargado — conectado a CSS centralizado');

@@ -331,6 +331,12 @@
                             color:     '#94a3b8',
                             stepSize:  Math.max(1, Math.ceil(maxVal / 5)),
                             precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Número de Docentes',
+                            color: '#64748b',
+                            font: { size: 11, weight: 600 }
                         }
                     }
                 }

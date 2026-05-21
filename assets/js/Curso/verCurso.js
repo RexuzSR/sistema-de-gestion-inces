@@ -51,8 +51,32 @@ document.addEventListener('DOMContentLoaded', function () {
               const infoEstado = window.estadoCurso.getInfo(curso.estado || curso.id_estatus || curso.id_estatuscurso);
               document.getElementById('estadoCurso-view').textContent = infoEstado.texto;
 
+              // Motivos de diferimiento
+              const esDiferido = (curso.estado || '').toLowerCase() === 'diferido';
+              const contenedorMotivos = document.getElementById('motivos-diferido-view');
+              const motivoParticipantes = document.getElementById('motivo-sin-participantes');
+              const motivoDocente = document.getElementById('motivo-sin-docente');
+
+              if (contenedorMotivos && motivoParticipantes && motivoDocente) {
+                // Resetear estado previo
+                contenedorMotivos.classList.add('d-none');
+                motivoParticipantes.classList.add('d-none');
+                motivoDocente.classList.add('d-none');
+
+                if (esDiferido) {
+                  const inscritos = parseInt(curso.numInscritos) || 0;
+                  const minParticipantes = parseInt(curso.minParticipantes) || 12;
+                  const sinParticipantes = inscritos < minParticipantes;
+
+                  if (sinParticipantes) motivoParticipantes.classList.remove('d-none');
+                  // El motivo de docente se resolverá tras el fetch de obtenerDocente.php
+                  contenedorMotivos._pendingDocente = true;
+                  if (sinParticipantes) contenedorMotivos.classList.remove('d-none');
+                }
+              }
+
               // Actualizar data-id del botón de matrícula
-              $('#btn-matricula-pdf').data('id', cursoId);
+              $('#btn-matricula-pdf, #btn-recorrido-curso').attr('data-id', cursoId);
 
               // Formatear fechas (sin sumar 1 día)
               const fechaInicio = curso.fechaInicio && curso.fechaInicio !== '-'
@@ -91,6 +115,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     contenedorDocente.setAttribute('data-curso-id', cursoId);
                   }
 
+                  // Completar motivos de diferimiento con resultado del docente
+                  if (esDiferido && contenedorMotivos) {
+                    const sinDocente = !docenteData.success;
+                    if (sinDocente) {
+                      motivoDocente.classList.remove('d-none');
+                      contenedorMotivos.classList.remove('d-none');
+                    }
+                  }
+                  
                   if (docenteData.success) {
                     const d = docenteData.docente;
                     document.getElementById('docente-nombre').textContent = d.nombre || defaultText;

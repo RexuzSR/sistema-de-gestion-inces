@@ -4,26 +4,26 @@
 // ==================================================================
 
 // ── Estado global del reporte ──────────────────────────────────────
-let datosMensuales    = [];        // Datos del año base activo
-let graficoInstance   = null;
+let datosMensuales = [];        // Datos del año base activo
+let graficoInstance = null;
 let cacheDatosAnuales = {};        // Cache: { 2025: [...], 2024: [...] }
-let anioBase          = null;      // Año que controla el gráfico y paneles
+let anioBase = null;      // Año que controla el gráfico y paneles
 
-let tiposActivos  = new Set(['nuevos']);
-let aniosActivos  = [];            // Años activos en el gráfico (orden asc)
-let tipoGrafico   = 'line';        // 'line' | 'bar'
-const MAX_ANIOS   = 3;
+let tiposActivos = new Set(['nuevos']);
+let aniosActivos = [];            // Años activos en el gráfico (orden asc)
+let tipoGrafico = 'line';        // 'line' | 'bar'
+const MAX_ANIOS = 3;
 
-let panelActivo   = null;
-let añosGlobales  = [];            // Años en el panel de detalle (orden asc)
+let panelActivo = null;
+let añosGlobales = [];            // Años en el panel de detalle (orden asc)
 
-let anioTabla     = null;
+let anioTabla = null;
 
 // Filtros demográficos para la tabla
 let filtroDemo = {
-    genero:      [],   // 'masculino', 'femenino'
-    discapacidad:[],   // 'con', 'sin'
-    edadUmbral:  []    // 'adolescente', 'adulto', 'adultoMayor'
+    genero: [],   // 'masculino', 'femenino'
+    discapacidad: [],   // 'con', 'sin'
+    edadUmbral: []    // 'adolescente', 'adulto', 'adultoMayor'
 };
 
 // Seguimiento de peticiones en vuelo para evitar condiciones de carrera
@@ -31,9 +31,9 @@ let peticionesEnCurso = {};
 
 // ── Colores ────────────────────────────────────────────────────────
 const COLOR_BASE = {
-    nuevos:    [23,  162, 184],
-    activos:   [40,  167,  69],
-    retirados: [220,  53,  69]
+    nuevos: [23, 162, 184],
+    activos: [40, 167, 69],
+    retirados: [220, 53, 69]
 };
 
 function colorBordeParaAnio(tipo, idxAnio, totalAnios) {
@@ -46,18 +46,18 @@ function colorBordeParaAnio(tipo, idxAnio, totalAnios) {
 function colorFillParaAnio(tipo, idxAnio, totalAnios, alpha = 0.18) {
     const [r, g, b] = COLOR_BASE[tipo];
     const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.50;
-    return `rgba(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)},${alpha})`;
+    return `rgba(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)},${alpha})`;
 }
 
 const UMBRALES_EDAD = {
-    adolescente: { min: 15, max: 17,  label: 'Adolescentes (15-17)' },
-    adulto:      { min: 18, max: 59,  label: 'Adultos (18-59)'       },
+    adolescente: { min: 15, max: 17, label: 'Adolescentes (15-17)' },
+    adulto: { min: 18, max: 59, label: 'Adultos (18-59)' },
     adultoMayor: { min: 60, max: 120, label: 'Adultos mayores (60+)' }
 };
 
 function obtenerNombresMeses() {
-    return ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
-            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 }
 
 function destruirGrafico() {
@@ -98,7 +98,7 @@ async function fetchDatosAnio(anio) {
 
 async function fetchAniosDisponibles() {
     try {
-        const res  = await fetch(`${API_REPORTES_URL}?accion=anios_disponibles`);
+        const res = await fetch(`${API_REPORTES_URL}?accion=anios_disponibles`);
         const data = await res.json();
         return Array.isArray(data) ? data : [new Date().getFullYear()];
     } catch {
@@ -124,14 +124,14 @@ function getDicAnteriorMesObj(anio) {
 function calcularFactorFiltro(mesDatos, campo) {
     if (!mesDatos || !mesDatos.demo) return 1;
     const demoCampo = campo === 'totalAcumulado' ? 'nuevos' : campo;
-    const demo  = mesDatos.demo[demoCampo] || {};
+    const demo = mesDatos.demo[demoCampo] || {};
     const total = mesDatos[campo === 'totalAcumulado' ? 'nuevos' : campo] || 1;
-    let factor  = 1;
+    let factor = 1;
 
     if (filtroDemo.genero.length > 0) {
         let suma = 0;
         if (filtroDemo.genero.includes('masculino')) suma += demo.masculino || 0;
-        if (filtroDemo.genero.includes('femenino'))  suma += demo.femenino  || 0;
+        if (filtroDemo.genero.includes('femenino')) suma += demo.femenino || 0;
         factor *= (suma / total);
     }
     if (filtroDemo.discapacidad.length > 0) {
@@ -143,7 +143,7 @@ function calcularFactorFiltro(mesDatos, campo) {
     if (filtroDemo.edadUmbral.length > 0) {
         let suma = 0;
         if (filtroDemo.edadUmbral.includes('adolescente')) suma += demo.adolescente || 0;
-        if (filtroDemo.edadUmbral.includes('adulto'))      suma += demo.adulto      || 0;
+        if (filtroDemo.edadUmbral.includes('adulto')) suma += demo.adulto || 0;
         if (filtroDemo.edadUmbral.includes('adultoMayor')) suma += demo.adultoMayor || 0;
         factor *= (suma / total);
     }
@@ -161,8 +161,8 @@ function valorFiltrado(mesDatos, campo) {
 
 function hayFiltroActivo() {
     return filtroDemo.genero.length > 0 ||
-           filtroDemo.discapacidad.length > 0 ||
-           filtroDemo.edadUmbral.length > 0;
+        filtroDemo.discapacidad.length > 0 ||
+        filtroDemo.edadUmbral.length > 0;
 }
 
 // ── Resumen KPI ────────────────────────────────────────────────────
@@ -175,13 +175,13 @@ function calcularResumenFiltrado(datos) {
     };
 
     let totalNuevos = 0, totalRetirados = 0;
-    const ultimo        = conDatos[conDatos.length - 1];
-    const activosUltimo = valorFiltrado(ultimo, 'activos')    ?? 0;
-    const retUltimo     = valorFiltrado(ultimo, 'retirados')  ?? 0;
+    const ultimo = conDatos[conDatos.length - 1];
+    const activosUltimo = valorFiltrado(ultimo, 'activos') ?? 0;
+    const retUltimo = valorFiltrado(ultimo, 'retirados') ?? 0;
 
     for (const m of conDatos) {
         const n = valorFiltrado(m, 'nuevos');
-        if (n !== null) totalNuevos    += n;
+        if (n !== null) totalNuevos += n;
         const r = valorFiltrado(m, 'retirados');
         if (r !== null) totalRetirados += r;
     }
@@ -190,29 +190,31 @@ function calcularResumenFiltrado(datos) {
         ? ((activosUltimo - retUltimo) / activosUltimo * 100).toFixed(1)
         : '—';
 
-    return { totalNuevos, activos: activosUltimo, retirados: totalRetirados,
-             tasaRetencion: tasa, totalAcumulado: totalNuevos };
+    return {
+        totalNuevos, activos: activosUltimo, retirados: totalRetirados,
+        tasaRetencion: tasa, totalAcumulado: totalNuevos
+    };
 }
 
 // ── HTML principal ─────────────────────────────────────────────────
 
 async function cargarTotalParticipantes() {
-    const contentDiv  = document.getElementById('reportContent');
+    const contentDiv = document.getElementById('reportContent');
     const categoriaId = window.currentCategoryId || 1;
-    const categorias  = window.categoriasReportes || [];
-    const categoria   = categorias.find(c => c.id === categoriaId) || { color: 'primary' };
+    const categorias = window.categoriasReportes || [];
+    const categoria = categorias.find(c => c.id === categoriaId) || { color: 'primary' };
 
     destruirGrafico();
     cacheDatosAnuales = {};
     peticionesEnCurso = {};
-    panelActivo       = null;
-    añosGlobales      = [];
-    anioBase          = null;
-    anioTabla         = null;
-    tiposActivos      = new Set(['nuevos']);
-    aniosActivos      = [];
-    tipoGrafico       = 'line';
-    filtroDemo        = { genero:[], discapacidad:[], edadUmbral:[] };
+    panelActivo = null;
+    añosGlobales = [];
+    anioBase = null;
+    anioTabla = null;
+    tiposActivos = new Set(['nuevos']);
+    aniosActivos = [];
+    tipoGrafico = 'line';
+    filtroDemo = { genero: [], discapacidad: [], edadUmbral: [] };
 
     contentDiv.innerHTML = `
     <div class="card shadow-lg border-0">
@@ -237,12 +239,12 @@ async function cargarTotalParticipantes() {
 
     try {
         const añosDisp = await fetchAniosDisponibles();
-        const hoy      = añosDisp[0] ?? new Date().getFullYear();
+        const hoy = añosDisp[0] ?? new Date().getFullYear();
 
-        anioBase      = hoy;
-        anioTabla     = hoy;
-        aniosActivos  = [hoy];
-        añosGlobales  = [hoy];
+        anioBase = hoy;
+        anioTabla = hoy;
+        aniosActivos = [hoy];
+        añosGlobales = [hoy];
 
         await cargarDatosTP(hoy, añosDisp, true);
     } catch (err) {
@@ -253,22 +255,22 @@ async function cargarTotalParticipantes() {
 // ── Carga de datos ─────────────────────────────────────────────────
 
 async function cargarDatosTP(anio, añosDisp, esCargaInicial = false) {
-    const loadEl   = document.getElementById('loadingTP');
+    const loadEl = document.getElementById('loadingTP');
     const contenEl = document.getElementById('contenidoTP');
-    const errorEl  = document.getElementById('errorTP');
+    const errorEl = document.getElementById('errorTP');
 
-    if (loadEl)   loadEl.style.display   = 'flex';
+    if (loadEl) loadEl.style.display = 'flex';
     if (contenEl) contenEl.style.display = 'none';
-    if (errorEl)  errorEl.style.display  = 'none';
+    if (errorEl) errorEl.style.display = 'none';
 
     try {
         const datos = await fetchDatosAnio(anio);
         datosMensuales = datos;
-        anioBase       = anio;
+        anioBase = anio;
 
         // Pre-cargar diciembre del año anterior (no bloqueante)
         if (!cacheDatosAnuales[anio - 1]) {
-            try { await fetchDatosAnio(anio - 1); } catch (_) {}
+            try { await fetchDatosAnio(anio - 1); } catch (_) { }
         }
 
         if (esCargaInicial) {
@@ -284,7 +286,7 @@ async function cargarDatosTP(anio, añosDisp, esCargaInicial = false) {
         inicializarFiltrosDemo();
         if (panelActivo) renderPanelDetalle(panelActivo);
 
-        if (loadEl)   loadEl.style.display   = 'none';
+        if (loadEl) loadEl.style.display = 'none';
         if (contenEl) contenEl.style.display = 'block';
 
     } catch (err) {
@@ -312,7 +314,7 @@ function mostrarErrorTP(mensaje) {
 // ── Render: estructura HTML del reporte (solo en carga inicial) ────
 
 function renderContenidoTP(añosDisp) {
-    const hoy      = anioBase;
+    const hoy = anioBase;
     const contenEl = document.getElementById('contenidoTP');
     if (!contenEl) return;
 
@@ -320,7 +322,7 @@ function renderContenidoTP(añosDisp) {
         `<option value="${a}" ${a === hoy ? 'selected' : ''}>${a}</option>`
     ).join('');
 
-    const svgX    = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
+    const svgX = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>`;
     const svgPlus = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
 
     contenEl.innerHTML = `
@@ -506,10 +508,10 @@ async function cambiarAnioTabla(anio) {
     try {
         // Pre-cargar diciembre del año anterior (no bloqueante)
         if (!cacheDatosAnuales[anio - 1]) {
-            try { await fetchDatosAnio(anio - 1); } catch (_) {}
+            try { await fetchDatosAnio(anio - 1); } catch (_) { }
         }
 
-        const datos   = await fetchDatosAnio(anio);
+        const datos = await fetchDatosAnio(anio);
         const resumen = calcularResumenFiltrado(datos);
         renderKPIs(resumen);
         renderTablaMensual(datos, getDicAnteriorMesObj(anio));
@@ -522,19 +524,19 @@ async function cambiarAnioTabla(anio) {
 
 function inicializarFiltrosDemo() {
     const btnToggle = document.getElementById('btnToggleFiltrosDemo');
-    const panel     = document.getElementById('panelFiltrosDemo');
+    const panel = document.getElementById('panelFiltrosDemo');
     if (!btnToggle || !panel) return;
 
     btnToggle.onclick = () => {
         const abierto = btnToggle.dataset.abierto === '1';
-        panel.style.display       = abierto ? 'none' : 'block';
+        panel.style.display = abierto ? 'none' : 'block';
         btnToggle.dataset.abierto = abierto ? '0' : '1';
     };
 
     async function actualizarFiltros() {
         filtroDemo.genero = [...document.querySelectorAll('input[name="fGenero"]:checked')].map(c => c.value);
         filtroDemo.discapacidad = [...document.querySelectorAll('input[name="fDisc"]:checked')].map(c => c.value);
-        filtroDemo.edadUmbral   = [...document.querySelectorAll('input[name="fEdad"]:checked')].map(c => c.value);
+        filtroDemo.edadUmbral = [...document.querySelectorAll('input[name="fEdad"]:checked')].map(c => c.value);
 
         actualizarSubtituloFiltro();
         const datos = cacheDatosAnuales[anioTabla] || [];
@@ -549,7 +551,7 @@ function inicializarFiltrosDemo() {
     document.getElementById('btnLimpiarFiltrosDemo')?.addEventListener('click', () => {
         document.querySelectorAll('input[name="fGenero"],input[name="fDisc"],input[name="fEdad"]')
             .forEach(cb => cb.checked = false);
-        filtroDemo = { genero:[], discapacidad:[], edadUmbral:[] };
+        filtroDemo = { genero: [], discapacidad: [], edadUmbral: [] };
         actualizarSubtituloFiltro();
         const datos = cacheDatosAnuales[anioTabla] || [];
         renderTablaMensual(datos, getDicAnteriorMesObj(anioTabla));
@@ -571,7 +573,7 @@ function actualizarSubtituloFiltro() {
     if (filtroDemo.edadUmbral.length)
         partes.push('Edad: ' + filtroDemo.edadUmbral.map(e => UMBRALES_EDAD[e]?.label || e).join(' o '));
 
-    sub.textContent   = 'Filtrado por: ' + partes.join(' · ');
+    sub.textContent = 'Filtrado por: ' + partes.join(' · ');
     sub.style.display = 'block';
 }
 
@@ -584,10 +586,10 @@ function renderKPIs(data) {
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
 
     const cards = [
-        { tipo:'nuevos',    valor: data.totalNuevos,        label:'Nuevos Participantes',  sub:'inscritos en el año',          color:'primary' },
-        { tipo:'activos',   valor: data.activos,             label:'Activos Actualmente',   sub:'cursando este mes',            color:'success' },
-        { tipo:'retirados', valor: data.retirados,           label:'Finalizaron / Baja',    sub:'salidas acumuladas en el año', color:'danger'  },
-        { tipo:'retencion', valor: `${data.tasaRetencion}%`, label:'Tasa de Retención',    sub:'activos que no dieron baja',   color:'warning' }
+        { tipo: 'nuevos', valor: data.totalNuevos, label: 'Nuevos Participantes', sub: 'inscritos en el año', color: 'primary' },
+        { tipo: 'activos', valor: data.activos, label: 'Activos Actualmente', sub: 'cursando este mes', color: 'success' },
+        { tipo: 'retirados', valor: data.retirados, label: 'Finalizaron / Baja', sub: 'salidas acumuladas en el año', color: 'danger' },
+        { tipo: 'retencion', valor: `${data.tasaRetencion}%`, label: 'Tasa de Retención', sub: 'activos que no dieron baja', color: 'warning' }
     ];
 
     el.innerHTML = `<div class="row mb-1">${cards.map(c => `
@@ -618,9 +620,9 @@ function togglePanelDetalle(tipo) {
     if (!wrapper) return;
 
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
-    const svgUp   = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
+    const svgUp = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
 
-    ['nuevos','activos','retirados','retencion'].forEach(t => {
+    ['nuevos', 'activos', 'retirados', 'retencion'].forEach(t => {
         const b = document.getElementById(`badgePanel-${t}`);
         if (b) b.innerHTML = `${svgDown}Ver detalle`;
     });
@@ -636,22 +638,22 @@ function togglePanelDetalle(tipo) {
     wrapper.style.display = 'block';
     const badge = document.getElementById(`badgePanel-${tipo}`);
     if (badge) badge.innerHTML = `${svgUp}Ocultar detalle`;
-    setTimeout(() => wrapper.scrollIntoView({ behavior:'smooth', block:'center' }), 50);
+    setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
 }
 
 const CFG_PANEL = {
-    nuevos:    { titulo:'Nuevos Inscritos por Mes',       campo:'nuevos',    color:'primary' },
-    activos:   { titulo:'Participantes Activos por Mes',  campo:'activos',   color:'success' },
-    retirados: { titulo:'Finalizaciones y Bajas por Mes', campo:'retirados', color:'danger'  },
-    retencion: { titulo:'Tasa de Retención Mensual (%)',  campo:'retencion', color:'warning' }
+    nuevos: { titulo: 'Nuevos Inscritos por Mes', campo: 'nuevos', color: 'primary' },
+    activos: { titulo: 'Participantes Activos por Mes', campo: 'activos', color: 'success' },
+    retirados: { titulo: 'Finalizaciones y Bajas por Mes', campo: 'retirados', color: 'danger' },
+    retencion: { titulo: 'Tasa de Retención Mensual (%)', campo: 'retencion', color: 'warning' }
 };
 
 function renderPanelDetalle(tipo) {
-    const wrapper  = document.getElementById('panelDetalleWrapper');
+    const wrapper = document.getElementById('panelDetalleWrapper');
     if (!wrapper) return;
-    const cfg    = CFG_PANEL[tipo];
-    const meses  = obtenerNombresMeses();
-    const años   = [...añosGlobales].sort((a, b) => a - b);
+    const cfg = CFG_PANEL[tipo];
+    const meses = obtenerNombresMeses();
+    const años = [...añosGlobales].sort((a, b) => a - b);
 
     const calcValor = (a, i) => {
         const d = (cacheDatosAnuales[a] || [])[i];
@@ -676,14 +678,13 @@ function renderPanelDetalle(tipo) {
         return row + '</tr>';
     }).join('');
 
-    const filaTotal = `<tr class="rp-tfoot-total"><td>Total</td>${
-        años.map((_, idx) => `<td class="text-center">${totalesPorAño[idx] > 0 ? totalesPorAño[idx].toLocaleString() : '—'}</td>`).join('')
-    }</tr>`;
+    const filaTotal = `<tr class="rp-tfoot-total"><td>Total</td>${años.map((_, idx) => `<td class="text-center">${totalesPorAño[idx] > 0 ? totalesPorAño[idx].toLocaleString() : '—'}</td>`).join('')
+        }</tr>`;
 
     const indicadorFiltro = hayFiltroActivo()
         ? `<span class="badge bg-warning text-dark ms-2 small">Filtro demográfico activo</span>` : '';
-    const svgXS  = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/></svg>`;
-    const svgPl  = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
+    const svgXS = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/></svg>`;
+    const svgPl = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
 
     const añosDisponiblesEnCache = Object.keys(cacheDatosAnuales).map(Number);
     const añosFaltantes = añosDisponiblesEnCache.filter(a => !años.includes(a));
@@ -696,7 +697,7 @@ function renderPanelDetalle(tipo) {
                     <div class="d-flex gap-2 align-items-center flex-wrap">
                         ${añosFaltantes.length > 0 ? `
                             <select class="form-select form-select-sm" id="selAddAnioPanel" style="width:auto;">
-                                ${añosFaltantes.map(a=>`<option value="${a}">${a}</option>`).join('')}
+                                ${añosFaltantes.map(a => `<option value="${a}">${a}</option>`).join('')}
                             </select>
                             <button class="btn btn-sm btn-outline-${cfg.color}" id="btnAddAnioPanel">${svgPl}Agregar año</button>
                         ` : `<span class="text-muted small">Todos los años cargados añadidos</span>`}
@@ -705,7 +706,7 @@ function renderPanelDetalle(tipo) {
                 ${años.length === 0 ? `<p class="text-muted text-center py-4">No hay años cargados. Agrega un año desde el gráfico.</p>` : `
                 <div class="table-responsive">
                     <table class="table table-sm table-striped table-hover align-middle mb-0 rp-table-fixed">
-                        <colgroup><col style="width:110px;">${años.map(()=>`<col style="width:95px;">`).join('')}</colgroup>
+                        <colgroup><col style="width:110px;">${años.map(() => `<col style="width:95px;">`).join('')}</colgroup>
                         <thead class="table-light">
                             <tr>
                                 <th>Mes</th>
@@ -783,15 +784,15 @@ function renderTablaMensual(datos, dicAnterior = null) {
 
     // ── Filas del año activo ────────────────────────────────────────
     const filas = datos.map((mes, idx) => {
-        const sd       = mes.nuevos === null;
-        const vNuevos  = sd ? null : valorFiltrado(mes, 'nuevos');
+        const sd = mes.nuevos === null;
+        const vNuevos = sd ? null : valorFiltrado(mes, 'nuevos');
         const vActivos = sd ? null : valorFiltrado(mes, 'activos');
-        const vRet     = sd ? null : valorFiltrado(mes, 'retirados');
+        const vRet = sd ? null : valorFiltrado(mes, 'retirados');
         if (!sd && vNuevos !== null) acum += vNuevos;
 
-        if (vNuevos  !== null) totalN += vNuevos;
+        if (vNuevos !== null) totalN += vNuevos;
         if (vActivos !== null) totalA += vActivos;
-        if (vRet     !== null) totalR += vRet;
+        if (vRet !== null) totalR += vRet;
 
         let crec = '<span class="text-muted">—</span>';
         if (!sd && vNuevos !== null) {
@@ -810,8 +811,8 @@ function renderTablaMensual(datos, dicAnterior = null) {
 
             if (vAnt !== null) {
                 if (vAnt > 0) {
-                    const diff  = vNuevos - vAnt;
-                    const pct   = ((diff / vAnt) * 100).toFixed(1);
+                    const diff = vNuevos - vAnt;
+                    const pct = ((diff / vAnt) * 100).toFixed(1);
                     const color = diff > 0 ? 'text-success' : diff < 0 ? 'text-danger' : 'text-muted';
                     const icono = diff > 0 ? svgUp : diff < 0 ? svgDw : svgDs;
                     const signo = diff > 0 ? '+' : '';
@@ -847,7 +848,7 @@ function renderTablaMensual(datos, dicAnterior = null) {
 // ── Gráfico ────────────────────────────────────────────────────────
 
 function getLabelTipo(t) {
-    return { nuevos:'Nuevos', activos:'Activos', retirados:'Retirados' }[t] || t;
+    return { nuevos: 'Nuevos', activos: 'Activos', retirados: 'Retirados' }[t] || t;
 }
 
 function renderGrafico() {
@@ -867,14 +868,14 @@ function renderGrafico() {
     if (!wrapper.querySelector('canvas')) wrapper.innerHTML = '<canvas id="canvasGrafico"></canvas>';
     destruirGrafico();
 
-    const ctx    = wrapper.querySelector('canvas').getContext('2d');
-    const tipos  = ['nuevos','activos','retirados'].filter(t => tiposActivos.has(t));
-    const años   = [...aniosActivos].sort((a, b) => a - b);
+    const ctx = wrapper.querySelector('canvas').getContext('2d');
+    const tipos = ['nuevos', 'activos', 'retirados'].filter(t => tiposActivos.has(t));
+    const años = [...aniosActivos].sort((a, b) => a - b);
     const nAnios = años.length;
     const nTipos = tipos.length;
     const unoAnio = nAnios === 1;
     const unoTipo = nTipos === 1;
-    const esBar   = tipoGrafico === 'bar';
+    const esBar = tipoGrafico === 'bar';
 
     // Mostrar diciembre anterior solo en línea con un único tipo
     const usarDic = unoTipo && !esBar;
@@ -887,9 +888,9 @@ function renderGrafico() {
 
     tipos.forEach((tipo, tipoIdx) => {
         años.forEach((anio, anioIdx) => {
-            const datosAnio  = cacheDatosAnuales[anio] || [];
+            const datosAnio = cacheDatosAnuales[anio] || [];
             const colorBorde = colorBordeParaAnio(tipo, anioIdx, nAnios);
-            const colorFill  = colorFillParaAnio(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.15));
+            const colorFill = colorFillParaAnio(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.15));
 
             const datosBase = datosAnio.map(m => m[tipo] ?? null);
             const datos = usarDic
@@ -903,13 +904,13 @@ function renderGrafico() {
             if (!esBar) {
                 if (unoTipo) {
                     fillConf = anioIdx === nAnios - 1
-                        ? { target:'origin', above: colorFill }
-                        : { target:`+${nTipos}`, above: colorFill };
+                        ? { target: 'origin', above: colorFill }
+                        : { target: `+${nTipos}`, above: colorFill };
                 } else if (unoAnio) {
                     const posOrden = tipos.indexOf(tipo);
                     fillConf = posOrden === nTipos - 1
-                        ? { target:'origin', above: colorFill }
-                        : { target:`+1`, above: colorFill };
+                        ? { target: 'origin', above: colorFill }
+                        : { target: `+1`, above: colorFill };
                 }
             }
 
@@ -929,18 +930,18 @@ function renderGrafico() {
             if (!esBar) {
                 if (usarDic) {
                     ds.segment = {
-                        borderDash:  c => c.p0DataIndex === 0 ? [5, 4] : undefined,
+                        borderDash: c => c.p0DataIndex === 0 ? [5, 4] : undefined,
                         borderColor: c => c.p0DataIndex === 0 ? colorBorde + '88' : colorBorde
                     };
                     ds.pointBackgroundColor = c => c.dataIndex === 0 ? colorBorde + '55' : colorBorde;
-                    ds.pointRadius          = c => c.dataIndex === 0 ? 3 : 4;
+                    ds.pointRadius = c => c.dataIndex === 0 ? 3 : 4;
                 } else {
                     ds.pointBackgroundColor = colorBorde;
-                    ds.pointRadius          = 4;
+                    ds.pointRadius = 4;
                 }
-                ds.pointBorderColor  = '#fff';
-                ds.pointBorderWidth  = 2;
-                ds.pointHoverRadius  = 7;
+                ds.pointBorderColor = '#fff';
+                ds.pointBorderWidth = 2;
+                ds.pointHoverRadius = 7;
             }
 
             datasets.push(ds);
@@ -968,19 +969,19 @@ function renderGrafico() {
             },
             scales: {
                 x: {
-                    grid: { color:'rgba(0,0,0,0.07)' },
+                    grid: { color: 'rgba(0,0,0,0.07)' },
                     ticks: {
                         color: c => (usarDic && c.index === 0) ? 'rgba(140,140,140,0.55)' : undefined,
-                        font:  c => (usarDic && c.index === 0) ? { style: 'italic' } : {}
+                        font: c => (usarDic && c.index === 0) ? { style: 'italic' } : {}
                     }
                 },
                 y: {
                     beginAtZero: true,
-                    grid: { color:'rgba(0,0,0,0.07)' },
-                    title: { display:true, text:'Participantes' }
+                    grid: { color: 'rgba(0,0,0,0.07)' },
+                    title: { display: true, text: 'Número de Participantes', color: '#64748b', font: { size: 11, weight: 600 } }
                 }
             },
-            interaction: { intersect:false, mode:'index' }
+            interaction: { intersect: false, mode: 'index' }
         }
     });
 }
@@ -1066,7 +1067,7 @@ function inicializarControlesGrafico() {
             await fetchDatosAnio(a);
             // Pre-cargar diciembre del año anterior para el punto de referencia
             if (!cacheDatosAnuales[a - 1]) {
-                try { await fetchDatosAnio(a - 1); } catch (_) {}
+                try { await fetchDatosAnio(a - 1); } catch (_) { }
             }
             aniosActivos.push(a);
             aniosActivos.sort((x, y) => x - y);
@@ -1115,21 +1116,21 @@ function sincronizarChipsAnios() {
 
 function limpiarRecursosTotalParticipantes() {
     destruirGrafico();
-    datosMensuales    = [];
+    datosMensuales = [];
     cacheDatosAnuales = {};
     peticionesEnCurso = {};
-    panelActivo       = null;
-    añosGlobales      = [];
-    aniosActivos      = [];
-    tiposActivos      = new Set(['nuevos']);
-    tipoGrafico       = 'line';
-    anioBase          = null;
-    anioTabla         = null;
-    filtroDemo        = { genero:[], discapacidad:[], edadUmbral:[] };
+    panelActivo = null;
+    añosGlobales = [];
+    aniosActivos = [];
+    tiposActivos = new Set(['nuevos']);
+    tipoGrafico = 'line';
+    anioBase = null;
+    anioTabla = null;
+    filtroDemo = { genero: [], discapacidad: [], edadUmbral: [] };
 }
 
 // ── Exports globales ───────────────────────────────────────────────
-window.cargarTotalParticipantes          = cargarTotalParticipantes;
+window.cargarTotalParticipantes = cargarTotalParticipantes;
 window.limpiarRecursosTotalParticipantes = limpiarRecursosTotalParticipantes;
 
 console.log('RE-Participante-Total.js cargado (BD real — sin datos aleatorios)');

@@ -625,7 +625,9 @@
                 scales:{
                     x:{grid:{display:false},border:{display:false},ticks:{font:{size:11},color:(ctx)=>ctx.index===mesActual?COLOR_CURR:'#64748b'}},
                     y:{beginAtZero:true,suggestedMax:maxVal+Math.ceil(maxVal*.18),grid:{color:'rgba(0,0,0,.05)'},border:{display:false},
-                       ticks:{font:{size:10},color:'#94a3b8',stepSize:Math.max(1,Math.ceil(maxVal/5)),precision:0}}
+                       ticks:{font:{size:10},color:'#94a3b8',stepSize:Math.max(1,Math.ceil(maxVal/5)),precision:0},
+                       title: { display: true, text: 'Número de Cursos', color: '#64748b', font: { size: 11, weight: 600 } }
+                    }
                 }
             },
             plugins:[pluginVals]

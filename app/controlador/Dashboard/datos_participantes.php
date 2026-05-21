@@ -139,7 +139,7 @@ $partPorMes = (function ($c) {
 
 // ── Cards seleccionables ──
 $cardDisponibles = $conn->query("
-    SELECT primer_nombre, primer_apellido, cedula, genero, grado_institucion,
+    SELECT primer_nombre, primer_apellido, cedula, genero, grado_institucion, estado,
            TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad,
            fecha_registro
     FROM tb_participante

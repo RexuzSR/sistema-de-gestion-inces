@@ -1,5 +1,5 @@
 // Gráfico de barras para "Estudiantes Por Estatus" (cambiado de pie a bar)
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     var ctx = document.getElementById("myChart");
 
     // Si no existe el canvas, no intentamos crear el gráfico
@@ -28,28 +28,42 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     var myChart = new Chart(ctx, {
-        type: 'bar',  // Cambiado a bar chart
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Número de Estudiantes',
+                label: 'Participantes',
                 data: data,
-                backgroundColor: backgroundColors,
-                borderColor: backgroundColors.map(function(color){ return color.replace('0.8', '1'); }),  // Bordes más oscuros
-                borderWidth: 1
+                backgroundColor: function (context) {
+                    const chart = context.chart;
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return null;
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, 'rgba(54, 162, 235, 0.7)');
+                    gradient.addColorStop(1, 'rgba(54, 162, 235, 1)');
+                    return gradient;
+                },
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 8,
+                borderSkipped: false,
             }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false,  // Oculta la leyenda para simplicidad en bar charts
-                },
+                legend: { display: false },
                 tooltip: {
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: { size: 13, weight: 'bold' },
+                    bodyFont: { size: 12 },
+                    displayColors: false,
                     callbacks: {
-                        label: function(context) {
-                            return context.label + ': ' + context.parsed.y + ' estudiantes';
+                        label: function (context) {
+                            return context.parsed.y + ' Participantes';
                         }
                     }
                 }
@@ -57,15 +71,21 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: {
-                        stepSize: 1  // Para valores enteros
-                    }
+                    title: {
+                        display: true,
+                        text: 'N* Participantes',
+                        color: '#64748b',
+                        font: { size: 12, weight: '600' }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+                    ticks: { stepSize: 1, color: '#94a3b8' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8' }
                 }
             },
-            animation: {
-                duration: 1000,  // Animación suave
-                easing: 'easeInOutQuad'
-            }
+            animation: { duration: 1000, easing: 'easeInOutQuad' }
         }
     });
 });
@@ -82,35 +102,44 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     var myBarChart = new Chart(chart, {
-        type: 'bar',  // Cambiado a bar chart horizontal
+        type: 'bar',
         data: {
             labels: ["Masculino", "Femenino"],
             datasets: [{
-                label: 'Número de Estudiantes',
+                label: 'Participantes',
                 data: [generoData.masculino, generoData.femenino],
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.8)',  // Azul para masculino
-                    'rgba(255, 99, 132, 0.8)',  // Rojo para femenino
-                ],
-                borderColor: [
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 99, 132, 1)',
-                ],
-                borderWidth: 1
+                backgroundColor: function (context) {
+                    const chart = context.chart;
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return null;
+                    const gM = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+                    gM.addColorStop(0, 'rgba(54, 162, 235, 0.7)');
+                    gM.addColorStop(1, 'rgba(54, 162, 235, 1)');
+                    const gF = ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+                    gF.addColorStop(0, 'rgba(255, 99, 132, 0.7)');
+                    gF.addColorStop(1, 'rgba(255, 99, 132, 1)');
+                    return context.dataIndex === 0 ? gM : gF;
+                },
+                borderColor: ['rgba(54, 162, 235, 1)', 'rgba(255, 99, 132, 1)'],
+                borderWidth: 1,
+                borderRadius: 5,
+                borderSkipped: false,
             }],
         },
         options: {
-            indexAxis: 'y',  // Hace el bar chart horizontal
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false,  // Oculta la leyenda
-                },
+                legend: { display: false },
                 tooltip: {
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
                     callbacks: {
-                        label: function(context) {
-                            return context.label + ': ' + context.parsed.x + ' estudiantes';
+                        label: function (context) {
+                            return context.parsed.x + ' Participantes';
                         }
                     }
                 }
@@ -118,15 +147,21 @@ document.addEventListener("DOMContentLoaded", function () {
             scales: {
                 x: {
                     beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
+                    title: {
+                        display: true,
+                        text: 'N* Participantes',
+                        color: '#64748b',
+                        font: { size: 12, weight: '600' }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+                    ticks: { stepSize: 1, color: '#94a3b8' }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { color: '#64748b', font: { weight: '600' } }
                 }
             },
-            animation: {
-                duration: 1000,
-                easing: 'easeInOutQuad'
-            }
+            animation: { duration: 1000, easing: 'easeInOutQuad' }
         }
     });
 });
@@ -159,11 +194,24 @@ document.addEventListener("DOMContentLoaded", function () {
             datasets: [{
                 label: "Cursos por ámbito",
                 data: [],
-                borderWidth: 2,
+                borderWidth: 3,
                 borderColor: "rgba(54, 162, 235, 1)",
-                backgroundColor: "rgba(54, 162, 235, 0.2)",
-                tension: 0.3,
-                fill: true
+                backgroundColor: function (context) {
+                    const chart = context.chart;
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return null;
+                    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                    gradient.addColorStop(0, 'rgba(54, 162, 235, 0.3)');
+                    gradient.addColorStop(1, 'rgba(54, 162, 235, 0)');
+                    return gradient;
+                },
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: "#fff",
+                pointBorderColor: "rgba(54, 162, 235, 1)",
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
             }]
         },
         options: {
@@ -171,19 +219,33 @@ document.addEventListener("DOMContentLoaded", function () {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    labels: { color: "black" }
+                    display: true,
+                    labels: { color: "#64748b", font: { weight: '600' } }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                    padding: 12,
+                    cornerRadius: 8,
                 }
             },
             scales: {
-                x: { ticks: { color: "black" }},
+                x: {
+                    grid: { display: false },
+                    ticks: { color: "#94a3b8" }
+                },
                 y: {
                     beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'N* Cursos',
+                        color: '#64748b',
+                        font: { size: 12, weight: '600' }
+                    },
+                    grid: { color: "rgba(0, 0, 0, 0.05)", drawBorder: false },
                     ticks: {
-                        color: "black",
-                        // Mostrar solo enteros
-                        callback: function(value){ return Number.isInteger(value) ? value : null; },
-                        stepSize: 1,
-                        precision: 0
+                        color: "#94a3b8",
+                        callback: function (value) { return Number.isInteger(value) ? value : null; },
+                        stepSize: 1
                     }
                 }
             }
@@ -193,8 +255,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function cargar(periodo) {
         var url = '../../app/controlador/obtenerAmbitos.php' + (periodo ? ('?periodo=' + encodeURIComponent(periodo)) : '');
         fetch(url, { cache: 'no-store' })
-            .then(function(res){ return res.json(); })
-            .then(function(json){
+            .then(function (res) { return res.json(); })
+            .then(function (json) {
                 if (!json || json.ok !== true) throw new Error(json && json.error ? json.error : 'Respuesta inválida');
 
                 var labels = json.labels || [];
@@ -213,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 statsChart.update();
             })
-            .catch(function(err){
+            .catch(function (err) {
                 console.error('Error cargando ámbitos:', err);
                 statsChart.data.labels = [];
                 statsChart.data.datasets[0].data = [];

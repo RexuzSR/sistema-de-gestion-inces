@@ -205,6 +205,11 @@ class Metas {
                 return ['success' => false, 'message' => 'Meta no encontrada.'];
             }
 
+            // Validar si la meta está vencida
+            if (strtotime($currentMeta['fecha_fin']) < strtotime(date('Y-m-d'))) {
+                return ['success' => false, 'message' => 'No se puede editar una meta que ya ha vencido.'];
+            }
+
             // Si ya está cerrada, no permitir reabrirla (a menos que estemos extendiendo la fecha en el futuro, pero el usuario dijo "no reabrirse")
             // Si el estado enviado es 'Activa' pero en BD es 'Cerrada', bloqueamos.
             // Dado que quitaremos el selector de estado, el backend debe decidir.
@@ -238,6 +243,135 @@ class Metas {
         } catch (PDOException $e) {
             error_log("Error en actualizar Meta: " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Lista los participantes que cuentan para el cumplimiento de una meta
+     * (misma lógica que el conteo dinámico de estudiantes_formados).
+     */
+    public function obtenerParticipantesPorMeta($id) {
+        $meta = $this->obtenerPorId($id);
+        if (!$meta) {
+            return null;
+        }
+
+        $tipo = $meta['tipo_objetivo'] ?? 'Aprobados';
+        $idAmbito = $meta['id_ambito'] ?? null;
+        $fechaInicio = $meta['fecha_inicio'];
+        $fechaFin = $meta['fecha_fin'];
+
+        $select = "SELECT DISTINCT
+                        p.id_participante,
+                        p.cedula,
+                        p.primer_nombre,
+                        p.segundo_nombre,
+                        p.primer_apellido,
+                        p.segundo_apellido,
+                        p.genero,
+                        p.correo,
+                        c.id_curso,
+                        c.nombre_curso,
+                        pc.estatus_participante,
+                        pc.fecha_inscripcion,
+                        pc.FechaFin AS fecha_fin_curso";
+
+        try {
+            switch ($tipo) {
+                case 'Aprobados':
+                    $sql = $select . "
+                        FROM tb_participante_curso pc
+                        INNER JOIN tb_participante p ON pc.id_participante = p.id_participante
+                        INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                        WHERE pc.estatus_participante = 'Aprobado'
+                          AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
+                          AND (:id_ambito IS NULL OR c.id_ambito = :id_ambito)
+                        ORDER BY p.primer_apellido, p.primer_nombre";
+                    break;
+
+                case 'Inscritos':
+                    $sql = $select . "
+                        FROM tb_participante_curso pc
+                        INNER JOIN tb_participante p ON pc.id_participante = p.id_participante
+                        INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+                        WHERE pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
+                          AND (:id_ambito IS NULL OR c.id_ambito = :id_ambito)
+                        ORDER BY p.primer_apellido, p.primer_nombre";
+                    break;
+
+                case 'Ingresados':
+                    $sql = "SELECT DISTINCT
+                                p.id_participante,
+                                p.cedula,
+                                p.primer_nombre,
+                                p.segundo_nombre,
+                                p.primer_apellido,
+                                p.segundo_apellido,
+                                p.genero,
+                                p.correo,
+                                NULL AS nombre_curso,
+                                'Registrado' AS estatus_participante,
+                                p.fecha_registro AS fecha_inscripcion,
+                                NULL AS fecha_fin_curso
+                            FROM tb_participante p
+                            WHERE p.fecha_registro BETWEEN :fecha_inicio AND :fecha_fin
+                            ORDER BY p.primer_apellido, p.primer_nombre";
+                    break;
+
+                case 'Masculino':
+                case 'Femenino':
+                    $sql = "SELECT DISTINCT
+                                p.id_participante,
+                                p.cedula,
+                                p.primer_nombre,
+                                p.segundo_nombre,
+                                p.primer_apellido,
+                                p.segundo_apellido,
+                                p.genero,
+                                p.correo,
+                                NULL AS nombre_curso,
+                                p.genero AS estatus_participante,
+                                p.fecha_registro AS fecha_inscripcion,
+                                NULL AS fecha_fin_curso
+                            FROM tb_participante p
+                            WHERE p.genero = :genero
+                              AND p.fecha_registro BETWEEN :fecha_inicio AND :fecha_fin
+                            ORDER BY p.primer_apellido, p.primer_nombre";
+                    break;
+
+                default:
+                    return ['meta' => $meta, 'participantes' => []];
+            }
+
+            $stmt = $this->conn->prepare($sql);
+
+            if ($tipo === 'Masculino' || $tipo === 'Femenino') {
+                $stmt->execute([
+                    ':fecha_inicio' => $fechaInicio,
+                    ':fecha_fin' => $fechaFin,
+                    ':genero' => $tipo,
+                ]);
+            } elseif ($tipo === 'Ingresados') {
+                $stmt->execute([
+                    ':fecha_inicio' => $fechaInicio,
+                    ':fecha_fin' => $fechaFin,
+                ]);
+            } else {
+                $stmt->bindValue(':fecha_inicio', $fechaInicio);
+                $stmt->bindValue(':fecha_fin', $fechaFin);
+                if ($idAmbito === null) {
+                    $stmt->bindValue(':id_ambito', null, PDO::PARAM_NULL);
+                } else {
+                    $stmt->bindValue(':id_ambito', (int) $idAmbito, PDO::PARAM_INT);
+                }
+                $stmt->execute();
+            }
+
+            $participantes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return ['meta' => $meta, 'participantes' => $participantes];
+        } catch (PDOException $e) {
+            error_log('Error en obtenerParticipantesPorMeta: ' . $e->getMessage());
+            throw $e;
         }
     }
 
