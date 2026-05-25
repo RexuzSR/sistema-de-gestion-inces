@@ -16,7 +16,7 @@ try {
         FROM tb_curso c
         LEFT JOIN tb_participante_curso pc 
             ON c.id_curso = pc.id_curso 
-            AND pc.estatus_participante IN ('Pendiente', 'En formación')
+            AND pc.estatus_participante IN ('Asignado', 'En formación')
         " . ($idAreaFormativa ? "WHERE c.id_areaFormativa = :id_areaFormativa AND YEAR(c.fecha_inicio) = YEAR(CURDATE())" : "WHERE YEAR(c.fecha_inicio) = YEAR(CURDATE())") . "
         GROUP BY YEAR(c.fecha_inicio), MONTH(c.fecha_inicio)
         ORDER BY YEAR(c.fecha_inicio), MONTH(c.fecha_inicio)

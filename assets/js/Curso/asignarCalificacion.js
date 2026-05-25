@@ -304,7 +304,7 @@ $(document).ready(function () {
             selects.each(function () {
                 const val = $(this).val();
                 if (!val || val === '')                          notasFaltantes++;
-                if (val === 'Pendiente' || val === 'En formación') estadosInvalidos++;
+                if (val === 'Asignado' || val === 'En formación') estadosInvalidos++;
             });
 
             if (notasFaltantes > 0) {
@@ -312,7 +312,7 @@ $(document).ready(function () {
                 return;
             }
             if (estadosInvalidos > 0) {
-                toastr.warning(`${estadosInvalidos} participante(s) tienen estado "Pendiente" o "En formación". Solo se aceptan Aprobado, Reprobado o Ausente.`);
+                toastr.warning(`${estadosInvalidos} participante(s) tienen estado "Asignado" o "En formación". Solo se aceptan Aprobado, Reprobado o Ausente.`);
                 return;
             }
 

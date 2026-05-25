@@ -80,15 +80,30 @@ class Curso {
                                 )";
             $this->conn->prepare($sqlSyncDiferido)->execute();
 
-            // 4. Sincronizar a 'Disponible' o 'En sistema' si no tienen cursos activos
-            $sqlSyncSistema = "UPDATE tb_participante p
-                               SET p.estado = 'En sistema'
-                               WHERE p.estado IN ('Asignado', 'En formación', 'Diferido')
+            // 4. Sincronizar a 'Disponible' si no tienen cursos activos PERO tienen historial (Aprobado/Reprobado/Ausente)
+            $sqlSyncDisponible = "UPDATE tb_participante p
+                               SET p.estado = 'Disponible'
+                               WHERE p.estado IN ('Asignado', 'En formación', 'Diferido', 'En sistema')
                                AND NOT EXISTS (
                                    SELECT 1 FROM tb_participante_curso pc
                                    INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
                                    WHERE pc.id_participante = p.id_participante
                                    AND c.id_estatusCurso IN (1, 2, 3, 4)
+                               )
+                               AND EXISTS (
+                                   SELECT 1 FROM tb_participante_curso pc2
+                                   WHERE pc2.id_participante = p.id_participante
+                                   AND pc2.estatus_participante IN ('Aprobado', 'Reprobado', 'Ausente')
+                               )";
+            $this->conn->prepare($sqlSyncDisponible)->execute();
+
+            // 5. Sincronizar a 'En sistema' si no tienen ningún curso (ni activo ni histórico)
+            $sqlSyncSistema = "UPDATE tb_participante p
+                               SET p.estado = 'En sistema'
+                               WHERE p.estado IN ('Asignado', 'En formación', 'Diferido')
+                               AND NOT EXISTS (
+                                   SELECT 1 FROM tb_participante_curso pc
+                                   WHERE pc.id_participante = p.id_participante
                                )";
             $this->conn->prepare($sqlSyncSistema)->execute();
 
@@ -858,7 +873,7 @@ class Curso {
                             INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso 
                             WHERE pc2.id_participante = p.id_participante 
                               AND c2.turno = :turno 
-                              AND pc2.estatus_participante IN ('Pendiente', 'En formación')
+                              AND pc2.estatus_participante IN ('Asignado', 'En formación')
                               AND pc2.id_curso != :id_curso
                             LIMIT 1) as curso_conflicto,
                            (SELECT c2.turno 
@@ -866,7 +881,7 @@ class Curso {
                             INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso 
                             WHERE pc2.id_participante = p.id_participante 
                               AND c2.turno = :turno 
-                              AND pc2.estatus_participante IN ('Pendiente', 'En formación')
+                              AND pc2.estatus_participante IN ('Asignado', 'En formación')
                               AND pc2.id_curso != :id_curso
                             LIMIT 1) as turno_conflicto
                     FROM tb_participante p
@@ -918,7 +933,7 @@ class Curso {
                     FROM tb_participante_curso pc
                     JOIN tb_participante p ON pc.id_participante = p.id_participante
                     WHERE pc.id_curso = :id_curso
-                    AND pc.estatus_participante IN ('Pendiente', 'En formación')";
+                    AND pc.estatus_participante IN ('Asignado', 'En formación')";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_curso', $id_curso, PDO::PARAM_INT);
@@ -989,7 +1004,7 @@ class Curso {
                     INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
                     WHERE pc.id_participante = :id_p
                       AND c.turno = :turno
-                      AND pc.estatus_participante IN ('Pendiente', 'En formación')
+                      AND pc.estatus_participante IN ('Asignado', 'En formación')
                       AND pc.id_curso != :id_c
                 ";
                 $stmtCheckTurno = $this->conn->prepare($sqlCheckTurno);
@@ -1007,7 +1022,7 @@ class Curso {
             // 3. Insertar nuevo registro
             $sqlInsert = "INSERT INTO tb_participante_curso 
                         (id_participante, id_curso, fecha_inscripcion, FechaInicio, FechaFin, estatus_participante)
-                        VALUES (:id_p, :id_c, CURDATE(), :fecha_inicio, :fecha_fin, 'Pendiente')";
+                        VALUES (:id_p, :id_c, CURDATE(), :fecha_inicio, :fecha_fin, 'Asignado')";
             $stmtInsert = $this->conn->prepare($sqlInsert);
             $stmtInsert->execute([
                 ':id_p' => $id_participante,
@@ -1171,7 +1186,7 @@ class Curso {
                     FROM tb_participante_curso pc
                     INNER JOIN tb_participante p ON pc.id_participante = p.id_participante
                     WHERE pc.id_curso = :id_curso
-                    AND pc.estatus_participante IN ('Pendiente', 'En formación', 'Aprobado', 'Reprobado', 'Ausente')";
+                    AND pc.estatus_participante IN ('Asignado', 'En formación', 'Aprobado', 'Reprobado', 'Ausente')";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_curso', $id_curso, PDO::PARAM_INT);
@@ -1231,7 +1246,37 @@ class Curso {
             $sql = "UPDATE tb_participante_curso SET estatus_participante = ? WHERE id_participante_curso = ?";
             $stmt = $this->conn->prepare($sql);
             $success = $stmt->execute([$estado, $idParticipanteCurso]);
-            
+
+            // Sincronizar el estado del participante
+            if ($success) {
+                $sqlGetPart = "SELECT id_participante FROM tb_participante_curso WHERE id_participante_curso = ?";
+                $stmtPart = $this->conn->prepare($sqlGetPart);
+                $stmtPart->execute([$idParticipanteCurso]);
+                $idParticipante = $stmtPart->fetchColumn();
+
+                if ($idParticipante) {
+                    // Revisar todos los cursos del participante para calcular su nuevo estado
+                    $sqlEstados = "SELECT estatus_participante FROM tb_participante_curso WHERE id_participante = ?";
+                    $stmtEstados = $this->conn->prepare($sqlEstados);
+                    $stmtEstados->execute([$idParticipante]);
+                    $todos = $stmtEstados->fetchAll(PDO::FETCH_COLUMN);
+
+                    $tieneEnFormacion = in_array('En formación', $todos);
+                    $tieneAsignado   = in_array('Asignado', $todos);
+                    $tieneDiferido   = in_array('Diferido', $todos);
+                    $tieneHistorial  = count(array_intersect(['Aprobado','Reprobado','Ausente'], $todos)) > 0;
+
+                    $nuevoEstado = 'Disponible';
+                    if ($tieneEnFormacion)  $nuevoEstado = 'En formación';
+                    elseif ($tieneAsignado) $nuevoEstado = 'Asignado';
+                    elseif ($tieneDiferido) $nuevoEstado = 'Diferido';
+                    elseif (!$tieneHistorial) $nuevoEstado = 'En sistema';
+
+                    $this->conn->prepare("UPDATE tb_participante SET estado = ? WHERE id_participante = ?")
+                                ->execute([$nuevoEstado, $idParticipante]);
+                }
+            }
+
             return [
                 'success' => $success,
                 'message' => $success ? 'Notas guardadas exitosamente' : 'Error al guardar notas'

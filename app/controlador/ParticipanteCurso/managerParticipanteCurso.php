@@ -35,7 +35,7 @@ class ParticipanteCurso {
                 FROM tb_participante_curso pc
                 INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
                 WHERE pc.id_participante = :id_participante
-                AND pc.estatus_participante IN ('Pendiente', 'En formación')
+                AND pc.estatus_participante IN ('Asignado', 'En formación')
                 ORDER BY pc.estatus_participante DESC, pc.fecha_inscripcion ASC";
     
         $stmt = $this->conn->prepare($sql);
@@ -57,7 +57,7 @@ class ParticipanteCurso {
                     SELECT pc.id_curso
                     FROM tb_participante_curso pc
                     WHERE pc.id_participante = :id_participante
-                    AND pc.estatus_participante = 'Pendiente'
+                    AND pc.estatus_participante = 'Asignado'
                 )
                 ORDER BY FIELD(c.turno, 'Mañana', 'Tarde'), c.nombre_curso";
         
@@ -101,14 +101,14 @@ class ParticipanteCurso {
                 FROM tb_participante_curso 
                 WHERE id_participante = :id_p 
                   AND id_curso = :id_c
-                  AND estatus_participante = 'Pendiente'
+                  AND estatus_participante = 'Asignado'
             ";
             $stmtVerificar = $this->conn->prepare($sqlVerificar);
             $stmtVerificar->execute([':id_p' => $id_participante, ':id_c' => $id_curso]);
-            error_log("Verification: Found " . $stmtVerificar->rowCount() . " 'Pendiente' record(s) for id_participante: $id_participante in id_curso: $id_curso.");
+            error_log("Verification: Found " . $stmtVerificar->rowCount() . " 'Asignado' record(s) for id_participante: $id_participante in id_curso: $id_curso.");
     
             if ($stmtVerificar->rowCount() > 0) {
-                throw new Exception("El participante ya está inscrito en este curso con estatus 'Pendiente'");
+                throw new Exception("El participante ya está inscrito en este curso con estatus 'Asignado'");
             }
 
             // 2.1 Verificar si el participante ya tiene un curso en el mismo turno
@@ -126,7 +126,7 @@ class ParticipanteCurso {
                     INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
                     WHERE pc.id_participante = :id_p
                       AND c.turno = :turno
-                      AND pc.estatus_participante IN ('Pendiente', 'En formación')
+                      AND pc.estatus_participante IN ('Asignado', 'En formación')
                       AND pc.id_curso != :id_c
                 ";
                 $stmtCheckTurno = $this->conn->prepare($sqlCheckTurno);
@@ -161,7 +161,7 @@ class ParticipanteCurso {
                 INSERT INTO tb_participante_curso 
                     (id_participante, id_curso, fecha_inscripcion, FechaInicio, FechaFin, estatus_participante)
                 VALUES 
-                    (:id_p, :id_c, CURDATE(), :fecha_inicio, :fecha_fin, 'Pendiente')
+                    (:id_p, :id_c, CURDATE(), :fecha_inicio, :fecha_fin, 'Asignado')
             ";
             $stmtInsertar = $this->conn->prepare($sqlInsertar);
             $stmtInsertar->execute([
@@ -232,17 +232,37 @@ class ParticipanteCurso {
             ");
             $actualizarCupo->execute([':id_curso' => $curso['id_curso']]);
     
-            // 4. Consultar cursos restantes con estado "Pendiente" del participante
-            $cursosPendientes = $this->conn->prepare("
-                SELECT COUNT(*) AS total 
+            // 4. Consultar cursos restantes para determinar el nuevo estado
+            $cursosRestantes = $this->conn->prepare("
+                SELECT estatus_participante 
                 FROM tb_participante_curso 
-                WHERE id_participante = :id_p AND estatus_participante = 'Pendiente'
+                WHERE id_participante = :id_p
             ");
-            $cursosPendientes->execute([':id_p' => $id_participante]);
-            $totalPendientes = $cursosPendientes->fetch(PDO::FETCH_ASSOC)['total'];
-    
-            // Determinar el nuevo estado del participante
-            $nuevoEstado = ($totalPendientes == 0) ? 'Disponible' : 'Asignado';
+            $cursosRestantes->execute([':id_p' => $id_participante]);
+            
+            $tieneEnFormacion = false;
+            $tieneAsignado = false;
+            $tieneDiferido = false;
+            $tieneHistorial = false;
+            
+            while ($c = $cursosRestantes->fetch(PDO::FETCH_ASSOC)) {
+                if ($c['estatus_participante'] === 'En formación') {
+                    $tieneEnFormacion = true;
+                } elseif ($c['estatus_participante'] === 'Asignado') {
+                    $tieneAsignado = true;
+                } elseif ($c['estatus_participante'] === 'Diferido') {
+                    $tieneDiferido = true;
+                } else {
+                    $tieneHistorial = true;
+                }
+            }
+            
+            $nuevoEstado = 'En sistema';
+            if ($tieneEnFormacion) $nuevoEstado = 'En formación';
+            elseif ($tieneAsignado) $nuevoEstado = 'Asignado';
+            elseif ($tieneDiferido) $nuevoEstado = 'Diferido';
+            elseif ($tieneHistorial) $nuevoEstado = 'Disponible';
+            
             error_log("Nuevo estado calculado: $nuevoEstado para participante ID: $id_participante");
     
             // 5. Actualizar estado del participante
@@ -284,7 +304,7 @@ class ParticipanteCurso {
                       FROM tb_participante_curso
                       INNER JOIN tb_curso ON tb_participante_curso.id_curso = tb_curso.id_curso
                       WHERE tb_participante_curso.id_participante = ?
-                      AND tb_participante_curso.estatus_participante NOT IN ('En formación', 'Pendiente')
+                      AND tb_participante_curso.estatus_participante NOT IN ('En formación', 'Asignado')
                       ORDER BY tb_participante_curso.fecha_inscripcion DESC";
     
             $stmt = $this->conn->prepare($query);

@@ -41,7 +41,7 @@ function curTrayBadgeParticipante(est) {
     const map = {
         'Aprobado':     { bg:'#e9f7ef', border:'#19875455', text:'#0f6840' },
         'En formación': { bg:'#e7f0ff', border:'#0d6efd55', text:'#0a4fc4' },
-        'Pendiente':    { bg:'#fff8e1', border:'#ffc10755', text:'#856404' },
+        'Asignado':    { bg:'#fff8e1', border:'#ffc10755', text:'#856404' },
         'Reprobado':    { bg:'#fdecea', border:'#dc354555', text:'#a71d2a' },
         'Ausente':      { bg:'#f0f0f0', border:'#6c757d55', text:'#495057' },
     };
@@ -815,7 +815,7 @@ function curTrayRenderDetalle(d, monthData = null) {
 
     const aprobados = parts.filter(p => p.estatus_participante === 'Aprobado').length;
     const reprobados = parts.filter(p => ['Reprobado', 'Ausente'].includes(p.estatus_participante)).length;
-    const enFormacion = parts.filter(p => ['En formación', 'Pendiente'].includes(p.estatus_participante)).length;
+    const enFormacion = parts.filter(p => ['En formación', 'Asignado'].includes(p.estatus_participante)).length;
 
     panel.innerHTML = `
     <div class="ct-participants-panel p-4">

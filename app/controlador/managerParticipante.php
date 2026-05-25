@@ -123,7 +123,7 @@ public function registrar($data) {
                 ':fecha_inscripcion' => date('Y-m-d'),
                 ':fecha_inicio' => $fechasCurso['fecha_inicio'],
                 ':fecha_fin' => $fechasCurso['fecha_fin'],
-                ':estatus_participante' => 'Pendiente'
+                ':estatus_participante' => 'Asignado'
             ]);
         }
 
@@ -454,7 +454,7 @@ public function eliminar($id) {
                                FROM tb_participante_curso pc
                                JOIN tb_curso c ON pc.id_curso = c.id_curso
                                WHERE pc.id_participante = :id
-                               AND pc.estatus_participante IN ('Pendiente', 'En formación')";
+                               AND pc.estatus_participante IN ('Asignado', 'En formación')";
         
                 $stmtActivos = $this->conn->prepare($sqlActivos);
                 $stmtActivos->bindParam(':id', $idParticipante, PDO::PARAM_INT);

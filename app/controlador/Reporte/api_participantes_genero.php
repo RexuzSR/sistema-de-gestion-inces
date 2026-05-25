@@ -10,7 +10,7 @@ try {
         FROM tb_participante_curso pc
         INNER JOIN tb_participante p ON pc.id_participante = p.id_participante
         INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
-        WHERE pc.estatus_participante = 'Pendiente'
+        WHERE pc.estatus_participante = 'Asignado'
         GROUP BY c.nombre_curso, p.genero
         ORDER BY c.nombre_curso ASC, p.genero ASC
     ";

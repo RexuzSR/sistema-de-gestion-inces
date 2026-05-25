@@ -8,14 +8,14 @@
  * ============================================================
  */
 
-// ── Distribución por estado (Inactivo + En sistema agrupados) ──
+// ── Distribución por estado ──
 $partEstado = $conn->query("
     SELECT
-        CASE WHEN estado IN ('Inactivo','En sistema') THEN 'Inactivo / Sin curso'
+        CASE WHEN estado = 'Inactivo' THEN 'Sin actividad'
              ELSE estado END AS estado,
         COUNT(*) t
     FROM tb_participante
-    GROUP BY CASE WHEN estado IN ('Inactivo','En sistema') THEN 'Inactivo / Sin curso'
+    GROUP BY CASE WHEN estado = 'Inactivo' THEN 'Sin actividad'
                   ELSE estado END
     ORDER BY t DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
@@ -59,7 +59,7 @@ $kDisponibles = (function ($c) {
 // ── KPI: En formación ──
 $kPctForm = (function ($c) {
     $tot = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $f   = $c->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'En formación'")->fetchColumn();
+    $f   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'En formación'")->fetchColumn();
     return [
         'en_formacion' => $f,
         'total'        => $tot,
@@ -70,7 +70,7 @@ $kPctForm = (function ($c) {
 // ── KPI: Inactivos (incluye "En sistema") ──
 $kInactivos = (function ($c) {
     $tot   = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $inact = $c->query("SELECT COUNT(*) FROM tb_participante WHERE estado IN ('Inactivo','En sistema')")->fetchColumn();
+    $inact = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado IN ('Inactivo','En sistema', 'Disponible')")->fetchColumn();
     return [
         'inactivos' => $inact,
         'total'     => $tot,
@@ -81,8 +81,8 @@ $kInactivos = (function ($c) {
 // ── KPI: Índice de asignación (Asignados + En formación) ──
 $kAsignacion = (function ($c) {
     $tot = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $a   = $c->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'Asignado'")->fetchColumn();
-    $f   = $c->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'En formación'")->fetchColumn();
+    $a   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'Asignado'")->fetchColumn();
+    $f   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'En formación'")->fetchColumn();
     $act = $a + $f;
     return [
         'asignados'    => $a,
@@ -156,7 +156,7 @@ $cardFormacion = $conn->query("
     LEFT JOIN tb_participante_curso pc ON pc.id_participante = p.id_participante
     LEFT JOIN tb_curso c
            ON pc.id_curso = c.id_curso
-          AND pc.estatus_participante = 'En formación'
+          AND pc.estatus_participante IN ('En formación', 'Pendiente')
     WHERE p.estado = 'En formación'
     GROUP BY p.id_participante
     ORDER BY p.primer_apellido

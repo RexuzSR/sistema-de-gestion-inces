@@ -324,7 +324,7 @@ function getParticipantesPorAmbito(PDO $conn, int $anio): array {
         SELECT a.nombre_ambito AS ambito,
                COUNT(DISTINCT pc.id_participante) AS total,
                SUM(CASE WHEN pc.estatus_participante = 'Aprobado' THEN 1 ELSE 0 END) AS aprobados,
-               SUM(CASE WHEN pc.estatus_participante IN ('En formación','Pendiente') THEN 1 ELSE 0 END) AS en_formacion,
+               SUM(CASE WHEN pc.estatus_participante IN ('En formación','Asignado') THEN 1 ELSE 0 END) AS en_formacion,
                SUM(CASE WHEN pc.estatus_participante IN ('Ausente','Reprobado') THEN 1 ELSE 0 END) AS retirados
         FROM tb_participante_curso pc
         JOIN tb_curso c ON c.id_curso = pc.id_curso

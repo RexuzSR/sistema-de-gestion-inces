@@ -19,9 +19,9 @@ function cargarCursosPendientes(idParticipante) {
                 data.forEach(curso => {
                     const badgeType = curso.estatus_participante === 'En formación'
                         ? '<span class="badge bg-success" title="En formación"><i class="bi bi-arrow-repeat"></i> En formación</span>'
-                        : '<span class="badge bg-warning text-dark" title="Pendiente"><i class="bi bi-clock-history"></i> Pendiente</span>';
+                        : '<span class="badge bg-warning text-dark" title="Asignado"><i class="bi bi-clock-history"></i> Asignado</span>';
 
-                    const botonDesinscribir = curso.estatus_participante === 'Pendiente'
+                    const botonDesinscribir = curso.estatus_participante === 'Asignado'
                         ? `<button class="btn btn-sm btn-danger desinscribir-curso"  data-id="${curso.id_participante_curso}">
                                 Desinscribir Curso
                            </button>`

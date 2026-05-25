@@ -70,7 +70,7 @@ function cargarCursosActivos(idParticipante) {
                 // Ordenar cursos: 1ro En formación, luego Pendiente, por fecha de inicio
                 const cursosOrdenados = data.cursosActivos.sort((a, b) => {
                     // Prioridad por estado
-                    const ordenEstados = { 'En formación': 1, 'Pendiente': 2 };
+                    const ordenEstados = { 'En formación': 1, 'Asignado': 2 };
                     if (ordenEstados[a.estado] !== ordenEstados[b.estado]) {
                         return ordenEstados[a.estado] - ordenEstados[b.estado];
                     }
@@ -109,7 +109,7 @@ function cargarCursosActivos(idParticipante) {
                                 badgeColor = 'estado-badge en-pausa';
                                 break;
                             default:
-                                badgeColor = curso.estado === 'Pendiente' ? 'estado-badge pendiente' : 'estado-badge en-curso';
+                                badgeColor = curso.estado === 'Asignado' ? 'estado-badge pendiente' : 'estado-badge en-curso';
                         }
 
                         const cursoHTML = `

@@ -113,9 +113,9 @@ public function actualizarEstadoCursos() {
                     $stmtUpdateCurso->bindParam(':id_curso', $idCurso);
                     $stmtUpdateCurso->execute();
 
-                    // Cambiar el estado de los participantes en el curso a "Pendiente" si corresponde
+                    // Cambiar el estado de los participantes en el curso a "Asignado" si corresponde
                     $updateParticipantesPendientes = "UPDATE tb_participante_curso 
-                                                      SET estatus_participante = 'Pendiente' 
+                                                      SET estatus_participante = 'Asignado' 
                                                       WHERE id_curso = :id_curso 
                                                         AND estatus_participante IN ('En formación')";
                     $stmtUpdateParticipantesPendientes = $this->conn->prepare($updateParticipantesPendientes);
@@ -132,10 +132,16 @@ public function actualizarEstadoCursos() {
                     $stmtUpdateCurso->bindParam(':id_curso', $idCurso);
                     $stmtUpdateCurso->execute();
 
-                    // Cambiar el estado de los participantes en el curso a "En formación"
-                    $updateParticipantesCurso = "UPDATE tb_participante_curso 
-                                                 SET estatus_participante = 'En formación' 
-                                                 WHERE id_curso = :id_curso AND estatus_participante = 'Pendiente'";
+                    // Cambiar el estado de los participantes según si es "En proceso" o "Diferido"
+                    if ($nuevoEstado == 3) {
+                        $updateParticipantesCurso = "UPDATE tb_participante_curso 
+                                                     SET estatus_participante = 'En formación' 
+                                                     WHERE id_curso = :id_curso AND estatus_participante = 'Asignado'";
+                    } else {
+                        $updateParticipantesCurso = "UPDATE tb_participante_curso 
+                                                     SET estatus_participante = 'Diferido' 
+                                                     WHERE id_curso = :id_curso AND estatus_participante = 'Asignado'";
+                    }
                     $stmtUpdateParticipantesCurso = $this->conn->prepare($updateParticipantesCurso);
                     $stmtUpdateParticipantesCurso->bindParam(':id_curso', $idCurso);
                     $stmtUpdateParticipantesCurso->execute();
@@ -181,22 +187,32 @@ public function actualizarEstadoCursos() {
                     $stmtEstadoCursos->execute();
 
                     $tieneEnFormacion = false;
-                    $tienePendiente = false;
+                    $tieneAsignado = false;
+                    $tieneDiferido = false;
+                    $tieneHistorial = false;
 
                     while ($estadoCurso = $stmtEstadoCursos->fetch(PDO::FETCH_ASSOC)) {
                         if ($estadoCurso['estatus_participante'] === 'En formación') {
                             $tieneEnFormacion = true;
-                        } elseif ($estadoCurso['estatus_participante'] === 'Pendiente') {
-                            $tienePendiente = true;
+                        } elseif ($estadoCurso['estatus_participante'] === 'Asignado') {
+                            $tieneAsignado = true;
+                        } elseif ($estadoCurso['estatus_participante'] === 'Diferido') {
+                            $tieneDiferido = true;
+                        } else {
+                            $tieneHistorial = true;
                         }
                     }
 
                     // Determinar el estado del participante
-                    $nuevoEstadoParticipante = 'Inactivo'; // Valor predeterminado
+                    $nuevoEstadoParticipante = 'En sistema'; // Valor predeterminado
                     if ($tieneEnFormacion) {
                         $nuevoEstadoParticipante = 'En formación';
-                    } elseif ($tienePendiente) {
+                    } elseif ($tieneAsignado) {
                         $nuevoEstadoParticipante = 'Asignado';
+                    } elseif ($tieneDiferido) {
+                        $nuevoEstadoParticipante = 'Diferido';
+                    } elseif ($tieneHistorial) {
+                        $nuevoEstadoParticipante = 'Disponible';
                     }
 
                     // Actualizar el estado del participante en la tabla `tb_participante`
