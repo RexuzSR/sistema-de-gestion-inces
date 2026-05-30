@@ -35,7 +35,7 @@ class Metas {
             $dynamicCount = "(
                 CASE 
                     WHEN m.tipo_objetivo = 'Aprobados' THEN (
-                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
                         FROM tb_participante_curso pc2
                         INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
                         WHERE pc2.estatus_participante = 'Aprobado'
@@ -43,7 +43,7 @@ class Metas {
                           AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
                     )
                     WHEN m.tipo_objetivo = 'Inscritos' THEN (
-                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
                         FROM tb_participante_curso pc2
                         INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
                         WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
@@ -100,7 +100,7 @@ class Metas {
             $dynamicCount = "(
                 CASE 
                     WHEN m.tipo_objetivo = 'Aprobados' THEN (
-                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
                         FROM tb_participante_curso pc2
                         INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
                         WHERE pc2.estatus_participante = 'Aprobado'
@@ -108,7 +108,7 @@ class Metas {
                           AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
                     )
                     WHEN m.tipo_objetivo = 'Inscritos' THEN (
-                        SELECT COUNT(DISTINCT pc2.id_participante)
+                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
                         FROM tb_participante_curso pc2
                         INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
                         WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
@@ -286,7 +286,7 @@ class Metas {
                         WHERE pc.estatus_participante = 'Aprobado'
                           AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
                           AND (:id_ambito IS NULL OR c.id_ambito = :id_ambito)
-                        ORDER BY p.primer_apellido, p.primer_nombre";
+                        ORDER BY c.nombre_curso, p.primer_apellido, p.primer_nombre";
                     break;
 
                 case 'Inscritos':
@@ -296,7 +296,7 @@ class Metas {
                         INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
                         WHERE pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
                           AND (:id_ambito IS NULL OR c.id_ambito = :id_ambito)
-                        ORDER BY p.primer_apellido, p.primer_nombre";
+                        ORDER BY c.nombre_curso, p.primer_apellido, p.primer_nombre";
                     break;
 
                 case 'Ingresados':
