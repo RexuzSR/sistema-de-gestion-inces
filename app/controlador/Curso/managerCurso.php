@@ -933,7 +933,7 @@ class Curso {
                     FROM tb_participante_curso pc
                     JOIN tb_participante p ON pc.id_participante = p.id_participante
                     WHERE pc.id_curso = :id_curso
-                    AND pc.estatus_participante IN ('Asignado', 'En formación')";
+                    AND LOWER(TRIM(pc.estatus_participante)) != 'retirado'";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_curso', $id_curso, PDO::PARAM_INT);
