@@ -69,8 +69,10 @@ $(document).ready(function () {
                 matchEdad = edad >= min && edad <= max;
             }
 
-            const estado = (p.estado || p.estado_participante || 'En sistema').toLowerCase();
-            const matchEstado = currentFilters.estado === '' || estado === currentFilters.estado.toLowerCase();
+            // Normalizar estado para comparar sin acentos ni mayúsculas
+            const estado = normalizeString(p.estado || p.estado_participante || 'En sistema');
+            const filtroEstado = normalizeString(currentFilters.estado || '');
+            const matchEstado = filtroEstado === '' || estado === filtroEstado;
 
             return matchGenero && matchEdad && matchEstado;
         });

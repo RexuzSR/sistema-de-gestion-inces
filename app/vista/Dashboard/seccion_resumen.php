@@ -624,8 +624,16 @@
                     </button>
                 </div>
                 <?php
-                $cursosIniciados = array_values(array_filter($cursosHistoricoDetalle ?? [], fn($c) => $c['tipo_ejecucion'] === 'iniciado'));
-                $cursosPendDif   = array_values(array_filter($cursosHistoricoDetalle ?? [], fn($c) => in_array($c['tipo_ejecucion'], ['pendiente','diferido'])));
+                $cursosIniciados = array_values(array_filter($cursosHistoricoDetalle ?? [], function($c) use ($trimestreActual, $anioActual) {
+                    return ($c['tipo_ejecucion'] === 'iniciado')
+                        && (int)$c['trimestre'] === (int)$trimestreActual
+                        && (int)$c['anio'] === (int)$anioActual;
+                }));
+                $cursosPendDif   = array_values(array_filter($cursosHistoricoDetalle ?? [], function($c) use ($trimestreActual, $anioActual) {
+                    return in_array($c['tipo_ejecucion'], ['pendiente','diferido'])
+                        && (int)$c['trimestre'] === (int)$trimestreActual
+                        && (int)$c['anio'] === (int)$anioActual;
+                }));
                 ?>
                 <div class="row g-3 align-items-start">
                     <div class="col-lg-4">

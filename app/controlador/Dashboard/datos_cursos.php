@@ -162,10 +162,13 @@ try {
             OR LOWER(tipo_objetivo) LIKE '%program%')
     ")->fetch(PDO::FETCH_ASSOC);
     if ((int)$metasCursos['total'] > 0) {
+        $total_meta = (int)$metasCursos['total'];
+        $cumplidas_meta = (int)$metasCursos['cumplidas'];
+        $pct_meta = $total_meta > 0 ? round($cumplidas_meta / $total_meta * 100, 1) : 0;
         $kEjecucion = [
-            'ejecutados'   => (int)$metasCursos['cumplidas'],
-            'planificados' => (int)$metasCursos['total'],
-            'pct'          => (float)$metasCursos['pct_promedio'],
+            'ejecutados'   => $cumplidas_meta,
+            'planificados' => $total_meta,
+            'pct'          => $pct_meta,
             'fuente'       => 'metas',
         ];
     } else {
@@ -175,16 +178,19 @@ try {
               AND QUARTER(fecha_inicio) = QUARTER(CURDATE())
               AND YEAR(fecha_inicio)    = YEAR(CURDATE())
         ")->fetchColumn();
-        $ejecut = (int)$conn->query("
-            SELECT COUNT(*) FROM tb_curso c
-            JOIN tb_estatuscurso e ON c.id_estatusCurso = e.id_estatusCurso
-            WHERE c.id_curso != 1
-              AND QUARTER(c.fecha_inicio) = QUARTER(CURDATE())
-              AND YEAR(c.fecha_inicio)    = YEAR(CURDATE())
-              AND (LOWER(e.nombre_estatusCurso) LIKE '%finaliz%'
-                OR LOWER(e.nombre_estatusCurso) LIKE '%complet%'
-                OR LOWER(e.nombre_estatusCurso) LIKE '%en curso%')
-        ")->fetchColumn();
+                // Contar como "ejecutados" aquellos cursos que están en formación/en proceso
+                $ejecut = (int)$conn->query(" 
+                        SELECT COUNT(*) FROM tb_curso c
+                        JOIN tb_estatuscurso e ON c.id_estatusCurso = e.id_estatusCurso
+                        WHERE c.id_curso != 1
+                            AND QUARTER(c.fecha_inicio) = QUARTER(CURDATE())
+                            AND YEAR(c.fecha_inicio)    = YEAR(CURDATE())
+                            AND (
+                                        e.id_estatusCurso = 3
+                                 OR LOWER(e.nombre_estatusCurso) LIKE '%form%'
+                                 OR LOWER(e.nombre_estatusCurso) LIKE '%proceso%'
+                            )
+                ")->fetchColumn();
         $kEjecucion = [
             'ejecutados'   => $ejecut,
             'planificados' => $planif,
@@ -275,8 +281,9 @@ try {
             CASE
                 WHEN LOWER(e.nombre_estatusCurso) LIKE '%dif%'
                     THEN 'diferido'
-                WHEN LOWER(e.nombre_estatusCurso) LIKE '%finaliz%'
-                  OR LOWER(e.nombre_estatusCurso) LIKE '%complet%'
+                WHEN e.id_estatusCurso = 3
+                  OR LOWER(e.nombre_estatusCurso) LIKE '%form%'
+                  OR LOWER(e.nombre_estatusCurso) LIKE '%proceso%'
                   OR LOWER(e.nombre_estatusCurso) LIKE '%en curso%'
                   OR LOWER(e.nombre_estatusCurso) LIKE '%inici%'
                     THEN 'iniciado'

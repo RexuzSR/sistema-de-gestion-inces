@@ -59,7 +59,7 @@ $kDisponibles = (function ($c) {
 // ── KPI: En formación ──
 $kPctForm = (function ($c) {
     $tot = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $f   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'En formación'")->fetchColumn();
+    $f   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE LOWER(p.estado) LIKE '%en form%'")->fetchColumn();
     return [
         'en_formacion' => $f,
         'total'        => $tot,
@@ -78,18 +78,22 @@ $kInactivos = (function ($c) {
     ];
 })($conn);
 
-// ── KPI: Índice de asignación (Asignados + En formación) ──
+// ── KPI: Índice de asignación (Participantes asignados a cursos / Total participantes)
 $kAsignacion = (function ($c) {
-    $tot = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $a   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'Asignado'")->fetchColumn();
-    $f   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'En formación'")->fetchColumn();
+    $tot = (int)$c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
+    $a   = (int)$c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'Asignado'")->fetchColumn();
+    $f   = (int)$c->query("SELECT COUNT(*) FROM tb_participante p WHERE LOWER(p.estado) LIKE '%en form%'")->fetchColumn();
+    // participantes activos = Asignados + En formación
     $act = $a + $f;
+    // pct ahora según la fórmula solicitada: (Participantes asignados a cursos / Total participantes) * 100
+    // Aquí interpretamos "Participantes asignados a cursos" como los activos (Asignados + En formación)
+    $pct = $tot > 0 ? round($act / $tot * 100, 1) : 0;
     return [
-        'asignados'    => $a,
-        'en_formacion' => $f,
-        'activos'      => $act,
-        'total'        => $tot,
-        'pct'          => $tot > 0 ? round($act / $tot * 100, 1) : 0,
+        'asignados'         => $a,
+        'en_formacion'      => $f,
+        'activos'           => $act,
+        'total'             => $tot,
+        'pct'               => $pct,
     ];
 })($conn);
 
@@ -147,7 +151,7 @@ $cardDisponibles = $conn->query("
     ORDER BY fecha_registro DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-$cardFormacion = $conn->query("
+$cardFormacion = $conn->query(" 
     SELECT p.primer_nombre, p.primer_apellido, p.cedula, p.genero,
            p.grado_institucion,
            TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
@@ -157,7 +161,7 @@ $cardFormacion = $conn->query("
     LEFT JOIN tb_curso c
            ON pc.id_curso = c.id_curso
           AND pc.estatus_participante IN ('En formación', 'Pendiente')
-    WHERE p.estado = 'En formación'
+    WHERE LOWER(p.estado) LIKE '%en form%'
     GROUP BY p.id_participante
     ORDER BY p.primer_apellido
 ")->fetchAll(PDO::FETCH_ASSOC);
