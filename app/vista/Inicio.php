@@ -143,7 +143,8 @@ window.HOME_CHARTS = {
     ambitoSolicitado: {
         labels: <?php echo json_encode(array_column($ambitoSolicitadoMes,'ambito')); ?>,
         data:   <?php echo json_encode(array_map('intval', array_column($ambitoSolicitadoMes,'inscripciones'))); ?>
-    }
+    },
+    formacionSolicitada: <?php echo $jsFormacionSolicitada; ?>
 };
 </script>
 

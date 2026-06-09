@@ -52,6 +52,11 @@
                         <div style="font-size:1.35rem;font-weight:800;color:#f59e0b;line-height:1;"><?php echo max($cursosPorMes); ?></div>
                         <div style="font-size:.65rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:2px;">Pico &middot; <?php echo $cMesesNombres[$cMesMax]; ?></div>
                     </div>
+                    <div style="width:1px;height:32px;background:#e2e8f0;"></div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.35rem;font-weight:800;color:#8b5cf6;line-height:1;"><?php echo $kPromedio['promedio']; ?></div>
+                        <div style="font-size:.65rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:2px;">Prom. Partic.</div>
+                    </div>
                 </div>
             </div>
             <div style="position:relative;height:190px;width:100%;"><canvas id="chartCursosMensual"></canvas></div>
@@ -94,10 +99,14 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0M2.04 4.326c.325 1.329 2.532 2.54 3.717 3.19.48.263.793.434.743.484q-.121.12-.242.234c-.416.396-.787.749-.758 1.266.035.634.618.824 1.214 1.017.577.188 1.168.38 1.286.983.082.417-.075.988-.22 1.52-.215.782-.406 1.48.22 1.48 1.5-.5 3.798-3.186 4-5 .138-1.243-2-2-3.5-2.5-.478-.16-.755.081-.99.284-.172.15-.322.279-.51.216-.445-.148-2.5-2-1.5-2.5.786-.4 2.363.158 3.27.465.527.181.86.294.73.035C10.044 2.31 7.96 1.5 7 1.5c-1 0-3.5 1.326-4.96 2.826zm7.027 5.978c.29.29.29.76 0 1.05a.74.74 0 0 1-1.05 0 .74.74 0 0 1 0-1.05.74.74 0 0 1 1.05 0"/></svg>
                     &Aacute;mbito Solicitado
                 </button>
+                <button class="chart-tab-btn" data-section="cursos" data-chart="formacion">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.742c-.934-.53-2.118-.602-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/></svg>
+                    Formaci&oacute;n Solicitada
+                </button>
             </nav>
             <div class="chart-tabs-body">
 
-                <!-- TAB: Por Estatus — tabla lateral navegable a cursos.php -->
+                <!-- TAB: Por Estatus -->
                 <div class="chart-tab-panel active" id="chart-panel-cursos-estatus">
                     <p class="chart-panel-title">Distribuci&oacute;n por estatus de curso</p>
                     <div class="chart-tab-duo-layout">
@@ -129,7 +138,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: Por Modalidad — tabla lateral navegable a cursos.php -->
+                <!-- TAB: Por Modalidad -->
                 <div class="chart-tab-panel" id="chart-panel-cursos-modalidad">
                     <p class="chart-panel-title">Distribuci&oacute;n por modalidad</p>
                     <div class="chart-tab-duo-layout">
@@ -161,7 +170,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: Por Turno — tabla lateral navegable a cursos.php -->
+                <!-- TAB: Por Turno -->
                 <div class="chart-tab-panel" id="chart-panel-cursos-turno">
                     <p class="chart-panel-title">Distribuci&oacute;n por turno</p>
                     <div class="chart-tab-duo-layout">
@@ -193,7 +202,7 @@
                     </div>
                 </div>
 
-                <!-- TAB: Ámbito Solicitado — tabla con filas navegables a cursos.php -->
+                <!-- TAB: Ámbito Solicitado -->
                 <div class="chart-tab-panel" id="chart-panel-cursos-ambito">
                     <p class="chart-panel-title">&Aacute;mbito m&aacute;s solicitado &mdash; <?php echo $mesActualES . ' ' . $anioActual; ?></p>
                     <?php if (empty($ambitoSolicitadoMes)): ?>
@@ -228,6 +237,58 @@
                         </div>
                     </div>
                     <?php endif; ?>
+                </div>
+
+                <!-- TAB: Formación más solicitada por mes -->
+                <div class="chart-tab-panel" id="chart-panel-cursos-formacion">
+                    <p class="chart-panel-title">Formaci&oacute;n m&aacute;s solicitada por mes &mdash; <?php echo $anioActual; ?></p>
+                    <div class="chart-tab-duo-layout">
+                        <div class="chart-tab-canvas-wrap"><canvas id="chartFormacionSolicitadaTab"></canvas></div>
+                        <div class="chart-tab-side-table">
+                            <table class="table table-sm table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mes</th>
+                                        <th>Curso m&aacute;s solicitado</th>
+                                        <th class="text-center">Inscrip.</th>
+                                        <th class="text-center">% Ocupaci&oacute;n</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <?php
+                                $cMesesES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                                $cMesesFull = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                                foreach ($formacionSolicitadaMes as $i => $fm):
+                                    $mesNombre = $cMesesFull[$i];
+                                    $nombreCurso = htmlspecialchars($fm['nombre_curso']);
+                                    $inscripciones = $fm['inscripciones'];
+                                    $maxPart = $fm['max_participantes'];
+                                    $pctOcupacion = $maxPart > 0 ? round($inscripciones / $maxPart * 100, 1) : 0;
+                                    $rowColor = $coloresFase2[$i % count($coloresFase2)];
+                                ?>
+                                    <tr class="<?php echo $inscripciones > 0 ? 'curso-row-link' : ''; ?>" data-nombre="<?php echo htmlspecialchars($fm['nombre_curso']); ?>" style="<?php echo $inscripciones > 0 ? 'cursor:pointer;' : ''; ?>">
+                                        <td class="fw-semibold"><?php echo $cMesesES[$i]; ?></td>
+                                        <td class="fw-semibold" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?php echo $nombreCurso; ?>">
+                                            <?php echo $nombreCurso; ?>
+                                        </td>
+                                        <td class="text-center fw-bold" style="color:<?php echo $rowColor; ?>;"><?php echo $inscripciones; ?></td>
+                                        <td class="text-center">
+                                            <?php if ($inscripciones > 0): ?>
+                                                <span class="badge-mini" style="background:<?php echo $rowColor; ?>22;color:<?php echo $rowColor; ?>;font-weight:600;"><?php echo $pctOcupacion; ?>%</span>
+                                            <?php else: ?>
+                                                <span class="text-muted">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <div style="padding:6px 8px 2px;font-size:.68rem;color:#94a3b8;display:flex;align-items:center;gap:5px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="#94a3b8" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0M4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5z"/></svg>
+                                Haz clic en una fila para ver el detalle del curso
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -481,17 +542,25 @@
                     <div class="cp-item"><span class="cp-valor"><?php echo $kCuposPerdidos['cupos_vacios']; ?></span><span class="cp-lbl">Cupos sin ocupar</span></div>
                     <div class="cp-item"><span class="cp-valor"><?php echo $kCuposPerdidos['total_cupos']; ?></span><span class="cp-lbl">Cupos totales disponibles</span></div>
                     <div class="cp-item"><span class="cp-valor semaforo-text-<?php echo $s_util; ?>"><?php echo $kCuposPerdidos['pct_desperdicio']; ?>%</span><span class="cp-lbl">% capacidad sin aprovechar</span></div>
+                    <div class="cp-item"><span class="cp-valor" style="color:#8b5cf6;"><?php echo $kPromedio['promedio']; ?></span><span class="cp-lbl">Prom. Participantes</span></div>
                     <div class="cp-item" style="border-left:2px solid #fde68a;padding-left:12px;"><span style="font-size:.72rem;color:#92400e;line-height:1.5;">Cada cupo vac&iacute;o representa un recurso formativo no aprovechado. Meta: &ge; 85% de ocupaci&oacute;n.</span></div>
                 </div>
                 <?php endif; ?>
             </div>
 
-            <!-- BLOQUE: FORMACIONES POR ÁMBITO -->
+            <!-- ══════════════════════════════════════════════════════
+                 BLOQUE: FORMACIONES POR ÁMBITO
+                 CAMBIOS: se eliminaron las cards de KPI y de instrucciones.
+                 La gráfica ocupa el 100% del ancho. El contorno de selección
+                 se dibuja mediante el plugin pluginContornoSeleccion.
+            ══════════════════════════════════════════════════════════ -->
             <div class="panel-section mt-3" id="bloque-ambito">
                 <div class="panel-section-header">
                     <span class="panel-section-dot" style="background:#6366f1;"></span>
                     <span class="panel-section-label">Formaciones por &Aacute;mbito</span>
                 </div>
+
+                <!-- Filtros de periodo -->
                 <div class="ej-filtros-wrap" style="margin-top:10px;">
                     <div class="ej-filtros-grupo">
                         <button class="amb-filtro-btn active" data-periodo="mes">Mes</button>
@@ -500,45 +569,74 @@
                         <button class="amb-filtro-btn" data-periodo="anio">A&ntilde;o</button>
                     </div>
                     <div class="ej-filtros-sel">
-                        <div id="amb-sel-mes"><select id="amb-mes-select" class="ej-select"><?php foreach ($mesesES as $n => $nm): ?><option value="<?php echo $n; ?>" <?php echo $n == $mesActualNum ? 'selected' : ''; ?>><?php echo $nm; ?></option><?php endforeach; ?></select></div>
-                        <div id="amb-sel-trimestre" style="display:none;"><select id="amb-trim-select" class="ej-select"><?php for ($t = 1; $t <= 4; $t++): ?><option value="<?php echo $t; ?>" <?php echo $t == $trimestreActualNum ? 'selected' : ''; ?>>T<?php echo $t; ?></option><?php endfor; ?></select></div>
-                        <div id="amb-sel-semestre" style="display:none;"><select id="amb-sem-select" class="ej-select"><option value="1" <?php echo $semestreActualNum===1?'selected':''; ?>>1er semestre (Ene&ndash;Jun)</option><option value="2" <?php echo $semestreActualNum===2?'selected':''; ?>>2do semestre (Jul&ndash;Dic)</option></select></div>
+                        <div id="amb-sel-mes">
+                            <select id="amb-mes-select" class="ej-select">
+                                <?php foreach ($mesesES as $n => $nm): ?>
+                                    <option value="<?php echo $n; ?>" <?php echo $n == $mesActualNum ? 'selected' : ''; ?>><?php echo $nm; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div id="amb-sel-trimestre" style="display:none;">
+                            <select id="amb-trim-select" class="ej-select">
+                                <?php for ($t = 1; $t <= 4; $t++): ?>
+                                    <option value="<?php echo $t; ?>" <?php echo $t == $trimestreActualNum ? 'selected' : ''; ?>>T<?php echo $t; ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div id="amb-sel-semestre" style="display:none;">
+                            <select id="amb-sem-select" class="ej-select">
+                                <option value="1" <?php echo $semestreActualNum===1?'selected':''; ?>>1er semestre (Ene&ndash;Jun)</option>
+                                <option value="2" <?php echo $semestreActualNum===2?'selected':''; ?>>2do semestre (Jul&ndash;Dic)</option>
+                            </select>
+                        </div>
                         <span style="color:#e2e8f0;font-size:1.1rem;user-select:none;">|</span>
-                        <div id="amb-sel-anio"><select id="amb-anio-select" class="ej-select"><?php foreach ($aniosDisponibles as $ay): ?><option value="<?php echo $ay; ?>" <?php echo $ay==$anioActualNum?'selected':''; ?>><?php echo $ay; ?></option><?php endforeach; ?></select></div>
+                        <div id="amb-sel-anio">
+                            <select id="amb-anio-select" class="ej-select">
+                                <?php foreach ($aniosDisponibles as $ay): ?>
+                                    <option value="<?php echo $ay; ?>" <?php echo $ay==$anioActualNum?'selected':''; ?>><?php echo $ay; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
+
                 <div id="amb-contenido">
-                    <div class="row g-3 align-items-start">
-                        <div class="col-md-4">
-                            <div class="panel-mini-kpi semaforo-borde-<?php echo $s_formMes; ?>" id="amb-kpi-box">
-                                <div class="panel-mini-kpi-header">
-                                    <span class="panel-mini-kpi-label" id="amb-kpi-label">Total formaciones este mes</span>
-                                    <span class="semaforo-badge semaforo-<?php echo $s_formMes; ?>" id="amb-kpi-sem"><?php echo semL($s_formMes); ?></span>
-                                </div>
-                                <div class="panel-mini-kpi-valor semaforo-text-<?php echo $s_formMes; ?>" id="amb-kpi-valor"><?php echo $totalFormMes; ?></div>
-                                <div class="panel-mini-kpi-sub" id="amb-kpi-sub"><?php echo count($formacionesPorAmbitoMes); ?> &aacute;mbito<?php echo count($formacionesPorAmbitoMes) !== 1 ? 's' : ''; ?> activos en <?php echo $mesActualES . ' ' . $anioActual; ?></div>
-                                <div class="kpi-adv-barra-fondo mt-2"><div class="kpi-adv-barra" id="amb-kpi-barra" style="width:<?php echo min(round($totalFormMes/15*100),100); ?>%;background:var(--sem-<?php echo $s_formMes; ?>,#28c76f);"></div></div>
+                    <!-- Gráfica a ancho completo — sin cards laterales -->
+                    <div style="background:#fff; border-radius:12px; padding:1.25rem; box-shadow:0 2px 12px rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.05);">
+                        <div style="position:relative; height:280px; width:100%;"><canvas id="chartAmbitoPeriodo"></canvas></div>
+                    </div>
+
+                    <!-- Detalle de cursos — se muestra al hacer clic en una barra -->
+                    <div class="mt-4 bg-white p-3 rounded-3 border" id="amb-detalle-cursos-wrap" style="display:none; box-shadow:0 2px 12px rgba(0,0,0,.04);">
+                        <div class="panel-section-header mb-3" style="display:flex; align-items:center; border-bottom:1px solid rgba(0,0,0,.07); padding-bottom:10px;">
+                            <span class="panel-section-dot" style="background:#8b5cf6;"></span>
+                            <span class="panel-section-label" id="amb-detalle-cursos-titulo" style="font-weight:700; color:#1e293b;">Cursos del per&iacute;odo</span>
+                            <button id="btn-cerrar-amb-detalle" style="margin-left:auto; background:none; border:none; cursor:pointer; color:#64748b; font-size:.8rem; padding:2px 8px; border-radius:4px;" title="Cerrar">&#x2715; cerrar</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-striped align-middle mb-0" id="tabla-amb-cursos" style="font-size:.78rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Curso</th>
+                                        <th class="text-center">Modalidad</th>
+                                        <th class="text-center">&Aacute;mbito</th>
+                                        <th class="text-center">Inscritos</th>
+                                        <th class="text-center">Cupo M&aacute;x.</th>
+                                        <th class="text-center">Fecha Inicio</th>
+                                        <th class="text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <div style="padding:6px 8px 2px; font-size:.68rem; color:#94a3b8; display:flex; align-items:center; gap:5px; margin-top:6px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="#94a3b8" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0M4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5z"/></svg>
+                                Haz clic en una fila para abrir el curso en su panel
                             </div>
                         </div>
-                        <div class="col-md-8" id="amb-barras-col">
-                            <?php if (empty($formacionesPorAmbitoMes)): ?>
-                                <p class="text-muted py-3 text-center" style="font-size:.82rem;">Sin formaciones iniciadas este mes.</p>
-                            <?php else:
-                                $maxMes = max(array_column($formacionesPorAmbitoMes, 'total'));
-                                foreach ($formacionesPorAmbitoMes as $i => $amb):
-                                    $barW  = $maxMes > 0 ? round($amb['total'] / $maxMes * 100) : 0;
-                                    $color = $coloresFase2[$i % count($coloresFase2)];
-                            ?>
-                                <div class="ambito-row">
-                                    <span class="ambito-row-lbl" title="<?php echo htmlspecialchars($amb['ambito']); ?>"><?php echo htmlspecialchars($amb['ambito']); ?></span>
-                                    <div class="kpi-adv-barra-fondo" style="height:10px;"><div style="width:<?php echo $barW; ?>%;height:10px;background:<?php echo $color; ?>;border-radius:5px;transition:width .4s ease;"></div></div>
-                                    <span class="ambito-row-val" style="color:<?php echo $color; ?>;"><?php echo $amb['total']; ?></span>
-                                </div>
-                            <?php endforeach; endif; ?>
-                        </div>
                     </div>
-                </div>
-            </div>
+                </div><!-- /amb-contenido -->
+            </div><!-- /bloque-ambito -->
         </div><!-- /tables-container -->
     </div><!-- /kpi-panel-inner -->
 </div><!-- /section-cursos -->
@@ -575,68 +673,117 @@
 </style>
 
 <script>
-/* ── Gráfica mensual de cursos ────────────────────────────── */
-(function() {
-    function build() {
-        const ctx = document.getElementById('chartCursosMensual');
-        if (!ctx) return;
-        if (typeof Chart === 'undefined') { setTimeout(build, 100); return; }
-        const data       = <?php echo json_encode(array_values($cursosPorMes)); ?>;
-        const mesActual  = <?php echo (int)date('n') - 1; ?>;
-        const labels     = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        const COLOR_BASE = '#28c76f', COLOR_CURR = '#7367f0', COLOR_NONE = '#28c76f33';
-        const bgColors     = data.map((v,i) => i===mesActual ? COLOR_CURR : (v>0 ? COLOR_BASE : COLOR_NONE));
-        const borderColors = data.map((v,i) => i===mesActual ? COLOR_CURR : (v>0 ? COLOR_BASE : 'transparent'));
-        const maxVal = Math.max(...data, 1);
+/* ════════════════════════════════════════════════════════════
+   FIX 1 — chartCursosMensual
+   La gráfica se construye en buildCursosMensual(), que se llama:
+   - Al cargar la sección (si Chart.js ya está listo).
+   - Desde window.buildCursosMensual() cuando la sección
+     se activa por primera vez (disparado por home.js / inicio.php).
+   Esto soluciona el canvas width=0 al estar la sección oculta.
+════════════════════════════════════════════════════════════ */
+(function () {
+    const DATA       = <?php echo json_encode(array_values($cursosPorMes)); ?>;
+    const MES_ACTUAL = <?php echo (int)date('n') - 1; ?>;
+    const LABELS     = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const COLOR_BASE = '#28c76f', COLOR_CURR = '#7367f0', COLOR_NONE = '#28c76f33';
+
+    function buildCursosMensual() {
+        const canvas = document.getElementById('chartCursosMensual');
+        if (!canvas) return;
+        if (typeof Chart === 'undefined') { setTimeout(buildCursosMensual, 100); return; }
+
+        if (canvas.offsetWidth === 0) { setTimeout(buildCursosMensual, 80); return; }
+
+        if (window._chartCursosMensual) { window._chartCursosMensual.destroy(); }
+
+        const bgColors     = DATA.map((v, i) => i === MES_ACTUAL ? COLOR_CURR : (v > 0 ? COLOR_BASE : COLOR_NONE));
+        const borderColors = DATA.map((v, i) => i === MES_ACTUAL ? COLOR_CURR : (v > 0 ? COLOR_BASE : 'transparent'));
+        const maxVal = Math.max(...DATA, 1);
+
+        const tickColors = LABELS.map((_, i) => i === MES_ACTUAL ? COLOR_CURR : '#64748b');
+
         const pluginVals = {
-            id:'valsC',
+            id: 'valsC',
             afterDatasetsDraw(chart) {
-                const {ctx:c, data:d} = chart;
-                d.datasets[0].data.forEach((val,i) => {
+                const { ctx: c, data: d } = chart;
+                d.datasets[0].data.forEach((val, i) => {
                     if (!val) return;
                     const bar = chart.getDatasetMeta(0).data[i];
-                    c.save(); c.fillStyle = i===mesActual ? COLOR_CURR : '#475569';
-                    c.font = '600 11px Roboto,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'bottom';
-                    c.fillText(val, bar.x, bar.y - 3); c.restore();
+                    c.save();
+                    c.fillStyle = i === MES_ACTUAL ? COLOR_CURR : '#475569';
+                    c.font = '600 11px Roboto,sans-serif';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'bottom';
+                    c.fillText(val, bar.x, bar.y - 3);
+                    c.restore();
                 });
             }
         };
-        if (window._chartCursosMensual) window._chartCursosMensual.destroy();
-        window._chartCursosMensual = new Chart(ctx, {
-            type:'bar',
-            data:{ labels, datasets:[{ data, backgroundColor:bgColors, borderColor:borderColors,
-                borderWidth:1.5, borderRadius:6, borderSkipped:false,
-                hoverBackgroundColor:data.map((_,i)=>i===mesActual?'#5b52d6':'#22a85f') }]},
-            options:{
-                responsive:true, maintainAspectRatio:false,
-                animation:{duration:800,easing:'easeOutQuart'},
-                layout:{padding:{top:20}},
-                plugins:{
-                    legend:{display:false},
-                    tooltip:{
-                        callbacks:{
-                            title: items => labels[items[0].dataIndex],
-                            label: item  => ` ${item.parsed.y} curso${item.parsed.y!==1?'s':''} iniciado${item.parsed.y!==1?'s':''}`,
-                            afterLabel: item => { const t=data.reduce((a,b)=>a+b,0); return ` ${t>0?Math.round(item.parsed.y/t*100):0}% del total anual`; }
+
+        window._chartCursosMensual = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: LABELS,
+                datasets: [{
+                    data: DATA,
+                    backgroundColor: bgColors,
+                    borderColor: borderColors,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    hoverBackgroundColor: DATA.map((_, i) => i === MES_ACTUAL ? '#5b52d6' : '#22a85f')
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 800, easing: 'easeOutQuart' },
+                layout: { padding: { top: 20 } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title:      items => LABELS[items[0].dataIndex],
+                            label:      item  => ` ${item.parsed.y} curso${item.parsed.y !== 1 ? 's' : ''} iniciado${item.parsed.y !== 1 ? 's' : ''}`,
+                            afterLabel: item  => { const t = DATA.reduce((a, b) => a + b, 0); return ` ${t > 0 ? Math.round(item.parsed.y / t * 100) : 0}% del total anual`; }
                         },
-                        backgroundColor:'rgba(15,23,42,.88)', titleFont:{size:12,weight:600}, bodyFont:{size:11}, padding:10, cornerRadius:7
+                        backgroundColor: 'rgba(15,23,42,.88)', titleFont: { size: 12, weight: 600 }, bodyFont: { size: 11 }, padding: 10, cornerRadius: 7
                     }
                 },
-                scales:{
-                    x:{grid:{display:false},border:{display:false},ticks:{font:{size:11},color:(ctx)=>ctx.index===mesActual?COLOR_CURR:'#64748b'}},
-                    y:{beginAtZero:true,suggestedMax:maxVal+Math.ceil(maxVal*.18),grid:{color:'rgba(0,0,0,.05)'},border:{display:false},
-                       ticks:{font:{size:10},color:'#94a3b8',stepSize:Math.max(1,Math.ceil(maxVal/5)),precision:0},
-                       title: { display: true, text: 'Número de Cursos', color: '#64748b', font: { size: 11, weight: 600 } }
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { font: { size: 11 }, color: tickColors }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: maxVal + Math.ceil(maxVal * 0.18),
+                        grid: { color: 'rgba(0,0,0,.05)' },
+                        border: { display: false },
+                        ticks: { font: { size: 10 }, color: '#94a3b8', stepSize: Math.max(1, Math.ceil(maxVal / 5)), precision: 0 },
+                        title: { display: true, text: 'Número de Cursos', color: '#64748b', font: { size: 11, weight: 600 } }
                     }
                 }
             },
-            plugins:[pluginVals]
+            plugins: [pluginVals]
         });
     }
-    build();
+
+    window.buildCursosMensual = buildCursosMensual;
+    buildCursosMensual();
 })();
 
-/* ── Filtros ejecución + ámbito ───────────────────────────── */
+/* ════════════════════════════════════════════════════════════
+   BLOQUE PRINCIPAL — Filtros de ejecución + gráfica Ámbito por Período
+   CAMBIOS:
+     · renderAmbito() ya no actualiza KPIs de cards (eliminadas).
+     · buildChartAmbitoPeriodo() incorpora pluginContornoSeleccion:
+       dibuja un rect redondeado alrededor de la columna apilada
+       seleccionada, con gap=4px y sombra sutil.
+     · ambBarraSeleccionada gestiona el toggle de selección.
+     · Periodo inicial siempre es 'mes' con el mes actual.
+════════════════════════════════════════════════════════════ */
 (function () {
     const INICIADOS_DATA   = <?php echo $jsIniciados; ?>;
     const CURSOS_HISTORICO = <?php echo $jsCursosHistorico; ?>;
@@ -644,93 +791,483 @@
     const MESES_NOM        = <?php echo $jsMesesES; ?>;
     const COLORES_AMBITO   = <?php echo json_encode(array_values($coloresFase2), JSON_UNESCAPED_UNICODE); ?>;
 
-    let ejPeriodoActivo = 'mes', ejCardActiva = null, ambPeriodoActivo = 'mes';
-    const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const semC = p => p>=85?'#28c76f':p>=75?'#f59e0b':'#ef4444';
-    const semK = p => p>=85?'semaforo-text-verde':p>=75?'semaforo-text-amarillo':'semaforo-text-rojo';
-    const gv   = id => { const e=document.getElementById(id); return e?parseInt(e.value):0; };
-    const st   = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-    const sv   = (id,v) => { const e=document.getElementById(id); if(e) e.style.display=v?'':'none'; };
+    let ejPeriodoActivo    = 'mes';
+    let ejCardActiva       = null;
+    let ambPeriodoActivo   = 'mes';   // arranca en mes actual (predeterminado)
+    let ambBarraSeleccionada = null;  // índice de columna seleccionada en la gráfica
 
-    function matchEj(a,m,t){ if(parseInt(a)!==gv('ej-anio-select')) return false; const mi=parseInt(m),ti=parseInt(t); if(ejPeriodoActivo==='mes') return mi===gv('ej-mes-select'); if(ejPeriodoActivo==='trimestre') return ti===gv('ej-trim-select'); if(ejPeriodoActivo==='semestre') return gv('ej-sem-select')===1?mi<=6:mi>6; return true; }
-    function matchAmb(a,m,t){ if(parseInt(a)!==gv('amb-anio-select')) return false; const mi=parseInt(m),ti=parseInt(t); if(ambPeriodoActivo==='mes') return mi===gv('amb-mes-select'); if(ambPeriodoActivo==='trimestre') return ti===gv('amb-trim-select'); if(ambPeriodoActivo==='semestre') return gv('amb-sem-select')===1?mi<=6:mi>6; return true; }
-    function labelEj(){ const a=gv('ej-anio-select'); if(ejPeriodoActivo==='mes') return (MESES_NOM[gv('ej-mes-select')-1]||'')+' '+a; if(ejPeriodoActivo==='trimestre') return 'T'+gv('ej-trim-select')+' '+a; if(ejPeriodoActivo==='semestre') return (gv('ej-sem-select')===1?'1er Sem.':'2do Sem.')+' '+a; return 'Año '+a; }
-    function labelAmb(){ const a=gv('amb-anio-select'); if(ambPeriodoActivo==='mes') return (MESES_NOM[gv('amb-mes-select')-1]||'')+' '+a; if(ambPeriodoActivo==='trimestre') return 'T'+gv('amb-trim-select')+' '+a; if(ambPeriodoActivo==='semestre') return (gv('amb-sem-select')===1?'1er Sem.':'2do Sem.')+' '+a; return 'Año '+a; }
-    function calcEj(){ let p=0,i=0; INICIADOS_DATA.forEach(r=>{ if(!matchEj(r.anio,r.mes,r.trimestre)) return; p+=parseInt(r.planificados)||0; i+=parseInt(r.iniciados)||0; }); return {planif:p,inic:i,pct:p>0?Math.round(i/p*100):0}; }
-    function filtrarTipo(tipo){ return CURSOS_HISTORICO.filter(c=>c.tipo_ejecucion===tipo&&matchEj(c.anio,c.mes,c.trimestre)); }
+    const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const semC = p => p >= 85 ? '#28c76f' : p >= 75 ? '#f59e0b' : '#ef4444';
+    const semK = p => p >= 85 ? 'semaforo-text-verde' : p >= 75 ? 'semaforo-text-amarillo' : 'semaforo-text-rojo';
+    const gv   = id => { const e = document.getElementById(id); return e ? parseInt(e.value) : 0; };
+    const st   = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    const sv   = (id, v) => { const e = document.getElementById(id); if (e) e.style.display = v ? '' : 'none'; };
 
-    function renderDetalleCards(cursos,tipo,label){
-        const wrap=document.getElementById('ej-detalle-wrap'), body=document.getElementById('ej-detalle-body');
-        const titulo=document.getElementById('ej-detalle-titulo'), dot=document.getElementById('ej-detalle-dot');
-        if(!wrap||!body) return;
-        const cfg={pendiente:{label:'Cursos Pendientes',color:'#3b82f6'},iniciado:{label:'Cursos en Formación',color:'#22c55e'},diferido:{label:'Cursos Diferidos',color:'#d97706'}};
-        const c=cfg[tipo]||{label:'Detalle',color:'#6366f1'};
-        if(titulo) titulo.textContent=c.label+' — '+(label||'');
-        if(dot) dot.style.background=c.color;
-        if(!cursos.length){ body.innerHTML=`<p class="text-muted text-center py-3" style="font-size:.82rem;">Sin cursos en el periodo seleccionado.</p>`; }
-        else {
-            let rows='';
-            cursos.forEach((cur,i)=>{ rows+=`<tr class="curso-row-link" data-nombre="${esc(cur.nombre_curso)}" style="cursor:pointer;" title="Ver curso"><td style="color:#94a3b8;font-size:.72rem;">${String(i+1).padStart(2,'0')}</td><td class="fw-semibold" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cur.nombre_curso)}</td><td class="text-center"><span class="badge-mini" style="background:#e0f2fe;color:#0369a1;">${esc(cur.nombre_modalidad)}</span></td><td class="text-center"><span class="badge-mini" style="background:#ede9fe;color:#5b21b6;">${esc(cur.nombre_ambito)}</span></td><td class="text-center fw-bold">${cur.num_inscritos}</td><td class="text-center text-muted">${cur.max_participantes}</td><td class="text-center" style="font-size:.75rem;">${esc(cur.fecha_inicio||'—')}</td><td class="text-center"><span class="badge-mini" style="background:${c.color}22;color:${c.color};">${esc(cur.nombre_estatusCurso)}</span></td></tr>`; });
-            body.innerHTML=`<table class="table table-sm table-hover table-striped align-middle mb-0"><thead class="table-light"><tr><th>#</th><th>Curso</th><th class="text-center">Modalidad</th><th class="text-center">Ámbito</th><th class="text-center">Inscritos</th><th class="text-center">Máx.</th><th class="text-center">Fecha inicio</th><th class="text-center">Estado</th></tr></thead><tbody>${rows}</tbody></table><div style="padding:6px 8px 2px;font-size:.68rem;color:#94a3b8;">↗ Haz clic en una fila para abrir el curso</div>`;
+    /* ── Ejecución ──────────────────────────────────────────── */
+    function matchEj(a, m, t) {
+        if (parseInt(a) !== gv('ej-anio-select')) return false;
+        const mi = parseInt(m), ti = parseInt(t);
+        if (ejPeriodoActivo === 'mes')       return mi === gv('ej-mes-select');
+        if (ejPeriodoActivo === 'trimestre') return ti === gv('ej-trim-select');
+        if (ejPeriodoActivo === 'semestre')  return gv('ej-sem-select') === 1 ? mi <= 6 : mi > 6;
+        return true;
+    }
+    function labelEj() {
+        const a = gv('ej-anio-select');
+        if (ejPeriodoActivo === 'mes')       return (MESES_NOM[gv('ej-mes-select') - 1] || '') + ' ' + a;
+        if (ejPeriodoActivo === 'trimestre') return 'T' + gv('ej-trim-select') + ' ' + a;
+        if (ejPeriodoActivo === 'semestre')  return (gv('ej-sem-select') === 1 ? '1er Sem.' : '2do Sem.') + ' ' + a;
+        return 'Año ' + a;
+    }
+    function calcEj() {
+        let p = 0, i = 0;
+        INICIADOS_DATA.forEach(r => {
+            if (!matchEj(r.anio, r.mes, r.trimestre)) return;
+            p += parseInt(r.planificados) || 0;
+            i += parseInt(r.iniciados)    || 0;
+        });
+        return { planif: p, inic: i, pct: p > 0 ? Math.round(i / p * 100) : 0 };
+    }
+    function filtrarTipo(tipo) {
+        return CURSOS_HISTORICO.filter(c => c.tipo_ejecucion === tipo && matchEj(c.anio, c.mes, c.trimestre));
+    }
+
+    function renderDetalleCards(cursos, tipo, label) {
+        const wrap  = document.getElementById('ej-detalle-wrap');
+        const body  = document.getElementById('ej-detalle-body');
+        const titulo = document.getElementById('ej-detalle-titulo');
+        const dot   = document.getElementById('ej-detalle-dot');
+        if (!wrap || !body) return;
+        const cfg = {
+            pendiente: { label: 'Cursos Pendientes',    color: '#3b82f6' },
+            iniciado:  { label: 'Cursos en Formación',  color: '#22c55e' },
+            diferido:  { label: 'Cursos Diferidos',      color: '#d97706' }
+        };
+        const c = cfg[tipo] || { label: 'Detalle', color: '#6366f1' };
+        if (titulo) titulo.textContent = c.label + ' — ' + (label || '');
+        if (dot)    dot.style.background = c.color;
+        if (!cursos.length) {
+            body.innerHTML = `<p class="text-muted text-center py-3" style="font-size:.82rem;">Sin cursos en el periodo seleccionado.</p>`;
+        } else {
+            let rows = '';
+            cursos.forEach((cur, i) => {
+                rows += `<tr class="curso-row-link" data-nombre="${esc(cur.nombre_curso)}" style="cursor:pointer;" title="Ver curso">
+                    <td style="color:#94a3b8;font-size:.72rem;">${String(i + 1).padStart(2, '0')}</td>
+                    <td class="fw-semibold" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cur.nombre_curso)}</td>
+                    <td class="text-center"><span class="badge-mini" style="background:#e0f2fe;color:#0369a1;">${esc(cur.nombre_modalidad)}</span></td>
+                    <td class="text-center"><span class="badge-mini" style="background:#ede9fe;color:#5b21b6;">${esc(cur.nombre_ambito)}</span></td>
+                    <td class="text-center fw-bold">${cur.num_inscritos}</td>
+                    <td class="text-center text-muted">${cur.max_participantes}</td>
+                    <td class="text-center" style="font-size:.75rem;">${esc(cur.fecha_inicio || '—')}</td>
+                    <td class="text-center"><span class="badge-mini" style="background:${c.color}22;color:${c.color};">${esc(cur.nombre_estatusCurso)}</span></td>
+                </tr>`;
+            });
+            body.innerHTML = `<table class="table table-sm table-hover table-striped align-middle mb-0">
+                <thead class="table-light"><tr><th>#</th><th>Curso</th><th class="text-center">Modalidad</th><th class="text-center">Ámbito</th><th class="text-center">Inscritos</th><th class="text-center">Máx.</th><th class="text-center">Fecha inicio</th><th class="text-center">Estado</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div style="padding:6px 8px 2px;font-size:.68rem;color:#94a3b8;">↗ Haz clic en una fila para abrir el curso</div>`;
         }
-        wrap.style.display='';
-        setTimeout(()=>wrap.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+        wrap.style.display = '';
+        setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
     }
 
-    function actualizarEj(){
-        const {planif,inic,pct}=calcEj(); const dif=filtrarTipo('diferido'); const pen=filtrarTipo('pendiente');
-        const label=labelEj(); const color=semC(pct);
-        const elPct=document.getElementById('ej-pct-val'); if(elPct){elPct.textContent=pct+'%';elPct.className='ej-card-val '+semK(pct);}
-        st('ej-iniciados-sub',inic+' de '+planif+' planificados');
-        st('ej-plan-val',pen.length); st('ej-plan-sub','pendientes de iniciar');
-        st('ej-ejec-val',inic); st('ej-ejec-sub',label);
-        st('ej-dif-val',dif.length); st('ej-dif-sub',label);
-        const fill=document.getElementById('ej-barra-fill'); if(fill){fill.style.width=Math.min(pct,100)+'%';fill.style.background=color;}
-        st('ej-barra-pct',pct+'%');
-        const bLbl=document.getElementById('ej-barra-label'); if(bLbl) bLbl.style.color=color;
-        st('ej-periodo-label','Meta ≥ 85% · '+label);
-        if(ejCardActiva){ const datos=ejCardActiva==='pendiente'?pen:ejCardActiva==='iniciado'?filtrarTipo('iniciado'):dif; renderDetalleCards(datos,ejCardActiva,label); }
+    function actualizarEj() {
+        const { planif, inic, pct } = calcEj();
+        const dif   = filtrarTipo('diferido');
+        const pen   = filtrarTipo('pendiente');
+        const label = labelEj();
+        const color = semC(pct);
+
+        const elPct = document.getElementById('ej-pct-val');
+        if (elPct) { elPct.textContent = pct + '%'; elPct.className = 'ej-card-val ' + semK(pct); }
+        st('ej-iniciados-sub', inic + ' de ' + planif + ' planificados');
+        st('ej-plan-val', pen.length); st('ej-plan-sub', 'pendientes de iniciar');
+        st('ej-ejec-val', inic);       st('ej-ejec-sub', label);
+        st('ej-dif-val',  dif.length); st('ej-dif-sub',  label);
+
+        const fill = document.getElementById('ej-barra-fill');
+        if (fill) { fill.style.width = Math.min(pct, 100) + '%'; fill.style.background = color; }
+        st('ej-barra-pct', pct + '%');
+        const bLbl = document.getElementById('ej-barra-label');
+        if (bLbl) bLbl.style.color = color;
+        st('ej-periodo-label', 'Meta ≥ 85% · ' + label);
+
+        if (ejCardActiva) {
+            const datos = ejCardActiva === 'pendiente' ? pen
+                        : ejCardActiva === 'iniciado'  ? filtrarTipo('iniciado')
+                        : dif;
+            renderDetalleCards(datos, ejCardActiva, label);
+        }
     }
 
-    ['card-planificados','card-iniciados','card-diferidos'].forEach(id=>{
-        const card=document.getElementById(id); if(!card) return;
-        card.addEventListener('click',()=>{
-            const tipo=card.dataset.tipo;
-            if(ejCardActiva===tipo){ ejCardActiva=null; card.classList.remove('ej-card-activa'); const w=document.getElementById('ej-detalle-wrap'); if(w) w.style.display='none'; return; }
-            ['card-planificados','card-iniciados','card-diferidos'].forEach(cid=>{ const c=document.getElementById(cid); if(c) c.classList.remove('ej-card-activa'); });
-            ejCardActiva=tipo; card.classList.add('ej-card-activa');
-            renderDetalleCards(tipo==='pendiente'?filtrarTipo('pendiente'):tipo==='iniciado'?filtrarTipo('iniciado'):filtrarTipo('diferido'), tipo, labelEj());
+    ['card-planificados', 'card-iniciados', 'card-diferidos'].forEach(id => {
+        const card = document.getElementById(id);
+        if (!card) return;
+        card.addEventListener('click', () => {
+            const tipo = card.dataset.tipo;
+            if (ejCardActiva === tipo) {
+                ejCardActiva = null;
+                card.classList.remove('ej-card-activa');
+                const w = document.getElementById('ej-detalle-wrap');
+                if (w) w.style.display = 'none';
+                return;
+            }
+            ['card-planificados','card-iniciados','card-diferidos'].forEach(cid => {
+                const c = document.getElementById(cid);
+                if (c) c.classList.remove('ej-card-activa');
+            });
+            ejCardActiva = tipo;
+            card.classList.add('ej-card-activa');
+            renderDetalleCards(
+                tipo === 'pendiente' ? filtrarTipo('pendiente')
+                : tipo === 'iniciado'  ? filtrarTipo('iniciado')
+                : filtrarTipo('diferido'),
+                tipo, labelEj()
+            );
         });
     });
-    const btnC=document.getElementById('btn-cerrar-ej-detalle');
-    if(btnC) btnC.addEventListener('click',()=>{ ejCardActiva=null; const w=document.getElementById('ej-detalle-wrap'); if(w) w.style.display='none'; ['card-planificados','card-iniciados','card-diferidos'].forEach(cid=>{ const c=document.getElementById(cid); if(c) c.classList.remove('ej-card-activa'); }); });
 
-    document.querySelectorAll('.ej-filtro-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ ejPeriodoActivo=btn.dataset.periodo; document.querySelectorAll('.ej-filtro-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); sv('ej-sel-mes',ejPeriodoActivo==='mes'); sv('ej-sel-trimestre',ejPeriodoActivo==='trimestre'); sv('ej-sel-semestre',ejPeriodoActivo==='semestre'); actualizarEj(); }); });
-    ['ej-mes-select','ej-trim-select','ej-sem-select','ej-anio-select'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener('change',actualizarEj); });
+    const btnCEj = document.getElementById('btn-cerrar-ej-detalle');
+    if (btnCEj) btnCEj.addEventListener('click', () => {
+        ejCardActiva = null;
+        const w = document.getElementById('ej-detalle-wrap');
+        if (w) w.style.display = 'none';
+        ['card-planificados','card-iniciados','card-diferidos'].forEach(cid => {
+            const c = document.getElementById(cid);
+            if (c) c.classList.remove('ej-card-activa');
+        });
+    });
+
+    document.querySelectorAll('.ej-filtro-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            ejPeriodoActivo = btn.dataset.periodo;
+            document.querySelectorAll('.ej-filtro-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            sv('ej-sel-mes',       ejPeriodoActivo === 'mes');
+            sv('ej-sel-trimestre', ejPeriodoActivo === 'trimestre');
+            sv('ej-sel-semestre',  ejPeriodoActivo === 'semestre');
+            actualizarEj();
+        });
+    });
+    ['ej-mes-select','ej-trim-select','ej-sem-select','ej-anio-select'].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) e.addEventListener('change', actualizarEj);
+    });
     actualizarEj();
 
-    /* Ámbito */
-    function calcAmbitoData(){ const m={}; AMBITO_HISTORICO.forEach(r=>{ if(!matchAmb(r.anio,r.mes,r.trimestre)) return; m[r.ambito]=(m[r.ambito]||0)+parseInt(r.total||0); }); return Object.entries(m).map(([a,t])=>({ambito:a,total:t})).sort((a,b)=>b.total-a.total); }
-    function semAmb(t){ if(ambPeriodoActivo==='mes') return t>15?'verde':t>=10?'amarillo':'rojo'; if(ambPeriodoActivo==='trimestre') return t>45?'verde':t>=30?'amarillo':'rojo'; if(ambPeriodoActivo==='semestre') return t>90?'verde':t>=60?'amarillo':'rojo'; return t>180?'verde':t>=120?'amarillo':'rojo'; }
-    function metaAmb(){ if(ambPeriodoActivo==='mes') return 15; if(ambPeriodoActivo==='trimestre') return 45; if(ambPeriodoActivo==='semestre') return 90; return 180; }
-    function semLbl(s){ return s==='verde'?'Óptimo':s==='amarillo'?'Atención':'Crítico'; }
-    const semColors={verde:'#28c76f',amarillo:'#f59e0b',rojo:'#ef4444'};
-
-    function renderAmbito(){
-        const datos=calcAmbitoData(); const total=datos.reduce((a,d)=>a+d.total,0); const label=labelAmb(); const sem=semAmb(total); const meta=metaAmb(); const barPct=meta>0?Math.min(Math.round(total/meta*100),100):0;
-        const labelTipo=ambPeriodoActivo==='mes'?'este mes':ambPeriodoActivo==='trimestre'?'este trimestre':ambPeriodoActivo==='semestre'?'este semestre':'este año';
-        const kL=document.getElementById('amb-kpi-label'); if(kL) kL.textContent='Total formaciones '+labelTipo;
-        const kS=document.getElementById('amb-kpi-sem'); if(kS){kS.textContent=semLbl(sem);kS.className='semaforo-badge semaforo-'+sem;}
-        const kV=document.getElementById('amb-kpi-valor'); if(kV){kV.textContent=total;kV.className='panel-mini-kpi-valor semaforo-text-'+sem;}
-        const kSub=document.getElementById('amb-kpi-sub'); if(kSub) kSub.textContent=datos.length+' ámbito'+(datos.length!==1?'s':'')+' activos en '+label;
-        const kB=document.getElementById('amb-kpi-barra'); if(kB){kB.style.width=barPct+'%';kB.style.background=semColors[sem]||'#28c76f';}
-        const kBox=document.getElementById('amb-kpi-box'); if(kBox) kBox.className='panel-mini-kpi semaforo-borde-'+sem;
-        const col=document.getElementById('amb-barras-col'); if(!col) return;
-        if(!datos.length){col.innerHTML=`<p class="text-muted py-3 text-center" style="font-size:.82rem;">Sin formaciones en el periodo seleccionado.</p>`;return;}
-        const maxVal=datos[0].total;
-        col.innerHTML=datos.map((d,i)=>{ const barW=maxVal>0?Math.round(d.total/maxVal*100):0; const color=COLORES_AMBITO[i%COLORES_AMBITO.length]; return `<div class="ambito-row"><span class="ambito-row-lbl" title="${esc(d.ambito)}">${esc(d.ambito)}</span><div class="kpi-adv-barra-fondo" style="height:10px;"><div style="width:${barW}%;height:10px;background:${color};border-radius:5px;transition:width .4s ease;"></div></div><span class="ambito-row-val" style="color:${color};">${d.total}</span></div>`; }).join('');
+    /* ════════════════════════════════════════════════════════
+       ÁMBITO — renderAmbito simplificada (sin cards de KPI)
+    ════════════════════════════════════════════════════════ */
+    function renderAmbito() {
+        buildChartAmbitoPeriodo();
+        // Ocultar detalle al cambiar filtro
+        const wrap = document.getElementById('amb-detalle-cursos-wrap');
+        if (wrap) wrap.style.display = 'none';
     }
-    document.querySelectorAll('.amb-filtro-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ ambPeriodoActivo=btn.dataset.periodo; document.querySelectorAll('.amb-filtro-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); sv('amb-sel-mes',ambPeriodoActivo==='mes'); sv('amb-sel-trimestre',ambPeriodoActivo==='trimestre'); sv('amb-sel-semestre',ambPeriodoActivo==='semestre'); renderAmbito(); }); });
-    ['amb-mes-select','amb-trim-select','amb-sem-select','amb-anio-select'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener('change',renderAmbito); });
+
+    /* ════════════════════════════════════════════════════════
+       buildChartAmbitoPeriodo
+       Incluye pluginContornoSeleccion: dibuja un rectángulo
+       redondeado alrededor de la columna apilada seleccionada,
+       con un gap de 4 px entre la barra y el contorno.
+    ════════════════════════════════════════════════════════ */
+    function buildChartAmbitoPeriodo() {
+        const canvas = document.getElementById('chartAmbitoPeriodo');
+        if (!canvas) return;
+        if (typeof Chart === 'undefined') return;
+        if (canvas.offsetWidth === 0) return;
+
+        const selectAnio  = parseInt(document.getElementById('amb-anio-select').value) || new Date().getFullYear();
+        const yearCourses = CURSOS_HISTORICO.filter(c => c.anio === selectAnio);
+        const ambitos     = [...new Set(CURSOS_HISTORICO.map(c => c.nombre_ambito).filter(Boolean))];
+
+        let labels = [], getPeriodIndex, periodKeys = [];
+
+        if (ambPeriodoActivo === 'mes') {
+            labels         = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            getPeriodIndex = c => c.mes - 1;
+            periodKeys     = Array.from({ length: 12 }, (_, i) => i);
+        } else if (ambPeriodoActivo === 'trimestre') {
+            labels         = ['T1','T2','T3','T4'];
+            getPeriodIndex = c => c.trimestre - 1;
+            periodKeys     = [0, 1, 2, 3];
+        } else if (ambPeriodoActivo === 'semestre') {
+            labels         = ['Semestre 1','Semestre 2'];
+            getPeriodIndex = c => (c.mes <= 6 ? 0 : 1);
+            periodKeys     = [0, 1];
+        } else {
+            const aniosDisp = [...new Set(CURSOS_HISTORICO.map(c => c.anio).filter(Boolean))].sort((a, b) => a - b);
+            labels          = aniosDisp.map(y => String(y));
+            getPeriodIndex  = c => aniosDisp.indexOf(c.anio);
+            periodKeys      = aniosDisp;
+        }
+
+        const coursesToCount = ambPeriodoActivo === 'anio' ? CURSOS_HISTORICO : yearCourses;
+
+        const datasets = ambitos.map((ambito, ambIdx) => {
+            const data = periodKeys.map(() => 0);
+            coursesToCount.forEach(c => {
+                if (c.nombre_ambito === ambito) {
+                    const idx = getPeriodIndex(c);
+                    if (idx >= 0 && idx < data.length) data[idx]++;
+                }
+            });
+            const color = COLORES_AMBITO[ambIdx % COLORES_AMBITO.length];
+            return {
+                label: ambito,
+                data,
+                backgroundColor: color,
+                borderColor: '#fff',
+                borderWidth: 1,
+                borderRadius: 4
+            };
+        });
+
+        // Destruir instancia previa y resetear selección
+        if (graficasCreadas['chartAmbitoPeriodo']) {
+            graficasCreadas['chartAmbitoPeriodo'].destroy();
+        }
+        ambBarraSeleccionada = null;
+
+        /* ── Plugin: contorno de selección ─────────────────────
+           Se dibuja en afterDraw(), por encima de todas las barras.
+           Calcula el bounding box de la columna apilada completa
+           (todos los datasets en ese índice) y traza un rectángulo
+           redondeado con gap=4 px y radio de esquina=6 px.
+        ──────────────────────────────────────────────────────── */
+        const pluginContornoSeleccion = {
+            id: 'contornoSeleccion',
+            afterDraw(chart) {
+                if (ambBarraSeleccionada === null) return;
+
+                const idx = ambBarraSeleccionada;
+                const { ctx } = chart;
+
+                // Recorrer todos los datasets para obtener el bounding box
+                let top    =  Infinity;
+                let bottom = -Infinity;
+                let left   =  Infinity;
+                let right  = -Infinity;
+                let hayDatos = false;
+
+                chart.data.datasets.forEach((_, di) => {
+                    const meta = chart.getDatasetMeta(di);
+                    if (!meta || !meta.data[idx]) return;
+                    const bar = meta.data[idx];
+                    // Solo considerar segmentos con altura real
+                    if (!bar.height || bar.height <= 0) return;
+                    hayDatos = true;
+
+                    const bTop    = bar.y;
+                    const bBottom = bar.y + bar.height;
+                    const bLeft   = bar.x - bar.width / 2;
+                    const bRight  = bar.x + bar.width / 2;
+
+                    if (bTop    < top)    top    = bTop;
+                    if (bBottom > bottom) bottom = bBottom;
+                    if (bLeft   < left)   left   = bLeft;
+                    if (bRight  > right)  right  = bRight;
+                });
+
+                if (!hayDatos) return;
+
+                const gap = 4;   // espacio entre la barra y el contorno (px)
+                const r   = 6;   // radio de las esquinas redondeadas (px)
+                const x   = left   - gap;
+                const y   = top    - gap;
+                const w   = (right  - left) + gap * 2;
+                const h   = (bottom - top)  + gap * 2;
+
+                ctx.save();
+                ctx.beginPath();
+                // ctx.roundRect disponible en navegadores modernos (Chrome 99+, Firefox 112+, Safari 15.4+)
+                if (ctx.roundRect) {
+                    ctx.roundRect(x, y, w, h, r);
+                } else {
+                    // Fallback sin esquinas redondeadas para navegadores antiguos
+                    ctx.rect(x, y, w, h);
+                }
+                ctx.strokeStyle  = 'rgba(30, 41, 59, 0.80)';
+                ctx.lineWidth    = 2;
+                ctx.setLineDash([]);
+                ctx.shadowColor  = 'rgba(30, 41, 59, 0.20)';
+                ctx.shadowBlur   = 8;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
+        try {
+            graficasCreadas['chartAmbitoPeriodo'] = new Chart(canvas, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, font: { size: 10, weight: '600' } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false },
+                            ticks: { font: { size: 11, weight: '600' }, color: '#64748b' }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,.05)', drawBorder: false },
+                            ticks: { font: { size: 10 }, color: '#94a3b8', stepSize: 1, precision: 0 },
+                            title: { display: true, text: 'N* Cursos', color: '#64748b', font: { size: 11, weight: 600 } }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (!elements.length) {
+                            // Clic en zona vacía → deseleccionar
+                            if (ambBarraSeleccionada !== null) {
+                                ambBarraSeleccionada = null;
+                                graficasCreadas['chartAmbitoPeriodo'].update('none');
+                                const wrap = document.getElementById('amb-detalle-cursos-wrap');
+                                if (wrap) wrap.style.display = 'none';
+                            }
+                            return;
+                        }
+                        const clickedIdx = elements[0].index;
+                        if (ambBarraSeleccionada === clickedIdx) {
+                            // Segundo clic en la misma barra → deseleccionar
+                            ambBarraSeleccionada = null;
+                            graficasCreadas['chartAmbitoPeriodo'].update('none');
+                            const wrap = document.getElementById('amb-detalle-cursos-wrap');
+                            if (wrap) wrap.style.display = 'none';
+                        } else {
+                            // Nueva selección → mostrar contorno + detalle
+                            ambBarraSeleccionada = clickedIdx;
+                            graficasCreadas['chartAmbitoPeriodo'].update('none');
+                            mostrarDetalleCursosPeriodo(clickedIdx);
+                        }
+                    }
+                },
+                plugins: [pluginContornoSeleccion]
+            });
+        } catch (e) { console.error('chartAmbitoPeriodo error:', e); }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       mostrarDetalleCursosPeriodo
+       Filtra CURSOS_HISTORICO según el índice de columna
+       clicado y lo vuelca en la tabla #tabla-amb-cursos.
+    ════════════════════════════════════════════════════════ */
+    function mostrarDetalleCursosPeriodo(clickedIdx) {
+        const selectAnio = parseInt(document.getElementById('amb-anio-select').value) || new Date().getFullYear();
+        let filtered = [], labelPeriodo = '';
+        const mesesFull = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        if (ambPeriodoActivo === 'mes') {
+            const mesNum = clickedIdx + 1;
+            filtered     = CURSOS_HISTORICO.filter(c => c.anio === selectAnio && c.mes === mesNum);
+            labelPeriodo = mesesFull[clickedIdx] + ' ' + selectAnio;
+        } else if (ambPeriodoActivo === 'trimestre') {
+            const trimNum = clickedIdx + 1;
+            filtered      = CURSOS_HISTORICO.filter(c => c.anio === selectAnio && c.trimestre === trimNum);
+            labelPeriodo  = 'T' + trimNum + ' ' + selectAnio;
+        } else if (ambPeriodoActivo === 'semestre') {
+            const semNum = clickedIdx + 1;
+            filtered     = CURSOS_HISTORICO.filter(c => c.anio === selectAnio && (semNum === 1 ? c.mes <= 6 : c.mes > 6));
+            labelPeriodo = (semNum === 1 ? '1er Semestre' : '2do Semestre') + ' ' + selectAnio;
+        } else {
+            const aniosDisp = [...new Set(CURSOS_HISTORICO.map(c => c.anio).filter(Boolean))].sort((a, b) => a - b);
+            const anioVal   = aniosDisp[clickedIdx];
+            filtered        = CURSOS_HISTORICO.filter(c => c.anio === anioVal);
+            labelPeriodo    = 'Año ' + anioVal;
+        }
+
+        const wrap   = document.getElementById('amb-detalle-cursos-wrap');
+        const tbody  = document.querySelector('#tabla-amb-cursos tbody');
+        const titulo = document.getElementById('amb-detalle-cursos-titulo');
+        if (!wrap || !tbody) return;
+        if (titulo) titulo.textContent = 'Cursos de ' + labelPeriodo + ' — por Ámbito';
+
+        if (!filtered.length) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-muted text-center py-3">Sin cursos registrados en este período.</td></tr>`;
+        } else {
+            let rows = '';
+            filtered.forEach((cur, i) => {
+                rows += `<tr class="curso-row-link" data-nombre="${esc(cur.nombre_curso)}" style="cursor:pointer;">
+                    <td style="color:#94a3b8;font-size:.72rem;">${String(i + 1).padStart(2, '0')}</td>
+                    <td class="fw-semibold" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(cur.nombre_curso)}</td>
+                    <td class="text-center"><span class="badge-mini" style="background:#e0f2fe;color:#0369a1;">${esc(cur.nombre_modalidad)}</span></td>
+                    <td class="text-center"><span class="badge-mini" style="background:#ede9fe;color:#5b21b6;">${esc(cur.nombre_ambito)}</span></td>
+                    <td class="text-center fw-bold">${cur.num_inscritos}</td>
+                    <td class="text-center text-muted">${cur.max_participantes}</td>
+                    <td class="text-center" style="font-size:.75rem;">${esc(cur.fecha_inicio || '—')}</td>
+                    <td class="text-center"><span class="badge bg-secondary bg-opacity-10 text-dark" style="font-size:.7rem;">${esc(cur.nombre_estatusCurso)}</span></td>
+                </tr>`;
+            });
+            tbody.innerHTML = rows;
+        }
+
+        wrap.style.display = '';
+        setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
+    }
+
+    /* Botón cerrar detalle ámbito */
+    const btnCerrarAmb = document.getElementById('btn-cerrar-amb-detalle');
+    if (btnCerrarAmb) btnCerrarAmb.addEventListener('click', () => {
+        const wrap = document.getElementById('amb-detalle-cursos-wrap');
+        if (wrap) wrap.style.display = 'none';
+        // Quitar selección visual también
+        ambBarraSeleccionada = null;
+        if (graficasCreadas['chartAmbitoPeriodo']) {
+            graficasCreadas['chartAmbitoPeriodo'].update('none');
+        }
+    });
+
+    /* Listeners de filtros de ámbito */
+    document.querySelectorAll('.amb-filtro-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            ambPeriodoActivo = btn.dataset.periodo;
+            document.querySelectorAll('.amb-filtro-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            sv('amb-sel-mes',       ambPeriodoActivo === 'mes');
+            sv('amb-sel-trimestre', ambPeriodoActivo === 'trimestre');
+            sv('amb-sel-semestre',  ambPeriodoActivo === 'semestre');
+            sv('amb-sel-anio',      ambPeriodoActivo !== 'anio');
+            renderAmbito();
+        });
+    });
+
+    ['amb-mes-select','amb-trim-select','amb-sem-select','amb-anio-select'].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) e.addEventListener('change', renderAmbito);
+    });
+
+    /* ── Exposición global ──────────────────────────────────
+       window.buildAmbitoPeriodo() es llamado por inicio.php /
+       home.js cuando la sección cursos se activa por primera vez.
+       Inicializa los selectores visibles y renderiza la gráfica
+       mostrando el mes actual (predeterminado).
+    ──────────────────────────────────────────────────────── */
+    window.buildAmbitoPeriodo = function () {
+        sv('amb-sel-mes',       ambPeriodoActivo === 'mes');
+        sv('amb-sel-trimestre', ambPeriodoActivo === 'trimestre');
+        sv('amb-sel-semestre',  ambPeriodoActivo === 'semestre');
+        sv('amb-sel-anio',      ambPeriodoActivo !== 'anio');
+        renderAmbito();
+    };
+
+    // NO llamar renderAmbito() aquí en el arranque: la sección está
+    // oculta y el canvas tendría width=0. Se invoca desde
+    // window.buildAmbitoPeriodo() al activar la sección.
 })();
 </script>

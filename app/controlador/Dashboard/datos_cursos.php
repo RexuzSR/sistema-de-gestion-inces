@@ -397,6 +397,46 @@ $anioActualNum      = (int)date('Y');
 $trimestreActualNum = (int)ceil($mesActualNum / 3);
 $semestreActualNum  = $mesActualNum <= 6 ? 1 : 2;
 
+// ── Formación más solicitada por mes (Año actual) ──
+$formacionSolicitadaMes = [];
+try {
+    $rows = $conn->query("
+        SELECT
+            MONTH(pc.fecha_inscripcion) AS mes,
+            c.nombre_curso,
+            COUNT(pc.id_participante) AS inscripciones,
+            c.max_participantes
+        FROM tb_participante_curso pc
+        JOIN tb_curso c ON pc.id_curso = c.id_curso
+        WHERE c.id_curso != 1
+          AND YEAR(pc.fecha_inscripcion) = YEAR(CURDATE())
+        GROUP BY MONTH(pc.fecha_inscripcion), c.id_curso, c.nombre_curso
+        ORDER BY mes ASC, inscripciones DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+
+    // Group by month and pick the top one
+    $temp = [];
+    foreach ($rows as $r) {
+        $mesNum = (int)$r['mes'];
+        if (!isset($temp[$mesNum])) {
+            $temp[$mesNum] = $r;
+        }
+    }
+    // Fill in missing months with 0 inscripciones to have a complete 12-month array
+    for ($m = 1; $m <= 12; $m++) {
+        if (isset($temp[$m])) {
+            $formacionSolicitadaMes[] = $temp[$m];
+        } else {
+            $formacionSolicitadaMes[] = [
+                'mes' => $m,
+                'nombre_curso' => 'Sin inscripciones',
+                'inscripciones' => 0,
+                'max_participantes' => 0
+            ];
+        }
+    }
+} catch(Exception $e) {}
+
 // ── JSON para JS ──
 $jsCursosDiferidos      = json_encode($cursosDiferidos,          JSON_UNESCAPED_UNICODE);
 $jsIniciados            = json_encode($iniciados_raw,             JSON_UNESCAPED_UNICODE);
@@ -404,3 +444,4 @@ $jsAnios                = json_encode($aniosDisponibles,          JSON_UNESCAPED
 $jsMesesES              = json_encode(array_values($mesesES),     JSON_UNESCAPED_UNICODE);
 $jsCursosHistorico      = json_encode($cursosHistoricoDetalle,    JSON_UNESCAPED_UNICODE);  // [NUEVO]
 $jsAmbitoHistorico      = json_encode($ambitoHistoricoJS,         JSON_UNESCAPED_UNICODE);  // [NUEVO]
+$jsFormacionSolicitada  = json_encode($formacionSolicitadaMes,    JSON_UNESCAPED_UNICODE);  // [NUEVO]

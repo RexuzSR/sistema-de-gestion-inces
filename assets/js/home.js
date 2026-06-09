@@ -36,6 +36,7 @@ const CHART_MAP = {
         modalidad: { chartId: 'chartCursosModalidad', render: 'renderCursosModalidad' },
         turno: { chartId: 'chartCursosTurno', render: 'renderCursosTurno' },
         ambito: { chartId: 'chartAmbitoSolicitadoTab', render: 'renderAmbitoSolicitado' },
+        formacion: { chartId: 'chartFormacionSolicitadaTab', render: 'renderFormacionSolicitada' },
     },
     docentes: {
         tipo: { chartId: 'chartDocTipo', render: 'renderDocTipo' },
@@ -161,7 +162,7 @@ function initTableNavigation() {
    Controla qué panel y qué gráfica se muestran dentro
    de cada sección del dashboard.
    NOTA: inicio.php NO debe registrar sus propios listeners
-         para .chart-tab-btn este módulo es el único dueño.
+         para .chart-tab-btn — este módulo es el único dueño.
 ════════════════════════════════════════════════════════════ */
 function initChartTabs() {
     document.querySelectorAll('.chart-tab-btn').forEach(btn => {
@@ -171,6 +172,13 @@ function initChartTabs() {
     });
 }
 
+/* ── FIX 1 ──────────────────────────────────────────────────
+   Se verifica graficasCreadas[entry.chartId] en lugar de solo
+   el Set. Si la instancia Chart.js no existe (primera vez o fue
+   destruida), se borra el flag del Set para forzar un re-render.
+   Esto evita que una render fallida a causa de HOME_CHARTS aún
+   no disponible deje el tab "marcado" sin gráfica real.
+────────────────────────────────────────────────────────────── */
 function activateChartTab(section, chartKey, btnEl) {
     const nav = document.getElementById(`chart-nav-${section}`);
     if (nav) nav.querySelectorAll('.chart-tab-btn').forEach(b => b.classList.remove('active'));
@@ -182,9 +190,16 @@ function activateChartTab(section, chartKey, btnEl) {
     if (panel) panel.classList.add('active');
 
     const key = `${section}:${chartKey}`;
+    const entry = CHART_MAP[section]?.[chartKey];
+
+    // Si la instancia Chart.js no existe pero el key ya estaba en el Set
+    // (render falló silenciosamente antes), limpiamos el flag para reintentar.
+    if (entry && !graficasCreadas[entry.chartId]) {
+        graficasRendered.delete(key);
+    }
+
     if (!graficasRendered.has(key)) {
         graficasRendered.add(key);
-        const entry = CHART_MAP[section]?.[chartKey];
         if (entry && typeof window[entry.render] === 'function') {
             setTimeout(() => window[entry.render](), 60);
         }
@@ -233,13 +248,36 @@ function renderCursosTurno() {
     const d = window.HOME_CHARTS; if (!d) return;
     makeBar('chartCursosTurno', d.cursosTurno.labels, d.cursosTurno.data, PALETA_TURNO, false, 'N* Cursos');
 }
+
+/* ── FIX 2 ──────────────────────────────────────────────────
+   renderAmbitoSolicitado ahora siempre intenta dibujar.
+   Si no hay datos muestra un mensaje en el canvas en lugar
+   de no hacer absolutamente nada.
+────────────────────────────────────────────────────────────── */
 function renderAmbitoSolicitado() {
     const d = window.HOME_CHARTS; if (!d) return;
-    if (d.ambitoSolicitado?.labels?.length) {
-        makeDonutAmbitoSol('chartAmbitoSolicitadoTab', d.ambitoSolicitado.labels, d.ambitoSolicitado.data);
+    const labels = d.ambitoSolicitado?.labels ?? [];
+    const data   = d.ambitoSolicitado?.data   ?? [];
+    if (labels.length) {
+        makeDonutAmbitoSol('chartAmbitoSolicitadoTab', labels, data);
+    } else {
+        _mostrarSinDatos('chartAmbitoSolicitadoTab', 'Sin registros de ámbito este mes');
     }
 }
 
+/* ── FIX 3 ──────────────────────────────────────────────────
+   renderFormacionSolicitada ahora siempre intenta dibujar.
+   Si el array está vacío muestra un mensaje en el canvas.
+────────────────────────────────────────────────────────────── */
+function renderFormacionSolicitada() {
+    const d = window.HOME_CHARTS; if (!d) return;
+    const items = d.formacionSolicitada ?? [];
+    if (items.length) {
+        makeBarFormacionSolicitada('chartFormacionSolicitadaTab', items);
+    } else {
+        _mostrarSinDatos('chartFormacionSolicitadaTab', 'Sin actividad de formaciones registrada');
+    }
+}
 
 /* ════════════════════════════════════════════════════════════
    RENDERS — DOCENTES
@@ -359,6 +397,29 @@ function mostrarTodasMetas() {
    Funciones base reutilizadas por todos los renders.
    Cada función destruye la instancia previa antes de redibujar.
 ════════════════════════════════════════════════════════════ */
+
+/* ── UTILIDAD: mensaje "sin datos" en el canvas ─────────────
+   Dibuja texto centrado y limpia cualquier instancia previa.
+   Usada cuando un render recibe datos vacíos.
+────────────────────────────────────────────────────────────── */
+function _mostrarSinDatos(canvasId, mensaje) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    if (graficasCreadas[canvasId]) {
+        graficasCreadas[canvasId].destroy();
+        delete graficasCreadas[canvasId];
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.font         = '13px Roboto, sans-serif';
+    ctx.fillStyle    = '#94a3b8';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(mensaje, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+}
+
 function colorPorPct(pct) {
     if (pct >= 95) return '#28c76f';
     if (pct >= 80) return '#f59e0b';
@@ -574,7 +635,7 @@ function makeBarAmbitoH(canvasId, labels, data) {
                 },
                 scales: {
                     x: {
-                        min: 0, max: 110,
+                        min: 0, max: 100,
                         grid: { color: 'rgba(0,0,0,.05)' }, border: { display: false },
                         ticks: { font: { size: 10 }, color: '#94a3b8', callback: v => v + '%', stepSize: 20 },
                         title: { display: true, text: '% Cumplimiento', color: '#64748b', font: { size: 11, weight: '600' } }
@@ -694,9 +755,93 @@ function makeDonutAmbitoSol(canvasId, labels, data) {
     } catch (e) { }
 }
 
+function makeBarFormacionSolicitada(canvasId, dataItems) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx || !dataItems?.length) return;
+    if (graficasCreadas[canvasId]) graficasCreadas[canvasId].destroy();
+
+    const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const dataValues = dataItems.map(item => item.inscripciones);
+    const courseNames = dataItems.map(item => item.nombre_curso);
+    const maxVals = dataItems.map(item => item.max_participantes);
+
+    try {
+        graficasCreadas[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: function(context) {
+                        const c = context.chart.ctx;
+                        const area = context.chart.chartArea;
+                        if (!area) return PALETA_AMBITO[context.dataIndex % PALETA_AMBITO.length];
+                        const gradient = c.createLinearGradient(0, area.bottom, 0, area.top);
+                        const baseCol = PALETA_AMBITO[context.dataIndex % PALETA_AMBITO.length];
+                        gradient.addColorStop(0, baseCol.replace(')', ', 0.6)').replace('rgb', 'rgba'));
+                        gradient.addColorStop(1, baseCol);
+                        return gradient;
+                    },
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            title: items => {
+                                const idx = items[0].dataIndex;
+                                return ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][idx];
+                            },
+                            label: c => {
+                                const idx = c.dataIndex;
+                                const course = courseNames[idx];
+                                const insc = dataValues[idx];
+                                if (insc === 0) return ' Sin inscripciones registradas';
+                                return ` Curso: ${course}`;
+                            },
+                            afterLabel: c => {
+                                const idx = c.dataIndex;
+                                const insc = dataValues[idx];
+                                const max = maxVals[idx];
+                                if (insc === 0) return '';
+                                const pct = max > 0 ? Math.round(insc / max * 100) : 0;
+                                return ` Inscripciones: ${insc} / ${max} (${pct}% ocupación)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, color: '#94a3b8' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,.05)', drawBorder: false },
+                        ticks: { font: { size: 10 }, color: '#94a3b8', stepSize: 1, precision: 0 },
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'N* Inscripciones',
+                            color: '#64748b',
+                            font: { size: 11, weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (e) { }
+}
+
 /* ════════════════════════════════════════════════════════════
    CARDS SELECCIONABLES — Indicadores semáforo del resumen
-   Añadir al final de home.js
 ════════════════════════════════════════════════════════════ */
 
 const PANEL_CHARTS = {
@@ -731,12 +876,10 @@ const pluginValoresDonut = {
             const value = data.datasets[0].data[i];
             if (!value || value === 0) return;
 
-            /* Centro del arco en coordenadas polares */
             const startAngle = arc.startAngle;
             const endAngle = arc.endAngle;
             const midAngle = (startAngle + endAngle) / 2;
 
-            /* Radio al punto medio del segmento (entre inner y outer) */
             const innerR = arc.innerRadius;
             const outerR = arc.outerRadius;
             const midR = innerR + (outerR - innerR) * 0.58;
@@ -744,7 +887,6 @@ const pluginValoresDonut = {
             const x = arc.x + midR * Math.cos(midAngle);
             const y = arc.y + midR * Math.sin(midAngle);
 
-            /* Sólo dibujar si el arco es suficientemente grande */
             const arcLength = Math.abs(endAngle - startAngle);
             if (arcLength < 0.28) return;
 
@@ -904,8 +1046,6 @@ function activarMiniTab(panelId, tabId, btnEl) {
 
 /* ════════════════════════════════════════════════════════════
    FUNCIÓN BASE: Donut con valores numéricos en segmentos
-   Envuelve makeDonut() pero con opciones extendidas para
-   mostrar los números dentro de cada porción.
 ════════════════════════════════════════════════════════════ */
 function makeDonutConValores(canvasId, labels, data, colores) {
     const ctx = document.getElementById(canvasId);
@@ -993,7 +1133,6 @@ function renderKpiMiniChart(kpiId) {
             const labels = ['En formación', 'Disponibles'];
             const vals = [d.formacion.enFormacion, d.formacion.disponibles];
             const cols = ['#28c76f', '#f59e0b'];
-            /* Incluir "Otros" sólo si existe */
             if (d.formacion.otros > 0) {
                 labels.push('Otros estados');
                 vals.push(d.formacion.otros);
