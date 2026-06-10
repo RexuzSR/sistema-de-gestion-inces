@@ -6,10 +6,10 @@ var categoriasReportes = [
         bgColor: "rgba(13,110,253,0.9)", lightColor: "rgba(13,110,253,0.5)",
         darkColor: "rgba(0,80,200,0.95)", bodyBgColor: "rgba(13,110,253,0.06)",
         reportes: [
-            { id: 1,  nombre: "Total de Participantes",          funcion: 'cargarTotalParticipantes', archivo: 'RE-Participante-Total.js' },
-            { id: 2,  nombre: "Participantes Aprobados",         funcion: 'cargarParticipantesAprobados', archivo: 'RE-Participante-Aprobados.js' },
-            { id: 9,  nombre: "Participantes por Ámbito",        funcion: 'cargarParticipantesPorAmbito', archivo: 'RE-Participante-Ambito.js' },
-            { id: 12, nombre: "Trayectoria de Participantes",    funcion: 'cargarTrayectoriaParticipantes', archivo: 'RE-Participante-Trayectoria.js' }
+            { id: 1, nombre: "Total de Participantes", funcion: 'cargarTotalParticipantes', archivo: 'RE-Participante-Total.js' },
+            { id: 2, nombre: "Participantes Aprobados", funcion: 'cargarParticipantesAprobados', archivo: 'RE-Participante-Aprobados.js' },
+            { id: 9, nombre: "Participantes por Ámbito", funcion: 'cargarParticipantesPorAmbito', archivo: 'RE-Participante-Ambito.js' },
+            { id: 12, nombre: "Trayectoria de Participantes", funcion: 'cargarTrayectoriaParticipantes', archivo: 'RE-Participante-Trayectoria.js' }
         ]
     },
     {
@@ -18,10 +18,11 @@ var categoriasReportes = [
         bgColor: "rgba(25,135,84,0.9)", lightColor: "rgba(25,135,84,0.5)",
         darkColor: "rgba(15,100,60,0.95)", bodyBgColor: "rgba(25,135,84,0.06)",
         reportes: [
-            { id: 3,  nombre: "Total de Cursos",              funcion: 'cargarTotalCursos', archivo: 'RE-Curso-Total.js' },
-            { id: 4,  nombre: "Cursos con más Participantes", funcion: 'cargarCursosMasParticipantes', archivo: 'RE-Curso-MasParticipantes.js' },
-            { id: 5,  nombre: "Curso más Requerido",          funcion: 'cargarCursoMasRequerido', archivo: 'RE-Curso-MasRequerido.js' },
-            { id: 13, nombre: "Trayectoria de Cursos",       funcion: 'cargarTrayectoriaCursos', archivo: 'RE-Curso-Trayectoria.js' }
+            { id: 3, nombre: "Total de Cursos", funcion: 'cargarTotalCursos', archivo: 'RE-Curso-Total.js' },
+            { id: 4, nombre: "Cursos con más Participantes", funcion: 'cargarCursosMasParticipantes', archivo: 'RE-Curso-MasParticipantes.js' },
+            { id: 5, nombre: "Curso más Requerido", funcion: 'cargarCursoMasRequerido', archivo: 'RE-Curso-MasRequerido.js' },
+            { id: 13, nombre: "Trayectoria de Cursos", funcion: 'cargarTrayectoriaCursos', archivo: 'RE-Curso-Trayectoria.js' },
+            { id: 14, nombre: "Cursos sin Docente", funcion: 'cargarCursosSinDocente', archivo: 'RE-Curso-SinDocente.js' }
         ]
     },
     {
@@ -30,9 +31,8 @@ var categoriasReportes = [
         bgColor: "rgba(255,193,7,0.9)", lightColor: "rgba(255,193,7,0.5)",
         darkColor: "rgba(200,150,0,0.95)", bodyBgColor: "rgba(255,193,7,0.07)",
         reportes: [
-            { id: 10, nombre: "Total de Docentes",        funcion: 'cargarTotalDocentes', archivo: 'RE-Docente-Total.js' },
-            { id: 6,  nombre: "Docentes más Solicitados", funcion: 'cargarDocentesMasSolicitados', archivo: 'RE-Docente-MasSolicitados.js' },
-            { id: 7,  nombre: "Docentes Inactivos",       funcion: 'cargarDocentesInactivos', archivo: 'RE-Docente-Inactivos.js' }
+            { id: 10, nombre: "Total de Docentes", funcion: 'cargarTotalDocentes', archivo: 'RE-Docente-Total.js' },
+            { id: 6, nombre: "Carga Horaria por Docente", funcion: 'cargarCargaHorariaDocentes', archivo: 'RE-Docente-CargaHoraria.js' }
         ]
     },
     {

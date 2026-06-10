@@ -84,8 +84,18 @@ try {
             echo json_encode(getDocentesMasSolicitados($conn, $anio, $limite));
             break;
 
+        case 'docentes_carga_horaria':
+            $limite = intval($_GET['limite'] ?? 15);
+            echo json_encode(getDocentesCargaHoraria($conn, $anio, $limite));
+            break;
+
+
         case 'docentes_inactivos':
             echo json_encode(getDocentesInactivos($conn));
+            break;
+
+        case 'cursos_sin_docente':
+            echo json_encode(getCursosSinDocente($conn));
             break;
 
         case 'metas_por_ambito':
@@ -499,6 +509,101 @@ function getDocentesInactivos(PDO $conn): array {
         HAVING ultima_asignacion IS NULL OR ultima_asignacion < DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
         ORDER BY ultima_asignacion ASC
     ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ====================================================================
+// ─────────────────── CURSOS SIN DOCENTE ─────────────────────────
+// ====================================================================
+
+/**
+ * Cursos con estatus "En espera" (id_estatusCurso = 1) que no tienen
+ * ningún docente asignado en tb_docente_curso, ordenados por fecha_inicio ASC
+ * para priorizar los más urgentes primero.
+ */
+function getCursosSinDocente(PDO $conn): array
+{
+    $stmt = $conn->query("
+        SELECT
+            c.id_curso,
+            c.nombre_curso,
+            c.fecha_inicio,
+            c.horas_totales,
+            c.max_participantes,
+            c.turno,
+            COALESCE(a.nombre_ambito, 'Sin ámbito')          AS nombre_ambito,
+            COALESCE(af.nombre_areaFormativa, 'Sin área')    AS nombre_area,
+            COALESCE(m.nombre_modalidad, 'Sin modalidad')    AS nombre_modalidad,
+
+            -- Participantes ya inscritos en el curso
+            (
+                SELECT COUNT(*)
+                FROM tb_participante_curso pc
+                WHERE pc.id_curso = c.id_curso
+            ) AS participantes_inscritos
+
+        FROM tb_curso c
+        LEFT JOIN tb_ambito        a  ON a.id_ambito        = c.id_ambito
+        LEFT JOIN tb_areaformativa af ON af.id_areaFormativa = c.id_areaFormativa
+        LEFT JOIN tb_modalidad     m  ON m.id_modalidad      = c.id_modalidad
+
+        -- Solo cursos En espera
+        WHERE c.id_estatusCurso = 1
+
+        -- Sin ningún docente asignado
+        AND NOT EXISTS (
+            SELECT 1
+            FROM tb_docente_curso dc
+            WHERE dc.id_curso = c.id_curso
+              AND dc.id_docente IS NOT NULL
+        )
+
+        ORDER BY c.fecha_inicio ASC
+    ");
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ====================================================================
+// ─────────────────── CARGA HORARIA DOCENTES ─────────────────────
+// ====================================================================
+
+/**
+ * Carga horaria real por docente:
+ * suma horas_totales (asignadas) y horas_completadas de los cursos
+ * que tiene asignados en el año indicado, ordenado de mayor a menor carga.
+ */
+function getDocentesCargaHoraria(PDO $conn, int $anio, int $limite = 15): array
+{
+    $stmt = $conn->prepare("
+        SELECT
+            d.id_docente,
+            d.primer_nombre,
+            d.primer_apellido,
+            d.tipo_docente,
+            d.estado_docente,
+            COALESCE(SUM(c.horas_totales), 0)      AS horas_asignadas,
+            COALESCE(SUM(c.horas_completadas), 0)  AS horas_completadas,
+            COUNT(DISTINCT dc.id_curso)             AS cursos_activos
+        FROM tb_docente d
+        INNER JOIN tb_docente_curso dc ON dc.id_docente = d.id_docente
+        INNER JOIN tb_curso c          ON c.id_curso    = dc.id_curso
+        WHERE
+            YEAR(COALESCE(c.fecha_inicio, dc.fecha_asignacion)) = :anio
+            AND c.id_estatusCurso IN (3, 4)
+        GROUP BY
+            d.id_docente,
+            d.primer_nombre,
+            d.primer_apellido,
+            d.tipo_docente,
+            d.estado_docente
+        HAVING horas_asignadas > 0
+        ORDER BY horas_asignadas DESC
+        LIMIT :limite
+    ");
+    $stmt->bindValue(':anio',   $anio,   PDO::PARAM_INT);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
