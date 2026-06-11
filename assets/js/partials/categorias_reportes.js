@@ -31,8 +31,9 @@ var categoriasReportes = [
         bgColor: "rgba(255,193,7,0.9)", lightColor: "rgba(255,193,7,0.5)",
         darkColor: "rgba(200,150,0,0.95)", bodyBgColor: "rgba(255,193,7,0.07)",
         reportes: [
-            { id: 10, nombre: "Total de Docentes", funcion: 'cargarTotalDocentes', archivo: 'RE-Docente-Total.js' },
-            { id: 6, nombre: "Carga Horaria por Docente", funcion: 'cargarCargaHorariaDocentes', archivo: 'RE-Docente-CargaHoraria.js' }
+            { id: 10, nombre: "Total de Docentes",        funcion: 'cargarTotalDocentes',        archivo: 'RE-Docente-Total.js'        },
+            { id: 6,  nombre: "Carga Horaria por Docente", funcion: 'cargarCargaHorariaDocentes', archivo: 'RE-Docente-CargaHoraria.js'  },
+            { id: 15, nombre: "Historial de Docente",      funcion: 'cargarHistorialDocente',     archivo: 'RE-Docente-Historial.js'     }
         ]
     },
     {

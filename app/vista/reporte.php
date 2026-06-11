@@ -76,7 +76,9 @@ $conn = null;
 <script src="../../assets/js/jquery-3.7.1.min.js"></script>
 <script src="../../assets/js/bootstrap.bundle.min.js"></script>
 <script src="../../assets/js/chart.js"></script>
-
+<script src="../../assets/js/Curso/estadoCurso.js"></script>
+<script src="../../assets/js/Curso/verCurso.js"></script>
+<?php include '../modales/Curso/modal-viewCurso.php'; ?>
 
 <!-- Los scripts de reportes se cargarán bajo demanda mediante reportes.js -->
 

@@ -76,7 +76,9 @@ try {
             break;
 
         case 'docentes_total':
-            echo json_encode(getDocentesTotal($conn, $anio));
+            $periodo = trim($_GET['periodo'] ?? 'year');
+            $periodoValor = intval($_GET['periodo_valor'] ?? 0);
+            echo json_encode(getDocentesTotal($conn, $anio, $periodo, $periodoValor));
             break;
 
         case 'docentes_mas_solicitados':
@@ -86,12 +88,36 @@ try {
 
         case 'docentes_carga_horaria':
             $limite = intval($_GET['limite'] ?? 15);
-            echo json_encode(getDocentesCargaHoraria($conn, $anio, $limite));
+            $periodo = trim($_GET['periodo'] ?? 'year');
+            $periodoValor = intval($_GET['periodo_valor'] ?? 0);
+            echo json_encode(getDocentesCargaHoraria($conn, $anio, $limite, $periodo, $periodoValor));
             break;
 
+        case 'docente_detalle_cursos':
+            $idDocente = intval($_GET['id_docente'] ?? 0);
+            $periodo = trim($_GET['periodo'] ?? 'year');
+            $periodoValor = intval($_GET['periodo_valor'] ?? 0);
+            if ($idDocente <= 0) {
+                echo json_encode(['error' => 'ID de docente no válido']);
+                break;
+            }
+            echo json_encode(getDocenteDetalleCursos($conn, $idDocente, $anio, $periodo, $periodoValor));
+            break;
 
         case 'docentes_inactivos':
             echo json_encode(getDocentesInactivos($conn));
+            break;
+
+        case 'detalle_docente':
+            $cedula = intval($_GET['cedula'] ?? 0);
+            if ($cedula <= 0) { echo json_encode(['error' => 'Cédula no válida']); break; }
+            echo json_encode(getDetalleDocente($conn, $cedula));
+            break;
+
+        case 'historial_cursos_docente':
+            $idDocente = intval($_GET['id_docente'] ?? 0);
+            if ($idDocente <= 0) { echo json_encode(['error' => 'ID no válido']); break; }
+            echo json_encode(getHistorialCursosDocente($conn, $idDocente));
             break;
 
         case 'cursos_sin_docente':
@@ -141,6 +167,10 @@ try {
                 'cursos'        => buscarCursos($conn, $q, $limite),
                 'docentes'      => buscarDocentes($conn, $q, $limite)
             ]);
+            break;
+
+        case 'lista_docentes':
+            echo json_encode(getListaDocentes($conn));
             break;
 
         case 'anios_disponibles':
@@ -377,11 +407,6 @@ function getCursosTotal(PDO $conn, int $anio): array {
     return mesesAArray($meses);
 }
 
-/**
- * ─── CORRECCIÓN CRÍTICA ─────────────────────────────────────────────────────
- * Se añade c.id_curso al SELECT para que el JS pueda identificar cada curso
- * y cargar sus participantes correctamente.
- */
 function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 10): array {
     $stmt = $conn->prepare("
         SELECT
@@ -425,9 +450,6 @@ function getCursoMasRequerido(PDO $conn, int $anio): array {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/**
- * Devuelve todos los participantes inscritos en un curso por su id_curso.
- */
 function getParticipantesPorCurso(PDO $conn, int $idCurso): array {
     if ($idCurso <= 0) return [];
     $stmt = $conn->prepare("
@@ -451,7 +473,22 @@ function getParticipantesPorCurso(PDO $conn, int $idCurso): array {
 // ─────────────────── DOCENTES ───────────────────────────────────────
 // ====================================================================
 
-function getDocentesTotal(PDO $conn, int $anio): array {
+function construirFiltroPeriodo(string $campoFecha, string $periodo, int $anio, $valor): array {
+    $condiciones = [];
+    $params = [];
+    if ($periodo === 'month') {
+        $condiciones[] = "MONTH($campoFecha) = :periodo_valor";
+        $params[':periodo_valor'] = intval($valor);
+    } elseif ($periodo === 'week') {
+        $condiciones[] = "WEEK($campoFecha, 1) = :periodo_valor";
+        $params[':periodo_valor'] = intval($valor);
+    }
+    $condiciones[] = "YEAR($campoFecha) = :anio";
+    $params[':anio'] = $anio;
+    return ['clausulas' => $condiciones, 'params' => $params];
+}
+
+function getDocentesTotal(PDO $conn, int $anio, string $periodo = 'year', int $periodoValor = 0): array {
     $stmt = $conn->prepare("
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN estado_docente = 'Disponible'   THEN 1 ELSE 0 END) AS disponible,
@@ -499,6 +536,120 @@ function getDocentesMasSolicitados(PDO $conn, int $anio, int $limite = 10): arra
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+// ⭐ FUNCIÓN ACTUALIZADA con métricas de encargos vs ejecución
+function getDetalleDocente(PDO $conn, int $cedula): array
+{
+    $stmt = $conn->prepare("
+        SELECT id_docente, primer_nombre, segundo_nombre,
+               primer_apellido, segundo_apellido,
+               cedula, correo, fecha_nacimiento, edad,
+               estado_docente, genero, tipo_docente
+        FROM tb_docente WHERE cedula = :cedula LIMIT 1
+    ");
+    $stmt->execute([':cedula' => $cedula]);
+    $doc = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$doc) return ['error' => 'Docente no encontrado'];
+    $id = intval($doc['id_docente']);
+
+    $stmt = $conn->prepare("SELECT numero_de_telefono, tipo_de_telefono FROM tb_telefono WHERE id_docente = :id ORDER BY id_telefono ASC");
+    $stmt->execute([':id' => $id]);
+    $doc['telefonos'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // ⭐ NUEVO: Estadísticas completas por ENCARGOS vs EJECUCIÓN
+    $stmt = $conn->prepare("
+        SELECT 
+            COUNT(DISTINCT dc.id_curso) AS cursos_asignados,
+            SUM(CASE WHEN c.id_estatusCurso = 5 THEN 1 ELSE 0 END) AS cursos_completados,
+            SUM(c.horas_totales) AS horas_asignadas,
+            SUM(c.horas_completadas) AS horas_completadas,
+            SUM(CASE WHEN c.id_estatusCurso = 5 THEN 1 ELSE 0 END) AS cursos_culminados,
+            SUM(CASE WHEN c.id_estatusCurso IN (3,4) THEN 1 ELSE 0 END) AS cursos_activos,
+            MIN(c.fecha_inicio) AS primer_curso,
+            MAX(c.fecha_inicio) AS ultimo_curso,
+            COUNT(DISTINCT c.id_curso) AS total_cursos,
+            -- Participantes inscritos en sus cursos
+            (SELECT COUNT(DISTINCT pc.id_participante) 
+             FROM tb_participante_curso pc 
+             WHERE pc.id_curso IN (SELECT id_curso FROM tb_docente_curso WHERE id_docente = :id)) AS total_inscritos,
+            -- Participantes aprobados en sus cursos
+            (SELECT COUNT(DISTINCT pc.id_participante) 
+             FROM tb_participante_curso pc 
+             WHERE pc.id_curso IN (SELECT id_curso FROM tb_docente_curso WHERE id_docente = :id)
+               AND pc.estatus_participante = 'Aprobado') AS total_aprobados
+        FROM tb_docente_curso dc
+        INNER JOIN tb_curso c ON c.id_curso = dc.id_curso
+        WHERE dc.id_docente = :id
+    ");
+    $stmt->execute([':id' => $id]);
+    $doc['resumen'] = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Aseguramos valores por defecto
+    $doc['resumen']['cursos_asignados'] = intval($doc['resumen']['cursos_asignados'] ?? 0);
+    $doc['resumen']['cursos_completados'] = intval($doc['resumen']['cursos_completados'] ?? 0);
+    $doc['resumen']['total_inscritos'] = intval($doc['resumen']['total_inscritos'] ?? 0);
+    $doc['resumen']['total_aprobados'] = intval($doc['resumen']['total_aprobados'] ?? 0);
+    $doc['resumen']['total_cursos'] = intval($doc['resumen']['total_cursos'] ?? 0);
+    $doc['resumen']['participantes_formados'] = $doc['resumen']['total_aprobados']; // Para compatibilidad
+
+    $stmt = $conn->prepare("
+        SELECT DISTINCT COALESCE(a.nombre_ambito,'Sin ámbito') AS nombre_ambito
+        FROM tb_docente_curso dc
+        INNER JOIN tb_curso c ON c.id_curso = dc.id_curso
+        LEFT JOIN tb_ambito a ON a.id_ambito = c.id_ambito
+        WHERE dc.id_docente = :id
+    ");
+    $stmt->execute([':id' => $id]);
+    $doc['ambitos'] = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'nombre_ambito');
+
+    $stmt = $conn->prepare("
+        SELECT DISTINCT COALESCE(af.nombre_areaFormativa,'Sin área') AS nombre_area
+        FROM tb_docente_curso dc
+        INNER JOIN tb_curso c ON c.id_curso = dc.id_curso
+        LEFT JOIN tb_areaformativa af ON af.id_areaFormativa = c.id_areaFormativa
+        WHERE dc.id_docente = :id
+    ");
+    $stmt->execute([':id' => $id]);
+    $doc['areas'] = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'nombre_area');
+
+    return $doc;
+}
+
+function getHistorialCursosDocente(PDO $conn, int $idDocente): array
+{
+    $stmt = $conn->prepare("
+        SELECT c.id_curso, c.nombre_curso, c.fecha_inicio, c.fecha_fin,
+               c.horas_totales, c.horas_completadas, c.turno,
+               c.tipo_formacion, c.programa_formacion,
+               c.max_participantes, c.num_inscritos,
+               dc.fecha_asignacion,
+               COALESCE(ec.nombre_estatusCurso,'Sin estado')  AS estatus_curso,
+               COALESCE(a.nombre_ambito,'Sin ámbito')         AS nombre_ambito,
+               COALESCE(af.nombre_areaFormativa,'Sin área')   AS nombre_area,
+               COALESCE(m.nombre_modalidad,'Sin modalidad')   AS nombre_modalidad,
+               SUM(CASE WHEN pc.estatus_participante='Aprobado'     THEN 1 ELSE 0 END) AS aprobados,
+               SUM(CASE WHEN pc.estatus_participante='Reprobado'    THEN 1 ELSE 0 END) AS reprobados,
+               SUM(CASE WHEN pc.estatus_participante='Ausente'      THEN 1 ELSE 0 END) AS ausentes,
+               SUM(CASE WHEN pc.estatus_participante='En formación' THEN 1 ELSE 0 END) AS en_formacion,
+               COUNT(pc.id_participante_curso)                                          AS total_inscritos
+        FROM tb_docente_curso dc
+        INNER JOIN tb_curso c ON c.id_curso = dc.id_curso
+        LEFT JOIN tb_estatuscurso  ec ON ec.id_estatusCurso   = c.id_estatusCurso
+        LEFT JOIN tb_ambito         a ON a.id_ambito           = c.id_ambito
+        LEFT JOIN tb_areaformativa af ON af.id_areaFormativa   = c.id_areaFormativa
+        LEFT JOIN tb_modalidad      m ON m.id_modalidad        = c.id_modalidad
+        LEFT JOIN tb_participante_curso pc ON pc.id_curso      = c.id_curso
+        WHERE dc.id_docente = :id
+        GROUP BY c.id_curso, c.nombre_curso, c.fecha_inicio, c.fecha_fin,
+                 c.horas_totales, c.horas_completadas, c.turno, c.tipo_formacion,
+                 c.programa_formacion, c.max_participantes, c.num_inscritos,
+                 dc.fecha_asignacion, ec.nombre_estatusCurso,
+                 a.nombre_ambito, af.nombre_areaFormativa, m.nombre_modalidad
+        ORDER BY c.fecha_inicio DESC
+    ");
+    $stmt->execute([':id' => $idDocente]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 function getDocentesInactivos(PDO $conn): array {
     $stmt = $conn->prepare("
         SELECT d.id_docente, d.primer_nombre, d.primer_apellido, d.tipo_docente,
@@ -514,14 +665,34 @@ function getDocentesInactivos(PDO $conn): array {
 }
 
 // ====================================================================
+// ─────────────────── LISTA DE DOCENTES ──────────────────────────────
+// ====================================================================
+
+function getListaDocentes(PDO $conn): array
+{
+    $stmt = $conn->prepare("
+        SELECT 
+            id_docente,
+            primer_nombre,
+            segundo_nombre,
+            primer_apellido,
+            segundo_apellido,
+            cedula,
+            correo,
+            tipo_docente,
+            estado_docente,
+            genero
+        FROM tb_docente
+        ORDER BY primer_apellido ASC, primer_nombre ASC
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ====================================================================
 // ─────────────────── CURSOS SIN DOCENTE ─────────────────────────
 // ====================================================================
 
-/**
- * Cursos con estatus "En espera" (id_estatusCurso = 1) que no tienen
- * ningún docente asignado en tb_docente_curso, ordenados por fecha_inicio ASC
- * para priorizar los más urgentes primero.
- */
 function getCursosSinDocente(PDO $conn): array
 {
     $stmt = $conn->query("
@@ -535,33 +706,24 @@ function getCursosSinDocente(PDO $conn): array
             COALESCE(a.nombre_ambito, 'Sin ámbito')          AS nombre_ambito,
             COALESCE(af.nombre_areaFormativa, 'Sin área')    AS nombre_area,
             COALESCE(m.nombre_modalidad, 'Sin modalidad')    AS nombre_modalidad,
-
-            -- Participantes ya inscritos en el curso
             (
                 SELECT COUNT(*)
                 FROM tb_participante_curso pc
                 WHERE pc.id_curso = c.id_curso
             ) AS participantes_inscritos
-
         FROM tb_curso c
         LEFT JOIN tb_ambito        a  ON a.id_ambito        = c.id_ambito
         LEFT JOIN tb_areaformativa af ON af.id_areaFormativa = c.id_areaFormativa
         LEFT JOIN tb_modalidad     m  ON m.id_modalidad      = c.id_modalidad
-
-        -- Solo cursos En espera
         WHERE c.id_estatusCurso = 1
-
-        -- Sin ningún docente asignado
         AND NOT EXISTS (
             SELECT 1
             FROM tb_docente_curso dc
             WHERE dc.id_curso = c.id_curso
               AND dc.id_docente IS NOT NULL
         )
-
         ORDER BY c.fecha_inicio ASC
     ");
-
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -569,13 +731,13 @@ function getCursosSinDocente(PDO $conn): array
 // ─────────────────── CARGA HORARIA DOCENTES ─────────────────────
 // ====================================================================
 
-/**
- * Carga horaria real por docente:
- * suma horas_totales (asignadas) y horas_completadas de los cursos
- * que tiene asignados en el año indicado, ordenado de mayor a menor carga.
- */
-function getDocentesCargaHoraria(PDO $conn, int $anio, int $limite = 15): array
+function getDocentesCargaHoraria(PDO $conn, int $anio, int $limite = 15, string $periodo = 'year', int $periodoValor = 0): array
 {
+    $filtro = construirFiltroPeriodo('COALESCE(c.fecha_inicio, dc.fecha_asignacion)', $periodo, $anio, $periodoValor);
+    $filtroSolap = construirFiltroPeriodo('COALESCE(c2.fecha_inicio, dc2.fecha_asignacion)', $periodo, $anio, $periodoValor);
+    $wherePeriodo = implode(' AND ', $filtro['clausulas']);
+    $wherePeriodoSolap = implode(' AND ', $filtroSolap['clausulas']);
+
     $stmt = $conn->prepare("
         SELECT
             d.id_docente,
@@ -585,13 +747,23 @@ function getDocentesCargaHoraria(PDO $conn, int $anio, int $limite = 15): array
             d.estado_docente,
             COALESCE(SUM(c.horas_totales), 0)      AS horas_asignadas,
             COALESCE(SUM(c.horas_completadas), 0)  AS horas_completadas,
-            COUNT(DISTINCT dc.id_curso)             AS cursos_activos
+            COUNT(DISTINCT dc.id_curso)             AS cursos_activos,
+            COALESCE((
+                SELECT 1
+                FROM tb_docente_curso dc2
+                JOIN tb_curso c2 ON c2.id_curso = dc2.id_curso
+                WHERE dc2.id_docente = d.id_docente
+                  AND c2.id_estatusCurso IN (3, 4, 5)
+                  AND $wherePeriodoSolap
+                GROUP BY dc2.id_docente
+                HAVING SUM(c2.horas_por_clase) > 8
+            ), 0) AS sobrecarga_diaria
         FROM tb_docente d
         INNER JOIN tb_docente_curso dc ON dc.id_docente = d.id_docente
         INNER JOIN tb_curso c          ON c.id_curso    = dc.id_curso
         WHERE
-            YEAR(COALESCE(c.fecha_inicio, dc.fecha_asignacion)) = :anio
-            AND c.id_estatusCurso IN (3, 4)
+            $wherePeriodo
+            AND c.id_estatusCurso IN (3, 4, 5)
         GROUP BY
             d.id_docente,
             d.primer_nombre,
@@ -602,8 +774,49 @@ function getDocentesCargaHoraria(PDO $conn, int $anio, int $limite = 15): array
         ORDER BY horas_asignadas DESC
         LIMIT :limite
     ");
-    $stmt->bindValue(':anio',   $anio,   PDO::PARAM_INT);
+
+    foreach ($filtro['params'] as $key => $value) {
+        if ($key === ':periodo_valor') {
+            $stmt->bindValue($key, $value, PDO::PARAM_INT);
+        } elseif ($key === ':anio') {
+            $stmt->bindValue($key, $value, PDO::PARAM_INT);
+        }
+    }
     $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function getDocenteDetalleCursos(PDO $conn, int $idDocente, int $anio, string $periodo = 'year', int $periodoValor = 0): array
+{
+    $filtro = construirFiltroPeriodo('COALESCE(c.fecha_inicio, dc.fecha_asignacion)', $periodo, $anio, $periodoValor);
+    $wherePeriodo = implode(' AND ', $filtro['clausulas']);
+
+    $stmt = $conn->prepare("
+        SELECT
+            c.id_curso,
+            c.nombre_curso,
+            c.fecha_inicio,
+            c.fecha_fin,
+            c.horas_totales,
+            c.horas_completadas,
+            COALESCE(ec.nombre_estatusCurso, 'Sin estado') AS estatus_curso
+        FROM tb_docente_curso dc
+        INNER JOIN tb_curso c ON c.id_curso = dc.id_curso
+        LEFT JOIN tb_estatuscurso ec ON ec.id_estatusCurso = c.id_estatusCurso
+        WHERE
+            dc.id_docente = :id_docente
+            AND $wherePeriodo
+        ORDER BY c.fecha_inicio ASC
+    ");
+    $stmt->bindValue(':id_docente', $idDocente, PDO::PARAM_INT);
+    foreach ($filtro['params'] as $key => $value) {
+        if ($key === ':periodo_valor') {
+            $stmt->bindValue($key, $value, PDO::PARAM_INT);
+        } elseif ($key === ':anio') {
+            $stmt->bindValue($key, $value, PDO::PARAM_INT);
+        }
+    }
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -613,7 +826,6 @@ function getDocentesCargaHoraria(PDO $conn, int $anio, int $limite = 15): array
 // ====================================================================
 
 function getMetasPorAmbito(PDO $conn, int $anio): array {
-    // Primero obtener todas las metas
     $stmt = $conn->prepare("
         SELECT 
             m.id_meta,
@@ -633,73 +845,36 @@ function getMetasPorAmbito(PDO $conn, int $anio): array {
     $stmt->execute([':anio' => $anio]);
     $metas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Para cada meta, calcular el progreso real basado en participantes
     foreach ($metas as &$meta) {
         $estudiantesFormados = 0;
-        
-        // Determinar las fechas de la meta
         $fechaInicio = $meta['fecha_inicio'];
         $fechaFin = $meta['fecha_fin'];
         
-        // Si no hay fechas definidas, usar el año completo
-        if (empty($fechaInicio)) {
-            $fechaInicio = "{$anio}-01-01";
-        }
-        if (empty($fechaFin)) {
-            $fechaFin = "{$anio}-12-31";
-        }
+        if (empty($fechaInicio)) $fechaInicio = "{$anio}-01-01";
+        if (empty($fechaFin)) $fechaFin = "{$anio}-12-31";
         
         if ($meta['tipo_objetivo'] === 'Aprobados') {
-            // Para metas de APROBADOS: contar participantes con estatus 'Aprobado'
-            // en cursos del mismo ámbito, dentro del período de la meta
-            $estudiantesFormados = contarAprobadosPorAmbitoYPeriodo(
-                $conn, 
-                $meta['id_ambito'], 
-                $fechaInicio, 
-                $fechaFin
-            );
-        } 
-        else if ($meta['tipo_objetivo'] === 'Inscritos') {
-            // Para metas de INSCRITOS: contar participantes inscritos
-            // en cursos del mismo ámbito, dentro del período de la meta
-            $estudiantesFormados = contarInscritosPorAmbitoYPeriodo(
-                $conn, 
-                $meta['id_ambito'], 
-                $fechaInicio, 
-                $fechaFin
-            );
+            $estudiantesFormados = contarAprobadosPorAmbitoYPeriodo($conn, $meta['id_ambito'], $fechaInicio, $fechaFin);
+        } else if ($meta['tipo_objetivo'] === 'Inscritos') {
+            $estudiantesFormados = contarInscritosPorAmbitoYPeriodo($conn, $meta['id_ambito'], $fechaInicio, $fechaFin);
         }
         
-        // Calcular porcentaje de cumplimiento
         $metaObjetivo = intval($meta['meta_objetivo']);
-        $porcentaje = 0;
-        if ($metaObjetivo > 0) {
-            $porcentaje = ($estudiantesFormados / $metaObjetivo) * 100;
-        }
+        $porcentaje = $metaObjetivo > 0 ? ($estudiantesFormados / $metaObjetivo) * 100 : 0;
         
-        // Determinar estado de cumplimiento
         $estadoCumplimiento = 'En progreso';
-        if ($porcentaje >= 100) {
-            $estadoCumplimiento = 'Cumplida';
-        } else if ($porcentaje <= 0) {
-            $estadoCumplimiento = 'Sin iniciar';
-        }
+        if ($porcentaje >= 100) $estadoCumplimiento = 'Cumplida';
+        else if ($porcentaje <= 0) $estadoCumplimiento = 'Sin iniciar';
         
-        // Asignar valores calculados
         $meta['estudiantes_formados'] = $estudiantesFormados;
         $meta['porcentaje_cumplimiento'] = round($porcentaje, 2);
         $meta['estado_cumplimiento'] = $estadoCumplimiento;
     }
     
-    error_log("Metas procesadas para año $anio: " . count($metas));
     return $metas;
 }
 
-/**
- * Cuenta participantes APROBADOS en cursos de un ámbito específico dentro de un período
- */
 function contarAprobadosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaInicio, string $fechaFin): int {
-    // Si no hay ámbito asignado, buscar metas sin ámbito específico
     if (empty($idAmbito)) {
         $sql = "
             SELECT COUNT(DISTINCT pc.id_participante) as total
@@ -709,12 +884,8 @@ function contarAprobadosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaIni
               AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
         ";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':fecha_inicio' => $fechaInicio,
-            ':fecha_fin' => $fechaFin
-        ]);
+        $stmt->execute([':fecha_inicio' => $fechaInicio, ':fecha_fin' => $fechaFin]);
     } else {
-        // Contar aprobados en cursos del ámbito específico
         $sql = "
             SELECT COUNT(DISTINCT pc.id_participante) as total
             FROM tb_participante_curso pc
@@ -724,23 +895,13 @@ function contarAprobadosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaIni
               AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
         ";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':id_ambito' => $idAmbito,
-            ':fecha_inicio' => $fechaInicio,
-            ':fecha_fin' => $fechaFin
-        ]);
+        $stmt->execute([':id_ambito' => $idAmbito, ':fecha_inicio' => $fechaInicio, ':fecha_fin' => $fechaFin]);
     }
-    
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     return intval($result['total'] ?? 0);
 }
 
-/**
- * Cuenta participantes INSCRITOS en cursos de un ámbito específico dentro de un período
- * (basado en fecha_inscripcion)
- */
 function contarInscritosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaInicio, string $fechaFin): int {
-    // Si no hay ámbito asignado, buscar metas sin ámbito específico
     if (empty($idAmbito)) {
         $sql = "
             SELECT COUNT(DISTINCT pc.id_participante) as total
@@ -749,12 +910,8 @@ function contarInscritosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaIni
             WHERE pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
         ";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':fecha_inicio' => $fechaInicio,
-            ':fecha_fin' => $fechaFin
-        ]);
+        $stmt->execute([':fecha_inicio' => $fechaInicio, ':fecha_fin' => $fechaFin]);
     } else {
-        // Contar inscritos en cursos del ámbito específico
         $sql = "
             SELECT COUNT(DISTINCT pc.id_participante) as total
             FROM tb_participante_curso pc
@@ -763,23 +920,13 @@ function contarInscritosPorAmbitoYPeriodo(PDO $conn, $idAmbito, string $fechaIni
               AND pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
         ";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':id_ambito' => $idAmbito,
-            ':fecha_inicio' => $fechaInicio,
-            ':fecha_fin' => $fechaFin
-        ]);
+        $stmt->execute([':id_ambito' => $idAmbito, ':fecha_inicio' => $fechaInicio, ':fecha_fin' => $fechaFin]);
     }
-    
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
     return intval($result['total'] ?? 0);
 }
 
-/**
- * Función adicional: Obtiene el desglose de participantes por meta
- * Útil para mostrar detalles en el reporte
- */
 function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
-    // Primero obtener la meta
     $stmt = $conn->prepare("
         SELECT m.*, a.nombre_ambito
         FROM tb_metas m
@@ -789,15 +936,12 @@ function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
     $stmt->execute([':id_meta' => $idMeta]);
     $meta = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$meta) {
-        return [];
-    }
+    if (!$meta) return [];
     
     $fechaInicio = $meta['fecha_inicio'] ?? date('Y') . '-01-01';
     $fechaFin = $meta['fecha_fin'] ?? date('Y') . '-12-31';
     
     if ($meta['tipo_objetivo'] === 'Aprobados') {
-        // Obtener lista de participantes aprobados
         $sql = "
             SELECT DISTINCT 
                 p.id_participante,
@@ -812,20 +956,11 @@ function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
               pc.estatus_participante = 'Aprobado'
               AND pc.FechaFin BETWEEN :fecha_inicio AND :fecha_fin
         ";
-
-        $params = [
-            ':fecha_inicio' => $fechaInicio,
-            ':fecha_fin' => $fechaFin
-        ];
-        if (!empty($meta['id_ambito'])) {
-            $params[':id_ambito'] = $meta['id_ambito'];
-        }
-        
+        $params = [':fecha_inicio' => $fechaInicio, ':fecha_fin' => $fechaFin];
+        if (!empty($meta['id_ambito'])) $params[':id_ambito'] = $meta['id_ambito'];
         $stmt = $conn->prepare($sql);
         $stmt->execute($params);
-        
     } else {
-        // Obtener lista de participantes inscritos
         $sql = "
             SELECT DISTINCT 
                 p.id_participante,
@@ -840,18 +975,11 @@ function getDetalleParticipantesPorMeta(PDO $conn, int $idMeta): array {
             WHERE " . (empty($meta['id_ambito']) ? "" : "c.id_ambito = :id_ambito AND") . "
               pc.fecha_inscripcion BETWEEN :fecha_inicio AND :fecha_fin
         ";
-        $params = [
-            ':fecha_inicio' => $fechaInicio,
-            ':fecha_fin' => $fechaFin
-        ];
-        if (!empty($meta['id_ambito'])) {
-            $params[':id_ambito'] = $meta['id_ambito'];
-        }
-        
+        $params = [':fecha_inicio' => $fechaInicio, ':fecha_fin' => $fechaFin];
+        if (!empty($meta['id_ambito'])) $params[':id_ambito'] = $meta['id_ambito'];
         $stmt = $conn->prepare($sql);
         $stmt->execute($params);
     }
-    
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -874,238 +1002,118 @@ function getAniosDisponibles(PDO $conn): array {
     return empty($rows) ? [intval(date('Y'))] : array_map('intval', $rows);
 }
 
-
-
-function buscarParticipantes(PDO $conn, string $q, int $limite): array
-{
+function buscarParticipantes(PDO $conn, string $q, int $limite): array {
     $stmt = $conn->prepare("
-        SELECT
-            CONCAT(primer_nombre, ' ', primer_apellido)  AS nombre,
-            cedula,
-            estado
+        SELECT CONCAT(primer_nombre, ' ', primer_apellido) AS nombre, cedula, estado
         FROM tb_participante
-        WHERE primer_nombre  LIKE :q
-           OR primer_apellido LIKE :q
-           OR cedula          LIKE :q
-           OR correo          LIKE :q
+        WHERE primer_nombre LIKE :q OR primer_apellido LIKE :q OR cedula LIKE :q OR correo LIKE :q
         LIMIT :limite
     ");
-    $stmt->bindValue(':q',      "%{$q}%", PDO::PARAM_STR);
-    $stmt->bindValue(':limite', $limite,  PDO::PARAM_INT);
+    $stmt->bindValue(':q', "%{$q}%", PDO::PARAM_STR);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Devuelve: nombre, cedula, estado
-    // El JS usa `p.cedula` como valor de ?buscar=
 }
  
-function buscarCursos(PDO $conn, string $q, int $limite): array
-{
+function buscarCursos(PDO $conn, string $q, int $limite): array {
     $stmt = $conn->prepare("
-        SELECT
-            c.id_curso,
-            c.nombre_curso              AS nombre,
-            e.nombre_estatusCurso       AS estatus
+        SELECT c.id_curso, c.nombre_curso AS nombre, e.nombre_estatusCurso AS estatus
         FROM tb_curso c
         LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso
-        WHERE c.nombre_curso LIKE :q
-           OR c.id_curso     LIKE :q
+        WHERE c.nombre_curso LIKE :q OR c.id_curso LIKE :q
         LIMIT :limite
     ");
-    $stmt->bindValue(':q',      "%{$q}%", PDO::PARAM_STR);
-    $stmt->bindValue(':limite', $limite,  PDO::PARAM_INT);
+    $stmt->bindValue(':q', "%{$q}%", PDO::PARAM_STR);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Devuelve: id_curso, nombre, estatus
-    // El JS usa `c.id_curso` como valor de ?buscar=
 }
  
-function buscarDocentes(PDO $conn, string $q, int $limite): array
-{
+function buscarDocentes(PDO $conn, string $q, int $limite): array {
     $stmt = $conn->prepare("
-        SELECT
-            CONCAT(primer_nombre, ' ', primer_apellido)  AS nombre,
-            cedula,
-            tipo_docente,
-            estado_docente
+        SELECT id_docente, primer_nombre, primer_apellido, cedula, tipo_docente, estado_docente
         FROM tb_docente
-        WHERE primer_nombre  LIKE :q
-           OR primer_apellido LIKE :q
-           OR cedula          LIKE :q
+        WHERE primer_nombre LIKE :q OR primer_apellido LIKE :q OR cedula LIKE :q
         LIMIT :limite
     ");
-    $stmt->bindValue(':q',      "%{$q}%", PDO::PARAM_STR);
-    $stmt->bindValue(':limite', $limite,  PDO::PARAM_INT);
+    $stmt->bindValue(':q', "%{$q}%", PDO::PARAM_STR);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // Devuelve: nombre, cedula, tipo_docente, estado_docente
-    // El JS usa `d.cedula` como valor de ?buscar=
 }
 
 function getResumenGlobal(PDO $conn): array {
-    // Total de participantes
     $stmt = $conn->query("SELECT COUNT(*) as total FROM tb_participante");
     $participantes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
-    
-    // Total de cursos
     $stmt = $conn->query("SELECT COUNT(*) as total FROM tb_curso");
     $cursos = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
-    
-    // Total de docentes
     $stmt = $conn->query("SELECT COUNT(*) as total FROM tb_docente");
     $docentes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
-    
-    // Progreso de metas (porcentaje promedio de cumplimiento)
-    $stmt = $conn->query("
-        SELECT AVG(porcentaje_cumplimiento) as promedio 
-        FROM tb_metas 
-        WHERE estado = 'Activo'
-    ");
+    $stmt = $conn->query("SELECT AVG(porcentaje_cumplimiento) as promedio FROM tb_metas WHERE estado = 'Activo'");
     $promedioMeta = $stmt->fetch(PDO::FETCH_ASSOC)['promedio'] ?? 0;
-    
     return [
         'participantes' => (int)$participantes,
-        'cursos'        => (int)$cursos,
-        'docentes'      => (int)$docentes,
-        'pct_metas'     => round($promedioMeta, 1)
+        'cursos' => (int)$cursos,
+        'docentes' => (int)$docentes,
+        'pct_metas' => round($promedioMeta, 1)
     ];
 }
 
-/**
- * Resumen de 4 KPI cards para el reporte Trayectoria de Participantes:
- *  - total:       total de participantes registrados en el sistema
- *  - activos:     participantes con estado = 'Activo'
- *  - registrados: participantes que tienen al menos una inscripción en tb_participante_curso
- *  - sin_curso:   participantes SIN ninguna inscripción en tb_participante_curso
- */
 function getTrayectoriaResumen(PDO $conn): array {
- 
-    // Total general
-    $stmt  = $conn->query("SELECT COUNT(*) FROM tb_participante");
+    $stmt = $conn->query("SELECT COUNT(*) FROM tb_participante");
     $total = intval($stmt->fetchColumn());
- 
-    // Participantes que existen en tb_participante Y tienen
-    // al menos 1 inscripción en tb_participante_curso
-    $stmt    = $conn->query("
-        SELECT COUNT(DISTINCT pc.id_participante)
-        FROM   tb_participante_curso pc
-        INNER JOIN tb_participante p ON p.id_participante = pc.id_participante
-    ");
+    $stmt = $conn->query("SELECT COUNT(DISTINCT pc.id_participante) FROM tb_participante_curso pc INNER JOIN tb_participante p ON p.id_participante = pc.id_participante");
     $activos = intval($stmt->fetchColumn());
- 
-    // Sin ninguna inscripción válida
     $sin_curso = max(0, $total - $activos);
- 
-    return [
-        'total'     => $total,
-        'activos'   => $activos,
-        'sin_curso' => $sin_curso,
-    ];
+    return ['total' => $total, 'activos' => $activos, 'sin_curso' => $sin_curso];
 }
  
-/**
- * Lista completa de participantes para la tabla.
- * Incluye has_curso (1/0) para el filtro de cards.
- */
 function getTrayectoriaParticipantes(PDO $conn): array {
     $stmt = $conn->query("
-        SELECT
-            p.cedula,
-            p.primer_nombre,
-            p.primer_apellido,
-            p.genero,
-            p.edad,
-            p.correo,
-            p.fecha_registro,
-            p.estado,
-            p.grado_institucion,
-            (
-                SELECT t.numero_de_telefono
-                FROM   tb_telefono t
-                WHERE  t.id_participante = p.id_participante
-                  AND  t.tipo_de_telefono = 'Móvil'
-                ORDER BY t.id_telefono ASC
-                LIMIT  1
-            ) AS telefono,
-            CASE WHEN EXISTS (
-                SELECT 1
-                FROM   tb_participante_curso pc
-                WHERE  pc.id_participante = p.id_participante
-            ) THEN 1 ELSE 0 END AS has_curso
-        FROM  tb_participante p
-        ORDER BY p.primer_apellido ASC, p.primer_nombre ASC
+        SELECT p.cedula, p.primer_nombre, p.primer_apellido, p.genero, p.edad, p.correo,
+               p.fecha_registro, p.estado, p.grado_institucion,
+               (SELECT t.numero_de_telefono FROM tb_telefono t WHERE t.id_participante = p.id_participante AND t.tipo_de_telefono = 'Móvil' ORDER BY t.id_telefono ASC LIMIT 1) AS telefono,
+               CASE WHEN EXISTS (SELECT 1 FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante) THEN 1 ELSE 0 END AS has_curso
+        FROM tb_participante p ORDER BY p.primer_apellido ASC, p.primer_nombre ASC
     ");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getDetalleParticipante(PDO $conn, int $cedula): array {
- 
-    // ── Datos personales + discapacidad ──────────────────────────────
     $stmt = $conn->prepare("
-        SELECT
-            p.cedula,
-            p.primer_nombre,
-            p.segundo_nombre,
-            p.primer_apellido,
-            p.segundo_apellido,
-            p.edad,
-            p.fecha_nacimiento,
-            p.fecha_registro,
-            p.correo,
-            p.estado,
-            p.genero,
-            p.grado_institucion,
-            d.nombre_discapacidad
+        SELECT p.cedula, p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido,
+               p.edad, p.fecha_nacimiento, p.fecha_registro, p.correo, p.estado, p.genero,
+               p.grado_institucion, d.nombre_discapacidad
         FROM tb_participante p
         LEFT JOIN tb_discapacidad d ON d.id_discapacidad = p.id_discapacidad
-        WHERE p.cedula = :cedula
-        LIMIT 1
+        WHERE p.cedula = :cedula LIMIT 1
     ");
     $stmt->execute([':cedula' => $cedula]);
     $persona = $stmt->fetch(PDO::FETCH_ASSOC);
- 
     if (!$persona) return ['error' => 'Participante no encontrado'];
- 
-    // Obtener id_participante para las demás consultas
+    
     $stmtId = $conn->prepare("SELECT id_participante FROM tb_participante WHERE cedula = :cedula LIMIT 1");
     $stmtId->execute([':cedula' => $cedula]);
     $idParticipante = intval($stmtId->fetchColumn());
- 
-    // ── Teléfonos ────────────────────────────────────────────────────
-    $stmt = $conn->prepare("
-        SELECT numero_de_telefono, tipo_de_telefono
-        FROM   tb_telefono
-        WHERE  id_participante = :id
-        ORDER BY id_telefono ASC
-    ");
+    
+    $stmt = $conn->prepare("SELECT numero_de_telefono, tipo_de_telefono FROM tb_telefono WHERE id_participante = :id ORDER BY id_telefono ASC");
     $stmt->execute([':id' => $idParticipante]);
     $persona['telefonos'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
- 
-    // ── Cursos (para tabla y gráfica Gantt) ──────────────────────────
+    
     $stmt = $conn->prepare("
-        SELECT
-            c.id_curso,
-            c.nombre_curso,
-            c.turno,
-            pc.fecha_inscripcion,
-            pc.FechaInicio       AS fecha_inicio,
-            pc.FechaFin          AS fecha_fin,
-            pc.estatus_participante,
-            e.nombre_estatusCurso AS estatus_curso,
-            a.nombre_ambito,
-            af.nombre_areaFormativa AS area_formativa,
-            m.nombre_modalidad,
-            c.horas_totales
-        FROM   tb_participante_curso pc
-        JOIN   tb_curso c  ON c.id_curso = pc.id_curso
-        LEFT JOIN tb_estatuscurso  e  ON e.id_estatusCurso  = c.id_estatusCurso
-        LEFT JOIN tb_ambito        a  ON a.id_ambito        = c.id_ambito
+        SELECT c.id_curso, c.nombre_curso, c.turno, pc.fecha_inscripcion,
+               pc.FechaInicio AS fecha_inicio, pc.FechaFin AS fecha_fin, pc.estatus_participante,
+               e.nombre_estatusCurso AS estatus_curso, a.nombre_ambito, af.nombre_areaFormativa AS area_formativa,
+               m.nombre_modalidad, c.horas_totales
+        FROM tb_participante_curso pc
+        JOIN tb_curso c ON c.id_curso = pc.id_curso
+        LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso
+        LEFT JOIN tb_ambito a ON a.id_ambito = c.id_ambito
         LEFT JOIN tb_areaformativa af ON af.id_areaFormativa = c.id_areaFormativa
-        LEFT JOIN tb_modalidad     m  ON m.id_modalidad      = c.id_modalidad
-        WHERE  pc.id_participante = :id
-        ORDER BY pc.FechaInicio ASC
+        LEFT JOIN tb_modalidad m ON m.id_modalidad = c.id_modalidad
+        WHERE pc.id_participante = :id ORDER BY pc.FechaInicio ASC
     ");
     $stmt->execute([':id' => $idParticipante]);
     $persona['cursos'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
- 
     return $persona;
 }

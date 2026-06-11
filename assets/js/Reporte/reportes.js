@@ -707,6 +707,12 @@ function _ejecutarCargaReporte(reporte, categoria) {
     const contentDiv = document.createElement('div');
     contentDiv.id = 'reportContent';
     contentDiv.className = 'fade-in';
+    // Placeholder de carga para evitar pantalla en blanco mientras el reporte inicializa
+    contentDiv.innerHTML = `
+        <div class="d-flex flex-column align-items-center justify-content-center p-4" style="min-height:220px;">
+            <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
+            <div class="mt-3 text-muted small">Cargando contenido del reporte...</div>
+        </div>`;
 
     const tabsContainer = document.getElementById('tabsContainer');
     contentDiv.style.marginTop = tabsContainer?.classList.contains('sticky-active') ? '80px' : '20px';
@@ -715,7 +721,30 @@ function _ejecutarCargaReporte(reporte, categoria) {
 
     setTimeout(() => {
         try {
-            window[reporte.funcion]();
+            // Ejecutar la función del reporte. Se espera que modifique #reportContent.
+            const result = window[reporte.funcion]();
+            // Si la función devuelve una promesa, esperar a su resolución para quitar el loader
+            if (result && typeof result.then === 'function') {
+                result.then(() => {
+                    // si quedó vacío, mostrar nota
+                    const rc = document.getElementById('reportContent');
+                    if (rc && rc.innerHTML.trim() === '') {
+                        rc.innerHTML = `<div class="alert alert-warning">El reporte se cargó correctamente pero no generó contenido.</div>`;
+                    }
+                }).catch(err => {
+                    console.error(`Error Promise en ${reporte.funcion}:`, err);
+                    const rc = document.getElementById('reportContent');
+                    if (rc) rc.innerHTML = `<div class="alert alert-danger">Error al cargar el reporte.</div>`;
+                });
+            } else {
+                // Si no devuelve promesa, verificar tras un breve retraso si dejó contenido
+                setTimeout(() => {
+                    const rc = document.getElementById('reportContent');
+                    if (rc && rc.innerHTML.trim() === '') {
+                        rc.innerHTML = `<div class="alert alert-warning">El reporte no generó contenido. Intenta recargar la página o selecciona otro reporte.</div>`;
+                    }
+                }, 900);
+            }
         } catch (e) {
             console.error(`Error al ejecutar ${reporte.funcion}:`, e);
             contentDiv.innerHTML = `<div class="alert alert-danger">Error al ejecutar el reporte: ${e.message}</div>`;
