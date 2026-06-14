@@ -10,17 +10,81 @@ class Metas {
     }
 
     /**
+     * Devuelve la consulta SQL para el conteo dinámico de estudiantes formados.
+     * @param bool $isForUpdate Si es true, devuelve el conteo real (sin considerar el valor congelado).
+     */
+    private function getDynamicCountSql($isForUpdate = false) {
+        $realCount = "(
+            CASE 
+                WHEN m.tipo_objetivo = 'Aprobados' THEN (
+                    SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
+                    FROM tb_participante_curso pc2
+                    INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                    WHERE pc2.estatus_participante = 'Aprobado'
+                      AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
+                      AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+                )
+                WHEN m.tipo_objetivo = 'Inscritos' THEN (
+                    SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
+                    FROM tb_participante_curso pc2
+                    INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                    WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
+                      AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+                )
+                WHEN m.tipo_objetivo = 'Ingresados' THEN (
+                    SELECT COUNT(DISTINCT p.id_participante)
+                    FROM tb_participante p
+                    WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                )
+                WHEN m.tipo_objetivo = 'Masculino' THEN (
+                    SELECT COUNT(DISTINCT p.id_participante)
+                    FROM tb_participante p
+                    WHERE p.genero = 'Masculino'
+                      AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                )
+                WHEN m.tipo_objetivo = 'Femenino' THEN (
+                    SELECT COUNT(DISTINCT p.id_participante)
+                    FROM tb_participante p
+                    WHERE p.genero = 'Femenino'
+                      AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+                )
+                ELSE 0
+            END
+        )";
+
+        if ($isForUpdate) {
+            return $realCount;
+        }
+
+        // Para consultas normales, si está cerrada usamos el valor congelado en estudiantes_formados
+        return "(IF(m.estado = 'Cerrada', m.estudiantes_formados, {$realCount}))";
+    }
+
+    /**
      * Cierra automáticamente las metas cuya fecha_fin ya pasó y aún están Activas.
+     * Congela el conteo dinámico de estudiantes formados al momento de cerrar.
      * Se llama antes de cada consulta para mantener el estado siempre actualizado.
      */
     private function cerrarMetasVencidas() {
         try {
-            // Sincronizar estados: si la fecha fin ya pasó, forzar a 'Cerrada'
-            $sql = "UPDATE tb_metas
-                       SET estado = 'Cerrada'
-                     WHERE estado != 'Cerrada'
-                       AND fecha_fin < CURDATE()";
-            $this->conn->exec($sql);
+            $realCount = $this->getDynamicCountSql(true);
+            
+            // Sincronizar estados: si la fecha fin ya pasó, forzar a 'Cerrada' y congelar conteo
+            $sql1 = "UPDATE tb_metas m
+                       SET m.estado = 'Cerrada',
+                           m.estudiantes_formados = {$realCount}
+                     WHERE m.estado != 'Cerrada'
+                       AND m.fecha_fin < CURDATE()";
+            $this->conn->exec($sql1);
+
+            // Congelar también las que ya estaban cerradas pero cuyo conteo en BD seguía en 0 
+            // (y que realmente tienen > 0 en su cálculo actual). 
+            $sql2 = "UPDATE tb_metas m
+                       SET m.estudiantes_formados = {$realCount}
+                     WHERE m.estado = 'Cerrada'
+                       AND m.estudiantes_formados = 0
+                       AND {$realCount} > 0";
+            $this->conn->exec($sql2);
         } catch (PDOException $e) {
             error_log("Error en cerrarMetasVencidas: " . $e->getMessage());
         }
@@ -32,43 +96,7 @@ class Metas {
             // Si m.id_ambito IS NULL => meta Global: suma de todos los cursos.
             // Si m.id_ambito tiene valor => solo cuenta participantes de cursos de ese ámbito.
             // Soporta tipo_objetivo: 'Aprobados' (estatus=Aprobado, por FechaFin) o 'Inscritos' (por fecha_inscripcion).
-            $dynamicCount = "(
-                CASE 
-                    WHEN m.tipo_objetivo = 'Aprobados' THEN (
-                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
-                        FROM tb_participante_curso pc2
-                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-                        WHERE pc2.estatus_participante = 'Aprobado'
-                          AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
-                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
-                    )
-                    WHEN m.tipo_objetivo = 'Inscritos' THEN (
-                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
-                        FROM tb_participante_curso pc2
-                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-                        WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
-                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
-                    )
-                    WHEN m.tipo_objetivo = 'Ingresados' THEN (
-                        SELECT COUNT(DISTINCT p.id_participante)
-                        FROM tb_participante p
-                        WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-                    )
-                    WHEN m.tipo_objetivo = 'Masculino' THEN (
-                        SELECT COUNT(DISTINCT p.id_participante)
-                        FROM tb_participante p
-                        WHERE p.genero = 'Masculino'
-                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-                    )
-                    WHEN m.tipo_objetivo = 'Femenino' THEN (
-                        SELECT COUNT(DISTINCT p.id_participante)
-                        FROM tb_participante p
-                        WHERE p.genero = 'Femenino'
-                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-                    )
-                    ELSE 0
-                END
-            )";
+            $dynamicCount = $this->getDynamicCountSql();
 
             $sql = "SELECT m.id_meta, m.meta_objetivo, m.id_ambito, m.tipo_objetivo,
                         COALESCE(a.nombre_ambito, 'Global') AS ambito_nombre,
@@ -96,44 +124,9 @@ class Metas {
     }
 
     public function obtenerPorId($id) {
+        $this->cerrarMetasVencidas(); // Sincronizar estados antes de consultar
         try {
-            $dynamicCount = "(
-                CASE 
-                    WHEN m.tipo_objetivo = 'Aprobados' THEN (
-                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
-                        FROM tb_participante_curso pc2
-                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-                        WHERE pc2.estatus_participante = 'Aprobado'
-                          AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
-                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
-                    )
-                    WHEN m.tipo_objetivo = 'Inscritos' THEN (
-                        SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
-                        FROM tb_participante_curso pc2
-                        INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
-                        WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
-                          AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
-                    )
-                    WHEN m.tipo_objetivo = 'Ingresados' THEN (
-                        SELECT COUNT(DISTINCT p.id_participante)
-                        FROM tb_participante p
-                        WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-                    )
-                    WHEN m.tipo_objetivo = 'Masculino' THEN (
-                        SELECT COUNT(DISTINCT p.id_participante)
-                        FROM tb_participante p
-                        WHERE p.genero = 'Masculino'
-                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-                    )
-                    WHEN m.tipo_objetivo = 'Femenino' THEN (
-                        SELECT COUNT(DISTINCT p.id_participante)
-                        FROM tb_participante p
-                        WHERE p.genero = 'Femenino'
-                          AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
-                    )
-                    ELSE 0
-                END
-            )";
+            $dynamicCount = $this->getDynamicCountSql();
 
             $sql = "SELECT m.id_meta, m.meta_objetivo, m.id_ambito, m.tipo_objetivo,
                         COALESCE(a.nombre_ambito, 'Global') AS ambito_nombre,

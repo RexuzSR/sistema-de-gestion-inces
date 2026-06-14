@@ -15,6 +15,7 @@ let tiposActivosHist = new Set(['objetivo', 'alcanzado']);
 let tipoGraficoHist  = 'bar';
 let vistaActivaHist  = 'anual';
 let anioHistTrim     = new Date().getFullYear();
+let tipoMetaHist     = '';
 let panelActivoHist  = null;
 
 const COLOR_BASE_HIST = {
@@ -47,48 +48,60 @@ function obtenerAniosDisponiblesHist() {
 }
 
 // ─── Fetch con caché ─────────────────────────────────────────
-async function fetchHistAnual() {
-    if (cacheHistAnual) return cacheHistAnual;
-    const res = await fetch(`${API_URL_HIST}?accion=metas_por_anio`,
+async function fetchHistAnual(tipoMeta) {
+    if (cacheHistAnual && cacheHistAnual._tipo === tipoMeta) return cacheHistAnual;
+    const url = `${API_URL_HIST}?accion=metas_por_anio${tipoMeta ? '&tipo=' + encodeURIComponent(tipoMeta) : ''}`;
+    const res = await fetch(url,
         { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     cacheHistAnual = Array.isArray(data) ? data : (data.data || []);
+    cacheHistAnual._tipo = tipoMeta;
     return cacheHistAnual;
 }
-async function fetchHistTrimestre(anio) {
-    if (cacheHistTrim[anio]) return cacheHistTrim[anio];
-    const res = await fetch(`${API_URL_HIST}?accion=metas_por_trimestre&anio_meta=${anio}`,
+async function fetchHistTrimestre(anio, tipoMeta) {
+    const key = `${anio}_${tipoMeta}`;
+    if (cacheHistTrim[key]) return cacheHistTrim[key];
+    const url = `${API_URL_HIST}?accion=metas_por_trimestre&anio_meta=${anio}${tipoMeta ? '&tipo=' + encodeURIComponent(tipoMeta) : ''}`;
+    const res = await fetch(url,
         { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    cacheHistTrim[anio] = Array.isArray(data) ? data : (data.data || []);
-    return cacheHistTrim[anio];
+    cacheHistTrim[key] = Array.isArray(data) ? data : (data.data || []);
+    return cacheHistTrim[key];
 }
 
 // ─── Normalización de respuestas del backend ─────────────────
 function normalizarAnual(raw) {
-    return raw.map(d => ({
-        label:          String(d.anio || d.year || '?'),
-        total_metas:    parseInt(d.total_metas    || 1),
-        objetivo_total: parseInt(d.objetivo_total || d.meta_objetivo || 0),
-        alcanzado_total:parseInt(d.alcanzado_total|| d.estudiantes_formados || 0),
-        pct:            parseFloat(d.porcentaje_promedio || d.porcentaje || d.porcentaje_cumplimiento || 0),
-        metas_cumplidas:parseInt(d.metas_cumplidas || 0),
-    }));
+    return raw.map(d => {
+        const objTotal = parseInt(d.objetivo_total || d.meta_objetivo || 0);
+        const alcTotal = parseInt(d.alcanzado_total || d.estudiantes_formados || 0);
+        return {
+            label:          String(d.anio || d.year || '?'),
+            total_metas:    parseInt(d.total_metas    || 1),
+            objetivo_total: objTotal,
+            alcanzado_total:alcTotal,
+            pct:            objTotal > 0 ? parseFloat((alcTotal / objTotal * 100).toFixed(2)) : 0,
+            metas_cumplidas:parseInt(d.metas_cumplidas || 0),
+        };
+    });
 }
 function normalizarTrimestre(raw) {
-    return raw.map(d => ({
-        trimestre:      parseInt(d.trimestre || d.quarter || 0),
-        label:          TRIM_NOMBRES[parseInt(d.trimestre || d.quarter || 0)] || `T${d.trimestre}`,
-        total_metas:    parseInt(d.total_metas    || 1),
-        objetivo_total: parseInt(d.objetivo_total || d.meta_objetivo || 0),
-        alcanzado_total:parseInt(d.alcanzado_total|| d.estudiantes_formados || 0),
-        pct:            parseFloat(d.porcentaje_promedio || d.porcentaje || d.porcentaje_cumplimiento || 0),
-        metas_cumplidas:parseInt(d.metas_cumplidas || 0),
-    }));
+    return raw.map(d => {
+        const objTotal = parseInt(d.objetivo_total || d.meta_objetivo || 0);
+        const alcTotal = parseInt(d.alcanzado_total || d.estudiantes_formados || 0);
+        return {
+            trimestre:      parseInt(d.trimestre || d.quarter || 0),
+            label:          TRIM_NOMBRES[parseInt(d.trimestre || d.quarter || 0)] || `T${d.trimestre}`,
+            total_metas:    parseInt(d.total_metas    || 1),
+            objetivo_total: objTotal,
+            alcanzado_total:alcTotal,
+            pct:            objTotal > 0 ? parseFloat((alcTotal / objTotal * 100).toFixed(2)) : 0,
+            metas_cumplidas:parseInt(d.metas_cumplidas || 0),
+        };
+    });
 }
 function buildResumenHist(datos) {
     const totalPeriodos = datos.length;
@@ -116,6 +129,7 @@ async function cargarHistoricoMetas() {
     panelActivoHist  = null;
     vistaActivaHist  = 'anual';
     anioHistTrim     = hoy;
+    tipoMetaHist     = '';
     tiposActivosHist = new Set(['objetivo', 'alcanzado']);
     tipoGraficoHist  = 'bar';
 
@@ -166,6 +180,20 @@ async function cargarHistoricoMetas() {
                   <div class="rp-toolbar-label mb-2">Año</div>
                   <select id="selectAnioHistTrim" class="form-select form-select-sm" style="width:100px;">
                     ${aniosDisp.map(a => `<option value="${a}" ${a===hoy?'selected':''}>${a}</option>`).join('')}
+                  </select>
+                </div>
+
+                <div class="rp-vdivider d-none d-md-block"></div>
+
+                <div style="flex:0 0 auto;">
+                  <div class="rp-toolbar-label mb-2">Tipo de Meta</div>
+                  <select id="selectTipoMetaHist" class="form-select form-select-sm" style="width:140px;">
+                    <option value="">Todos</option>
+                    <option value="Aprobados">Aprobados</option>
+                    <option value="Inscritos">Inscritos</option>
+                    <option value="Ingresados">Ingresados</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
                   </select>
                 </div>
 
@@ -243,6 +271,11 @@ async function cargarHistoricoMetas() {
         if (vistaActivaHist === 'trimestre') await _cargarVistaHist();
     });
 
+    document.getElementById('selectTipoMetaHist')?.addEventListener('change', async function () {
+        tipoMetaHist = this.value;
+        await _cargarVistaHist();
+    });
+
     await _cargarVistaHist();
 }
 
@@ -264,10 +297,10 @@ async function _cargarVistaHist() {
     try {
         let datos = [];
         if (vistaActivaHist === 'anual') {
-            datos = normalizarAnual(await fetchHistAnual());
+            datos = normalizarAnual(await fetchHistAnual(tipoMetaHist));
             document.getElementById('histTablaTitulo').textContent = 'Resumen Anual de Metas';
         } else {
-            datos = normalizarTrimestre(await fetchHistTrimestre(anioHistTrim));
+            datos = normalizarTrimestre(await fetchHistTrimestre(anioHistTrim, tipoMetaHist));
             document.getElementById('histTablaTitulo').textContent = `Resumen Trimestral ${anioHistTrim}`;
         }
 
@@ -324,8 +357,8 @@ function renderKPIsHist(r) {
             let datos = [];
             try {
                 datos = vistaActivaHist === 'anual'
-                    ? normalizarAnual(await fetchHistAnual())
-                    : normalizarTrimestre(await fetchHistTrimestre(anioHistTrim));
+                    ? normalizarAnual(await fetchHistAnual(tipoMetaHist))
+                    : normalizarTrimestre(await fetchHistTrimestre(anioHistTrim, tipoMetaHist));
             } catch {}
             await togglePanelDetalleHist(card.dataset.tipo, datos);
         })
@@ -601,6 +634,7 @@ function limpiarRecursosHist() {
     cacheHistAnual   = null;
     cacheHistTrim    = {};
     panelActivoHist  = null;
+    tipoMetaHist     = '';
     tiposActivosHist = new Set(['objetivo','alcanzado']);
     tipoGraficoHist  = 'bar';
     vistaActivaHist  = 'anual';

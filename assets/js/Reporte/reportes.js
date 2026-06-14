@@ -303,12 +303,7 @@ function mostrarCategorias() {
 
             btn.addEventListener('click', (e) => {
                 aplicarRippleCard(btn, e, color);
-                // Metas abre directamente su módulo en lugar de expandir reportes
-                if (categoria.id === 4) {
-                    _abrirMetas();
-                } else {
-                    toggleCategoriaExpansion(categoria.id);
-                }
+                toggleCategoriaExpansion(categoria.id);
             });
 
             nav.appendChild(btn);
@@ -518,49 +513,32 @@ function _aplicarColorTab(tab, cat, activo) {
 
 function setupStickyTabs() {
     if (!tabsContainer) return () => { };
-    let ph = null, isSticky = false;
     try {
-        ph = document.createElement('div');
-        ph.id = '_tabs-placeholder';
-        ph.style.cssText = 'display:none;pointer-events:none;';
-        tabsContainer.parentNode.insertBefore(ph, tabsContainer.nextSibling);
+        tabsContainer.style.position = 'sticky';
+        tabsContainer.style.top = '0';
+        tabsContainer.style.zIndex = '999';
 
         const sentinel = document.createElement('div');
         sentinel.id = '_sticky-sentinel';
-        sentinel.style.cssText = 'height:1px;visibility:hidden;pointer-events:none;';
+        sentinel.style.cssText = 'position:absolute;height:1px;visibility:hidden;pointer-events:none;';
         tabsContainer.parentNode.insertBefore(sentinel, tabsContainer);
 
-        const activate = () => {
-            if (isSticky) return;
-            isSticky = true;
-            ph.style.height = tabsContainer.offsetHeight + 'px';
-            ph.style.display = 'block';
-            tabsContainer.style.cssText += `position:fixed!important;top:0!important;left:0!important;width:${window.innerWidth}px!important;z-index:9999!important;border-radius:0!important;margin:0!important;`;
-            tabsContainer.classList.add('sticky-active');
-        };
-
-        const deactivate = () => {
-            if (!isSticky) return;
-            isSticky = false;
-            ph.style.display = 'none';
-            ph.style.height = '0';
-            tabsContainer.style.position = tabsContainer.style.top = tabsContainer.style.left =
-                tabsContainer.style.width = tabsContainer.style.zIndex =
-                tabsContainer.style.borderRadius = tabsContainer.style.margin = '';
-            tabsContainer.classList.remove('sticky-active');
-        };
-
         const obs = new IntersectionObserver(
-            ([e]) => e.isIntersecting ? deactivate() : activate(),
+            ([e]) => {
+                if (!e.isIntersecting) tabsContainer.classList.add('sticky-active');
+                else tabsContainer.classList.remove('sticky-active');
+            },
             { root: null, threshold: 0 }
         );
         obs.observe(sentinel);
 
         return () => {
             obs.disconnect();
-            deactivate();
             if (sentinel.parentNode) sentinel.remove();
-            if (ph.parentNode) ph.remove();
+            tabsContainer.classList.remove('sticky-active');
+            tabsContainer.style.position = '';
+            tabsContainer.style.top = '';
+            tabsContainer.style.zIndex = '';
         };
     } catch (e) { console.error('Error sticky:', e); return () => { }; }
 }
@@ -585,6 +563,8 @@ function seleccionarReporte(reporteId, categoriaId) {
             try {
                 cardsContainer.style.display = 'none';
                 reportContainer.style.display = 'block';
+                reportContainer.classList.remove('fade-out');
+                reportContainer.classList.add('fade-in');
                 reportContainer.innerHTML = '';
                 tabsContainer.style.display = 'block';
                 cargarReporte(reporteId, categoriaId);
@@ -714,8 +694,7 @@ function _ejecutarCargaReporte(reporte, categoria) {
             <div class="mt-3 text-muted small">Cargando contenido del reporte...</div>
         </div>`;
 
-    const tabsContainer = document.getElementById('tabsContainer');
-    contentDiv.style.marginTop = tabsContainer?.classList.contains('sticky-active') ? '80px' : '20px';
+    contentDiv.style.marginTop = '20px';
 
     const toolbar = document.createElement('div');
     toolbar.className = 'rp-toolbar';

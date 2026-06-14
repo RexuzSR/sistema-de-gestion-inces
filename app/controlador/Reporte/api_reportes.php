@@ -125,21 +125,25 @@ try {
             break;
 
         case 'metas_por_ambito':
-            echo json_encode(getMetasPorAmbito($conn, $anio));
+            $tipo = isset($_GET['tipo']) && $_GET['tipo'] !== '' ? $_GET['tipo'] : null;
+            echo json_encode(getMetasPorAmbito($conn, $anio, $tipo));
             break;
             
         case 'metas_por_anio':
-            echo json_encode(getMetasPorAnio($conn));
+            $tipo = isset($_GET['tipo']) && $_GET['tipo'] !== '' ? $_GET['tipo'] : null;
+            echo json_encode(getMetasPorAnio($conn, $tipo));
             break;
             
         case 'metas_por_mes':
             $anioMeta = intval($_GET['anio_meta'] ?? $anio);
-            echo json_encode(getMetasPorMes($conn, $anioMeta));
+            $tipo = isset($_GET['tipo']) && $_GET['tipo'] !== '' ? $_GET['tipo'] : null;
+            echo json_encode(getMetasPorMes($conn, $anioMeta, $tipo));
             break;
             
         case 'metas_por_trimestre':
             $anioMeta = intval($_GET['anio_meta'] ?? $anio);
-            echo json_encode(getMetasPorTrimestre($conn, $anioMeta));
+            $tipo = isset($_GET['tipo']) && $_GET['tipo'] !== '' ? $_GET['tipo'] : null;
+            echo json_encode(getMetasPorTrimestre($conn, $anioMeta, $tipo));
             break;
             
         case 'progreso_metas_detallado':
@@ -825,13 +829,14 @@ function getDocenteDetalleCursos(PDO $conn, int $idDocente, int $anio, string $p
 // ───────────────────────────── METAS ─────────────────────────────
 // ====================================================================
 
-function getMetasPorAmbito(PDO $conn, int $anio): array {
-    $stmt = $conn->prepare("
+function getMetasPorAmbito(PDO $conn, int $anio, ?string $tipo = null): array {
+    $sql = "
         SELECT 
             m.id_meta,
             COALESCE(a.nombre_ambito, 'Sin ámbito asignado') AS nombre_ambito,
             m.tipo_objetivo,
             m.meta_objetivo,
+            m.estudiantes_formados AS estudiantes_formados_db,
             m.estado,
             m.fecha_inicio,
             m.fecha_fin,
@@ -840,9 +845,18 @@ function getMetasPorAmbito(PDO $conn, int $anio): array {
         FROM tb_metas m
         LEFT JOIN tb_ambito a ON a.id_ambito = m.id_ambito
         WHERE (YEAR(m.fecha_inicio) = :anio OR m.fecha_inicio IS NULL)
-        ORDER BY COALESCE(a.nombre_ambito, 'ZZZ'), m.tipo_objetivo
-    ");
-    $stmt->execute([':anio' => $anio]);
+    ";
+
+    $params = [':anio' => $anio];
+    if ($tipo) {
+        $sql .= " AND m.tipo_objetivo = :tipo";
+        $params[':tipo'] = $tipo;
+    }
+
+    $sql .= " ORDER BY COALESCE(a.nombre_ambito, 'ZZZ'), m.tipo_objetivo";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
     $metas = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($metas as &$meta) {
@@ -853,10 +867,14 @@ function getMetasPorAmbito(PDO $conn, int $anio): array {
         if (empty($fechaInicio)) $fechaInicio = "{$anio}-01-01";
         if (empty($fechaFin)) $fechaFin = "{$anio}-12-31";
         
-        if ($meta['tipo_objetivo'] === 'Aprobados') {
-            $estudiantesFormados = contarAprobadosPorAmbitoYPeriodo($conn, $meta['id_ambito'], $fechaInicio, $fechaFin);
-        } else if ($meta['tipo_objetivo'] === 'Inscritos') {
-            $estudiantesFormados = contarInscritosPorAmbitoYPeriodo($conn, $meta['id_ambito'], $fechaInicio, $fechaFin);
+        if ($meta['estado'] === 'Cerrada') {
+            $estudiantesFormados = intval($meta['estudiantes_formados_db']);
+        } else {
+            if ($meta['tipo_objetivo'] === 'Aprobados') {
+                $estudiantesFormados = contarAprobadosPorAmbitoYPeriodo($conn, $meta['id_ambito'], $fechaInicio, $fechaFin);
+            } else if ($meta['tipo_objetivo'] === 'Inscritos') {
+                $estudiantesFormados = contarInscritosPorAmbitoYPeriodo($conn, $meta['id_ambito'], $fechaInicio, $fechaFin);
+            }
         }
         
         $metaObjetivo = intval($meta['meta_objetivo']);
@@ -1127,7 +1145,7 @@ function getDetalleParticipante(PDO $conn, int $cedula): array {
  * Salida: anio, total_metas, objetivo_total, alcanzado_total,
  *         porcentaje_promedio, metas_cumplidas
  */
-function getMetasPorAnio(PDO $conn): array {
+function getMetasPorAnio(PDO $conn, ?string $tipo = null): array {
     $stmt = $conn->query("
         SELECT DISTINCT YEAR(fecha_inicio) AS anio
         FROM tb_metas
@@ -1141,7 +1159,7 @@ function getMetasPorAnio(PDO $conn): array {
     $resultado = [];
     foreach ($anios as $anio) {
         $anio  = intval($anio);
-        $metas = getMetasPorAmbito($conn, $anio);
+        $metas = getMetasPorAmbito($conn, $anio, $tipo);
         if (empty($metas)) continue;
 
         $totalMetas     = count($metas);
@@ -1169,8 +1187,8 @@ function getMetasPorAnio(PDO $conn): array {
  * Salida: trimestre, total_metas, objetivo_total, alcanzado_total,
  *         porcentaje_promedio, metas_cumplidas
  */
-function getMetasPorTrimestre(PDO $conn, int $anio): array {
-    $metas = getMetasPorAmbito($conn, $anio);
+function getMetasPorTrimestre(PDO $conn, int $anio, ?string $tipo = null): array {
+    $metas = getMetasPorAmbito($conn, $anio, $tipo);
     if (empty($metas)) return [];
 
     $trimestres = [1 => [], 2 => [], 3 => [], 4 => []];
