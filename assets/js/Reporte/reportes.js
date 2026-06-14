@@ -814,6 +814,65 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 document.body.appendChild(form);
                 form.submit();
                 document.body.removeChild(form);
+            } else if (reporte.id === 13) {
+                // Generar PDF backend para "Trayectoria de Cursos"
+                const filtros = window.curTrayFiltros || { anio: '', modalidad: '', estatus: '', tipoPeriodo: '', subPeriodo: '' };
+                const busqueda = window.curTrayBusqueda || '';
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '../controlador/fpdf/Reporte/ReporteCursoTrayectoria.php';
+                form.target = '_blank';
+
+                const mkInput = (name, value) => {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = name;
+                    inp.value = value;
+                    form.appendChild(inp);
+                };
+
+                mkInput('anio', filtros.anio || '');
+                mkInput('modalidad', filtros.modalidad || '');
+                mkInput('estatus', filtros.estatus || '');
+                mkInput('busqueda', busqueda || '');
+                mkInput('tipoPeriodo', filtros.tipoPeriodo || '');
+                mkInput('subPeriodo', filtros.subPeriodo || '');
+
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } else if (reporte.id === 10) {
+                // Generar PDF backend para "Total de Docentes"
+                let chartBase64 = '';
+                if (window.docGrafico) {
+                    chartBase64 = window.docGrafico.toBase64Image();
+                }
+                const anioBase = window.docAnioBase || new Date().getFullYear();
+                const anioTabla = window.docAnioTabla || anioBase;
+                const aniosGrafico = window.docAniosGrafico || [anioBase];
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '../controlador/fpdf/Reporte/ReporteTotalDocentes.php';
+                form.target = '_blank';
+
+                const mkInput = (name, value) => {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = name;
+                    inp.value = value;
+                    form.appendChild(inp);
+                };
+
+                mkInput('chart_image', chartBase64);
+                mkInput('anio_base', anioBase);
+                mkInput('anio_tabla', anioTabla);
+                mkInput('anios_grafico', JSON.stringify(aniosGrafico));
+
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
             } else {
                 const prevTitle = document.title;
                 document.title = `Reporte - ${reporte.nombre}`;

@@ -188,10 +188,38 @@ function cargarTotalDocentes() {
                                         <th class="text-center">Asignaciones del mes</th>
                                         <th class="text-center">Total acumulado</th>
                                         <th>Variación mensual</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="docTbody"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Detalle Docentes Asignados -->
+                <div class="modal fade" id="docDetalleModal" tabindex="-1" aria-labelledby="docDetalleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-header bg-warning bg-opacity-10 border-warning border-opacity-25">
+                                <h5 class="modal-title fw-semibold" id="docDetalleModalLabel">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2 mb-1 text-warning">
+                                        <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 13H1c0-.26.164-1.03.76-1.724C2.305 10.636 3.233 10 5 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72zM4.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5m6 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/>
+                                    </svg>
+                                    Docentes Asignados — <span id="docDetalleModalMes"></span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body" id="docDetalleModalBody">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-warning" role="status"></div>
+                                    <p class="mt-2 text-muted small">Cargando detalles…</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <small class="text-muted me-auto" id="docDetalleModalCount"></small>
+                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -819,11 +847,21 @@ function docRenderTabla(asignacionesMes) {
             }
         }
 
+        const mesIdx = idx + 1;
+        const btnDetalle = (!sinDato && vN > 0)
+            ? `<button class="btn btn-sm btn-outline-warning doc-btn-detalle-mes" data-mes="${mesIdx}" data-mes-nombre="${mes.mes}" title="Ver docentes asignados en ${mes.mes}">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                     <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
+                 </svg>Ver detalle
+               </button>`
+            : '<span class="text-muted small">—</span>';
+
         return `<tr>
             <td><strong>${mes.mes}</strong></td>
             <td class="text-center fw-bold">${vN !== null ? vN.toLocaleString() : '—'}</td>
             <td class="text-center">${acum !== null ? acum.toLocaleString() : '—'}</td>
             <td>${sinDato ? '<span class="text-muted">—</span>' : varHtml}</td>
+            <td class="text-center">${btnDetalle}</td>
         </tr>`;
     }).join('');
 
@@ -833,7 +871,157 @@ function docRenderTabla(asignacionesMes) {
             <td class="text-center">${totAsig.toLocaleString()}</td>
             <td class="text-center">—</td>
             <td>—</td>
+            <td></td>
         </tr>`;
+
+    // Vincular botones "Ver detalle"
+    tbody.querySelectorAll('.doc-btn-detalle-mes').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mes = parseInt(btn.dataset.mes);
+            const mesNombre = btn.dataset.mesNombre;
+            docMostrarDetalleMes(mes, mesNombre);
+        });
+    });
+}
+
+// ============================================================
+// ── MODAL DETALLE DOCENTES ASIGNADOS POR MES ─────────────────
+// ============================================================
+async function docMostrarDetalleMes(mes, mesNombre) {
+    const modal = document.getElementById('docDetalleModal');
+    const body = document.getElementById('docDetalleModalBody');
+    const titulo = document.getElementById('docDetalleModalMes');
+    const conteo = document.getElementById('docDetalleModalCount');
+    if (!modal || !body) return;
+
+    const anio = docAnioTabla || docAnioBase;
+    titulo.textContent = `${mesNombre} ${anio}`;
+    body.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-warning" role="status"></div>
+            <p class="mt-2 text-muted small">Cargando detalles…</p>
+        </div>`;
+    conteo.textContent = '';
+
+    // Mostrar modal con Bootstrap
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+
+    try {
+        const data = await docFetch({
+            accion: 'docentes_asignados_mes_detalle',
+            anio: anio,
+            mes: mes
+        });
+
+        if (!Array.isArray(data) || data.length === 0) {
+            body.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No se encontraron asignaciones de docentes en ${mesNombre} ${anio}.
+                </div>`;
+            conteo.textContent = '0 asignaciones';
+            return;
+        }
+
+        // Agrupar por docente
+        const porDocente = {};
+        data.forEach(r => {
+            const key = r.id_docente;
+            if (!porDocente[key]) {
+                porDocente[key] = {
+                    nombre: r.nombre_completo.replace(/\s+/g, ' ').trim(),
+                    cedula: r.cedula,
+                    tipo: r.tipo_docente,
+                    estado: r.estado_docente,
+                    cursos: []
+                };
+            }
+            porDocente[key].cursos.push({
+                id_curso: r.id_curso,
+                nombre_curso: r.nombre_curso,
+                fecha: r.fecha_asignacion
+            });
+        });
+
+        const docentes = Object.values(porDocente);
+        conteo.textContent = `${data.length} asignación(es) — ${docentes.length} docente(s)`;
+
+        const badgeColor = (estado) => {
+            switch (estado) {
+                case 'Disponible':   return 'success';
+                case 'Asignado':     return 'primary';
+                case 'En formación': return 'warning';
+                case 'Inactivo':     return 'danger';
+                default:             return 'secondary';
+            }
+        };
+
+        const badgeTipo = (tipo) => {
+            switch (tipo) {
+                case 'Fijo':        return 'dark';
+                case 'Contratado':  return 'info';
+                case 'PDL':         return 'secondary';
+                case 'Voluntario':  return 'success';
+                default:            return 'secondary';
+            }
+        };
+
+        let html = '';
+        docentes.forEach((doc, idx) => {
+            html += `
+            <div class="card border-0 shadow-sm mb-3 ${idx > 0 ? '' : ''}">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <div>
+                            <h6 class="mb-0 fw-bold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" class="me-1 text-warning">
+                                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+                                </svg>
+                                ${doc.nombre}
+                            </h6>
+                            <small class="text-muted">
+                                C.I. ${Number(doc.cedula).toLocaleString('es-VE')}
+                            </small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-${badgeTipo(doc.tipo)} bg-opacity-75">${doc.tipo}</span>
+                            <span class="badge bg-${badgeColor(doc.estado)}">${doc.estado}</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:60px;">ID</th>
+                                    <th>Curso Asignado</th>
+                                    <th style="width:130px;" class="text-center">Fecha Asignación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${doc.cursos.map(c => `
+                                    <tr>
+                                        <td class="text-muted">#${c.id_curso}</td>
+                                        <td class="fw-semibold">${c.nombre_curso}</td>
+                                        <td class="text-center small">${new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        body.innerHTML = html;
+
+    } catch (err) {
+        body.innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Error al cargar detalles: ${err.message}
+            </div>`;
+        conteo.textContent = 'Error';
+    }
 }
 
 // ============================================================
@@ -852,6 +1040,13 @@ function limpiarTotalDocentes() {
 }
 
 // ── Registrar en window ───────────────────────────────────────────────────────
+Object.defineProperty(window, 'docGrafico', { get: function() { return docGrafico; }, configurable: true });
+Object.defineProperty(window, 'docAnioBase', { get: function() { return docAnioBase; }, configurable: true });
+Object.defineProperty(window, 'docAnioTabla', { get: function() { return docAnioTabla; }, configurable: true });
+Object.defineProperty(window, 'docAniosGrafico', { get: function() { return docAniosGrafico; }, configurable: true });
+Object.defineProperty(window, 'docTipoGrafico', { get: function() { return docTipoGrafico; }, configurable: true });
+Object.defineProperty(window, 'docAniosPanel', { get: function() { return docAniosPanel; }, configurable: true });
+
 window.cargarTotalDocentes = cargarTotalDocentes;
 window.limpiarTotalDocentes = limpiarTotalDocentes;
 console.log('RE-Docente-Total.js cargado — conectado a CSS centralizado');

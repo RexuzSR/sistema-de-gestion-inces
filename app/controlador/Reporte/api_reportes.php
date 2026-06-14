@@ -81,6 +81,15 @@ try {
             echo json_encode(getDocentesTotal($conn, $anio, $periodo, $periodoValor));
             break;
 
+        case 'docentes_asignados_mes_detalle':
+            $mes = intval($_GET['mes'] ?? 0);
+            if ($mes < 1 || $mes > 12) {
+                echo json_encode(['error' => 'Mes no válido']);
+                break;
+            }
+            echo json_encode(getDocentesAsignadosMesDetalle($conn, $anio, $mes));
+            break;
+
         case 'docentes_mas_solicitados':
             $limite = intval($_GET['limite'] ?? 10);
             echo json_encode(getDocentesMasSolicitados($conn, $anio, $limite));
@@ -523,6 +532,29 @@ function getDocentesTotal(PDO $conn, int $anio, string $periodo = 'year', int $p
         if (isset($meses[$m])) $meses[$m]['nuevos'] = intval($row['total']);
     }
     return ['totales' => $totales, 'asignacionesMes' => mesesAArray($meses)];
+}
+
+function getDocentesAsignadosMesDetalle(PDO $conn, int $anio, int $mes): array {
+    $stmt = $conn->prepare("
+        SELECT dc.id_docente_curso,
+               d.id_docente,
+               CONCAT(d.primer_nombre, ' ', COALESCE(d.segundo_nombre, ''), ' ', d.primer_apellido, ' ', COALESCE(d.segundo_apellido, '')) AS nombre_completo,
+               d.cedula,
+               d.tipo_docente,
+               d.estado_docente,
+               c.id_curso,
+               c.nombre_curso,
+               dc.fecha_asignacion
+        FROM tb_docente_curso dc
+        JOIN tb_docente d ON d.id_docente = dc.id_docente
+        JOIN tb_curso c ON c.id_curso = dc.id_curso
+        WHERE YEAR(dc.fecha_asignacion) = :anio
+          AND MONTH(dc.fecha_asignacion) = :mes
+          AND dc.id_docente IS NOT NULL
+        ORDER BY d.primer_apellido ASC, d.primer_nombre ASC
+    ");
+    $stmt->execute([':anio' => $anio, ':mes' => $mes]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function getDocentesMasSolicitados(PDO $conn, int $anio, int $limite = 10): array {

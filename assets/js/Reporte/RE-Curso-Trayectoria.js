@@ -10,7 +10,7 @@ let curTrayOrdenCol        = null;
 let curTrayOrdenAsc        = true;
 let curTrayBusqueda        = '';
 let curTrayCursoAct        = null;
-let curTrayFiltros         = { anio:'', modalidad:'', estatus:'' };
+let curTrayFiltros         = { anio:'', modalidad:'', estatus:'', tipoPeriodo:'', subPeriodo:'' };
 
 const API_CUR_TRAY_URL = '../controlador/Reporte/api_reportes.php';
 
@@ -78,7 +78,7 @@ async function cargarTrayectoriaCursos() {
     curTrayOrdenAsc        = true;
     curTrayBusqueda        = '';
     curTrayCursoAct        = null;
-    curTrayFiltros         = { anio:'', modalidad:'', estatus:'' };
+    curTrayFiltros         = { anio:'', modalidad:'', estatus:'', tipoPeriodo:'', subPeriodo:'' };
 
     contentDiv.innerHTML = `
     <div class="card shadow-lg border-0">
@@ -130,7 +130,7 @@ async function cargarTrayectoriaCursos() {
                     <div class="row g-2 align-items-end">
 
                         <!-- Año -->
-                        <div class="col-sm-6 col-md-4">
+                        <div class="col-sm-6 col-md-2">
                             <label class="form-label mb-1"
                                    style="font-size:.7rem;font-weight:700;color:#64748b;
                                           text-transform:uppercase;letter-spacing:.05em;">
@@ -142,7 +142,7 @@ async function cargarTrayectoriaCursos() {
                         </div>
 
                         <!-- Modalidad -->
-                        <div class="col-sm-6 col-md-4">
+                        <div class="col-sm-6 col-md-2">
                             <label class="form-label mb-1"
                                    style="font-size:.7rem;font-weight:700;color:#64748b;
                                           text-transform:uppercase;letter-spacing:.05em;">
@@ -154,7 +154,7 @@ async function cargarTrayectoriaCursos() {
                         </div>
 
                         <!-- Estatus -->
-                        <div class="col-sm-6 col-md-4">
+                        <div class="col-sm-6 col-md-2">
                             <label class="form-label mb-1"
                                    style="font-size:.7rem;font-weight:700;color:#64748b;
                                           text-transform:uppercase;letter-spacing:.05em;">
@@ -162,6 +162,33 @@ async function cargarTrayectoriaCursos() {
                             </label>
                             <select class="form-select form-select-sm" id="curTrayFiltroEstatus">
                                 <option value="">Todos</option>
+                            </select>
+                        </div>
+
+                        <!-- Periodo Temporal -->
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label mb-1"
+                                   style="font-size:.7rem;font-weight:700;color:#64748b;
+                                          text-transform:uppercase;letter-spacing:.05em;">
+                                Periodo Temporal
+                            </label>
+                            <select class="form-select form-select-sm" id="curTrayFiltroTipoPeriodo">
+                                <option value="">Todos</option>
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="semestral">Semestral</option>
+                            </select>
+                        </div>
+
+                        <!-- Detalle de Periodo -->
+                        <div class="col-sm-6 col-md-3">
+                            <label class="form-label mb-1"
+                                   style="font-size:.7rem;font-weight:700;color:#64748b;
+                                          text-transform:uppercase;letter-spacing:.05em;">
+                                Selección de Periodo
+                            </label>
+                            <select class="form-select form-select-sm" id="curTrayFiltroSubPeriodo" disabled>
+                                <option value="">Selecciona...</option>
                             </select>
                         </div>
 
@@ -265,12 +292,44 @@ function curTrayRenderKPI(data) {
         </div>`).join('');
 }
 
+function curTrayActualizarSubPeriodoSelect(tipo) {
+    const sel = document.getElementById('curTrayFiltroSubPeriodo');
+    if (!sel) return;
+    
+    if (!tipo) {
+        sel.innerHTML = '<option value="">Selecciona...</option>';
+        sel.disabled = true;
+        return;
+    }
+    
+    sel.disabled = false;
+    let html = '<option value="">Todos</option>';
+    
+    if (tipo === 'mensual') {
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        meses.forEach((m, idx) => {
+            html += `<option value="${idx + 1}">${m}</option>`;
+        });
+    } else if (tipo === 'trimestral') {
+        html += '<option value="1">Trimestre 1 (Ene - Mar)</option>';
+        html += '<option value="2">Trimestre 2 (Abr - Jun)</option>';
+        html += '<option value="3">Trimestre 3 (Jul - Sep)</option>';
+        html += '<option value="4">Trimestre 4 (Oct - Dic)</option>';
+    } else if (tipo === 'semestral') {
+        html += '<option value="1">Semestre 1 (Ene - Jun)</option>';
+        html += '<option value="2">Semestre 2 (Jul - Dic)</option>';
+    }
+    
+    sel.innerHTML = html;
+}
+
 function curTrayInicializarFiltros() {
     document.getElementById('curTrayBtnLimpiarFiltros')?.addEventListener('click', () => {
-        curTrayFiltros = { anio:'', modalidad:'', estatus:'' };
-        ['curTrayFiltroAnio','curTrayFiltroModalidad','curTrayFiltroEstatus'].forEach(id => {
+        curTrayFiltros = { anio:'', modalidad:'', estatus:'', tipoPeriodo:'', subPeriodo:'' };
+        ['curTrayFiltroAnio','curTrayFiltroModalidad','curTrayFiltroEstatus','curTrayFiltroTipoPeriodo','curTrayFiltroSubPeriodo'].forEach(id => {
             const el = document.getElementById(id); if (el) el.value = '';
         });
+        curTrayActualizarSubPeriodoSelect('');
         curTrayActualizarChipsFiltros();
         curTrayRenderTabla();
     });
@@ -289,6 +348,22 @@ function curTrayInicializarFiltros() {
             curTrayRenderTabla();
         });
     });
+
+    document.getElementById('curTrayFiltroTipoPeriodo')?.addEventListener('change', e => {
+        curTrayFiltros.tipoPeriodo = e.target.value;
+        curTrayFiltros.subPeriodo = '';
+        curTrayActualizarSubPeriodoSelect(e.target.value);
+        curTrayPaginaActual = 1;
+        curTrayActualizarChipsFiltros();
+        curTrayRenderTabla();
+    });
+
+    document.getElementById('curTrayFiltroSubPeriodo')?.addEventListener('change', e => {
+        curTrayFiltros.subPeriodo = e.target.value;
+        curTrayPaginaActual = 1;
+        curTrayActualizarChipsFiltros();
+        curTrayRenderTabla();
+    });
 }
 
 function curTrayActualizarChipsFiltros() {
@@ -298,6 +373,20 @@ function curTrayActualizarChipsFiltros() {
     if (curTrayFiltros.anio)      chips.push({ label:`Año: ${curTrayFiltros.anio}`,      campo:'anio' });
     if (curTrayFiltros.modalidad) chips.push({ label:`Mod: ${curTrayFiltros.modalidad}`,  campo:'modalidad' });
     if (curTrayFiltros.estatus)   chips.push({ label:`Est: ${curTrayFiltros.estatus}`,    campo:'estatus' });
+    if (curTrayFiltros.tipoPeriodo) {
+        let label = `Periodo: ${curTrayFiltros.tipoPeriodo}`;
+        if (curTrayFiltros.subPeriodo) {
+            if (curTrayFiltros.tipoPeriodo === 'mensual') {
+                const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                label += ` (${meses[parseInt(curTrayFiltros.subPeriodo) - 1]})`;
+            } else if (curTrayFiltros.tipoPeriodo === 'trimestral') {
+                label += ` (Trimestre ${curTrayFiltros.subPeriodo})`;
+            } else if (curTrayFiltros.tipoPeriodo === 'semestral') {
+                label += ` (Semestre ${curTrayFiltros.subPeriodo})`;
+            }
+        }
+        chips.push({ label: label, campo:'periodo' });
+    }
 
     contenedor.innerHTML = chips.map(ch => `
         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
@@ -308,9 +397,16 @@ function curTrayActualizarChipsFiltros() {
     contenedor.querySelectorAll('.curTray-chip-close').forEach(btn => {
         btn.addEventListener('click', () => {
             const campo = btn.dataset.campo;
-            curTrayFiltros[campo] = '';
-            const mapId = { anio:'curTrayFiltroAnio', modalidad:'curTrayFiltroModalidad', estatus:'curTrayFiltroEstatus' };
-            const el = document.getElementById(mapId[campo]); if (el) el.value = '';
+            if (campo === 'periodo') {
+                curTrayFiltros.tipoPeriodo = '';
+                curTrayFiltros.subPeriodo = '';
+                const elTipo = document.getElementById('curTrayFiltroTipoPeriodo'); if (elTipo) elTipo.value = '';
+                curTrayActualizarSubPeriodoSelect('');
+            } else {
+                curTrayFiltros[campo] = '';
+                const mapId = { anio:'curTrayFiltroAnio', modalidad:'curTrayFiltroModalidad', estatus:'curTrayFiltroEstatus' };
+                const el = document.getElementById(mapId[campo]); if (el) el.value = '';
+            }
             curTrayActualizarChipsFiltros();
             curTrayRenderTabla();
         });
@@ -326,6 +422,26 @@ function curTrayRenderTabla() {
     if (curTrayFiltros.anio)      datos = datos.filter(c => c.fecha_inicio?.startsWith(curTrayFiltros.anio));
     if (curTrayFiltros.modalidad) datos = datos.filter(c => c.nombre_modalidad === curTrayFiltros.modalidad);
     if (curTrayFiltros.estatus)   datos = datos.filter(c => c.estatus === curTrayFiltros.estatus);
+
+    if (curTrayFiltros.tipoPeriodo && curTrayFiltros.subPeriodo) {
+        const sub = parseInt(curTrayFiltros.subPeriodo);
+        datos = datos.filter(c => {
+            if (!c.fecha_inicio || c.fecha_inicio === '0000-00-00') return false;
+            const mes = parseInt(c.fecha_inicio.split('-')[1]);
+            if (curTrayFiltros.tipoPeriodo === 'mensual') {
+                return mes === sub;
+            } else if (curTrayFiltros.tipoPeriodo === 'trimestral') {
+                if (sub === 1) return mes >= 1 && mes <= 3;
+                if (sub === 2) return mes >= 4 && mes <= 6;
+                if (sub === 3) return mes >= 7 && mes <= 9;
+                if (sub === 4) return mes >= 10 && mes <= 12;
+            } else if (curTrayFiltros.tipoPeriodo === 'semestral') {
+                if (sub === 1) return mes >= 1 && mes <= 6;
+                if (sub === 2) return mes >= 7 && mes <= 12;
+            }
+            return true;
+        });
+    }
 
     if (curTrayBusqueda.trim()) {
         const q = curTrayBusqueda.toLowerCase();
@@ -900,5 +1016,11 @@ function curTrayInicializarBusqueda() {
 }
 
 // Exportar
+Object.defineProperty(window, 'curTrayFiltros', { get: function() { return curTrayFiltros; }, configurable: true });
+Object.defineProperty(window, 'curTrayBusqueda', { get: function() { return curTrayBusqueda; }, configurable: true });
+Object.defineProperty(window, 'curTrayCursoAct', { get: function() { return curTrayCursoAct; }, configurable: true });
+Object.defineProperty(window, 'curTrayCursoDetalle', { get: function() { return curTrayCursoDetalle; }, configurable: true });
+Object.defineProperty(window, 'curTrayChartInstance', { get: function() { return curTrayChartInstance; }, configurable: true });
+
 window.cargarTrayectoriaCursos = cargarTrayectoriaCursos;
 console.log('RE-Curso-Trayectoria.js cargado');
