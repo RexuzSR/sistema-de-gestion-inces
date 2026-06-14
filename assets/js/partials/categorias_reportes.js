@@ -42,7 +42,9 @@ var categoriasReportes = [
         bgColor: "rgba(220,53,69,0.9)", lightColor: "rgba(220,53,69,0.5)",
         darkColor: "rgba(180,35,50,0.95)", bodyBgColor: "rgba(220,53,69,0.06)",
         reportes: [
-            { id: 11, nombre: "Metas Totales", funcion: 'cargarMetaPorAmbito', archivo: 'reportes-metas.js' }
+            { id: 11, nombre: "Metas por Ámbito",              funcion: 'cargarMetaPorAmbito',    archivo: 'RE-Meta-PorAmbito.js'  },
+            { id: 16, nombre: "Histórico de Metas",            funcion: 'cargarHistoricoMetas',   archivo: 'RE-Meta-Historico.js'  },
+            { id: 17, nombre: "Detalle de Participantes por Meta", funcion: 'cargarDetalleMeta',  archivo: 'RE-Meta-Detalle.js'    }
         ]
     }
 ];

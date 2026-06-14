@@ -1117,3 +1117,152 @@ function getDetalleParticipante(PDO $conn, int $cedula): array {
     $persona['cursos'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     return $persona;
 }
+
+// ====================================================================
+// ─────────── METAS: FUNCIONES AGREGADAS ─────────────────────────────
+// ====================================================================
+
+/**
+ * Resumen de metas agrupado por año (todos los años con registros).
+ * Salida: anio, total_metas, objetivo_total, alcanzado_total,
+ *         porcentaje_promedio, metas_cumplidas
+ */
+function getMetasPorAnio(PDO $conn): array {
+    $stmt = $conn->query("
+        SELECT DISTINCT YEAR(fecha_inicio) AS anio
+        FROM tb_metas
+        WHERE fecha_inicio IS NOT NULL
+        ORDER BY anio ASC
+    ");
+    $anios = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (empty($anios)) return [];
+
+    $resultado = [];
+    foreach ($anios as $anio) {
+        $anio  = intval($anio);
+        $metas = getMetasPorAmbito($conn, $anio);
+        if (empty($metas)) continue;
+
+        $totalMetas     = count($metas);
+        $objetivoTotal  = array_sum(array_column($metas, 'meta_objetivo'));
+        $alcanzadoTotal = array_sum(array_column($metas, 'estudiantes_formados'));
+        $sumaPct        = array_sum(array_column($metas, 'porcentaje_cumplimiento'));
+        $promedioPct    = $totalMetas > 0 ? round($sumaPct / $totalMetas, 2) : 0;
+        $metasCumplidas = count(array_filter($metas, fn($m) => $m['porcentaje_cumplimiento'] >= 100));
+
+        $resultado[] = [
+            'anio'                => $anio,
+            'total_metas'         => $totalMetas,
+            'objetivo_total'      => $objetivoTotal,
+            'alcanzado_total'     => $alcanzadoTotal,
+            'porcentaje_promedio' => $promedioPct,
+            'metas_cumplidas'     => $metasCumplidas,
+        ];
+    }
+
+    return $resultado;
+}
+
+/**
+ * Resumen de metas agrupado por trimestre para un año dado.
+ * Salida: trimestre, total_metas, objetivo_total, alcanzado_total,
+ *         porcentaje_promedio, metas_cumplidas
+ */
+function getMetasPorTrimestre(PDO $conn, int $anio): array {
+    $metas = getMetasPorAmbito($conn, $anio);
+    if (empty($metas)) return [];
+
+    $trimestres = [1 => [], 2 => [], 3 => [], 4 => []];
+    foreach ($metas as $meta) {
+        $fi  = $meta['fecha_inicio'] ?? null;
+        $mes = $fi ? intval(date('n', strtotime($fi))) : 1;
+        $t   = intval(ceil($mes / 3));
+        $trimestres[$t][] = $meta;
+    }
+
+    $resultado = [];
+    foreach ($trimestres as $t => $lista) {
+        if (empty($lista)) continue;
+
+        $totalMetas     = count($lista);
+        $objetivoTotal  = array_sum(array_column($lista, 'meta_objetivo'));
+        $alcanzadoTotal = array_sum(array_column($lista, 'estudiantes_formados'));
+        $sumaPct        = array_sum(array_column($lista, 'porcentaje_cumplimiento'));
+        $promedioPct    = $totalMetas > 0 ? round($sumaPct / $totalMetas, 2) : 0;
+        $metasCumplidas = count(array_filter($lista, fn($m) => $m['porcentaje_cumplimiento'] >= 100));
+
+        $resultado[] = [
+            'trimestre'           => $t,
+            'total_metas'         => $totalMetas,
+            'objetivo_total'      => $objetivoTotal,
+            'alcanzado_total'     => $alcanzadoTotal,
+            'porcentaje_promedio' => $promedioPct,
+            'metas_cumplidas'     => $metasCumplidas,
+        ];
+    }
+
+    return $resultado;
+}
+
+/**
+ * Resumen de metas agrupado por mes para un año dado.
+ * Salida: mes, nombre_mes, total_metas, objetivo_total,
+ *         alcanzado_total, porcentaje_promedio, metas_cumplidas
+ */
+function getMetasPorMes(PDO $conn, int $anio): array {
+    $nombresMeses = [
+        1=>'Enero',    2=>'Febrero',   3=>'Marzo',     4=>'Abril',
+        5=>'Mayo',     6=>'Junio',     7=>'Julio',     8=>'Agosto',
+        9=>'Septiembre',10=>'Octubre', 11=>'Noviembre',12=>'Diciembre',
+    ];
+
+    $metas = getMetasPorAmbito($conn, $anio);
+    if (empty($metas)) return [];
+
+    $porMes = [];
+    foreach ($metas as $meta) {
+        $fi  = $meta['fecha_inicio'] ?? null;
+        $mes = $fi ? intval(date('n', strtotime($fi))) : 1;
+        $porMes[$mes][] = $meta;
+    }
+
+    $resultado = [];
+    foreach ($porMes as $mes => $lista) {
+        $totalMetas     = count($lista);
+        $objetivoTotal  = array_sum(array_column($lista, 'meta_objetivo'));
+        $alcanzadoTotal = array_sum(array_column($lista, 'estudiantes_formados'));
+        $sumaPct        = array_sum(array_column($lista, 'porcentaje_cumplimiento'));
+        $promedioPct    = $totalMetas > 0 ? round($sumaPct / $totalMetas, 2) : 0;
+        $metasCumplidas = count(array_filter($lista, fn($m) => $m['porcentaje_cumplimiento'] >= 100));
+
+        $resultado[] = [
+            'mes'                 => $mes,
+            'nombre_mes'          => $nombresMeses[$mes] ?? "Mes $mes",
+            'total_metas'         => $totalMetas,
+            'objetivo_total'      => $objetivoTotal,
+            'alcanzado_total'     => $alcanzadoTotal,
+            'porcentaje_promedio' => $promedioPct,
+            'metas_cumplidas'     => $metasCumplidas,
+        ];
+    }
+
+    usort($resultado, fn($a, $b) => $a['mes'] - $b['mes']);
+    return $resultado;
+}
+
+/**
+ * Progreso detallado de cada meta para un año dado.
+ * Mismos campos que getMetasPorAmbito + brecha y excedente calculados.
+ */
+function getProgresoMetasDetallado(PDO $conn, int $anio): array {
+    $metas = getMetasPorAmbito($conn, $anio);
+    foreach ($metas as &$m) {
+        $obj          = intval($m['meta_objetivo']);
+        $alc          = intval($m['estudiantes_formados']);
+        $m['brecha']   = max(0, $obj - $alc);
+        $m['excedente']= max(0, $alc - $obj);
+        $m['cumplida'] = $m['porcentaje_cumplimiento'] >= 100;
+    }
+    return $metas;
+}

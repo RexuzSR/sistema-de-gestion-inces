@@ -717,7 +717,38 @@ function _ejecutarCargaReporte(reporte, categoria) {
     const tabsContainer = document.getElementById('tabsContainer');
     contentDiv.style.marginTop = tabsContainer?.classList.contains('sticky-active') ? '80px' : '20px';
 
+    const toolbar = document.createElement('div');
+    toolbar.className = 'rp-toolbar';
+    toolbar.innerHTML = `
+        <div class="rp-toolbar-group">
+            <span class="rp-toolbar-label">Acciones del reporte</span>
+        </div>
+        <div class="rp-toolbar-group">
+            <button type="button" id="btn-print-report" class="rp-btn rp-btn--cyan">
+                <i class="bi bi-printer-fill"></i> Imprimir PDF
+            </button>
+            <button type="button" id="btn-back-to-categories" class="rp-btn rp-btn--ghost">
+                <i class="bi bi-arrow-left-circle"></i> Volver a reportes
+            </button>
+        </div>`;
+    reportContainer.appendChild(toolbar);
+
     reportContainer.appendChild(contentDiv);
+
+    const printButton = toolbar.querySelector('#btn-print-report');
+    if (printButton) {
+        printButton.addEventListener('click', () => {
+            const prevTitle = document.title;
+            document.title = `Reporte - ${reporte.nombre}`;
+            window.print();
+            setTimeout(() => { document.title = prevTitle; }, 800);
+        });
+    }
+
+    const backButton = toolbar.querySelector('#btn-back-to-categories');
+    if (backButton) {
+        backButton.addEventListener('click', volverCategorias);
+    }
 
     setTimeout(() => {
         try {
