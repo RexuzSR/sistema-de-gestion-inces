@@ -637,7 +637,7 @@ function cargarReporte(reporteId, categoriaId) {
         mostrarLoading();
         const script = document.createElement('script');
         // La ruta es relativa a app/vista/reporte.php
-        script.src = `../../assets/js/Reporte/${reporte.archivo}`;
+        script.src = `../../assets/js/Reporte/${reporte.archivo}?v=${Date.now()}`;
         
         script.onload = () => {
             setTimeout(() => {
@@ -717,10 +717,109 @@ function _ejecutarCargaReporte(reporte, categoria) {
     const printButton = toolbar.querySelector('#btn-print-report');
     if (printButton) {
         printButton.addEventListener('click', () => {
-            const prevTitle = document.title;
-            document.title = `Reporte - ${reporte.nombre}`;
-            window.print();
-            setTimeout(() => { document.title = prevTitle; }, 800);
+            if (reporte.id === 4) {
+                // Generar PDF backend para "Cursos con más Participantes"
+                let chartBase64 = '';
+                if (typeof cmpChart !== 'undefined' && cmpChart) {
+                    chartBase64 = cmpChart.toBase64Image();
+                }
+                const anio = typeof anioCmp !== 'undefined' ? anioCmp : new Date().getFullYear();
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '../controlador/fpdf/Reporte/ReporteCursoMasParticipantes.php';
+                form.target = '_blank';
+                
+                const inputAnio = document.createElement('input');
+                inputAnio.type = 'hidden';
+                inputAnio.name = 'anio';
+                inputAnio.value = anio;
+                form.appendChild(inputAnio);
+                
+                const inputChart = document.createElement('input');
+                inputChart.type = 'hidden';
+                inputChart.name = 'chart_image';
+                inputChart.value = chartBase64;
+                form.appendChild(inputChart);
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } else if (reporte.id === 3) {
+                // Generar PDF backend para "Total de Cursos"
+                let chartBase64 = '';
+                if (typeof graficoCursosInstance !== 'undefined' && graficoCursosInstance) {
+                    chartBase64 = graficoCursosInstance.toBase64Image();
+                }
+                const anio = typeof anioTablaCursos !== 'undefined' ? anioTablaCursos : new Date().getFullYear();
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '../controlador/fpdf/Reporte/ReporteTotalCursosMensual.php';
+                form.target = '_blank';
+                
+                const inputAnio = document.createElement('input');
+                inputAnio.type = 'hidden';
+                inputAnio.name = 'anio';
+                inputAnio.value = anio;
+                form.appendChild(inputAnio);
+                
+                const inputChart = document.createElement('input');
+                inputChart.type = 'hidden';
+                inputChart.name = 'chart_image';
+                inputChart.value = chartBase64;
+                form.appendChild(inputChart);
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } else if (reporte.id === 5) {
+                // Generar PDF backend para "Curso más Requerido"
+                const datos = window.datosCompletosRQ;
+                if (!datos || datos.length === 0) {
+                    alert('El reporte aún está cargando. Por favor espera a que se muestren los datos y vuelve a intentarlo.');
+                    return;
+                }
+
+                let chartBase64 = '';
+                if (window.cursoRequeridoChart) {
+                    chartBase64 = window.cursoRequeridoChart.toBase64Image();
+                }
+                const anio = window.anioRQ || new Date().getFullYear();
+                const datosJson = JSON.stringify(datos);
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '../controlador/fpdf/Reporte/ReporteCursoMasRequerido.php';
+                form.target = '_blank';
+
+                const mkInput = (name, value) => {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = name;
+                    inp.value = value;
+                    form.appendChild(inp);
+                };
+
+                mkInput('anio', anio);
+                mkInput('chart_image', chartBase64);
+
+                // Usar textarea para evitar límites de longitud en campos input
+                const ta = document.createElement('textarea');
+                ta.name = 'datos_json';
+                ta.style.display = 'none';
+                ta.value = datosJson;
+                form.appendChild(ta);
+
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            } else {
+                const prevTitle = document.title;
+                document.title = `Reporte - ${reporte.nombre}`;
+                window.print();
+                setTimeout(() => { document.title = prevTitle; }, 800);
+            }
         });
     }
 

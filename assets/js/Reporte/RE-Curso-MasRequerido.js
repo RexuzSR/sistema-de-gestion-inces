@@ -378,6 +378,8 @@
         try {
             const datos = await fetchCursosAnio(anio);
             datosCompletosTop3 = datos;
+            window.datosCompletosRQ = datos;  // Exponer lo antes posible para PDF
+            window.anioRQ = anio;
             poblarSelectAreas('selectAreaTop3', datos);
             renderTop3(datos);
             setLoading('Top3', false);
@@ -671,7 +673,7 @@
             'rgba(75,192,192,.75)', 'rgba(153,102,255,.75)', 'rgba(255,205,86,.75)'
         ];
 
-        cursoRequeridoChart = new Chart(ctx, {
+        window.cursoRequeridoChart = cursoRequeridoChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels,
@@ -709,6 +711,8 @@
         try {
             const datos = await fetchCursosAnio(anio);
             datosCompletosTabla = datos;
+            window.datosCompletosRQ = datos;  // Exponer para PDF
+            window.anioRQ = anio;              // Exponer año activo para PDF
             poblarSelectAreas('selectAreaTabla', datos);
             const inp = document.getElementById('searchRankingTable');
             if (inp) inp.value = '';

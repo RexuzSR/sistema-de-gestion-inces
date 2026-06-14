@@ -490,7 +490,10 @@ async function cargarDatosTC(anio, esCargaInicial = false) {
 function buildResumenCursos(conDatos, ultimo) {
     const totalNuevos = conDatos.reduce((s, m) => s + (m.nuevos || 0), 0);
     const totalCulminados = conDatos.reduce((s, m) => s + (m.culminados || 0), 0);
-    const activos = ultimo?.activos || 0;
+    // Sumar activos de todos los meses: la API agrupa por mes de creación,
+    // por lo que un curso creado en Mayo que sigue "En proceso" en Junio
+    // solo aparece en Mayo. Usar solo el último mes daría 0 incorrectamente.
+    const activos = conDatos.reduce((s, m) => s + (m.activos || 0), 0);
     const enEspera = ultimo?.enEspera || 0;
     const tasaCompletitud = totalNuevos > 0
         ? ((totalCulminados / totalNuevos) * 100).toFixed(1)

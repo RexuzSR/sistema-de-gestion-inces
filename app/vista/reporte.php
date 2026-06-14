@@ -82,7 +82,7 @@ $conn = null;
 
 <!-- Los scripts de reportes se cargarán bajo demanda mediante reportes.js -->
 
-<script src="/Sistema%20de%20Gestion%20Inces/assets/js/Reporte/reportes.js"></script>
+<script src="/Sistema%20de%20Gestion%20Inces/assets/js/Reporte/reportes.js?v=<?php echo time(); ?>"></script>
 <script src="../../assets/js/home.js"></script>
 <script src="../../assets/js/notifications.js"></script>
 
