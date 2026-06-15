@@ -949,8 +949,12 @@ function _ejecutarCargaReporte(reporte, categoria) {
                     ? parseInt(document.getElementById('selectAnioAmbito').value) || new Date().getFullYear()
                     : new Date().getFullYear();
 
+                const selectAmbito = document.getElementById('selectAmbitoEspecifico');
+                const ambitoFiltro = selectAmbito ? selectAmbito.value : 'todos';
+
                 const payload = {
                     anio: anio,
+                    ambitoFiltro: ambitoFiltro,
                     datosAmbito: typeof datosAmbito !== 'undefined' ? datosAmbito : [],
                     datosAmbitoAnioAnterior: typeof datosAmbitoAnioAnterior !== 'undefined' ? datosAmbitoAnioAnterior : []
                 };

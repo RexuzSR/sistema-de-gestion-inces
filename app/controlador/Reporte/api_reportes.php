@@ -48,8 +48,37 @@ try {
         case 'exportar_trayectoria_pdf':
             // Deshabilitar cualquier output json
             header_remove('Content-Type');
-            require_once __DIR__ . '/pdf_trayectoria_participante.php';
+            require_once __DIR__ . '/../fpdf/Reporte/ReporteTrayectoriaParticipantes.php';
             exit;
+
+        case 'participantes_por_mes_detalle':
+            $mes = intval($_GET['mes'] ?? 0);
+            $anioFiltro = intval($_GET['anio'] ?? date('Y'));
+            if ($mes < 1 || $mes > 12) {
+                echo json_encode(['error' => 'Mes no válido']);
+                break;
+            }
+            echo json_encode(getParticipantesPorMesDetalle($conn, $anioFiltro, $mes));
+            break;
+
+        case 'cursos_por_mes_detalle':
+            $mes = intval($_GET['mes'] ?? 0);
+            $anioFiltro = intval($_GET['anio'] ?? date('Y'));
+            if ($mes < 1 || $mes > 12) {
+                echo json_encode(['error' => 'Mes no válido']);
+                break;
+            }
+            echo json_encode(getCursosPorMesDetalle($conn, $anioFiltro, $mes));
+            break;
+
+        case 'docentes_por_mes_detalle':
+            $mes = intval($_GET['mes'] ?? 0);
+            if ($mes < 1 || $mes > 12) {
+                echo json_encode(['error' => 'Mes no válido']);
+                break;
+            }
+            echo json_encode(getDocentesPorMesDetalle($conn, $mes));
+            break;
 
         case 'participantes_total':
             $estadosRaw = $_GET['estados'] ?? '';
@@ -1375,4 +1404,54 @@ function getProgresoMetasDetallado(PDO $conn, int $anio): array {
         $m['cumplida'] = $m['porcentaje_cumplimiento'] >= 100;
     }
     return $metas;
+}
+
+/**
+ * Obtener listado de participantes registrados en un mes y año específico
+ */
+function getParticipantesPorMesDetalle(PDO $conn, int $anio, int $mes): array {
+    $stmt = $conn->prepare("
+        SELECT primer_nombre, primer_apellido, cedula, estado, genero, grado_institucion,
+               TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad, fecha_registro
+        FROM tb_participante
+        WHERE YEAR(fecha_registro) = :anio AND MONTH(fecha_registro) = :mes
+        ORDER BY fecha_registro DESC
+    ");
+    $stmt->execute([':anio' => $anio, ':mes' => $mes]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Obtener listado de cursos registrados/iniciados en un mes y año específico
+ */
+function getCursosPorMesDetalle(PDO $conn, int $anio, int $mes): array {
+    $stmt = $conn->prepare("
+        SELECT c.nombre_curso, e.nombre_estatusCurso, m.nombre_modalidad, c.turno,
+               c.num_inscritos, c.max_participantes, c.fecha_inicio, c.fecha_fin
+        FROM tb_curso c
+        JOIN tb_estatuscurso e ON c.id_estatusCurso = e.id_estatusCurso
+        LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
+        WHERE YEAR(c.fecha_inicio) = :anio AND MONTH(c.fecha_inicio) = :mes AND c.id_curso != 1
+        ORDER BY c.fecha_inicio DESC, c.nombre_curso ASC
+    ");
+    $stmt->execute([':anio' => $anio, ':mes' => $mes]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Obtener listado de docentes nacidos en un mes específico
+ * (coincide con la agrupación del gráfico mensual de docentes)
+ */
+function getDocentesPorMesDetalle(PDO $conn, int $mes): array {
+    $stmt = $conn->prepare("
+        SELECT primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+               cedula, tipo_docente, estado_docente, genero,
+               fecha_nacimiento,
+               TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad
+        FROM tb_docente
+        WHERE MONTH(fecha_nacimiento) = :mes
+        ORDER BY primer_apellido ASC, primer_nombre ASC
+    ");
+    $stmt->execute([':mes' => $mes]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

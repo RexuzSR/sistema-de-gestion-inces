@@ -291,6 +291,18 @@
                 maintainAspectRatio: false,
                 animation: { duration: 800, easing: 'easeOutQuart' },
                 layout:   { padding: { top: 20 } },
+                onClick: function(evt, elements) {
+                    if (!elements || elements.length === 0) return;
+                    const idx = elements[0].index;
+                    const val = data[idx];
+                    if (val === 0) return;
+                    const mesNum = idx + 1;
+                    const labelsFull = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                    mostrarDetalleDocentesMes(mesNum, labelsFull[idx]);
+                },
+                onHover: function(evt, elements) {
+                    evt.native.target.style.cursor = (elements && elements.length > 0 && data[elements[0].index] > 0) ? 'pointer' : 'default';
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -346,4 +358,316 @@
     }
     build();
 })();
+</script>
+
+<!-- Modal Detalle Docentes por Mes de Nacimiento -->
+<style>
+.modal-docente-row {
+    transition: all 0.2s ease-in-out;
+}
+.modal-docente-row:hover td {
+    background-color: #f8fafc !important;
+}
+.modal-docente-row:hover {
+    transform: translateY(-1px);
+}
+.modal-docente-row:hover svg.chevron-arrow-doc {
+    transform: translateX(4px);
+    fill: #7367f0;
+}
+.modal-docente-table td {
+    padding: 8px 12px !important;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.modal-docente-table td:first-child {
+    border-left: 1px solid #e2e8f0;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+.modal-docente-table td:last-child {
+    border-right: 1px solid #e2e8f0;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.modal-docente-search-input {
+    border-radius: 20px;
+    padding: 10px 16px 10px 42px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    font-size: 0.85rem;
+    transition: all 0.2s ease-in-out;
+}
+.modal-docente-search-input:focus {
+    border-color: #7367f0;
+    box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.15);
+    outline: none;
+}
+.empty-state-icon-docente {
+    background: #ede8ff;
+    color: #7367f0;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+}
+</style>
+
+<div class="modal fade" id="modal-DetalleDocentesMes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);">
+      <!-- Header -->
+      <div class="modal-header border-0" style="background:linear-gradient(135deg,#5b21b6 0%,#7367f0 50%,#a78bfa 100%);padding:1.25rem 1.5rem;">
+        <div>
+          <h5 class="modal-title text-white" style="font-weight:700;font-size:1.1rem;display:flex;align-items:center;gap:8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 16 16">
+              <path d="M4 16s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-5.95a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+              <path d="M2 1a2 2 0 0 0-2 2v9.5A1.5 1.5 0 0 0 1.5 14h.653a5.4 5.4 0 0 1 1.066-2H1V3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9h-2.219c.554.654.89 1.373 1.066 2h.653a1.5 1.5 0 0 0 1.5-1.5V3a2 2 0 0 0-2-2z"/>
+            </svg>
+            Docentes &mdash; <span id="modal-docente-mes-nombre">Mes</span>
+          </h5>
+          <p class="text-white-50 mb-0" style="font-size:.78rem;margin-top:2px;">Docentes nacidos en este mes</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <!-- Search -->
+      <div style="padding:1rem 1.5rem .5rem;background:#fff;">
+        <div style="position:relative;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#94a3b8" viewBox="0 0 16 16" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+          </svg>
+          <input type="text" class="form-control modal-docente-search-input" id="modal-docente-search" placeholder="Buscar por nombre, c&eacute;dula, tipo o estado...">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:.72rem;color:#94a3b8;">
+            <span id="modal-docente-filtered-wrapper" style="display:none;">
+              <span id="modal-docente-filtered-count">0</span> encontrados &middot;
+            </span>
+            Clic en una fila para ver el docente
+          </span>
+          <span id="modal-docente-count" style="font-size:.72rem;font-weight:600;color:#7367f0;">0 docentes</span>
+        </div>
+      </div>
+      <!-- Body -->
+      <div class="modal-body" style="padding:.5rem 1.5rem 1.25rem;max-height:420px;overflow-y:auto;">
+        <!-- Loading -->
+        <div id="modal-docente-loading" style="text-align:center;padding:3rem 0;">
+          <div class="spinner-border text-primary" role="status" style="width:2.5rem;height:2.5rem;border-width:.22rem;color:#7367f0 !important;">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p style="margin-top:12px;color:#64748b;font-size:.85rem;">Cargando docentes&hellip;</p>
+        </div>
+        <!-- Sin datos -->
+        <div id="modal-docente-sin-datos" style="display:none;text-align:center;padding:2.5rem 0;">
+          <div class="empty-state-icon-docente">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M4 16s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-5.95a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+            </svg>
+          </div>
+          <p style="color:#64748b;font-weight:600;">No se encontraron docentes</p>
+          <p style="color:#94a3b8;font-size:.82rem;">No hay docentes nacidos en este mes.</p>
+        </div>
+        <!-- Contenido -->
+        <div id="modal-docente-contenido" style="display:none;">
+          <table class="modal-docente-table" style="width:100%;border-collapse:separate;border-spacing:0 6px;">
+            <tbody id="modal-docente-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Footer -->
+      <div class="modal-footer border-0" style="padding:.75rem 1.5rem;background:#f8fafc;">
+        <button type="button" class="btn btn-sm" data-bs-dismiss="modal" style="border-radius:10px;padding:6px 22px;font-size:.82rem;font-weight:600;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+    document.addEventListener('DOMContentLoaded', function() {
+        var searchInput = document.getElementById('modal-docente-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                var query = this.value.toLowerCase().trim();
+                var rows  = document.querySelectorAll('#modal-docente-tbody tr');
+                var visibles = 0;
+                rows.forEach(function(row) {
+                    var text = (row.getAttribute('data-nombre') || '').toLowerCase()
+                             + ' ' + (row.getAttribute('data-cedula') || '').toLowerCase()
+                             + ' ' + (row.getAttribute('data-tipo') || '').toLowerCase()
+                             + ' ' + (row.getAttribute('data-estado') || '').toLowerCase();
+                    if (!query || text.indexOf(query) !== -1) {
+                        row.style.display = '';
+                        visibles++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                var wrapper = document.getElementById('modal-docente-filtered-wrapper');
+                if (query.length > 0) {
+                    wrapper.style.display = 'inline-block';
+                    document.getElementById('modal-docente-filtered-count').textContent = visibles;
+                } else {
+                    wrapper.style.display = 'none';
+                }
+            });
+        }
+    });
+})();
+
+if (typeof window.escHtml !== 'function') {
+    window.escHtml = function(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+}
+
+function mostrarDetalleDocentesMes(mesNum, mesLabel) {
+    document.getElementById('modal-docente-mes-nombre').textContent = mesLabel;
+    
+    // Limpiar buscador
+    document.getElementById('modal-docente-search').value = '';
+    document.getElementById('modal-docente-filtered-wrapper').style.display = 'none';
+    
+    // Mostrar loading
+    document.getElementById('modal-docente-loading').style.display = 'block';
+    document.getElementById('modal-docente-sin-datos').style.display = 'none';
+    document.getElementById('modal-docente-contenido').style.display = 'none';
+    document.getElementById('modal-docente-count').textContent = 'Cargando...';
+    
+    var modal = new bootstrap.Modal(document.getElementById('modal-DetalleDocentesMes'));
+    modal.show();
+    
+    var apiUrl = '../controlador/Reporte/api_reportes.php?accion=docentes_por_mes_detalle&mes=' + mesNum;
+    
+    fetch(apiUrl)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            document.getElementById('modal-docente-loading').style.display = 'none';
+            
+            if (!data || data.length === 0) {
+                document.getElementById('modal-docente-sin-datos').style.display = 'block';
+                document.getElementById('modal-docente-count').textContent = '0 docentes';
+                return;
+            }
+            
+            var tbody = document.getElementById('modal-docente-tbody');
+            tbody.innerHTML = '';
+            
+            var colEstado = {
+                'Disponible':     '#28c76f',
+                'En formación':   '#f59e0b',
+                'Asignado':       '#0ea5e9',
+                'Inactivo':       '#ef4444'
+            };
+            
+            var colTipo = {
+                'Fijo':        '#7367f0',
+                'Contratado':  '#0ea5e9',
+                'PDL':         '#f59e0b',
+                'Voluntario':  '#28c76f'
+            };
+            
+            data.forEach(function(d) {
+                var nombre = escHtml((d.primer_nombre || '') + ' ' + (d.segundo_nombre || '')).trim()
+                           + ' ' + escHtml((d.primer_apellido || '') + ' ' + (d.segundo_apellido || '')).trim();
+                nombre = nombre.replace(/\s+/g, ' ').trim();
+                
+                var fNac = '';
+                if (d.fecha_nacimiento) {
+                    var parts = d.fecha_nacimiento.split('-');
+                    fNac = parts[2] + '/' + parts[1] + '/' + parts[0];
+                }
+                
+                var estadoColor = colEstado[d.estado_docente] || '#6c757d';
+                var tipoColor   = colTipo[d.tipo_docente] || '#6c757d';
+                var generoIcon  = d.genero === 'Masculino'
+                    ? '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#0ea5e9" viewBox="0 0 16 16"><path d="M8 1a4 4 0 1 0 0 8 4 4 0 0 0 0-8M3 5a5 5 0 1 1 5.5 4.975V12h2a.5.5 0 0 1 0 1h-2v2.5a.5.5 0 0 1-1 0V13h-2a.5.5 0 0 1 0-1h2V9.975A5 5 0 0 1 3 5"/></svg>'
+                    : '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#ec4899" viewBox="0 0 16 16"><path d="M8 1a4 4 0 1 0 0 8 4 4 0 0 0 0-8M3 5a5 5 0 1 1 5.5 4.975V12h2a.5.5 0 0 1 0 1h-2v2.5a.5.5 0 0 1-1 0V13h-2a.5.5 0 0 1 0-1h2V9.975A5 5 0 0 1 3 5"/></svg>';
+                var generoColor = d.genero === 'Masculino' ? '#0ea5e9' : '#ec4899';
+                
+                var tr = document.createElement('tr');
+                tr.className = 'modal-docente-row docente-row-link';
+                tr.style.cssText = 'cursor:pointer;';
+                tr.setAttribute('data-cedula', d.cedula || '');
+                tr.setAttribute('data-nombre', nombre);
+                tr.setAttribute('data-tipo', d.tipo_docente || '');
+                tr.setAttribute('data-estado', d.estado_docente || '');
+                tr.title = 'Ver docente';
+                
+                tr.innerHTML = ''
+                    + '<td style="min-width:220px;max-width:280px;">'
+                    + '  <div style="display:flex;align-items:center;gap:10px;">'
+                    + '    <div style="width:32px;height:32px;border-radius:8px;background:#ede8ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+                    + '      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="#7367f0" viewBox="0 0 16 16">'
+                    + '        <path d="M4 16s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-5.95a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>'
+                    + '      </svg>'
+                    + '    </div>'
+                    + '    <div style="min-width:0;">'
+                    + '      <div style="font-weight:600;color:#1e293b;overflow:hidden;text-overflow:ellipsis;max-width:220px;" title="' + nombre + '">' + nombre + '</div>'
+                    + '      <div style="font-size:.7rem;color:#94a3b8;">C.I. ' + escHtml(d.cedula) + '</div>'
+                    + '    </div>'
+                    + '  </div>'
+                    + '</td>'
+                    + '<td>'
+                    + '  <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:' + tipoColor + '18;color:' + tipoColor + ';">'
+                    +      escHtml(d.tipo_docente)
+                    + '  </span>'
+                    + '</td>'
+                    + '<td>'
+                    + '  <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:' + estadoColor + '18;color:' + estadoColor + ';">'
+                    + '    <span style="width:6px;height:6px;border-radius:50%;background:' + estadoColor + ';"></span>'
+                    +      escHtml(d.estado_docente)
+                    + '  </span>'
+                    + '</td>'
+                    + '<td style="text-align:center;">'
+                    + '  <span style="display:inline-flex;align-items:center;gap:4px;font-size:.78rem;color:' + generoColor + ';font-weight:500;">'
+                    +      generoIcon + ' ' + escHtml(d.genero)
+                    + '  </span>'
+                    + '</td>'
+                    + '<td style="text-align:center;">'
+                    + '  <span style="font-weight:700;font-size:.85rem;color:#1e293b;">' + (d.edad || '—') + '</span>'
+                    + '  <span style="font-size:.68rem;color:#94a3b8;"> años</span>'
+                    + '</td>'
+                    + '<td>'
+                    + '  <span style="font-size:.78rem;color:#64748b;">'
+                    + '    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#94a3b8" viewBox="0 0 16 16" style="margin-right:3px;">'
+                    + '      <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>'
+                    + '    </svg>'
+                    +      fNac
+                    + '  </span>'
+                    + '</td>'
+                    + '<td style="text-align:right;">'
+                    + '  <svg class="chevron-arrow-doc" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#cbd5e1" viewBox="0 0 16 16" style="transition:all 0.2s ease;">'
+                    + '    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>'
+                    + '  </svg>'
+                    + '</td>';
+                
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('modal-docente-contenido').style.display = 'block';
+            document.getElementById('modal-docente-count').textContent = data.length + ' docente' + (data.length !== 1 ? 's' : '');
+        })
+        .catch(function(err) {
+            console.error('Error fetching monthly docentes:', err);
+            document.getElementById('modal-docente-loading').style.display = 'none';
+            document.getElementById('modal-docente-sin-datos').style.display = 'block';
+            document.getElementById('modal-docente-count').textContent = 'Error';
+        });
+}
 </script>

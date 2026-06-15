@@ -501,7 +501,7 @@
                     borderWidth:      1.5,
                     borderRadius:     6,
                     borderSkipped:    false,
-                    hoverBackgroundColor: data.map((_, i) => i === mesActual ? '#5b52d6' : '#00afc5'),
+                    hoverBackgroundColor: data.map((v, i) => i === mesActual ? '#5b52d6' : '#00afc5'),
                 }]
             },
             options: {
@@ -509,6 +509,20 @@
                 maintainAspectRatio: false,
                 animation: { duration: 800, easing: 'easeOutQuart' },
                 layout: { padding: { top: 20 } },
+                onClick: (event, elements) => {
+                    if (!elements.length) return;
+                    const index = elements[0].index;
+                    const mesNum = index + 1;
+                    const names = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                    const mesLabel = names[index];
+                    mostrarDetalleParticipantesMes(mesNum, mesLabel);
+                },
+                onHover: (event, chartElement) => {
+                    const target = event.native ? event.native.target : (event.target || event.srcElement);
+                    if (target) {
+                        target.style.cursor = chartElement.length ? 'pointer' : 'default';
+                    }
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -845,4 +859,397 @@ if (typeof CHART_MAP !== 'undefined') {
     const btnClose = document.getElementById('kpi-detalle-close');
     if (btnClose) btnClose.addEventListener('click', cerrarDetalle);
 })();
+</script>
+
+<!-- Modal Detalle Participantes Registrados por Mes -->
+<style>
+.modal-part-row {
+    transition: all 0.2s ease-in-out;
+}
+.modal-part-row:hover td {
+    background-color: #f8fafc !important;
+}
+.modal-part-row:hover {
+    transform: translateY(-1px);
+}
+.modal-part-row:hover svg.chevron-arrow {
+    transform: translateX(4px);
+    fill: #0d9488;
+}
+.sticky-thead th {
+    background-color: #f8fafc !important;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: none !important;
+    padding: 10px 12px !important;
+    white-space: nowrap;
+}
+.modal-part-table td {
+    padding: 8px 12px !important;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.modal-part-table td:first-child {
+    border-left: 1px solid #e2e8f0;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+.modal-part-table td:last-child {
+    border-right: 1px solid #e2e8f0;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.modal-part-search-input {
+    border-radius: 20px;
+    padding: 10px 16px 10px 42px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    font-size: 0.85rem;
+    transition: all 0.2s ease-in-out;
+}
+.modal-part-search-input:focus {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    outline: none;
+}
+.modal-close-btn-custom {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.2s ease-in-out;
+}
+.modal-close-btn-custom:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+    color: white;
+}
+.empty-state-icon {
+    background: #f0fdfa;
+    color: #0d9488;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+</style>
+
+<div class="modal fade" id="modal-DetalleParticipantesMes" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <!-- Header con gradiente premium -->
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #0f766e, #0d9488, #0ea5e9); padding: 18px 24px; border-bottom: none;">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalDetalleLabel">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.047 1.09-2.904.243-.294.526-.569.846-.816M5 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4m1.89-3.921a3 3 0 1 1-4.226 4.226 3 3 0 0 1 4.226-4.226"/>
+          </svg>
+          Registros de <span id="modal-part-mes-nombre">Mes</span> · <span id="modal-part-mes-anio"><?php echo $anioActual; ?></span>
+        </h5>
+        <button type="button" class="modal-close-btn-custom" data-bs-dismiss="modal" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Cuerpo del modal -->
+      <div class="modal-body p-4" style="background-color: #f8fafc; min-height: 250px;">
+        
+        <!-- Barra de búsqueda e información con mejor diseño -->
+        <div class="mb-4 d-flex align-items-center gap-3 flex-wrap">
+          <div class="position-relative flex-grow-1" style="min-width: 250px;">
+            <span class="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="color: #94a3b8;">
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+              </svg>
+            </span>
+            <input type="text" id="modal-part-search" class="form-control modal-part-search-input ps-5 w-100 shadow-sm" placeholder="Buscar por nombre, cédula o estado...">
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-teal-soft text-teal border border-teal-soft fw-semibold px-3 py-2" style="font-size: .75rem; border-radius: 20px; display: none; background-color: #e0f2fe; color: #0369a1;" id="modal-part-filtered-wrapper">
+              Mostrados: <span id="modal-part-filtered-count">0</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Spinner de carga -->
+        <div id="modal-part-loading" class="text-center py-5" style="display: none;">
+          <div class="spinner-border text-teal" role="status" style="color: #0d9488;">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted mt-3 small fw-medium">Obteniendo listado de participantes...</p>
+        </div>
+        
+        <!-- Estado sin datos -->
+        <div id="modal-part-sin-datos" class="text-center py-5 text-muted" style="display: none;">
+          <div class="empty-state-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+              <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252(1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+            </svg>
+          </div>
+          <h6 class="fw-bold text-dark mb-1">Sin registros</h6>
+          <p class="text-muted small mb-0">No se encontraron participantes registrados en este mes.</p>
+        </div>
+
+        <!-- Tabla interactiva con diseño premium -->
+        <div id="modal-part-contenido" class="table-responsive" style="max-height: 400px; display: none; border-radius: 8px;">
+          <table class="table align-middle mb-0 modal-part-table" style="border-collapse: separate; border-spacing: 0 6px;">
+            <thead class="sticky-top sticky-thead">
+              <tr>
+                <th style="border-top-left-radius: 8px;">Participante</th>
+                <th>Cédula</th>
+                <th>Estado</th>
+                <th>Género</th>
+                <th>Instrucción</th>
+                <th class="text-center">Edad</th>
+                <th>Fecha Registro</th>
+                <th style="border-top-right-radius: 8px; width: 4%;"></th>
+              </tr>
+            </thead>
+            <tbody id="modal-part-tbody" style="background-color: transparent;">
+              <!-- rows dynamically filled here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Footer con resumen -->
+      <div class="modal-footer border-top-0 d-flex justify-content-between p-3" style="background-color: #f1f5f9;">
+        <span class="badge bg-dark bg-opacity-10 text-dark-emphasis px-3 py-2 fw-semibold" id="modal-part-count" style="font-size: 0.78rem; border-radius: 20px;">0 participantes</span>
+        <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 20px; font-weight: 600; padding: 6px 16px; background-color: #64748b; border: none;">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Funciones auxiliares para avatares e iniciales
+function getInitials(name) {
+    if (!name) return '??';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+}
+
+function getAvatarColor(name) {
+    if (!name) return { bg: '#e2e8f0', text: '#475569' };
+    const colors = [
+        { bg: '#fee2e2', text: '#b91c1c' }, // rojo
+        { bg: '#ffedd5', text: '#c2410c' }, // naranja
+        { bg: '#fef3c7', text: '#b45309' }, // ámbar
+        { bg: '#ecfdf5', text: '#047857' }, // esmeralda
+        { bg: '#f0fdf4', text: '#15803d' }, // verde
+        { bg: '#e0f2fe', text: '#0369a1' }, // sky
+        { bg: '#eff6ff', text: '#1d4ed8' }, // azul
+        { bg: '#f5f3ff', text: '#6d28d9' }, // violeta
+        { bg: '#fdf2f8', text: '#be185d' }, // rosa
+        { bg: '#e0f7fa', text: '#00838f' }  // cian oscuro
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+}
+
+// Registramos el buscador del modal una sola vez
+(function setupModalSearch() {
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('modal-part-search');
+        if (input) {
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('#modal-part-tbody tr');
+                let visibles = 0;
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        row.style.display = '';
+                        visibles++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                const wrapper = document.getElementById('modal-part-filtered-wrapper');
+                if (query.length > 0) {
+                    wrapper.style.display = 'inline-block';
+                    document.getElementById('modal-part-filtered-count').textContent = visibles;
+                } else {
+                    wrapper.style.display = 'none';
+                }
+            });
+        }
+    });
+})();
+
+function mostrarDetalleParticipantesMes(mesNum, mesLabel) {
+    document.getElementById('modal-part-mes-nombre').textContent = mesLabel;
+    
+    // Clear search input
+    document.getElementById('modal-part-search').value = '';
+    document.getElementById('modal-part-filtered-wrapper').style.display = 'none';
+    
+    // Show loading, hide others
+    document.getElementById('modal-part-loading').style.display = 'block';
+    document.getElementById('modal-part-sin-datos').style.display = 'none';
+    document.getElementById('modal-part-contenido').style.display = 'none';
+    document.getElementById('modal-part-count').textContent = '—';
+    
+    // Show Modal using Bootstrap
+    const modalEl = document.getElementById('modal-DetalleParticipantesMes');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (!modalInstance) {
+        modalInstance = new bootstrap.Modal(modalEl);
+    }
+    modalInstance.show();
+    
+    // Fetch data from API
+    const url = `../controlador/Reporte/api_reportes.php?accion=participantes_por_mes_detalle&mes=${mesNum}&anio=<?php echo $anioActual; ?>`;
+    fetch(url, { credentials: 'same-origin' })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('modal-part-loading').style.display = 'none';
+            if (data.error || !Array.isArray(data) || data.length === 0) {
+                document.getElementById('modal-part-sin-datos').style.display = 'block';
+                document.getElementById('modal-part-count').textContent = '0 participantes';
+                return;
+            }
+            
+            const tbody = document.getElementById('modal-part-tbody');
+            tbody.innerHTML = '';
+            
+            data.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = 'part-row-link modal-part-row';
+                tr.dataset.cedula = p.cedula;
+                tr.style.cursor = 'pointer';
+                tr.style.backgroundColor = '#ffffff';
+                
+                // Normalización de estados
+                const rawEstado = p.estado;
+                const estadoLabel = ['Inactivo','En sistema'].includes(rawEstado) ? 'Sin curso activo' : rawEstado;
+                
+                // Estilos para las pastillas de estado con mejor contraste y diseño
+                let pillClass = '';
+                let dotColor = '';
+                if (estadoLabel === 'En formación' || estadoLabel === 'En formacion') {
+                    pillClass = 'background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;';
+                    dotColor = '#10b981';
+                } else if (estadoLabel === 'Disponible') {
+                    pillClass = 'background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a;';
+                    dotColor = '#f59e0b';
+                } else if (estadoLabel === 'Asignado') {
+                    pillClass = 'background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;';
+                    dotColor = '#3b82f6';
+                } else if (estadoLabel === 'Diferido') {
+                    pillClass = 'background-color: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8;';
+                    dotColor = '#ec4899';
+                } else {
+                    pillClass = 'background-color: #f8fafc; color: #475569; border: 1px solid #cbd5e1;';
+                    dotColor = '#64748b';
+                }
+                
+                // Generador de Avatares
+                const fullName = p.primer_nombre + ' ' + p.primer_apellido;
+                const initials = getInitials(fullName);
+                const avatarTheme = getAvatarColor(fullName);
+                
+                const avatarHTML = `
+                    <div class="d-flex align-items-center gap-2">
+                      <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; background-color: ${avatarTheme.bg}; color: ${avatarTheme.text}; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);">
+                        ${initials}
+                      </div>
+                      <span class="fw-bold text-dark" style="font-size: .83rem;">${escHtml(fullName)}</span>
+                    </div>
+                `;
+                
+                // Badges de género con iconos SVG
+                let genderBadge = '';
+                if (p.genero === 'Masculino') {
+                    genderBadge = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:12px; font-size:.7rem; font-weight:600; background-color:#e0f2fe; color:#0369a1;"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M9.5 2a.5.5 0 0 1 0-1h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V3.707L9.854 6.854a.5.5 0 0 1-.708-.708L12.293 3H9.5zM6 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg> Masc</span>`;
+                } else {
+                    genderBadge = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:12px; font-size:.7rem; font-weight:600; background-color:#fce7f3; color:#be185d;"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-4 3a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM8 8a.5.5 0 0 1 .5.5v2h2a.5.5 0 0 1 0 1h-2v2a.5.5 0 0 1-1 0v-2h-2a.5.5 0 0 1 0-1h2v-2A.5.5 0 0 1 8 8z"/></svg> Fem</span>`;
+                }
+                
+                const formattedFecha = p.fecha_registro ? p.fecha_registro.split(' ')[0].split('-').reverse().join('/') : '—';
+                
+                // Formateo de Cédula (V-XXXXXXXX)
+                const cedStr = p.cedula ? p.cedula.toString() : '';
+                let cedulaFormat = escHtml(cedStr);
+                if (cedStr && !cedStr.includes('-')) {
+                    cedulaFormat = 'V-' + parseInt(cedStr).toLocaleString('de-DE');
+                }
+                
+                tr.innerHTML = `
+                    <td>${avatarHTML}</td>
+                    <td class="text-secondary fw-semibold" style="font-family: var(--bs-font-monospace, monospace); font-size: .8rem;">${cedulaFormat}</td>
+                    <td>
+                      <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:12px; font-size:.7rem; font-weight:600; ${pillClass}">
+                        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:${dotColor};"></span>
+                        ${escHtml(estadoLabel)}
+                      </span>
+                    </td>
+                    <td>${genderBadge}</td>
+                    <td class="text-secondary fw-semibold" style="font-size: .8rem;">
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="#94a3b8" viewBox="0 0 16 16"><path d="M8.211 2.047a.5.5 0 0 0-.422 0l-7.14 3.57a.5.5 0 0 0 0 .893l7.14 3.56a.5.5 0 0 0 .422 0l7.14-3.56a.5.5 0 0 0 0-.893L8.211 2.047z"/><path d="M3.21 9.77a.5.5 0 0 1 .582-.24l4.208 1.402a.5.5 0 0 0 .317 0l4.208-1.402a.5.5 0 0 1 .582.24l.322.643a.5.5 0 0 1-.211.666l-5 2.5a.5.5 0 0 1-.482 0l-5-2.5a.5.5 0 0 1-.211-.666l.322-.643z"/></svg>
+                        ${escHtml(p.grado_institucion ?? '—')}
+                      </span>
+                    </td>
+                    <td class="text-center fw-bold text-dark" style="font-size: .8rem;">${p.edad ? p.edad + ' años' : '—'}</td>
+                    <td class="text-secondary" style="font-size: .8rem;">
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="#94a3b8" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                        ${formattedFecha}
+                      </span>
+                    </td>
+                    <td style="text-align: right;">
+                      <svg class="chevron-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#cbd5e1" viewBox="0 0 16 16" style="transition: all 0.2s ease;">
+                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('modal-part-contenido').style.display = 'block';
+            document.getElementById('modal-part-count').textContent = `${data.length} participante${data.length !== 1 ? 's' : ''}`;
+        })
+        .catch(err => {
+            console.error('Error fetching monthly participants:', err);
+            document.getElementById('modal-part-loading').style.display = 'none';
+            document.getElementById('modal-part-sin-datos').style.display = 'block';
+            document.getElementById('modal-part-count').textContent = 'Error';
+        });
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return str.toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 </script>

@@ -739,6 +739,20 @@
                 maintainAspectRatio: false,
                 animation: { duration: 800, easing: 'easeOutQuart' },
                 layout: { padding: { top: 20 } },
+                onClick: (event, elements) => {
+                    if (!elements.length) return;
+                    const index = elements[0].index;
+                    const mesNum = index + 1;
+                    const names = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                    const mesLabel = names[index];
+                    mostrarDetalleCursosMes(mesNum, mesLabel);
+                },
+                onHover: (event, chartElement) => {
+                    const target = event.native ? event.native.target : (event.target || event.srcElement);
+                    if (target) {
+                        target.style.cursor = chartElement.length ? 'pointer' : 'default';
+                    }
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -1270,4 +1284,326 @@
     // oculta y el canvas tendría width=0. Se invoca desde
     // window.buildAmbitoPeriodo() al activar la sección.
 })();
+</script>
+
+<!-- Modal Detalle Cursos Registrados por Mes -->
+<style>
+.modal-curso-row {
+    transition: all 0.2s ease-in-out;
+}
+.modal-curso-row:hover td {
+    background-color: #f8fafc !important;
+}
+.modal-curso-row:hover {
+    transform: translateY(-1px);
+}
+.modal-curso-row:hover svg.chevron-arrow {
+    transform: translateX(4px);
+    fill: #28c76f;
+}
+.modal-curso-table td {
+    padding: 8px 12px !important;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.modal-curso-table td:first-child {
+    border-left: 1px solid #e2e8f0;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+.modal-curso-table td:last-child {
+    border-right: 1px solid #e2e8f0;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.modal-curso-search-input {
+    border-radius: 20px;
+    padding: 10px 16px 10px 42px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    font-size: 0.85rem;
+    transition: all 0.2s ease-in-out;
+}
+.modal-curso-search-input:focus {
+    border-color: #28c76f;
+    box-shadow: 0 0 0 3px rgba(40, 199, 111, 0.15);
+    outline: none;
+}
+.empty-state-icon-curso {
+    background: #f0fdf4;
+    color: #28c76f;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+</style>
+
+<div class="modal fade" id="modal-DetalleCursosMes" tabindex="-1" aria-labelledby="modalDetalleCursosLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <!-- Header con gradiente premium -->
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #15803d, #28c76f, #0ea5e9); padding: 18px 24px; border-bottom: none;">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalDetalleCursosLabel">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8.5 2.687c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
+          </svg>
+          Cursos iniciados en <span id="modal-curso-mes-nombre">Mes</span> &middot; <span id="modal-curso-mes-anio"><?php echo $anioActual; ?></span>
+        </h5>
+        <button type="button" class="modal-close-btn-custom" data-bs-dismiss="modal" aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Cuerpo del modal -->
+      <div class="modal-body p-4" style="background-color: #f8fafc; min-height: 250px;">
+        
+        <!-- Barra de búsqueda e información -->
+        <div class="mb-4 d-flex align-items-center gap-3 flex-wrap">
+          <div class="position-relative flex-grow-1" style="min-width: 250px;">
+            <span class="position-absolute top-50 start-0 translate-middle-y ps-3 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="color: #94a3b8;">
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+              </svg>
+            </span>
+            <input type="text" id="modal-curso-search" class="form-control modal-curso-search-input ps-5 w-100 shadow-sm" placeholder="Buscar por nombre, modalidad, turno o estado...">
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-teal-soft text-teal border border-teal-soft fw-semibold px-3 py-2" style="font-size: .75rem; border-radius: 20px; display: none; background-color: #e2fce8; color: #15803d;" id="modal-curso-filtered-wrapper">
+              Mostrados: <span id="modal-curso-filtered-count">0</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Spinner de carga -->
+        <div id="modal-curso-loading" class="text-center py-5" style="display: none;">
+          <div class="spinner-border text-success" role="status" style="color: #28c76f;">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted mt-3 small fw-medium">Obteniendo listado de cursos...</p>
+        </div>
+        
+        <!-- Estado sin datos -->
+        <div id="modal-curso-sin-datos" class="text-center py-5 text-muted" style="display: none;">
+          <div class="empty-state-icon-curso">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+              <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+            </svg>
+          </div>
+          <h6 class="fw-bold text-dark mb-1">Sin registros</h6>
+          <p class="text-muted small mb-0">No se encontraron cursos iniciados en este mes.</p>
+        </div>
+
+        <!-- Tabla interactiva con diseño premium -->
+        <div id="modal-curso-contenido" class="table-responsive" style="max-height: 400px; display: none; border-radius: 8px;">
+          <table class="table align-middle mb-0 modal-curso-table" style="border-collapse: separate; border-spacing: 0 6px;">
+            <thead class="sticky-top sticky-thead">
+              <tr>
+                <th style="border-top-left-radius: 8px;">Curso</th>
+                <th>Modalidad</th>
+                <th>Turno</th>
+                <th class="text-center">Participantes</th>
+                <th>Fechas (Inicio - Fin)</th>
+                <th>Estatus</th>
+                <th style="border-top-right-radius: 8px; width: 4%;"></th>
+              </tr>
+            </thead>
+            <tbody id="modal-curso-tbody" style="background-color: transparent;">
+              <!-- rows dynamically filled here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Footer con resumen -->
+      <div class="modal-footer border-top-0 d-flex justify-content-between p-3" style="background-color: #f1f5f9;">
+        <span class="badge bg-dark bg-opacity-10 text-dark-emphasis px-3 py-2 fw-semibold" id="modal-curso-count" style="font-size: 0.78rem; border-radius: 20px;">0 cursos</span>
+        <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" style="border-radius: 20px; font-weight: 600; padding: 6px 16px; background-color: #64748b; border: none;">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Registrar el buscador del modal de cursos
+(function setupModalCursoSearch() {
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('modal-curso-search');
+        if (input) {
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('#modal-curso-tbody tr');
+                let visibles = 0;
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        row.style.display = '';
+                        visibles++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                const wrapper = document.getElementById('modal-curso-filtered-wrapper');
+                if (query.length > 0) {
+                    wrapper.style.display = 'inline-block';
+                    document.getElementById('modal-curso-filtered-count').textContent = visibles;
+                } else {
+                    wrapper.style.display = 'none';
+                }
+            });
+        }
+    });
+})();
+
+if (typeof window.escHtml !== 'function') {
+    window.escHtml = function(str) {
+        if (!str) return '';
+        return str.toString()
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+}
+
+function mostrarDetalleCursosMes(mesNum, mesLabel) {
+    document.getElementById('modal-curso-mes-nombre').textContent = mesLabel;
+    
+    // Limpiar buscador
+    document.getElementById('modal-curso-search').value = '';
+    document.getElementById('modal-curso-filtered-wrapper').style.display = 'none';
+    
+    // Mostrar loading
+    document.getElementById('modal-curso-loading').style.display = 'block';
+    document.getElementById('modal-curso-sin-datos').style.display = 'none';
+    document.getElementById('modal-curso-contenido').style.display = 'none';
+    document.getElementById('modal-curso-count').textContent = '—';
+    
+    // Mostrar modal usando Bootstrap
+    const modalEl = document.getElementById('modal-DetalleCursosMes');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (!modalInstance) {
+        modalInstance = new bootstrap.Modal(modalEl);
+    }
+    modalInstance.show();
+    
+    // Llamar a la API
+    const url = `../controlador/Reporte/api_reportes.php?accion=cursos_por_mes_detalle&mes=${mesNum}&anio=<?php echo $anioActual; ?>`;
+    fetch(url, { credentials: 'same-origin' })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('modal-curso-loading').style.display = 'none';
+            if (data.error || !Array.isArray(data) || data.length === 0) {
+                document.getElementById('modal-curso-sin-datos').style.display = 'block';
+                document.getElementById('modal-curso-count').textContent = '0 cursos';
+                return;
+            }
+            
+            const tbody = document.getElementById('modal-curso-tbody');
+            tbody.innerHTML = '';
+            
+            data.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.className = 'curso-row-link modal-curso-row';
+                tr.dataset.nombre = c.nombre_curso;
+                tr.style.cursor = 'pointer';
+                tr.style.backgroundColor = '#ffffff';
+                
+                // Color semántico de pastilla de estatus
+                let pillStyle = 'background-color: #f8fafc; color: #475569; border: 1px solid #cbd5e1;';
+                let dotColor = '#64748b';
+                const est = (c.nombre_estatusCurso || '').toLowerCase();
+                
+                if (est.includes('culmin') || est.includes('complet') || est.includes('finaliz')) {
+                    pillStyle = 'background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;';
+                    dotColor = '#28c76f';
+                } else if (est.includes('proces') || est.includes('curso') || est.includes('inici')) {
+                    pillStyle = 'background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;';
+                    dotColor = '#3b82f6';
+                } else if (est.includes('difer')) {
+                    pillStyle = 'background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a;';
+                    dotColor = '#f59e0b';
+                } else if (est.includes('esper')) {
+                    pillStyle = 'background-color: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5;';
+                    dotColor = '#ef4444';
+                }
+                
+                // Formato de Fechas
+                const fInicio = c.fecha_inicio ? c.fecha_inicio.split('-').reverse().join('/') : '—';
+                const fFin    = c.fecha_fin ? c.fecha_fin.split('-').reverse().join('/') : '—';
+                
+                // Cupos y progreso visual
+                const pct = c.max_participantes > 0 ? Math.round((c.num_inscritos / c.max_participantes) * 100) : 0;
+                let barColor = '#64748b';
+                if (pct >= 90) barColor = '#ef4444';      // casi lleno o lleno
+                else if (pct >= 50) barColor = '#28c76f'; // moderado
+                else barColor = '#3b82f6';                // pocos
+                
+                tr.innerHTML = `
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; background-color: #e8f5e9; color: #1b5e20; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-journal-bookmark" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M6 8V1h1v7L6.5 7.5z"/>
+                            <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1c0-.188.04-.368.113-.532L1 12.045V11h1v.045a1 1 0 0 0 .11.455L3 13.045V12h1v1.045a1 1 0 0 0 .11-.455L5.5 11.5v-1h1v1.045a1 1 0 0 0 .11.455L8 13.045V12h1v1.045a1 1 0 0 0 .11-.455L10.5 11.5v-1h1v1.045a1 1 0 0 0 .11.455L13 13.045V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v12c0 .584.237 1.114.62 1.492A1 1 0 0 1 2 14V2a2 2 0 0 1 2-2z"/>
+                          </svg>
+                        </div>
+                        <span class="fw-bold text-dark" style="font-size: .83rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${window.escHtml(c.nombre_curso)}">
+                          ${window.escHtml(c.nombre_curso)}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="text-center"><span class="badge-mini" style="background:#e0f2fe; color:#0369a1; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;">${window.escHtml(c.nombre_modalidad || '—')}</span></td>
+                    <td class="text-secondary fw-semibold" style="font-size: .8rem;">${window.escHtml(c.turno || '—')}</td>
+                    <td>
+                      <div class="d-flex flex-column" style="min-width: 80px;">
+                        <span class="fw-bold text-dark mb-1" style="font-size: 0.76rem;">${c.num_inscritos} / ${c.max_participantes} <span class="text-muted" style="font-size: 0.68rem; font-weight: normal;">(${pct}%)</span></span>
+                        <div class="progress" style="height: 4px; background-color: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                          <div class="progress-bar" role="progressbar" style="width: ${pct}%; background-color: ${barColor};"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-secondary" style="font-size: .8rem;">
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="#94a3b8" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                        ${fInicio} - ${fFin}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:12px; font-size:.7rem; font-weight:600; ${pillStyle}">
+                        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background-color:${dotColor};"></span>
+                        ${window.escHtml(c.nombre_estatusCurso)}
+                      </span>
+                    </td>
+                    <td style="text-align: right;">
+                      <svg class="chevron-arrow" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#cbd5e1" viewBox="0 0 16 16" style="transition: all 0.2s ease;">
+                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('modal-curso-contenido').style.display = 'block';
+            document.getElementById('modal-curso-count').textContent = `${data.length} curso${data.length !== 1 ? 's' : ''}`;
+        })
+        .catch(err => {
+            console.error('Error fetching monthly courses:', err);
+            document.getElementById('modal-curso-loading').style.display = 'none';
+            document.getElementById('modal-curso-sin-datos').style.display = 'block';
+            document.getElementById('modal-curso-count').textContent = 'Error';
+        });
+}
 </script>

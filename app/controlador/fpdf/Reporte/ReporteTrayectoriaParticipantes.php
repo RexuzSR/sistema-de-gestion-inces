@@ -1,6 +1,6 @@
 <?php
 ob_start();
-require_once __DIR__ . '/../dompdf/autoload.inc.php';
+require_once __DIR__ . '/../../dompdf/autoload.inc.php';
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -289,7 +289,7 @@ if ($cedulaSelected) {
 }
 
 // Convert Logo
-$logoPath = __DIR__ . '/../../../assets/img/inces-logo.png';
+$logoPath = __DIR__ . '/../../../../assets/img/inces-logo.png';
 if (file_exists($logoPath)) {
     $logoData = base64_encode(file_get_contents($logoPath));
     $logoSrc = 'data:image/png;base64,'.$logoData;
