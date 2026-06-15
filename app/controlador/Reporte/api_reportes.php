@@ -23,7 +23,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('X-Content-Type-Options: nosniff');
 
-require_once '../../modelo/conexion.php';
+require_once __DIR__ . '/../../modelo/conexion.php';
 require_once __DIR__ . '/api_reportes_cursos_trayectoria.php';
 
 try {
@@ -44,9 +44,21 @@ if ($anio > $anioActual || $anio < 2000) {
 
 try {
     switch ($accion) {
+        
+        case 'exportar_trayectoria_pdf':
+            // Deshabilitar cualquier output json
+            header_remove('Content-Type');
+            require_once __DIR__ . '/pdf_trayectoria_participante.php';
+            exit;
 
         case 'participantes_total':
-            echo json_encode(getParticipantesTotal($conn, $anio));
+            $estadosRaw = $_GET['estados'] ?? '';
+            $estados = !empty($estadosRaw) ? explode(',', $estadosRaw) : null;
+            echo json_encode(getParticipantesTotal($conn, $anio, $estados));
+            break;
+
+        case 'participantes_estados_sistema':
+            echo json_encode(getParticipantesEstadosSistema($conn));
             break;
 
         case 'participantes_aprobados':
@@ -312,19 +324,36 @@ function mapDemo(array $row): array {
 // ─────────────────── PARTICIPANTES ──────────────────────────────────
 // ====================================================================
 
-function getParticipantesTotal(PDO $conn, int $anio): array {
+function construirCondicionEstado(?array $estados, string $prefijo, array &$params): string {
+    if (empty($estados)) return "";
+    $keys = [];
+    foreach ($estados as $i => $est) {
+        $key = $prefijo . $i;
+        $keys[] = ":" . $key;
+        $params[$key] = $est;
+    }
+    return " AND p.estado IN (" . implode(',', $keys) . ")";
+}
+
+function getParticipantesTotal(PDO $conn, int $anio, ?array $estados = null): array {
     $meses = inicializarMeses($anio);
 
+    $paramsNuevos = [':anio' => $anio];
+    $condEstNuevos = construirCondicionEstado($estados, 'estNuevos', $paramsNuevos);
     $stmt = $conn->prepare("
         SELECT MONTH(p.fecha_registro) AS mes, COUNT(*) AS total, " . selectDemo() . "
-        FROM tb_participante p WHERE YEAR(p.fecha_registro) = :anio GROUP BY MONTH(p.fecha_registro)
+        FROM tb_participante p 
+        WHERE YEAR(p.fecha_registro) = :anio $condEstNuevos 
+        GROUP BY MONTH(p.fecha_registro)
     ");
-    $stmt->execute([':anio' => $anio]);
+    $stmt->execute($paramsNuevos);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $m = intval($row['mes']);
         if (isset($meses[$m])) { $meses[$m]['nuevos'] = intval($row['total']); $meses[$m]['demo']['nuevos'] = mapDemo($row); }
     }
 
+    $paramsActivos = [':anio1'=>$anio,':anio2'=>$anio,':anio3'=>$anio,':anio4'=>$anio];
+    $condEstActivos = construirCondicionEstado($estados, 'estActivos', $paramsActivos);
     $stmt = $conn->prepare("
         SELECT meses.mes_activo, COUNT(DISTINCT pc.id_participante) AS total, " . selectDemo() . "
         FROM (SELECT 1 AS mes_activo UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6
@@ -334,27 +363,53 @@ function getParticipantesTotal(PDO $conn, int $anio): array {
          AND pc.FechaFin >= DATE_FORMAT(MAKEDATE(:anio2, 1) + INTERVAL (meses.mes_activo - 1) MONTH, '%Y-%m-01')
          AND pc.estatus_participante = 'En formación'
         JOIN tb_participante p ON p.id_participante = pc.id_participante
-        WHERE YEAR(pc.FechaInicio) <= :anio3 AND YEAR(pc.FechaFin) >= :anio4
+        WHERE YEAR(pc.FechaInicio) <= :anio3 AND YEAR(pc.FechaFin) >= :anio4 $condEstActivos
         GROUP BY meses.mes_activo
     ");
-    $stmt->execute([':anio1'=>$anio,':anio2'=>$anio,':anio3'=>$anio,':anio4'=>$anio]);
+    $stmt->execute($paramsActivos);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $m = intval($row['mes_activo']);
         if (isset($meses[$m])) { $meses[$m]['activos'] = intval($row['total']); $meses[$m]['demo']['activos'] = mapDemo($row); }
     }
 
+    $paramsRetirados = [':anio' => $anio];
+    $condEstRetirados = construirCondicionEstado($estados, 'estRetirados', $paramsRetirados);
     $stmt = $conn->prepare("
         SELECT MONTH(pc.FechaFin) AS mes, COUNT(DISTINCT pc.id_participante) AS total, " . selectDemo() . "
         FROM tb_participante_curso pc JOIN tb_participante p ON p.id_participante = pc.id_participante
-        WHERE YEAR(pc.FechaFin) = :anio AND pc.estatus_participante IN ('Ausente', 'Reprobado')
+        WHERE YEAR(pc.FechaFin) = :anio AND pc.estatus_participante IN ('Ausente', 'Reprobado') $condEstRetirados
         GROUP BY MONTH(pc.FechaFin)
     ");
-    $stmt->execute([':anio' => $anio]);
+    $stmt->execute($paramsRetirados);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $m = intval($row['mes']);
         if (isset($meses[$m])) { $meses[$m]['retirados'] = intval($row['total']); $meses[$m]['demo']['retirados'] = mapDemo($row); }
     }
     return mesesAArray($meses);
+}
+
+function getParticipantesEstadosSistema(PDO $conn): array {
+    $stmt = $conn->query("SELECT estado, COUNT(*) as total FROM tb_participante GROUP BY estado");
+    $estados = [
+        'En formacion' => 0,
+        'Inactivo' => 0,
+        'Disponible' => 0,
+        'Asignado' => 0,
+        'En sistema' => 0,
+        'Diferido' => 0
+    ];
+    $total = 0;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $estado = $row['estado'];
+        if (array_key_exists($estado, $estados)) {
+            $estados[$estado] = intval($row['total']);
+        }
+        $total += intval($row['total']);
+    }
+    return [
+        'total' => $total,
+        'estados' => $estados
+    ];
 }
 
 function getParticipantesAprobados(PDO $conn, int $anio): array {
@@ -1123,7 +1178,12 @@ function getTrayectoriaParticipantes(PDO $conn): array {
         SELECT p.cedula, p.primer_nombre, p.primer_apellido, p.genero, p.edad, p.correo,
                p.fecha_registro, p.estado, p.grado_institucion,
                (SELECT t.numero_de_telefono FROM tb_telefono t WHERE t.id_participante = p.id_participante AND t.tipo_de_telefono = 'Móvil' ORDER BY t.id_telefono ASC LIMIT 1) AS telefono,
-               CASE WHEN EXISTS (SELECT 1 FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante) THEN 1 ELSE 0 END AS has_curso
+               CASE WHEN EXISTS (SELECT 1 FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante) THEN 1 ELSE 0 END AS has_curso,
+               CASE WHEN EXISTS (SELECT 1 FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante AND pc.estatus_participante = 'Aprobado') THEN 1 ELSE 0 END AS has_aprobado,
+               (SELECT GROUP_CONCAT(c2.nombre_curso SEPARATOR ', ') 
+                FROM tb_participante_curso pc2 
+                JOIN tb_curso c2 ON c2.id_curso = pc2.id_curso 
+                WHERE pc2.id_participante = p.id_participante AND pc2.estatus_participante = 'Aprobado') AS cursos_aprobados
         FROM tb_participante p ORDER BY p.primer_apellido ASC, p.primer_nombre ASC
     ");
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

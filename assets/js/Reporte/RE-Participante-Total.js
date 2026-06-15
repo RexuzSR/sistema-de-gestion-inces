@@ -6,8 +6,10 @@
 // ── Estado global del reporte ──────────────────────────────────────
 let datosMensuales = [];        // Datos del año base activo
 let graficoInstance = null;
-let cacheDatosAnuales = {};        // Cache: { 2025: [...], 2024: [...] }
+let cacheDatosAnuales = {};        // Cache: { "2025_Disponible,Asignado": [...], ... }
 let anioBase = null;      // Año que controla el gráfico y paneles
+let estadosFiltrados = []; // Estados activos del filtro: ['Disponible', 'En formacion']
+let datosEstadosSistema = { total: 0, estados: {} }; // Datos globales del sistema
 
 let tiposActivos = new Set(['nuevos']);
 let aniosActivos = [];            // Años activos en el gráfico (orden asc)
@@ -71,29 +73,38 @@ function initTooltips(root) {
 
 // ── API ────────────────────────────────────────────────────────────
 const API_REPORTES_URL = '../controlador/Reporte/api_reportes.php';
+
 async function fetchDatosAnio(anio) {
-    if (cacheDatosAnuales[anio]) return cacheDatosAnuales[anio];
+    const cacheKey = `${anio}_${estadosFiltrados.join(',')}`;
+    if (cacheDatosAnuales[cacheKey]) return cacheDatosAnuales[cacheKey];
 
-    if (peticionesEnCurso[anio]) return peticionesEnCurso[anio];
+    if (peticionesEnCurso[cacheKey]) return peticionesEnCurso[cacheKey];
 
-    const promise = fetch(`${API_REPORTES_URL}?accion=participantes_total&anio=${anio}`)
+    const estadosParam = estadosFiltrados.length > 0 ? `&estados=${encodeURIComponent(estadosFiltrados.join(','))}` : '';
+    const promise = fetch(`${API_REPORTES_URL}?accion=participantes_total&anio=${anio}${estadosParam}`)
         .then(res => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             return res.json();
         })
         .then(data => {
             if (data.error) throw new Error(data.error);
-            cacheDatosAnuales[anio] = data;
-            delete peticionesEnCurso[anio];
+            cacheDatosAnuales[cacheKey] = data;
+            delete peticionesEnCurso[cacheKey];
             return data;
         })
         .catch(err => {
-            delete peticionesEnCurso[anio];
+            delete peticionesEnCurso[cacheKey];
             throw err;
         });
 
-    peticionesEnCurso[anio] = promise;
+    peticionesEnCurso[cacheKey] = promise;
     return promise;
+}
+
+async function fetchEstadosSistema() {
+    const res = await fetch(`${API_REPORTES_URL}?accion=participantes_estados_sistema`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
 }
 
 async function fetchAniosDisponibles() {
@@ -106,15 +117,20 @@ async function fetchAniosDisponibles() {
     }
 }
 
+// ── Helper: clave de caché estructurada ─────────────────────────────
+function obtenerClaveCache(anio) {
+    return `${anio}_${estadosFiltrados.join(',')}`;
+}
+
 // ── Helper: diciembre del año anterior (para gráfico y tabla) ──────
 function getDicAnterior(tipo, anio) {
-    const datos = cacheDatosAnuales[anio - 1];
+    const datos = cacheDatosAnuales[obtenerClaveCache(anio - 1)];
     if (!datos) return null;
     return datos[11]?.[tipo] ?? null;
 }
 
 function getDicAnteriorMesObj(anio) {
-    const datos = cacheDatosAnuales[anio - 1];
+    const datos = cacheDatosAnuales[obtenerClaveCache(anio - 1)];
     if (!datos) return null;
     return datos[11] ?? null;
 }
@@ -162,7 +178,8 @@ function valorFiltrado(mesDatos, campo) {
 function hayFiltroActivo() {
     return filtroDemo.genero.length > 0 ||
         filtroDemo.discapacidad.length > 0 ||
-        filtroDemo.edadUmbral.length > 0;
+        filtroDemo.edadUmbral.length > 0 ||
+        estadosFiltrados.length > 0;
 }
 
 // ── Resumen KPI ────────────────────────────────────────────────────
@@ -215,6 +232,8 @@ async function cargarTotalParticipantes() {
     aniosActivos = [];
     tipoGrafico = 'line';
     filtroDemo = { genero: [], discapacidad: [], edadUmbral: [] };
+    estadosFiltrados = [];
+    datosEstadosSistema = { total: 0, estados: {} };
 
     contentDiv.innerHTML = `
     <div class="card shadow-lg border-0">
@@ -238,6 +257,7 @@ async function cargarTotalParticipantes() {
     </div>`;
 
     try {
+        datosEstadosSistema = await fetchEstadosSistema();
         const añosDisp = await fetchAniosDisponibles();
         const hoy = añosDisp[0] ?? new Date().getFullYear();
 
@@ -269,7 +289,7 @@ async function cargarDatosTP(anio, añosDisp, esCargaInicial = false) {
         anioBase = anio;
 
         // Pre-cargar diciembre del año anterior (no bloqueante)
-        if (!cacheDatosAnuales[anio - 1]) {
+        if (!cacheDatosAnuales[obtenerClaveCache(anio - 1)]) {
             try { await fetchDatosAnio(anio - 1); } catch (_) { }
         }
 
@@ -460,6 +480,35 @@ function renderContenidoTP(añosDisp) {
                                 </div>
                             </div>
                         </div>
+                        <div class="rp-filter-group-item rp-filter-group-item--wide">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Estado actual</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check">
+                                    <input class="btn-check" type="checkbox" id="fe_en_formacion" name="fEstado" value="En formacion" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_en_formacion">En formación</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="btn-check" type="checkbox" id="fe_disponible" name="fEstado" value="Disponible" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_disponible">Disponible</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="btn-check" type="checkbox" id="fe_asignado" name="fEstado" value="Asignado" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_asignado">Asignado</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="btn-check" type="checkbox" id="fe_inactivo" name="fEstado" value="Inactivo" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_inactivo">Inactivo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="btn-check" type="checkbox" id="fe_en_sistema" name="fEstado" value="En sistema" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_en_sistema">En sistema</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="btn-check" type="checkbox" id="fe_diferido" name="fEstado" value="Diferido" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_diferido">Diferido</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-2 text-end">
                         <button class="btn btn-sm btn-outline-danger" id="btnLimpiarFiltrosDemo">${svgX} Limpiar filtros</button>
@@ -507,7 +556,7 @@ async function cambiarAnioTabla(anio) {
 
     try {
         // Pre-cargar diciembre del año anterior (no bloqueante)
-        if (!cacheDatosAnuales[anio - 1]) {
+        if (!cacheDatosAnuales[obtenerClaveCache(anio - 1)]) {
             try { await fetchDatosAnio(anio - 1); } catch (_) { }
         }
 
@@ -538,25 +587,40 @@ function inicializarFiltrosDemo() {
         filtroDemo.discapacidad = [...document.querySelectorAll('input[name="fDisc"]:checked')].map(c => c.value);
         filtroDemo.edadUmbral = [...document.querySelectorAll('input[name="fEdad"]:checked')].map(c => c.value);
 
-        actualizarSubtituloFiltro();
-        const datos = cacheDatosAnuales[anioTabla] || [];
-        renderTablaMensual(datos, getDicAnteriorMesObj(anioTabla));
-        renderKPIs(calcularResumenFiltrado(datos));
-        if (panelActivo) renderPanelDetalle(panelActivo);
+        const nuevosEstados = [...document.querySelectorAll('input[name="fEstado"]:checked')].map(c => c.value);
+        const cambiaronEstados = JSON.stringify(nuevosEstados.sort()) !== JSON.stringify(estadosFiltrados.sort());
+
+        if (cambiaronEstados) {
+            estadosFiltrados = nuevosEstados;
+            await aplicarFiltrosEstado();
+        } else {
+            actualizarSubtituloFiltro();
+            const cacheKey = `${anioTabla}_${estadosFiltrados.join(',')}`;
+            const datos = cacheDatosAnuales[cacheKey] || [];
+            renderTablaMensual(datos, getDicAnteriorMesObj(anioTabla));
+            renderKPIs(calcularResumenFiltrado(datos));
+            if (panelActivo) renderPanelDetalle(panelActivo);
+        }
     }
 
-    document.querySelectorAll('input[name="fGenero"],input[name="fDisc"],input[name="fEdad"]')
+    document.querySelectorAll('input[name="fGenero"],input[name="fDisc"],input[name="fEdad"],input[name="fEstado"]')
         .forEach(cb => cb.addEventListener('change', actualizarFiltros));
 
-    document.getElementById('btnLimpiarFiltrosDemo')?.addEventListener('click', () => {
-        document.querySelectorAll('input[name="fGenero"],input[name="fDisc"],input[name="fEdad"]')
+    document.getElementById('btnLimpiarFiltrosDemo')?.addEventListener('click', async () => {
+        document.querySelectorAll('input[name="fGenero"],input[name="fDisc"],input[name="fEdad"],input[name="fEstado"]')
             .forEach(cb => cb.checked = false);
         filtroDemo = { genero: [], discapacidad: [], edadUmbral: [] };
-        actualizarSubtituloFiltro();
-        const datos = cacheDatosAnuales[anioTabla] || [];
-        renderTablaMensual(datos, getDicAnteriorMesObj(anioTabla));
-        renderKPIs(calcularResumenFiltrado(datos));
-        if (panelActivo) renderPanelDetalle(panelActivo);
+        if (estadosFiltrados.length > 0) {
+            estadosFiltrados = [];
+            await aplicarFiltrosEstado();
+        } else {
+            actualizarSubtituloFiltro();
+            const cacheKey = `${anioTabla}_`;
+            const datos = cacheDatosAnuales[cacheKey] || [];
+            renderTablaMensual(datos, getDicAnteriorMesObj(anioTabla));
+            renderKPIs(calcularResumenFiltrado(datos));
+            if (panelActivo) renderPanelDetalle(panelActivo);
+        }
     });
 }
 
@@ -565,6 +629,15 @@ function actualizarSubtituloFiltro() {
     if (!sub) return;
     if (!hayFiltroActivo()) { sub.style.display = 'none'; return; }
 
+    const nombresEstados = {
+        'En formacion': 'En formación',
+        'Inactivo': 'Inactivo',
+        'Disponible': 'Disponible',
+        'Asignado': 'Asignado',
+        'En sistema': 'En sistema',
+        'Diferido': 'Diferido'
+    };
+
     const partes = [];
     if (filtroDemo.genero.length)
         partes.push('Género: ' + filtroDemo.genero.map(g => g === 'masculino' ? 'Masculino' : 'Femenino').join(' o '));
@@ -572,6 +645,8 @@ function actualizarSubtituloFiltro() {
         partes.push('Discapacidad: ' + filtroDemo.discapacidad.map(d => d === 'con' ? 'Con' : 'Sin').join(' o '));
     if (filtroDemo.edadUmbral.length)
         partes.push('Edad: ' + filtroDemo.edadUmbral.map(e => UMBRALES_EDAD[e]?.label || e).join(' o '));
+    if (estadosFiltrados.length)
+        partes.push('Estado: ' + estadosFiltrados.map(e => nombresEstados[e] || e).join(' o '));
 
     sub.textContent = 'Filtrado por: ' + partes.join(' · ');
     sub.style.display = 'block';
@@ -585,7 +660,16 @@ function renderKPIs(data) {
 
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
 
+    let totalSistemaValor = datosEstadosSistema.total;
+    let totalSistemaSub = 'participantes registrados';
+    if (estadosFiltrados.length > 0) {
+        const sumaFiltrada = estadosFiltrados.reduce((acc, est) => acc + (datosEstadosSistema.estados[est] ?? 0), 0);
+        totalSistemaValor = `${sumaFiltrada} de ${datosEstadosSistema.total}`;
+        totalSistemaSub = 'filtrados en el sistema';
+    }
+
     const cards = [
+        { tipo: 'total_sistema', valor: totalSistemaValor, label: 'Total en Sistema', sub: totalSistemaSub, color: 'info' },
         { tipo: 'nuevos', valor: data.totalNuevos, label: 'Nuevos Participantes', sub: 'inscritos en el año', color: 'primary' },
         { tipo: 'activos', valor: data.activos, label: 'Activos Actualmente', sub: 'cursando este mes', color: 'success' },
         { tipo: 'retirados', valor: data.retirados, label: 'Finalizaron / Baja', sub: 'salidas acumuladas en el año', color: 'danger' },
@@ -593,10 +677,10 @@ function renderKPIs(data) {
     ];
 
     el.innerHTML = `<div class="row mb-1">${cards.map(c => `
-        <div class="col-md-3">
+        <div class="col-md">
             <div class="card border-0 shadow-sm mb-3 kpi-card" role="button" data-tipo="${c.tipo}">
                 <div class="card-body text-center py-3">
-                    <h2 class="fw-bold text-${c.color} mt-2 mb-0">
+                    <h2 class="fw-bold text-${c.color} mt-2 mb-0" style="font-size: 1.8rem; white-space: nowrap;">
                         ${typeof c.valor === 'number' ? c.valor.toLocaleString() : c.valor}
                     </h2>
                     <p class="rp-kpi-card-label">${c.label}</p>
@@ -622,7 +706,7 @@ function togglePanelDetalle(tipo) {
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
     const svgUp = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/></svg>`;
 
-    ['nuevos', 'activos', 'retirados', 'retencion'].forEach(t => {
+    ['total_sistema', 'nuevos', 'activos', 'retirados', 'retencion'].forEach(t => {
         const b = document.getElementById(`badgePanel-${t}`);
         if (b) b.innerHTML = `${svgDown}Ver detalle`;
     });
@@ -651,12 +735,122 @@ const CFG_PANEL = {
 function renderPanelDetalle(tipo) {
     const wrapper = document.getElementById('panelDetalleWrapper');
     if (!wrapper) return;
+
+    if (tipo === 'total_sistema') {
+        const estados = datosEstadosSistema.estados || {};
+        const nombresEstados = {
+            'En formacion': 'En formación',
+            'Disponible': 'Disponible',
+            'Asignado': 'Asignado',
+            'Inactivo': 'Inactivo',
+            'En sistema': 'En sistema',
+            'Diferido': 'Diferido'
+        };
+        const coloresEstados = {
+            'En formacion': 'success',
+            'Disponible': 'primary',
+            'Asignado': 'warning',
+            'Inactivo': 'danger',
+            'En sistema': 'info',
+            'Diferido': 'dark'
+        };
+
+        const htmlEstados = Object.keys(nombresEstados).map(est => {
+            const cant = estados[est] ?? 0;
+            const activo = estadosFiltrados.includes(est);
+            const color = coloresEstados[est];
+            
+            // Colores e intensidades específicas para los estados activos (pastel suave y bordes nítidos)
+            const estilosActivo = {
+                'En formacion': 'background-color: rgba(40, 167, 69, 0.12); border-color: #28a745 !important; color: #1e7e34;',
+                'Disponible': 'background-color: rgba(0, 123, 255, 0.12); border-color: #007bff !important; color: #0056b3;',
+                'Asignado': 'background-color: rgba(255, 193, 7, 0.15); border-color: #ffc107 !important; color: #856404;',
+                'Inactivo': 'background-color: rgba(220, 53, 69, 0.12); border-color: #dc3545 !important; color: #bd2130;',
+                'En sistema': 'background-color: rgba(23, 162, 184, 0.12); border-color: #17a2b8 !important; color: #117a8b;',
+                'Diferido': 'background-color: rgba(108, 117, 125, 0.15); border-color: #6c757d !important; color: #343a40;'
+            };
+            
+            const estiloCSS = activo 
+                ? estilosActivo[est] 
+                : 'background-color: #ffffff; border-color: #dee2e6; color: #212529;';
+
+            const badgeClase = activo
+                ? `bg-${color} text-white`
+                : 'border border-secondary-subtle text-secondary bg-light';
+
+            const badgeTexto = activo
+                ? '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" class="bi bi-check-lg me-1" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/></svg>Filtrando'
+                : 'Filtrar';
+
+            return `
+                <div class="col-6 col-md-4 col-lg-2">
+                    <div class="card p-3 text-center btn-filtro-estado" 
+                         data-estado="${est}" 
+                         style="cursor: pointer; transition: all 0.2s ease-in-out; border-width: 2px; ${estiloCSS}"
+                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                        <h3 class="fw-bold mb-1">${cant}</h3>
+                        <div class="small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">${nombresEstados[est]}</div>
+                        <div class="mt-2 text-center">
+                            <span class="badge rounded-pill ${badgeClase}" style="font-size: 0.65rem; padding: 4px 10px;">
+                                ${badgeTexto}
+                            </span>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        wrapper.innerHTML = `
+            <div class="card border-0 shadow-sm rp-card-top" data-color="info">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <h6 class="mb-0 text-info">Distribución por Estado Actual en el Sistema</h6>
+                        <div>
+                            ${estadosFiltrados.length > 0 ? `
+                                <button class="btn btn-sm btn-outline-danger" id="btnLimpiarEstadosDetalle">
+                                    Quitar todos los filtros de estado
+                                </button>
+                            ` : '<span class="text-muted small">Haz clic en un estado para aplicar el filtro</span>'}
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        ${htmlEstados}
+                    </div>
+                    <p class="text-muted small mb-0 mt-2 text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0M7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0z"/></svg>
+                        Al filtrar por uno o más estados, se actualizarán los datos demográficos, mensuales y las gráficas del año correspondiente.
+                    </p>
+                </div>
+            </div>`;
+
+        // Añadir manejadores
+        wrapper.querySelectorAll('.btn-filtro-estado').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const est = btn.dataset.estado;
+                const idx = estadosFiltrados.indexOf(est);
+                if (idx > -1) {
+                    estadosFiltrados.splice(idx, 1);
+                } else {
+                    estadosFiltrados.push(est);
+                }
+                // Recargar datos con los estados filtrados
+                await aplicarFiltrosEstado();
+            });
+        });
+
+        document.getElementById('btnLimpiarEstadosDetalle')?.addEventListener('click', async () => {
+            estadosFiltrados = [];
+            await aplicarFiltrosEstado();
+        });
+        return;
+    }
+
     const cfg = CFG_PANEL[tipo];
     const meses = obtenerNombresMeses();
     const años = [...añosGlobales].sort((a, b) => a - b);
 
     const calcValor = (a, i) => {
-        const d = (cacheDatosAnuales[a] || [])[i];
+        const d = (cacheDatosAnuales[obtenerClaveCache(a)] || [])[i];
         if (!d || d.nuevos === null) return null;
         if (tipo === 'retencion') {
             const act = valorFiltrado(d, 'activos');
@@ -686,7 +880,7 @@ function renderPanelDetalle(tipo) {
     const svgXS = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/></svg>`;
     const svgPl = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
 
-    const añosDisponiblesEnCache = Object.keys(cacheDatosAnuales).map(Number);
+    const añosDisponiblesEnCache = [...new Set(Object.keys(cacheDatosAnuales).map(k => parseInt(k.split('_')[0])).filter(a => !isNaN(a)))];
     const añosFaltantes = añosDisponiblesEnCache.filter(a => !años.includes(a));
 
     wrapper.innerHTML = `
@@ -888,7 +1082,7 @@ function renderGrafico() {
 
     tipos.forEach((tipo, tipoIdx) => {
         años.forEach((anio, anioIdx) => {
-            const datosAnio = cacheDatosAnuales[anio] || [];
+            const datosAnio = cacheDatosAnuales[obtenerClaveCache(anio)] || [];
             const colorBorde = colorBordeParaAnio(tipo, anioIdx, nAnios);
             const colorFill = colorFillParaAnio(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.15));
 
@@ -1066,7 +1260,7 @@ function inicializarControlesGrafico() {
         try {
             await fetchDatosAnio(a);
             // Pre-cargar diciembre del año anterior para el punto de referencia
-            if (!cacheDatosAnuales[a - 1]) {
+            if (!cacheDatosAnuales[obtenerClaveCache(a - 1)]) {
                 try { await fetchDatosAnio(a - 1); } catch (_) { }
             }
             aniosActivos.push(a);
@@ -1112,6 +1306,39 @@ function sincronizarChipsAnios() {
     );
 }
 
+async function aplicarFiltrosEstado() {
+    const anio = anioTabla || anioBase;
+    try {
+        // Recargar datos para el año de la tabla
+        const datos = await fetchDatosAnio(anio);
+        datosMensuales = datos;
+
+        // Pre-cargar/recargar los años comparativos del gráfico
+        for (const a of aniosActivos) {
+            await fetchDatosAnio(a);
+        }
+
+        // Sincronizar checkboxes demográficos del panel
+        sincronizarCheckboxesEstados();
+        actualizarSubtituloFiltro();
+
+        // Re-renderizar KPIs, tabla, gráfico y panel de detalle
+        const resumen = calcularResumenFiltrado(datosMensuales);
+        renderKPIs(resumen);
+        renderTablaMensual(datosMensuales, getDicAnteriorMesObj(anio));
+        renderGrafico();
+        if (panelActivo) renderPanelDetalle(panelActivo);
+    } catch (err) {
+        mostrarErrorTP(`Error al aplicar filtros de estado: ${err.message}`);
+    }
+}
+
+function sincronizarCheckboxesEstados() {
+    document.querySelectorAll('input[name="fEstado"]').forEach(cb => {
+        cb.checked = estadosFiltrados.includes(cb.value);
+    });
+}
+
 // ── Limpieza ───────────────────────────────────────────────────────
 
 function limpiarRecursosTotalParticipantes() {
@@ -1127,6 +1354,8 @@ function limpiarRecursosTotalParticipantes() {
     anioBase = null;
     anioTabla = null;
     filtroDemo = { genero: [], discapacidad: [], edadUmbral: [] };
+    estadosFiltrados = [];
+    datosEstadosSistema = { total: 0, estados: {} };
 }
 
 // ── Exports globales ───────────────────────────────────────────────

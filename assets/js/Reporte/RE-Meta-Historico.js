@@ -51,10 +51,10 @@ function obtenerAniosDisponiblesHist() {
 async function fetchHistAnual(tipoMeta) {
     if (cacheHistAnual && cacheHistAnual._tipo === tipoMeta) return cacheHistAnual;
     const url = `${API_URL_HIST}?accion=metas_por_anio${tipoMeta ? '&tipo=' + encodeURIComponent(tipoMeta) : ''}`;
-    const res = await fetch(url,
-        { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+  const res = await fetchWithTimeout(url,
+    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }, 15000);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
     if (data.error) throw new Error(data.error);
     cacheHistAnual = Array.isArray(data) ? data : (data.data || []);
     cacheHistAnual._tipo = tipoMeta;
@@ -64,13 +64,28 @@ async function fetchHistTrimestre(anio, tipoMeta) {
     const key = `${anio}_${tipoMeta}`;
     if (cacheHistTrim[key]) return cacheHistTrim[key];
     const url = `${API_URL_HIST}?accion=metas_por_trimestre&anio_meta=${anio}${tipoMeta ? '&tipo=' + encodeURIComponent(tipoMeta) : ''}`;
-    const res = await fetch(url,
-        { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    cacheHistTrim[key] = Array.isArray(data) ? data : (data.data || []);
+  const res = await fetchWithTimeout(url,
+    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }, 15000);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  cacheHistTrim[key] = Array.isArray(data) ? data : (data.data || []);
     return cacheHistTrim[key];
+}
+
+// Helper: fetch con timeout para evitar bloqueos indefinidos
+async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  options.signal = controller.signal;
+  try {
+    const resp = await fetch(url, options);
+    clearTimeout(id);
+    return resp;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
 }
 
 // ─── Normalización de respuestas del backend ─────────────────
@@ -314,12 +329,13 @@ async function _cargarVistaHist() {
         if (panelActivoHist) await renderPanelDetalleHist(panelActivoHist, datos);
 
     } catch (err) {
-        if (loadEl)  loadEl.style.display = 'none';
-        if (errorEl) {
-            errorEl.classList.remove('d-none');
-            document.getElementById('errorMsgHist').textContent = `Error: ${err.message}`;
-        }
-        console.error('[RE-Meta-Historico] Error:', err);
+      if (loadEl)  loadEl.style.display = 'none';
+      if (errorEl) {
+        errorEl.classList.remove('d-none');
+        const msg = (err && err.name === 'AbortError') ? 'Tiempo de espera al obtener los datos.' : (err && err.message ? err.message : String(err));
+        document.getElementById('errorMsgHist').textContent = `Error: ${msg}`;
+      }
+      console.error('[RE-Meta-Historico] Error:', err);
     }
 }
 

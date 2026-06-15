@@ -10,7 +10,7 @@ let trayOrdenCol        = null;
 let trayOrdenAsc        = true;
 let trayBusqueda        = '';
 let trayParticipanteAct = null;
-let trayFiltros         = { conCurso:null, anio:'', genero:'', estado:'', edadMin:'', edadMax:'' };
+let trayFiltros         = { conCurso:null, conAprobado:null, anio:'', genero:'', estado:'', edadMin:'', edadMax:'' };
 
 const API_TRAY_URL = '../controlador/Reporte/api_reportes.php';
 const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -136,7 +136,7 @@ async function cargarTrayectoriaParticipantes() {
     trayOrdenAsc        = true;
     trayBusqueda        = '';
     trayParticipanteAct = null;
-    trayFiltros         = { conCurso:null, anio:'', genero:'', estado:'', edadMin:'', edadMax:'' };
+    trayFiltros         = { conCurso:null, conAprobado:null, anio:'', meses:[], genero:'', estado:'', edadMin:'', edadMax:'' };
 
     contentDiv.innerHTML = `
     <div class="card shadow-lg border-0">
@@ -260,6 +260,48 @@ async function cargarTrayectoriaParticipantes() {
                                               padding:.25rem .5rem;font-size:.875rem;
                                               background:transparent;">
                             </div>
+                        </div>
+
+                        <!-- Mes de registro -->
+                        <div class="col-sm-6 col-md-4 col-xl-2">
+                            <label class="form-label mb-1"
+                                   style="font-size:.7rem;font-weight:700;color:#64748b;
+                                          text-transform:uppercase;letter-spacing:.05em;">
+                                Mes de registro
+                            </label>
+                            <div class="dropdown w-100">
+                                <button class="btn btn-sm dropdown-toggle w-100 text-start" type="button" id="trayFiltroMesesBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="background:#fff;border:1px solid #dee2e6;border-radius:.375rem;color:#212529;display:flex;justify-content:space-between;align-items:center;padding:.25rem .5rem;">
+                                    <span id="trayFiltroMesesLabel" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Todos los meses</span>
+                                </button>
+                                <ul class="dropdown-menu w-100 p-2 shadow-sm" aria-labelledby="trayFiltroMesesBtn" style="max-height:220px;overflow-y:auto;font-size:0.875rem;border-radius:10px;">
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="01" id="tm01"><label class="form-check-label w-100" for="tm01">Enero</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="02" id="tm02"><label class="form-check-label w-100" for="tm02">Febrero</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="03" id="tm03"><label class="form-check-label w-100" for="tm03">Marzo</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="04" id="tm04"><label class="form-check-label w-100" for="tm04">Abril</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="05" id="tm05"><label class="form-check-label w-100" for="tm05">Mayo</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="06" id="tm06"><label class="form-check-label w-100" for="tm06">Junio</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="07" id="tm07"><label class="form-check-label w-100" for="tm07">Julio</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="08" id="tm08"><label class="form-check-label w-100" for="tm08">Agosto</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="09" id="tm09"><label class="form-check-label w-100" for="tm09">Septiembre</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="10" id="tm10"><label class="form-check-label w-100" for="tm10">Octubre</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="11" id="tm11"><label class="form-check-label w-100" for="tm11">Noviembre</label></div></li>
+                                    <li><div class="form-check"><input class="form-check-input tray-mes-cb" type="checkbox" value="12" id="tm12"><label class="form-check-label w-100" for="tm12">Diciembre</label></div></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Certificados -->
+                        <div class="col-sm-6 col-md-4 col-xl-2">
+                            <label class="form-label mb-1"
+                                   style="font-size:.7rem;font-weight:700;color:#64748b;
+                                          text-transform:uppercase;letter-spacing:.05em;">
+                                Certificados
+                            </label>
+                            <select class="form-select form-select-sm" id="trayFiltroConAprobado">
+                                <option value="">Todos</option>
+                                <option value="1">Con formaciones aprobadas</option>
+                                <option value="0">Sin formaciones aprobadas</option>
+                            </select>
                         </div>
 
                     </div>
@@ -478,6 +520,7 @@ function trayInicializarFiltros() {
     };
 
     bind('trayFiltroConCurso', 'conCurso', v => v === '' ? null : v === '1');
+    bind('trayFiltroConAprobado', 'conAprobado', v => v === '' ? null : v === '1');
     bind('trayFiltroAnio',    'anio');
     bind('trayFiltroGenero',  'genero');
     bind('trayFiltroEstado',  'estado');
@@ -494,15 +537,38 @@ function trayInicializarFiltros() {
             }, 350);
         });
     });
+
+    const handleCheckboxMes = () => {
+        const seleccionados = Array.from(document.querySelectorAll('.tray-mes-cb:checked')).map(cb => cb.value);
+        trayFiltros.meses = seleccionados;
+        const labelEl = document.getElementById('trayFiltroMesesLabel');
+        if (seleccionados.length === 0) {
+            labelEl.textContent = 'Todos los meses';
+        } else if (seleccionados.length === 1) {
+            labelEl.textContent = document.querySelector(`.tray-mes-cb[value="${seleccionados[0]}"]`).nextElementSibling.textContent;
+        } else {
+            labelEl.textContent = `${seleccionados.length} meses selec.`;
+        }
+        trayPaginaActual = 1;
+        trayActualizarChipsFiltros();
+        trayRenderTabla();
+    };
+
+    document.querySelectorAll('.tray-mes-cb').forEach(cb => {
+        cb.addEventListener('change', handleCheckboxMes);
+    });
 }
 
 function trayLimpiarFiltros() {
-    trayFiltros = { conCurso:null, anio:'', genero:'', estado:'', edadMin:'', edadMax:'' };
-    ['trayFiltroConCurso','trayFiltroAnio','trayFiltroGenero',
+    trayFiltros = { conCurso:null, conAprobado:null, anio:'', meses:[], genero:'', estado:'', edadMin:'', edadMax:'' };
+    ['trayFiltroConCurso','trayFiltroConAprobado','trayFiltroAnio','trayFiltroGenero',
      'trayFiltroEstado','trayFiltroEdadMin','trayFiltroEdadMax'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    document.querySelectorAll('.tray-mes-cb').forEach(cb => cb.checked = false);
+    const labelEl = document.getElementById('trayFiltroMesesLabel');
+    if (labelEl) labelEl.textContent = 'Todos los meses';
     traySincronizarCards();
     trayPaginaActual = 1;
     trayActualizarChipsFiltros();
@@ -514,10 +580,22 @@ function trayActualizarChipsFiltros() {
     if (!contenedor) return;
 
     const chips = [];
+    const f = trayFiltros;
     const selConCurso = { null:'', true:'Con registro de curso', false:'Sin registro de curso' };
-    if (trayFiltros.conCurso !== null) chips.push({ label: selConCurso[trayFiltros.conCurso], campo:'conCurso' });
-    if (trayFiltros.anio)    chips.push({ label:`Año: ${trayFiltros.anio}`,        campo:'anio'    });
-    if (trayFiltros.genero)  chips.push({ label:`Género: ${trayFiltros.genero}`,   campo:'genero'  });
+    if (f.conCurso !== null) chips.push({ label: selConCurso[f.conCurso], campo:'conCurso' });
+
+    const selConAprobado = { null:'', true:'Con formaciones aprobadas', false:'Sin formaciones aprobadas' };
+    if (f.conAprobado !== null) chips.push({ label: selConAprobado[f.conAprobado], campo:'conAprobado' });
+
+    if (f.anio)    chips.push({ label:`Año: ${f.anio}`,        campo:'anio'    });
+    
+    const mesesNombres = {'01':'Enero','02':'Febrero','03':'Marzo','04':'Abril','05':'Mayo','06':'Junio','07':'Julio','08':'Agosto','09':'Septiembre','10':'Octubre','11':'Noviembre','12':'Diciembre'};
+    if (f.meses && f.meses.length > 0) {
+        const nombres = f.meses.map(m => mesesNombres[m]).join(', ');
+        chips.push({ label: 'Mes: '+nombres, campo: 'meses' });
+    }
+    
+    if (f.genero)  chips.push({ label:`Género: ${f.genero}`,   campo:'genero'  });
     if (trayFiltros.estado)  chips.push({ label:`Estado: ${trayFiltros.estado}`,   campo:'estado'  });
     if (trayFiltros.edadMin) chips.push({ label:`Edad ≥ ${trayFiltros.edadMin}`,   campo:'edadMin' });
     if (trayFiltros.edadMax) chips.push({ label:`Edad ≤ ${trayFiltros.edadMax}`,   campo:'edadMax' });
@@ -528,8 +606,8 @@ function trayActualizarChipsFiltros() {
                      font-size:.72rem;font-weight:600;padding:.25em .7em;border-radius:999px;">
             ${ch.label}
             <button data-chip-campo="${ch.campo}"
-                    style="background:none;border:none;padding:0;line-height:1;
-                           cursor:pointer;color:#0a4fc4;font-size:.75rem;">
+                     style="background:none;border:none;padding:0;line-height:1;
+                            cursor:pointer;color:#0a4fc4;font-size:.75rem;">
                 <i class="bi bi-x-lg"></i>
             </button>
         </span>`
@@ -538,15 +616,21 @@ function trayActualizarChipsFiltros() {
     contenedor.querySelectorAll('[data-chip-campo]').forEach(btn => {
         btn.addEventListener('click', () => {
             const campo = btn.dataset.chipCampo;
-            const mapId = {
-                conCurso:'trayFiltroConCurso', anio:'trayFiltroAnio',
-                genero:'trayFiltroGenero', estado:'trayFiltroEstado',
-                edadMin:'trayFiltroEdadMin', edadMax:'trayFiltroEdadMax'
-            };
-            trayFiltros[campo] = campo === 'conCurso' ? null : '';
-            const el = document.getElementById(mapId[campo]);
-            if (el) el.value = '';
-            if (campo === 'conCurso') traySincronizarCards();
+            if (campo === 'meses') {
+                trayFiltros.meses = [];
+                document.querySelectorAll('.tray-mes-cb').forEach(cb => cb.checked = false);
+                document.getElementById('trayFiltroMesesLabel').textContent = 'Todos los meses';
+            } else {
+                const mapId = {
+                    conCurso:'trayFiltroConCurso', conAprobado:'trayFiltroConAprobado', anio:'trayFiltroAnio',
+                    genero:'trayFiltroGenero', estado:'trayFiltroEstado',
+                    edadMin:'trayFiltroEdadMin', edadMax:'trayFiltroEdadMax'
+                };
+                trayFiltros[campo] = (campo === 'conCurso' || campo === 'conAprobado') ? null : '';
+                const el = document.getElementById(mapId[campo]);
+                if (el) el.value = '';
+                if (campo === 'conCurso') traySincronizarCards();
+            }
             trayPaginaActual = 1;
             trayActualizarChipsFiltros();
             trayRenderTabla();
@@ -562,8 +646,19 @@ function trayDatosFiltrados() {
     if (trayFiltros.conCurso === true)  datos = datos.filter(p => parseInt(p.has_curso) === 1);
     if (trayFiltros.conCurso === false) datos = datos.filter(p => parseInt(p.has_curso) === 0);
 
+    if (trayFiltros.conAprobado === true)  datos = datos.filter(p => parseInt(p.has_aprobado) === 1);
+    if (trayFiltros.conAprobado === false) datos = datos.filter(p => parseInt(p.has_aprobado) === 0);
+
     if (trayFiltros.anio)
         datos = datos.filter(p => p.fecha_registro?.startsWith(trayFiltros.anio));
+
+    if (trayFiltros.meses && trayFiltros.meses.length > 0) {
+        datos = datos.filter(p => {
+            if (!p.fecha_registro || p.fecha_registro === '0000-00-00') return false;
+            const mesRegistro = p.fecha_registro.substring(5, 7);
+            return trayFiltros.meses.includes(mesRegistro);
+        });
+    }
 
     if (trayFiltros.genero)
         datos = datos.filter(p => (p.genero ?? '') === trayFiltros.genero);
@@ -628,34 +723,81 @@ function trayRenderTabla() {
             ${label}${thIcon(col)}
          </th>`;
 
+    const conAprobadoActivo = (trayFiltros.conAprobado === true);
+
+    const headersHtml = conAprobadoActivo
+        ? `<tr>
+            ${th('cedula','Cédula')}
+            ${th('primer_nombre','Nombre')}
+            ${th('primer_apellido','Apellido')}
+            ${th('telefono','Teléfono')}
+            ${th('correo','Correo')}
+            <th>Cursos Aprobados</th>
+           </tr>`
+        : `<tr>
+            ${th('cedula','Cédula')}
+            ${th('primer_nombre','Nombre')}
+            ${th('primer_apellido','Apellido')}
+            ${th('genero','Género')}
+            ${th('edad','Edad')}
+            ${th('telefono','Teléfono')}
+            ${th('correo','Correo')}
+            ${th('fecha_registro','Registro')}
+            <th class="text-center" style="white-space:nowrap;">Estado</th>
+           </tr>`;
+
+    const colspanVal = conAprobadoActivo ? 6 : 9;
+
     const filas = pagina.length === 0
-        ? `<tr><td colspan="9" class="text-center text-muted py-5">
+        ? `<tr><td colspan="${colspanVal}" class="text-center text-muted py-5">
                <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
                No se encontraron participantes
            </td></tr>`
         : pagina.map(p => {
             const activo = trayParticipanteAct === String(p.cedula);
-            return `<tr class="tray-fila${activo?' table-active':''}"
-                        data-cedula="${p.cedula}"
-                        style="cursor:pointer;transition:background .12s;">
-                <td><strong style="font-family:var(--rp-mono);font-size:.85rem;">
-                    ${p.cedula ?? '—'}
-                </strong></td>
-                <td>${p.primer_nombre   ?? '—'}</td>
-                <td>${p.primer_apellido ?? '—'}</td>
-                <td>${p.genero         ?? '—'}</td>
-                <td class="text-center">${p.edad ?? '—'}</td>
-                <td style="font-family:var(--rp-mono);font-size:.8rem;">
-                    ${trayFono(p.telefono)}
-                </td>
-                <td class="text-truncate" style="max-width:170px;" title="${p.correo ?? ''}">
-                    ${p.correo ?? '—'}
-                </td>
-                <td style="white-space:nowrap;font-size:.8rem;">
-                    ${trayFecha(p.fecha_registro)}
-                </td>
-                <td class="text-center">${trayBadgeEstado(p.estado)}</td>
-            </tr>`;
+            if (conAprobadoActivo) {
+                const cursosStr = p.cursos_aprobados || '—';
+                return `<tr class="tray-fila${activo?' table-active':''}"
+                            data-cedula="${p.cedula}"
+                            style="cursor:pointer;transition:background .12s;">
+                    <td><strong style="font-family:var(--rp-mono);font-size:.85rem;">
+                        ${p.cedula ?? '—'}
+                    </strong></td>
+                    <td>${p.primer_nombre   ?? '—'}</td>
+                    <td>${p.primer_apellido ?? '—'}</td>
+                    <td style="font-family:var(--rp-mono);font-size:.8rem;">
+                        ${trayFono(p.telefono)}
+                    </td>
+                    <td class="text-truncate" style="max-width:170px;" title="${p.correo ?? ''}">
+                        ${p.correo ?? '—'}
+                    </td>
+                    <td class="text-truncate" style="max-width:260px;" title="${cursosStr}">
+                        ${cursosStr}
+                    </td>
+                </tr>`;
+            } else {
+                return `<tr class="tray-fila${activo?' table-active':''}"
+                            data-cedula="${p.cedula}"
+                            style="cursor:pointer;transition:background .12s;">
+                    <td><strong style="font-family:var(--rp-mono);font-size:.85rem;">
+                        ${p.cedula ?? '—'}
+                    </strong></td>
+                    <td>${p.primer_nombre   ?? '—'}</td>
+                    <td>${p.primer_apellido ?? '—'}</td>
+                    <td>${p.genero         ?? '—'}</td>
+                    <td class="text-center">${p.edad ?? '—'}</td>
+                    <td style="font-family:var(--rp-mono);font-size:.8rem;">
+                        ${trayFono(p.telefono)}
+                    </td>
+                    <td class="text-truncate" style="max-width:170px;" title="${p.correo ?? ''}">
+                        ${p.correo ?? '—'}
+                    </td>
+                    <td style="white-space:nowrap;font-size:.8rem;">
+                        ${trayFecha(p.fecha_registro)}
+                    </td>
+                    <td class="text-center">${trayBadgeEstado(p.estado)}</td>
+                </tr>`;
+            }
         }).join('');
 
     wrapper.innerHTML = `
@@ -686,17 +828,7 @@ function trayRenderTabla() {
                 <div class="table-responsive">
                     <table class="table table-striped table-hover table-sm align-middle mb-0">
                         <thead class="table-light">
-                            <tr>
-                                ${th('cedula','Cédula')}
-                                ${th('primer_nombre','Nombre')}
-                                ${th('primer_apellido','Apellido')}
-                                ${th('genero','Género')}
-                                ${th('edad','Edad')}
-                                ${th('telefono','Teléfono')}
-                                ${th('correo','Correo')}
-                                ${th('fecha_registro','Registro')}
-                                <th class="text-center" style="white-space:nowrap;">Estado</th>
-                            </tr>
+                            ${headersHtml}
                         </thead>
                         <tbody>${filas}</tbody>
                     </table>
@@ -1222,5 +1354,30 @@ function trayInicializarBusqueda() {
 }
 
 // ── Exports ────────────────────────────────────────────────────────
+
+window.trayExportarPdf = function() {
+    const cedula = trayParticipanteAct || '';
+    
+    let ganttImage = '';
+    if (cedula && document.getElementById('trayGanttCanvas')) {
+        ganttImage = document.getElementById('trayGanttCanvas').toDataURL('image/png');
+    }
+
+    const data = {
+        conCurso: trayFiltros.conCurso === null ? '' : (trayFiltros.conCurso ? '1' : '0'),
+        conAprobado: trayFiltros.conAprobado === null ? '' : (trayFiltros.conAprobado ? '1' : '0'),
+        anio: trayFiltros.anio || '',
+        meses: JSON.stringify(trayFiltros.meses || []),
+        genero: trayFiltros.genero || '',
+        estado: trayFiltros.estado || '',
+        edadMin: trayFiltros.edadMin || '',
+        edadMax: trayFiltros.edadMax || '',
+        cedula: cedula,
+        gantt_image: ganttImage
+    };
+
+    postAndOpenPdf('../controlador/Reporte/api_reportes.php?accion=exportar_trayectoria_pdf', data);
+};
+
 window.cargarTrayectoriaParticipantes = cargarTrayectoriaParticipantes;
 console.log('RE-Participante-Trayectoria.js cargado');

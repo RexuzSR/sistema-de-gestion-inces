@@ -1,10 +1,11 @@
 <?php
 require('../fpdf.php');
-require('../../../modelo/conexion.php');
+require_once('../../../modelo/conexion.php');
 
 class PDF extends FPDF
 {
     private $anio;
+    private $usuario;
 
     function __construct($orientation = 'L', $unit = 'mm', $size = 'A4')
     {
@@ -14,6 +15,11 @@ class PDF extends FPDF
     function setAnio($anio)
     {
         $this->anio = $anio;
+    }
+
+    function setUsuario($usuario)
+    {
+        $this->usuario = $usuario;
     }
 
     function Header()
@@ -27,9 +33,11 @@ class PDF extends FPDF
         $this->SetFont('Arial', 'I', 12);
         $this->Cell(80);
         $this->Cell(120, 10, utf8_decode('Año Seleccionado: ' . $this->anio), 0, 1, 'C');
-        // Fecha de generación
+        // Usuario y fecha de generación
         $this->SetFont('Arial', '', 10);
-        $this->Cell(0, 10, utf8_decode('Generado el: ' . date('d/m/Y h:i A')), 0, 1, 'R');
+        $usuarioTxt = isset($this->usuario) && strlen(trim($this->usuario)) ? $this->usuario : 'Usuario no identificado';
+        $this->Cell(0, 6, utf8_decode('Generado por: ' . $usuarioTxt), 0, 1, 'L');
+        $this->Cell(0, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'R');
         $this->Ln(5);
     }
 
@@ -131,9 +139,39 @@ function getDuracionLegible($fi, $ff) {
     return $m . ' mes(es) (' . $dias . ' d)';
 }
 
-// 4. Inicializar PDF (Horizontal para acomodar gráficos y tabla ancha)
 $pdf = new PDF('L', 'mm', 'A4');
+// 4. Inicializar PDF (Horizontal para acomodar gráficos y tabla ancha)
 $pdf->setAnio($anio);
+// Incluir usuario desde base de datos
+date_default_timezone_set('America/Caracas');
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) session_start();
+$conexion = new Conexion();
+$conn = $conexion->getConexion();
+$usuarioFull = 'Usuario no identificado';
+if (isset($_SESSION['id_usuario'])) {
+    $sqlUsuario = "SELECT TRIM(CONCAT(
+                        COALESCE(primer_nombre, ''), ' ',
+                        COALESCE(segundo_nombre, ''), ' ',
+                        COALESCE(primer_apellido, ''), ' ',
+                        COALESCE(segundo_apellido, '')
+                    )) AS nombre_completo
+                   FROM tb_usuario WHERE id_usuario = :id_usuario";
+    try {
+        $stmtUsuario = $conn->prepare($sqlUsuario);
+        $stmtUsuario->bindParam(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+        $stmtUsuario->execute();
+        $resultUsuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+        if ($resultUsuario && !empty(trim($resultUsuario['nombre_completo']))) {
+            $usuarioFull = trim($resultUsuario['nombre_completo']);
+        }
+    } catch (Exception $e) {
+        // Fallback si la consulta falla
+    }
+}
+$pdf->setUsuario($usuarioFull);
 $pdf->AliasNbPages();
 $pdf->AddPage();
 

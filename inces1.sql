@@ -648,7 +648,7 @@ CREATE TABLE `tb_participante_curso` (
   `fecha_inscripcion` date NOT NULL,
   `FechaInicio` date NOT NULL,
   `FechaFin` date NOT NULL,
-  `estatus_participante` enum('Asignado','Diferido','Aprobado','Reprobado','En formaci¾n','Ausente') NOT NULL
+  `estatus_participante` enum('Asignado','Diferido','Aprobado','Reprobado','En formación','Ausente') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

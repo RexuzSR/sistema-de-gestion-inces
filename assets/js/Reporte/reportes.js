@@ -3,6 +3,71 @@
 
 
 const cardsContainer = document.getElementById('cardsContainer');
+
+// Helper function to POST data and open the resulting PDF in a new tab inline (bypassing Chrome's POST-to-blank viewer bug)
+window.postAndOpenPdf = function(url, data) {
+    if (typeof mostrarLoading === 'function') mostrarLoading();
+    
+    const newWindow = window.open('about:blank', '_blank');
+    if (newWindow) {
+        newWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Generando PDF...</title>
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #475569; }
+                    .spinner { border: 4px solid #cbd5e1; border-top: 4px solid #0d6efd; border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    .message { font-size: 16px; font-weight: 500; }
+                </style>
+            </head>
+            <body>
+                <div class="spinner"></div>
+                <div class="message">Generando reporte PDF, por favor espere...</div>
+            </body>
+            </html>
+        `);
+        newWindow.document.close();
+    }
+
+    const formData = new FormData();
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            const val = data[key];
+            formData.append(key, typeof val === 'object' ? JSON.stringify(val) : val);
+        }
+    }
+
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Error al generar el PDF en el servidor');
+        return response.blob();
+    })
+    .then(blob => {
+        if (typeof ocultarLoading === 'function') ocultarLoading();
+        const fileURL = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        if (newWindow) {
+            newWindow.location.href = fileURL;
+        } else {
+            window.open(fileURL, '_blank');
+        }
+    })
+    .catch(error => {
+        if (typeof ocultarLoading === 'function') ocultarLoading();
+        if (newWindow) newWindow.close();
+        console.error('Error al generar PDF:', error);
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Error al generar el reporte en PDF.');
+        } else {
+            alert('Error al generar el reporte en PDF.');
+        }
+    });
+};
 const reportContainer = document.getElementById('reportContainer');
 const loadingOverlay = document.getElementById('loadingOverlay');
 let tabsContainer = null;
@@ -725,26 +790,175 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 }
                 const anio = typeof anioCmp !== 'undefined' ? anioCmp : new Date().getFullYear();
                 
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../controlador/fpdf/Reporte/ReporteCursoMasParticipantes.php';
-                form.target = '_blank';
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteCursoMasParticipantes.php', {
+                    anio: anio,
+                    chart_image: chartBase64
+                });
+            } else if (reporte.id === 1) {
+                // Generar PDF backend para "Total de Participantes"
+                let chartBase64 = '';
+                if (typeof graficoInstance !== 'undefined' && graficoInstance) {
+                    chartBase64 = graficoInstance.toBase64Image();
+                }
+                const anio = typeof anioBase !== 'undefined' ? anioBase : new Date().getFullYear();
                 
-                const inputAnio = document.createElement('input');
-                inputAnio.type = 'hidden';
-                inputAnio.name = 'anio';
-                inputAnio.value = anio;
-                form.appendChild(inputAnio);
+                let resumenKpi = null;
+                if (typeof cacheDatosAnuales !== 'undefined' && typeof estadosFiltrados !== 'undefined' && typeof calcularResumenFiltrado === 'function') {
+                    const key = `${anio}_${estadosFiltrados.join(',')}`;
+                    if (cacheDatosAnuales[key]) {
+                        resumenKpi = calcularResumenFiltrado(cacheDatosAnuales[key]);
+                    }
+                }
+
+                let panelData = {
+                    tipo: typeof panelActivo !== 'undefined' ? panelActivo : null,
+                    meses: typeof obtenerNombresMeses === 'function' ? obtenerNombresMeses() : [],
+                    anios: typeof añosGlobales !== 'undefined' ? [...añosGlobales].sort((a,b)=>a-b) : [],
+                    valores: {}
+                };
+
+                if (panelData.tipo && panelData.tipo !== 'total_sistema' && typeof cacheDatosAnuales !== 'undefined' && typeof valorFiltrado === 'function') {
+                    const campo = { nuevos: 'nuevos', activos: 'activos', retirados: 'retirados', retencion: 'retencion' }[panelData.tipo];
+                    panelData.anios.forEach(a => {
+                        const d = cacheDatosAnuales[`${a}_${typeof estadosFiltrados !== 'undefined' ? estadosFiltrados.join(',') : ''}`] || [];
+                        panelData.valores[a] = [];
+                        for(let i=0; i<12; i++) {
+                            const mesDatos = d[i];
+                            if (!mesDatos || mesDatos.nuevos === null) {
+                                panelData.valores[a].push(null);
+                                continue;
+                            }
+                            if (panelData.tipo === 'retencion') {
+                                const act = valorFiltrado(mesDatos, 'activos');
+                                const ret = valorFiltrado(mesDatos, 'retirados');
+                                if (act === null || act === 0) panelData.valores[a].push(null);
+                                else panelData.valores[a].push(((act - ret) / act * 100).toFixed(1) + '%');
+                            } else {
+                                panelData.valores[a].push(valorFiltrado(mesDatos, campo));
+                            }
+                        }
+                    });
+                }
+
+                let tablaMensual = [];
+                const cacheKey = `${anio}_${estadosFiltrados.join(',')}`;
+                if (typeof cacheDatosAnuales !== 'undefined' && cacheDatosAnuales[cacheKey]) {
+                    const rawData = cacheDatosAnuales[cacheKey];
+                    tablaMensual = rawData.map((m, idx) => {
+                        const sd = m.nuevos === null;
+                        return {
+                            mes: m.mes,
+                            mesNumero: m.mesNumero ?? (idx + 1),
+                            nuevos: sd ? null : (typeof valorFiltrado === 'function' ? valorFiltrado(m, 'nuevos') : m.nuevos),
+                            activos: sd ? null : (typeof valorFiltrado === 'function' ? valorFiltrado(m, 'activos') : m.activos),
+                            retirados: sd ? null : (typeof valorFiltrado === 'function' ? valorFiltrado(m, 'retirados') : m.retirados),
+                            totalAcumulado: sd ? null : m.totalAcumulado
+                        };
+                    });
+                }
+
+                const payload = {
+                    anioBase: anio,
+                    anioTabla: typeof anioTabla !== 'undefined' ? anioTabla : anio,
+                    estadosFiltrados: typeof estadosFiltrados !== 'undefined' ? estadosFiltrados : [],
+                    filtroDemo: typeof filtroDemo !== 'undefined' ? filtroDemo : { genero: [], discapacidad: [], edadUmbral: [] },
+                    resumen: resumenKpi,
+                    datosEstadosSistema: typeof datosEstadosSistema !== 'undefined' ? datosEstadosSistema : { total: 0, estados: {} },
+                    panelData: panelData,
+                    tablaMensual: tablaMensual
+                };
+
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteTotalParticipantes.php', {
+                    chart_image: chartBase64,
+                    payload_json: payload
+                });
+            } else if (reporte.id === 2) {
+                // Generar PDF backend para "Participantes Aprobados"
+                let chartBase64 = '';
+                if (typeof graficoAprobInstance !== 'undefined' && graficoAprobInstance) {
+                    chartBase64 = graficoAprobInstance.toBase64Image();
+                }
                 
-                const inputChart = document.createElement('input');
-                inputChart.type = 'hidden';
-                inputChart.name = 'chart_image';
-                inputChart.value = chartBase64;
-                form.appendChild(inputChart);
+                let chartCursosBase64 = '';
+                if (typeof instanciasGraficosCursos !== 'undefined' && instanciasGraficosCursos.length > 0 && instanciasGraficosCursos[0].instance) {
+                    chartCursosBase64 = instanciasGraficosCursos[0].instance.toBase64Image();
+                }
+
+                const anio = typeof anioAprobTabla !== 'undefined' ? anioAprobTabla : new Date().getFullYear();
                 
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                let resumenKpi = null;
+                if (typeof calcularResumenAprob === 'function' && typeof datosAprobMensuales !== 'undefined') {
+                    resumenKpi = calcularResumenAprob(datosAprobMensuales);
+                }
+
+                let panelData = {
+                    tipo: typeof panelAprobActivo !== 'undefined' ? panelAprobActivo : null,
+                    meses: typeof obtenerNombresMesesAprob === 'function' ? obtenerNombresMesesAprob() : [],
+                    anios: typeof añosAprobGlobales !== 'undefined' ? [...añosAprobGlobales].sort((a,b)=>a-b) : [],
+                    valores: {}
+                };
+
+                if (panelData.tipo && typeof cacheAprobAnuales !== 'undefined') {
+                    const campoData = panelData.tipo === 'tasa' ? 'tasaAprobacion' : panelData.tipo;
+                    panelData.anios.forEach(a => {
+                        const d = cacheAprobAnuales[a] || [];
+                        panelData.valores[a] = [];
+                        for(let i=0; i<12; i++) {
+                            const mesDatos = d[i];
+                            if (!mesDatos || mesDatos.aprobados === null) {
+                                panelData.valores[a].push(null);
+                                continue;
+                            }
+                            if (panelData.tipo === 'tasa') {
+                                panelData.valores[a].push(mesDatos.tasaAprobacion + '%');
+                            } else {
+                                panelData.valores[a].push(mesDatos[campoData]);
+                            }
+                        }
+                    });
+                }
+                
+                let tablaMensual = typeof filtrarMesesPorTiempo === 'function' && typeof cacheAprobAnuales !== 'undefined' && cacheAprobAnuales[anio] 
+                    ? filtrarMesesPorTiempo(cacheAprobAnuales[anio]) 
+                    : [];
+
+                const payload = {
+                    anioTabla: anio,
+                    filtroTiempo: typeof filtroAprobTiempo !== 'undefined' ? filtroAprobTiempo : { tipo: 'anual', anio },
+                    resumen: resumenKpi,
+                    panelData: panelData,
+                    tablaMensual: tablaMensual,
+                    cursosSel: typeof cursosAprobSel !== 'undefined' && typeof cursosAprobDisp !== 'undefined' 
+                        ? cursosAprobDisp.filter(c => cursosAprobSel.includes(c.id)) 
+                        : []
+                };
+
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteParticipantesAprobados.php', {
+                    chart_image: chartBase64,
+                    chart_cursos_image: chartCursosBase64,
+                    payload_json: payload
+                });
+            } else if (reporte.id === 9) {
+                // Generar PDF backend para "Participantes por Ámbito" con Dompdf
+                let chartBase64 = '';
+                if (typeof graficoAmbito !== 'undefined' && graficoAmbito) {
+                    chartBase64 = graficoAmbito.toBase64Image();
+                }
+
+                const anio = typeof document.getElementById('selectAnioAmbito') !== 'undefined' && document.getElementById('selectAnioAmbito') 
+                    ? parseInt(document.getElementById('selectAnioAmbito').value) || new Date().getFullYear()
+                    : new Date().getFullYear();
+
+                const payload = {
+                    anio: anio,
+                    datosAmbito: typeof datosAmbito !== 'undefined' ? datosAmbito : [],
+                    datosAmbitoAnioAnterior: typeof datosAmbitoAnioAnterior !== 'undefined' ? datosAmbitoAnioAnterior : []
+                };
+
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteParticipantesAmbito.php', {
+                    chart_image: chartBase64,
+                    payload_json: payload
+                });
             } else if (reporte.id === 3) {
                 // Generar PDF backend para "Total de Cursos"
                 let chartBase64 = '';
@@ -753,26 +967,10 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 }
                 const anio = typeof anioTablaCursos !== 'undefined' ? anioTablaCursos : new Date().getFullYear();
                 
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../controlador/fpdf/Reporte/ReporteTotalCursosMensual.php';
-                form.target = '_blank';
-                
-                const inputAnio = document.createElement('input');
-                inputAnio.type = 'hidden';
-                inputAnio.name = 'anio';
-                inputAnio.value = anio;
-                form.appendChild(inputAnio);
-                
-                const inputChart = document.createElement('input');
-                inputChart.type = 'hidden';
-                inputChart.name = 'chart_image';
-                inputChart.value = chartBase64;
-                form.appendChild(inputChart);
-                
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteTotalCursosMensual.php', {
+                    anio: anio,
+                    chart_image: chartBase64
+                });
             } else if (reporte.id === 5) {
                 // Generar PDF backend para "Curso más Requerido"
                 const datos = window.datosCompletosRQ;
@@ -788,60 +986,24 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 const anio = window.anioRQ || new Date().getFullYear();
                 const datosJson = JSON.stringify(datos);
 
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../controlador/fpdf/Reporte/ReporteCursoMasRequerido.php';
-                form.target = '_blank';
-
-                const mkInput = (name, value) => {
-                    const inp = document.createElement('input');
-                    inp.type = 'hidden';
-                    inp.name = name;
-                    inp.value = value;
-                    form.appendChild(inp);
-                };
-
-                mkInput('anio', anio);
-                mkInput('chart_image', chartBase64);
-
-                // Usar textarea para evitar límites de longitud en campos input
-                const ta = document.createElement('textarea');
-                ta.name = 'datos_json';
-                ta.style.display = 'none';
-                ta.value = datosJson;
-                form.appendChild(ta);
-
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteCursoMasRequerido.php', {
+                    anio: anio,
+                    chart_image: chartBase64,
+                    datos_json: datosJson
+                });
             } else if (reporte.id === 13) {
                 // Generar PDF backend para "Trayectoria de Cursos"
                 const filtros = window.curTrayFiltros || { anio: '', modalidad: '', estatus: '', tipoPeriodo: '', subPeriodo: '' };
                 const busqueda = window.curTrayBusqueda || '';
                 
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../controlador/fpdf/Reporte/ReporteCursoTrayectoria.php';
-                form.target = '_blank';
-
-                const mkInput = (name, value) => {
-                    const inp = document.createElement('input');
-                    inp.type = 'hidden';
-                    inp.name = name;
-                    inp.value = value;
-                    form.appendChild(inp);
-                };
-
-                mkInput('anio', filtros.anio || '');
-                mkInput('modalidad', filtros.modalidad || '');
-                mkInput('estatus', filtros.estatus || '');
-                mkInput('busqueda', busqueda || '');
-                mkInput('tipoPeriodo', filtros.tipoPeriodo || '');
-                mkInput('subPeriodo', filtros.subPeriodo || '');
-
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteCursoTrayectoria.php', {
+                    anio: filtros.anio || '',
+                    modalidad: filtros.modalidad || '',
+                    estatus: filtros.estatus || '',
+                    busqueda: busqueda || '',
+                    tipoPeriodo: filtros.tipoPeriodo || '',
+                    subPeriodo: filtros.subPeriodo || ''
+                });
             } else if (reporte.id === 10) {
                 // Generar PDF backend para "Total de Docentes"
                 let chartBase64 = '';
@@ -852,27 +1014,16 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 const anioTabla = window.docAnioTabla || anioBase;
                 const aniosGrafico = window.docAniosGrafico || [anioBase];
                 
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '../controlador/fpdf/Reporte/ReporteTotalDocentes.php';
-                form.target = '_blank';
-
-                const mkInput = (name, value) => {
-                    const inp = document.createElement('input');
-                    inp.type = 'hidden';
-                    inp.name = name;
-                    inp.value = value;
-                    form.appendChild(inp);
-                };
-
-                mkInput('chart_image', chartBase64);
-                mkInput('anio_base', anioBase);
-                mkInput('anio_tabla', anioTabla);
-                mkInput('anios_grafico', JSON.stringify(aniosGrafico));
-
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                postAndOpenPdf('../controlador/fpdf/Reporte/ReporteTotalDocentes.php', {
+                    chart_image: chartBase64,
+                    anio_base: anioBase,
+                    anio_tabla: anioTabla,
+                    anios_grafico: JSON.stringify(aniosGrafico)
+                });
+            } else if (reporte.id === 12) {
+                if (window.trayExportarPdf) {
+                    window.trayExportarPdf();
+                }
             } else {
                 const prevTitle = document.title;
                 document.title = `Reporte - ${reporte.nombre}`;

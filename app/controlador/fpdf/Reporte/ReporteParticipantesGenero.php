@@ -5,6 +5,7 @@ require('../../../modelo/conexion.php');
 class PDF extends FPDF {
     private $participantesPorCurso;
     private $rutaBase;
+    private $usuario;
 
     function __construct() {
         parent::__construct('L');  // Orientación horizontal
@@ -47,6 +48,11 @@ class PDF extends FPDF {
         $this->SetFont('Arial', 'B', 16);
         $this->Cell(0, 10, utf8_decode('REPORTE DE GÉNEROS POR CURSO'), 0, 1, 'C');
         $this->Ln(12);
+        // Usuario generado
+        $this->SetFont('Arial', '', 9);
+        $usuarioTxt = isset($this->usuario) && strlen(trim($this->usuario)) ? $this->usuario : 'Usuario no identificado';
+        $this->Cell(0, 6, utf8_decode('Generado por: ' . $usuarioTxt), 0, 1, 'L');
+        $this->Cell(0, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'R');
     }
 
     function Footer() {
@@ -65,6 +71,10 @@ class PDF extends FPDF {
 
     function setParticipantesPorCurso($data) {
         $this->participantesPorCurso = $data;
+    }
+
+    function setUsuario($usuario) {
+        $this->usuario = $usuario;
     }
 
     function generarContenido() {
@@ -116,6 +126,36 @@ $datos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // Generar PDF
 if (!empty($datos)) {
     $pdf = new PDF();
+    // Incluir usuario desde base de datos
+    date_default_timezone_set('America/Caracas');
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $conexion = new Conexion();
+    $conn = $conexion->getConexion();
+    $usuarioFull = 'Usuario no identificado';
+    if (isset($_SESSION['id_usuario'])) {
+        $sqlUsuario = "SELECT TRIM(CONCAT(
+                            COALESCE(primer_nombre, ''), ' ',
+                            COALESCE(segundo_nombre, ''), ' ',
+                            COALESCE(primer_apellido, ''), ' ',
+                            COALESCE(segundo_apellido, '')
+                        )) AS nombre_completo
+                       FROM tb_usuario WHERE id_usuario = :id_usuario";
+        try {
+            $stmtUsuario = $conn->prepare($sqlUsuario);
+            $stmtUsuario->bindParam(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+            $stmtUsuario->execute();
+            $resultUsuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+            if ($resultUsuario && !empty(trim($resultUsuario['nombre_completo']))) {
+                $usuarioFull = trim($resultUsuario['nombre_completo']);
+            }
+        } catch (Exception $e) {
+            // Fallback si la consulta falla
+        }
+    }
+    $pdf->setUsuario($usuarioFull);
     $pdf->AddPage();
     $pdf->setParticipantesPorCurso($datos);
     $pdf->generarContenido();
