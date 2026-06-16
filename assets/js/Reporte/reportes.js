@@ -1028,6 +1028,26 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 if (window.trayExportarPdf) {
                     window.trayExportarPdf();
                 }
+            } else if (reporte.id === 11) {
+                if (window.exportarPdfMetasPorAmbito) {
+                    window.exportarPdfMetasPorAmbito();
+                }
+            } else if (reporte.id === 6) {
+                if (window.exportarPdfCargaHoraria) {
+                    window.exportarPdfCargaHoraria();
+                }
+            } else if (reporte.id === 15) {
+                if (window.exportarPdfHistorialDocente) {
+                    window.exportarPdfHistorialDocente();
+                }
+            } else if (reporte.id === 16) {
+                if (window.exportarPdfHistoricoMetas) {
+                    window.exportarPdfHistoricoMetas();
+                }
+            } else if (reporte.id === 17) {
+                if (window.exportarPdfDetalleMeta) {
+                    window.exportarPdfDetalleMeta();
+                }
             } else {
                 const prevTitle = document.title;
                 document.title = `Reporte - ${reporte.nombre}`;

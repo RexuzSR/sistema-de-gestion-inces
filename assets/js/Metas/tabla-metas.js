@@ -28,20 +28,39 @@ $(document).ready(function () {
                         String(m.porcentaje_cumplimiento).includes(s) ||
                         String(m.fecha_inicio).includes(s) ||
                         String(m.fecha_fin).includes(s) ||
-                        String(m.estado).toLowerCase().includes(s)
+                        String(m.estado_cumplimiento || '').toLowerCase().includes(s)
                     ));
                 }
 
                 // Aplicar filtros adicionales
                 const tipoFilter = $('#TipoDeMeta-filter').val();
                 const estadoFilter = $('#estado-filter').val();
+                const periodoFilter = $('#periodo-filter').val();
                 
                 if (tipoFilter) {
                     metas = metas.filter(m => m.tipo_objetivo === tipoFilter);
                 }
                 
                 if (estadoFilter) {
-                    metas = metas.filter(m => m.estado === estadoFilter);
+                    metas = metas.filter(m => m.estado_cumplimiento === estadoFilter);
+                }
+
+                if (periodoFilter) {
+                    metas = metas.filter(m => {
+                        if (!m.fecha_inicio || !m.fecha_fin) return false;
+                        const d1 = new Date(m.fecha_inicio + 'T00:00:00');
+                        const d2 = new Date(m.fecha_fin + 'T00:00:00');
+                        const timeDiff = d2.getTime() - d1.getTime();
+                        const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+                        
+                        let p = '';
+                        if (daysDiff >= 27 && daysDiff <= 32) p = 'mensual';
+                        else if (daysDiff >= 88 && daysDiff <= 93) p = 'trimestral';
+                        else if (daysDiff >= 179 && daysDiff <= 185) p = 'semestral';
+                        else if (daysDiff >= 364 && daysDiff <= 367) p = 'anual';
+                        
+                        return p === periodoFilter;
+                    });
                 }
 
                 // Filtrar por ambito_id si viene de la URL
@@ -245,7 +264,7 @@ $(document).ready(function () {
     });
 
     // Filtros
-    $('#TipoDeMeta-filter, #estado-filter').on('change', function () {
+    $('#TipoDeMeta-filter, #estado-filter, #periodo-filter').on('change', function () {
         cargarMetas(1, recordsPerPage, currentSearch);
     });
 

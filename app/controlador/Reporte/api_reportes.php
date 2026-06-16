@@ -51,6 +51,28 @@ try {
             require_once __DIR__ . '/../fpdf/Reporte/ReporteTrayectoriaParticipantes.php';
             exit;
 
+        case 'exportar_pdf_carga_horaria':
+            header_remove('Content-Type');
+            require_once __DIR__ . '/pdf_carga_horaria_docentes.php';
+            exit;
+
+        case 'exportar_pdf_historial_docente':
+            header_remove('Content-Type');
+            require_once __DIR__ . '/pdf_historial_docente.php';
+            exit;
+
+        case 'exportar_pdf_historico_metas':
+            header_remove('Content-Type');
+            require_once __DIR__ . '/pdf_historico_metas.php';
+            exit;
+
+        case 'exportar_pdf_detalle_meta':
+            header_remove('Content-Type');
+            require_once __DIR__ . '/pdf_detalle_participantes_meta.php';
+            exit;
+
+
+
         case 'participantes_por_mes_detalle':
             $mes = intval($_GET['mes'] ?? 0);
             $anioFiltro = intval($_GET['anio'] ?? date('Y'));

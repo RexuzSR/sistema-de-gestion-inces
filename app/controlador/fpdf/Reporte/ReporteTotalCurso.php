@@ -1,81 +1,20 @@
 <?php
-require('../fpdf.php');
-require('../../../modelo/conexion.php');
+// ============================================================
+// ReporteTotalCurso.php
+// Controlador DOMPDF (Migrado) - Reporte "Comparativo Mensual de Cursos"
+// ============================================================
 
-class PDF extends FPDF
-{
-    private $cursoData;
-    private $comparativaData;
-    private $usuario;
+require_once __DIR__ . '/../../dompdf/vendor/autoload.php';
+require_once __DIR__ . '/../../../modelo/conexion.php';
 
-    function Header()
-    {
-        // Logo de INCES
-        $this->Image('../../../../assets/img/inces-logo.png', 185, 5, 20);
-        $this->SetFont('Arial', 'B', 16);
-        $this->Cell(45);
-        $this->Cell(110, 15, utf8_decode('INCES INDUSTRIAL BOLIVARIANO'), 0, 1, 'C', 0);
-        $this->Ln(10);
-        // Usuario y fecha
-        $this->SetFont('Arial', '', 10);
-        $usuarioTxt = isset($this->usuario) && strlen(trim($this->usuario)) ? $this->usuario : 'Usuario no identificado';
-        $this->Cell(0, 6, utf8_decode('Generado por: ' . $usuarioTxt), 0, 1, 'L');
-        $this->Cell(0, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'R');
-    }
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-    function Footer()
-    {
-        // Pie de página
-        $this->SetY(-15);
-        $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, utf8_decode('Página ') . $this->PageNo(), 0, 0, 'C');
-    }
-
-    function setCursoData($data)
-    {
-        $this->cursoData = $data;
-    }
-
-    function setComparativaData($data)
-    {
-        $this->comparativaData = $data;
-    }
-
-    function setUsuario($usuario)
-    {
-        $this->usuario = $usuario;
-    }
-
-    function generarContenido()
-    {
-        // Título de la sección de curso (centrado)
-        $this->SetFont('Arial', 'B', 14);
-        $this->Cell(0, 10, utf8_decode('REPORTE DE CURSOS'), 0, 1, 'C');
-        $this->Ln(10);
-
-        // Mostrar datos de la comparación
-        $this->SetFont('Arial', '', 12);
-        $this->Cell(100, 10, utf8_decode('Cursos Este Mes: ' . $this->comparativaData['total_actual']), 0, 1);
-        $this->Cell(100, 10, utf8_decode('Cursos Mes Pasado: ' . $this->comparativaData['total_anterior']), 0, 1);
-        $this->Cell(100, 10, utf8_decode('Variación en %: ' . round($this->comparativaData['variacion'], 2) . '%'), 0, 1);
-        $this->Ln(10);
-
-        // Mostrar detalles de cursos por estatus
-        $this->SetFont('Arial', 'B', 12);
-        $this->Cell(40, 10, utf8_decode('Estatus'), 1, 0, 'C');
-        $this->Cell(50, 10, utf8_decode('Total de Cursos'), 1, 0, 'C');
-        $this->Cell(50, 10, utf8_decode('Porcentaje'), 1, 1, 'C');
-        $this->SetFont('Arial', '', 12);
-
-        foreach ($this->comparativaData['estatus'] as $estatus) {
-            $this->Cell(40, 10, utf8_decode($estatus['nombre_estatusCurso']), 1, 0, 'C');
-            $this->Cell(50, 10, utf8_decode($estatus['total']), 1, 0, 'C');
-            $this->Cell(50, 10, utf8_decode($estatus['porcentaje'] . '%'), 1, 1, 'C');
-        }
-
-        $this->Ln(10);
-    }
-}
+date_default_timezone_set('America/Caracas');
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Conexión a la base de datos usando PDO
 $conexion = new Conexion();
@@ -112,7 +51,7 @@ if ($dataAnterior['total_anterior'] > 0) {
 // Consulta para obtener el total de cursos por estatus usando PDO
 $sqlEstatus = "
     SELECT ec.nombre_estatusCurso, COUNT(c.id_curso) as total,
-    ROUND((COUNT(c.id_curso) / (SELECT COUNT(*) FROM tb_curso)) * 100, 2) as porcentaje
+    ROUND((COUNT(c.id_curso) / (SELECT COUNT(*) FROM tb_curso WHERE fecha_inicio BETWEEN :inicioMes2 AND :finMes2)) * 100, 2) as porcentaje
     FROM tb_curso c
     JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
     WHERE c.fecha_inicio BETWEEN :inicioMes AND :finMes
@@ -122,9 +61,15 @@ $sqlEstatus = "
 $stmtEstatus = $conn->prepare($sqlEstatus);
 $stmtEstatus->bindParam(':inicioMes', $inicioMes);
 $stmtEstatus->bindParam(':finMes', $finMes);
+$stmtEstatus->bindParam(':inicioMes2', $inicioMes);
+$stmtEstatus->bindParam(':finMes2', $finMes);
 $stmtEstatus->execute();
 $estatusData = [];
 while ($row = $stmtEstatus->fetch(PDO::FETCH_ASSOC)) {
+    // Si el total de cursos en el mes es 0, evitamos valor null en porcentaje
+    if ($row['porcentaje'] === null) {
+        $row['porcentaje'] = 0;
+    }
     $estatusData[] = $row;
 }
 
@@ -135,16 +80,6 @@ $comparativaData = [
     'estatus' => $estatusData
 ];
 
-// Generar PDF
-$pdf = new PDF();
-// Incluir usuario desde base de datos
-date_default_timezone_set('America/Caracas');
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-$conexion = new Conexion();
-$conn = $conexion->getConexion();
 $usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
@@ -162,15 +97,40 @@ if (isset($_SESSION['id_usuario'])) {
         if ($resultUsuario && !empty(trim($resultUsuario['nombre_completo']))) {
             $usuarioFull = trim($resultUsuario['nombre_completo']);
         }
-    } catch (Exception $e) {
-        // Fallback si la consulta falla
-    }
+    } catch (Exception $e) { }
 }
-$pdf->setUsuario($usuarioFull);
-$pdf->AddPage();
-$pdf->setComparativaData($comparativaData);
-$pdf->generarContenido();
 
-// Salida del PDF
-$pdf->Output('I', 'Reporte_Cursos_Comparativo.pdf');
+$pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../../assets/img/inces-logo.png';
+
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
+
+$fechaGeneracion = date('d/m/Y h:i A');
+
+$pdfData = [
+    'usuarioFull' => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno' => $logoGobierno,
+    'logoInces' => $logoInces,
+    'comparativaData' => $comparativaData
+];
+
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../../vista/reportes/pdf_templates/total_curso.php';
+$html = ob_get_clean();
+
+$options = new Options();
+$options->set('isHtml5ParserEnabled', true);
+$options->set('isRemoteEnabled', true);
+$options->set('isPhpEnabled', true);
+
+$dompdf = new Dompdf($options);
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
+
+if (ob_get_length()) ob_end_clean();
+$dompdf->stream('Reporte_Cursos_Comparativo.pdf', ['Attachment' => false]);
 ?>

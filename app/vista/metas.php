@@ -126,21 +126,31 @@ if (!empty($imagenUsuario)) {
                 <div class="filters-container d-flex justify-content-between align-items-center pt-2">
                         <!-- Filtros -->
                         <form id="filters-form" class="d-flex align-items-center gap-2">
-                            <label class="label text-nowrap" for="tipo de meta">Tipo de meta:</label>
+                            <label class="label text-nowrap" for="tipo de meta">Tipo de objetivo:</label>
                             <select class="form-select form-select-sm" name="tipoDeMeta" id="TipoDeMeta-filter">
                                 <option value="">Todos</option>
-                                <option value="mensual">Mensual</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="semestral">Semestral</option>
-                                <option value="anual">Anual</option>
+                                <option value="Aprobados">Aprobados</option>
+                                <option value="Inscritos">Inscritos</option>
+                                <option value="Ingresados">Ingresados</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
                             </select>
             
                             <label class="label" for="estado">Estado:</label>
                             <select class="form-select form-select-sm" name="estado" id="estado-filter">
                                 <option value="">Todos</option>
-                                <option value="alcanzada">Alcanzada</option>
-                                <option value="En Proceso">En proceso</option>
-                                <option value="No alcanzada">No alcanzada</option>
+                                <option value="Cumplida">Cumplida</option>
+                                <option value="En progreso">En progreso</option>
+                                <option value="No cumplida">No cumplida</option>
+                            </select>
+
+                            <label class="label" for="periodo">Período:</label>
+                            <select class="form-select form-select-sm" name="periodo" id="periodo-filter">
+                                <option value="">Todos</option>
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="semestral">Semestral</option>
+                                <option value="anual">Anual</option>
                             </select>
                         </form>
 

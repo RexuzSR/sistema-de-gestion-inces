@@ -450,9 +450,6 @@ function renderCargaHoraria(data, totalesObj) {
                         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosCarga()">
                             <i class="bi bi-arrow-counterclockwise me-1"></i>Limpiar
                         </button>
-                        <button type="button" class="btn btn-sm btn-success" onclick="exportarCargaExcel()">
-                            <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1481,3 +1478,92 @@ window.limpiarFiltrosCarga          = limpiarFiltrosCarga;
 window.exportarCargaExcel           = exportarCargaExcel;
 
 console.log('RE-Docente-CargaHoraria.js cargado');
+
+// ─── Exportar a PDF (DOMPDF) ──────────────────────────────────────────────────
+async function exportarPdfCargaHoraria() {
+    const btn = document.getElementById('btnExportarPdfCarga');
+    const btnTop = document.getElementById('btn-print-report');
+    const oldHtml = btn ? btn.innerHTML : '';
+    const oldHtmlTop = btnTop ? btnTop.innerHTML : '';
+    try {
+        if (btn) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Generando...';
+            btn.disabled = true;
+        }
+        if (btnTop) {
+            btnTop.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Generando...';
+            btnTop.disabled = true;
+        }
+
+        // 1. Obtener imagen del canvas
+        const canvas = document.getElementById('graficoCargaHoraria');
+        let chartBase64 = '';
+        if (canvas) {
+            chartBase64 = canvas.toDataURL('image/png', 1.0);
+        }
+
+        // 2. Obtener datos procesados
+        let datosFiltrados = [];
+        if (typeof obtenerDatosFiltradosYOrdenados === 'function') {
+            datosFiltrados = obtenerDatosFiltradosYOrdenados();
+        } else {
+            // Fallback: usar cargaHorariaData y aplicar filtros manuales si es necesario
+            datosFiltrados = [...cargaHorariaData];
+        }
+        
+        // 3. Preparar el payload
+        const payload = {
+            anioCarga: anioCarga,
+            periodoCarga: periodoCarga,
+            periodoValorCarga: periodoValorCarga,
+            cargaPanelActivo: cargaPanelActivo,
+            cargaFiltroBusqueda: cargaFiltroBusqueda,
+            cargaFiltroTipo: cargaFiltroTipo,
+            cargaFiltroEstado: cargaFiltroEstado,
+            cargaCriterioOrden: cargaCriterioOrden,
+            datos: datosFiltrados,
+            totales: cargaTotalesActuales,
+            graficoBase64: chartBase64
+        };
+
+        // 4. Enviar vía POST con JSON + Fetch
+        const url = new URL(API_URL_CARGA, window.location.href);
+        url.searchParams.set('accion', 'exportar_pdf_carga_horaria');
+
+        const response = await fetch(url.toString(), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error en el servidor: ${response.status}`);
+        }
+
+        // 5. Recibir blob y abrir en nueva pestaña
+        const blob = await response.blob();
+        if (blob.size === 0) {
+            throw new Error("El archivo PDF generado está vacío");
+        }
+        
+        const fileUrl = URL.createObjectURL(blob);
+        window.open(fileUrl, '_blank');
+
+    } catch (error) {
+        console.error("Error al exportar PDF:", error);
+        alert("Ocurrió un error al generar el PDF: " + error.message);
+    } finally {
+        if (btn) {
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+        }
+        if (btnTop) {
+            btnTop.innerHTML = oldHtmlTop;
+            btnTop.disabled = false;
+        }
+    }
+}
+window.exportarPdfCargaHoraria = exportarPdfCargaHoraria;
+

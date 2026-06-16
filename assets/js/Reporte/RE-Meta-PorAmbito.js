@@ -711,4 +711,73 @@ window.limpiarRecursosMetas = function () {
     _metasPanelActivo = null; _metasAnioBase = null; _metasAnioTabla = null;
 };
 
+window.exportarPdfMetasPorAmbito = function() {
+    let chartBase64 = '';
+    if (_metasChartInstance) {
+        // Asegurar que el fondo sea blanco antes de exportar
+        const canvas = _metasChartInstance.canvas;
+        const ctx = canvas.getContext('2d');
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        chartBase64 = _metasChartInstance.toBase64Image();
+        ctx.restore();
+    }
+    
+    // Obtener los datos del panel activo si lo hay
+    let panelData = null;
+    if (_metasPanelActivo) {
+        panelData = {
+            tipo: _metasPanelActivo,
+            titulo: {
+                total: 'Todas las Metas',
+                cumplidas: 'Metas Cumplidas',
+                noCumplidas: 'Metas No Cumplidas',
+                promedio: 'Metas por Cumplimiento'
+            }[_metasPanelActivo] || _metasPanelActivo,
+            metas: _metasPanelActivo === 'cumplidas' ? _metasProcesadas.filter(m => m.pct >= 100) :
+                   _metasPanelActivo === 'noCumplidas' ? _metasProcesadas.filter(m => m.pct < 100) :
+                   _metasPanelActivo === 'promedio' ? [..._metasProcesadas].sort((a,b) => b.pct - a.pct) :
+                   _metasProcesadas
+        };
+    }
+
+    // Extraer datos históricos consolidados de _metasCache
+    const historial = [];
+    if (_metasGraficoAnios && _metasGraficoAnios.length > 0) {
+        _metasGraficoAnios.forEach(a => {
+            if (_metasCache[a]) {
+                const procesadas = _metasProcesar(_metasCache[a], a);
+                const resumen = _metasResumen(procesadas);
+                historial.push({
+                    anio: a,
+                    totalObj: resumen.totObj,
+                    totalForm: resumen.totForm,
+                    cumplimientoGlobal: resumen.totObj > 0 ? (resumen.totForm / resumen.totObj) * 100 : 0
+                });
+            }
+        });
+    }
+
+    const payload = {
+        anioTabla: _metasAnioTabla || new Date().getFullYear(),
+        graficoAnios: [..._metasGraficoAnios].sort((a,b) => b - a),
+        graficoTipos: Array.from(_metasGraficoTipos),
+        panelData: panelData,
+        resumen: _metasResumen(_metasProcesadas),
+        metas: _metasProcesadas,
+        historial: historial
+    };
+    
+    if (typeof window.postAndOpenPdf === 'function') {
+        window.postAndOpenPdf('../controlador/fpdf/Reporte/ReporteMetaPorAmbito.php', {
+            chart_image: chartBase64,
+            payload_json: JSON.stringify(payload)
+        });
+    } else {
+        alert('La función de exportación no está disponible.');
+    }
+};
+
 console.log('RE-Meta-PorAmbito.js cargado');

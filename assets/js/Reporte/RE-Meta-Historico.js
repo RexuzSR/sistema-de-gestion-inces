@@ -656,7 +656,69 @@ function limpiarRecursosHist() {
     vistaActivaHist  = 'anual';
 }
 
+async function exportarPdfHistoricoMetas() {
+    const btnTop = document.getElementById('btn-print-report');
+    const oldHtmlTop = btnTop ? btnTop.innerHTML : '';
+
+    try {
+        if (btnTop) {
+            btnTop.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>';
+            btnTop.disabled = true;
+        }
+
+        let datos = [];
+        datos = vistaActivaHist === 'anual'
+            ? normalizarAnual(await fetchHistAnual(tipoMetaHist))
+            : normalizarTrimestre(await fetchHistTrimestre(anioHistTrim, tipoMetaHist));
+
+        const canvas = document.getElementById('canvasGraficoHist');
+        const graficoBase64 = canvas ? canvas.toDataURL('image/png', 1.0) : '';
+
+        const payload = {
+            vista: vistaActivaHist,
+            anio: anioHistTrim,
+            tipoMeta: tipoMetaHist,
+            metricasActivas: Array.from(tiposActivosHist),
+            tipoGrafico: tipoGraficoHist,
+            panelActivo: panelActivoHist,
+            datos: datos,
+            resumen: buildResumenHist(datos),
+            graficoBase64: graficoBase64
+        };
+
+        const response = await fetch('../controlador/Reporte/api_reportes.php?accion=exportar_pdf_historico_metas', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error en el servidor: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        if (blob.size === 0) {
+            throw new Error("El archivo PDF generado está vacío");
+        }
+
+        const fileUrl = URL.createObjectURL(blob);
+        window.open(fileUrl, '_blank');
+
+    } catch (error) {
+        console.error("Error al exportar PDF del histórico de metas:", error);
+        alert("Ocurrió un error al generar el PDF: " + error.message);
+    } finally {
+        if (btnTop) {
+            btnTop.innerHTML = oldHtmlTop;
+            btnTop.disabled = false;
+        }
+    }
+}
+
 window.cargarHistoricoMetas = cargarHistoricoMetas;
 window.limpiarRecursosHist  = limpiarRecursosHist;
+window.exportarPdfHistoricoMetas = exportarPdfHistoricoMetas;
 
 console.log('RE-Meta-Historico.js cargado');

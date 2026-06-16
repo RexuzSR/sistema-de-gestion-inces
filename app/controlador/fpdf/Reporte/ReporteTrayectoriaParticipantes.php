@@ -1,12 +1,36 @@
 <?php
-ob_start();
-require_once __DIR__ . '/../../dompdf/autoload.inc.php';
+// ============================================================
+// ReporteTrayectoriaParticipantes.php
+// Controlador DOMPDF (Migrado) - Reporte "Trayectoria de Participantes"
+// ============================================================
+
+require_once __DIR__ . '/../../dompdf/vendor/autoload.php';
+require_once __DIR__ . '/../../../modelo/conexion.php';
+// Asumimos que las funciones getTrayectoriaResumen, getTrayectoriaParticipantes, etc. 
+// están disponibles porque este archivo formaba parte del sistema antiguo o 
+// incluimos api_reportes.php (se nota que las usa globalmente, revisaremos si necesita require adicional, 
+// el original asume que están pero api_reportes.php es llamado por AJAX usualmente.
+// En el original dice: "// Obtener la data (funciones globales de api_reportes.php)"
+// Mejor incluimos api_reportes si es necesario, pero el original NO lo incluye explícitamente (asume que algo lo carga o está en la misma sesión/directorio. Ah, el original es llamado directamente. Mmm, vamos a incluir api_reportes.php si es que define esas funciones, o extraer la lógica. El original de la línea 60 dice: "$kpiData = getTrayectoriaResumen($conn);").
+// Para no romperlo, usaré require_once de api_reportes.php.
+require_once __DIR__ . '/../../Reporte/api_reportes.php';
+
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    die("Acceso denegado.");
+}
+
+$conexion = new Conexion();
+$conn = $conexion->getConexion();
+
 // Start session if not started
-if (session_status() === PHP_SESSION_NONE) session_start();
 date_default_timezone_set('America/Caracas');
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Obtener datos del usuario
 $usuarioFull = 'Usuario no identificado';
@@ -57,9 +81,81 @@ elseif ($edadMax !== '') $txtEdad = "<= {$edadMax} años";
 $nombresMeses = ['01'=>'Enero','02'=>'Febrero','03'=>'Marzo','04'=>'Abril','05'=>'Mayo','06'=>'Junio','07'=>'Julio','08'=>'Agosto','09'=>'Septiembre','10'=>'Octubre','11'=>'Noviembre','12'=>'Diciembre'];
 $txtMeses = empty($meses) ? 'Todos' : implode(', ', array_map(function($m) use ($nombresMeses) { return $nombresMeses[$m] ?? $m; }, $meses));
 
-// Obtener la data (funciones globales de api_reportes.php)
-$kpiData = getTrayectoriaResumen($conn);
-$todos = getTrayectoriaParticipantes($conn);
+// Funciones locales de consulta (para reemplazar getTrayectoriaResumen y demás si fallan)
+function local_getTrayectoriaResumen($conn) {
+    $res = ['total'=>0, 'activos'=>0, 'sin_curso'=>0];
+    try {
+        $stmt = $conn->query("SELECT COUNT(id_participante) as tot FROM tb_participante");
+        $res['total'] = $stmt->fetchColumn() ?: 0;
+        
+        $stmt = $conn->query("SELECT COUNT(DISTINCT id_participante) as act FROM tb_participante_curso");
+        $res['activos'] = $stmt->fetchColumn() ?: 0;
+        
+        $res['sin_curso'] = $res['total'] - $res['activos'];
+    } catch(Exception $e) {}
+    return $res;
+}
+
+function local_getTrayectoriaParticipantes($conn) {
+    $sql = "SELECT p.id_participante, p.cedula, p.primer_nombre, p.primer_apellido, 
+            p.fecha_registro, p.genero, p.correo, p.telefono, 
+            TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) as edad,
+            (SELECT COUNT(*) FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante) as has_curso,
+            (SELECT COUNT(*) FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante AND pc.estatus_participante = 'Aprobado') as has_aprobado,
+            IFNULL((
+                SELECT GROUP_CONCAT(c.nombre_curso SEPARATOR ', ')
+                FROM tb_participante_curso pc
+                JOIN tb_curso c ON c.id_curso = pc.id_curso
+                WHERE pc.id_participante = p.id_participante AND pc.estatus_participante = 'Aprobado'
+            ), '') as cursos_aprobados,
+            COALESCE(
+                (SELECT pc.estatus_participante FROM tb_participante_curso pc JOIN tb_curso c ON c.id_curso = pc.id_curso WHERE pc.id_participante = p.id_participante ORDER BY c.fecha_inicio DESC LIMIT 1),
+                'Disponible'
+            ) as estado
+            FROM tb_participante p
+            ORDER BY p.fecha_registro DESC";
+    $stmt = $conn->query($sql);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function local_getDetalleParticipante($conn, $cedula) {
+    $sql = "SELECT * FROM tb_participante WHERE cedula = :cedula";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([':cedula' => $cedula]);
+    $p = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$p) return ['error' => 'No encontrado'];
+    
+    // Calcular edad
+    if (!empty($p['fecha_nacimiento']) && $p['fecha_nacimiento'] !== '0000-00-00') {
+        $from = new DateTime($p['fecha_nacimiento']);
+        $to   = new DateTime('today');
+        $p['edad'] = $from->diff($to)->y;
+    } else {
+        $p['edad'] = '—';
+    }
+    
+    // Teléfonos
+    $sqlTelf = "SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = :id_participante";
+    $stmtTelf = $conn->prepare($sqlTelf);
+    $stmtTelf->execute([':id_participante' => $p['id_participante']]);
+    $p['telefonos'] = $stmtTelf->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Cursos
+    $sqlCursos = "SELECT c.*, pc.fecha_inscripcion, pc.estatus_participante, m.nombre_modalidad
+                  FROM tb_participante_curso pc
+                  JOIN tb_curso c ON c.id_curso = pc.id_curso
+                  LEFT JOIN tb_modalidad m ON m.id_modalidad = c.id_modalidad
+                  WHERE pc.id_participante = :id_participante
+                  ORDER BY c.fecha_inicio DESC";
+    $stmtCursos = $conn->prepare($sqlCursos);
+    $stmtCursos->execute([':id_participante' => $p['id_participante']]);
+    $p['cursos'] = $stmtCursos->fetchAll(PDO::FETCH_ASSOC);
+    
+    return $p;
+}
+
+$kpiData = function_exists('getTrayectoriaResumen') ? getTrayectoriaResumen($conn) : local_getTrayectoriaResumen($conn);
+$todos = function_exists('getTrayectoriaParticipantes') ? getTrayectoriaParticipantes($conn) : local_getTrayectoriaParticipantes($conn);
 
 $estadoEnFormacion = 0;
 $estadoEnSistema = 0;
@@ -74,7 +170,7 @@ foreach ($todos as $p) {
     if ($est === 'Disponible') $estadoDisponible++;
 }
 
-// Filtrar en PHP igual que en JS
+// Filtrar
 $filtrados = [];
 foreach ($todos as $p) {
     if ($conCurso !== '' && (int)$p['has_curso'] !== (int)$conCurso) continue;
@@ -100,79 +196,13 @@ foreach ($todos as $p) {
 
 $totalEncontrados = count($filtrados);
 
-// Preparar Tabla de Participantes
-$tablaParticipantesHtml = "";
-$countP = 0;
-
-if ($conAprobado == '1') {
-    $tableHeaderHtml = "
-        <tr>
-            <th style='text-align:center; width:4%;'>#</th>
-            <th style='width:12%;'>Cédula</th>
-            <th style='width:16%;'>Nombre</th>
-            <th style='width:16%;'>Apellido</th>
-            <th style='width:12%;'>Teléfono</th>
-            <th style='width:18%;'>Correo</th>
-            <th style='width:22%;'>Cursos Aprobados</th>
-        </tr>
-    ";
-} else {
-    $tableHeaderHtml = "
-        <tr>
-            <th style='text-align:center'>#</th>
-            <th>Cédula</th>
-            <th>Nombre</th>
-            <th>Apellido</th>
-            <th>Género</th>
-            <th style='text-align:center'>Edad</th>
-            <th>Teléfono</th>
-            <th>Correo</th>
-            <th>Fecha Registro</th>
-            <th style='text-align:center'>Estado</th>
-        </tr>
-    ";
-}
-
-foreach ($filtrados as $p) {
-    $countP++;
-    if ($conAprobado == '1') {
-        $cursosStr = !empty($p['cursos_aprobados']) ? $p['cursos_aprobados'] : '—';
-        $tablaParticipantesHtml .= "<tr>
-            <td style='text-align:center'>{$countP}</td>
-            <td>{$p['cedula']}</td>
-            <td>{$p['primer_nombre']}</td>
-            <td>{$p['primer_apellido']}</td>
-            <td>{$p['telefono']}</td>
-            <td>{$p['correo']}</td>
-            <td>{$cursosStr}</td>
-        </tr>";
-    } else {
-        $est = $p['estado'];
-        if (strpos($est, 'formaci') !== false && (strpos($est, '?') !== false || strpos($est, 'n') !== false)) {
-            $est = 'En formación';
-        }
-        $fechaR = (!empty($p['fecha_registro']) && $p['fecha_registro'] !== '0000-00-00') ? date('d/m/Y', strtotime($p['fecha_registro'])) : '—';
-        $tablaParticipantesHtml .= "<tr>
-            <td style='text-align:center'>{$countP}</td>
-            <td>{$p['cedula']}</td>
-            <td>{$p['primer_nombre']}</td>
-            <td>{$p['primer_apellido']}</td>
-            <td>{$p['genero']}</td>
-            <td style='text-align:center'>{$p['edad']}</td>
-            <td>{$p['telefono']}</td>
-            <td>{$p['correo']}</td>
-            <td>{$fechaR}</td>
-            <td style='text-align:center'>{$est}</td>
-        </tr>";
-    }
-}
-
 // Detalle del Participante
 $detalleHtml = "";
 if ($cedulaSelected) {
-    $detalleData = getDetalleParticipante($conn, $cedulaSelected);
+    $detalleData = function_exists('getDetalleParticipante') ? getDetalleParticipante($conn, $cedulaSelected) : local_getDetalleParticipante($conn, $cedulaSelected);
+    
     if (!isset($detalleData['error'])) {
-        $nombreComp = trim($detalleData['primer_nombre'].' '.$detalleData['segundo_nombre'].' '.$detalleData['primer_apellido'].' '.$detalleData['segundo_apellido']);
+        $nombreComp = trim($detalleData['primer_nombre'].' '.($detalleData['segundo_nombre']??'').' '.$detalleData['primer_apellido'].' '.($detalleData['segundo_apellido']??''));
         $fechaN = (!empty($detalleData['fecha_nacimiento']) && $detalleData['fecha_nacimiento'] !== '0000-00-00') ? date('d/m/Y', strtotime($detalleData['fecha_nacimiento'])) : '—';
         
         $telefonos = array_column($detalleData['telefonos'] ?? [], 'numero_de_telefono');
@@ -206,19 +236,19 @@ if ($cedulaSelected) {
         $detalleHtml = "
         <div class='page-break'></div>
         <div class='section-title'>Detalle del Participante Seleccionado</div>
-        <div style='background:#f8f9fa; padding:15px; border-radius:5px; border-left:4px solid #0056b3; margin-bottom:20px;'>
+        <div class='detalle-box'>
             <table style='width:100%; border:none; margin:0;'>
                 <tr>
-                    <td style='border:none; width:50%; vertical-align:top; padding:0;'>
-                        <h4 style='color:#0056b3; margin-top:0;'>Datos Personales</h4>
+                    <td style='border:none; width:50%; vertical-align:top; padding:0; background:transparent;'>
+                        <h4>Datos Personales</h4>
                         <p><strong>Cédula:</strong> {$detalleData['cedula']}</p>
                         <p><strong>Nombre Completo:</strong> {$nombreComp}</p>
                         <p><strong>Fecha de Nacimiento:</strong> {$fechaN}</p>
                         <p><strong>Edad:</strong> {$detalleData['edad']}</p>
                         <p><strong>Género:</strong> {$detalleData['genero']}</p>
                     </td>
-                    <td style='border:none; width:50%; vertical-align:top; padding:0;'>
-                        <h4 style='color:#0056b3; margin-top:0;'>Contacto y Académico</h4>
+                    <td style='border:none; width:50%; vertical-align:top; padding:0; background:transparent;'>
+                        <h4>Contacto y Académico</h4>
                         <p><strong>Teléfonos:</strong> {$telfStr}</p>
                         <p><strong>Correo:</strong> {$detalleData['correo']}</p>
                         <p><strong>Nivel de Instrucción:</strong> " . ($detalleData['grado_institucion'] ?? '—') . "</p>
@@ -228,18 +258,17 @@ if ($cedulaSelected) {
                 </tr>
             </table>
         </div>
-
         <div class='section-title'>Historial de Cursos</div>
-        <table>
+        <table class='data-table'>
             <thead>
                 <tr>
-                    <th>Curso</th>
-                    <th style='text-align:center'>Inscripción</th>
-                    <th style='text-align:center'>Inicio</th>
-                    <th style='text-align:center'>Fin</th>
-                    <th style='text-align:center'>Turno</th>
-                    <th style='text-align:center'>Modalidad</th>
-                    <th style='text-align:center'>Estatus</th>
+                    <th style='width:30%; text-align:left;'>Curso</th>
+                    <th style='width:12%;'>Inscripción</th>
+                    <th style='width:12%;'>Inicio</th>
+                    <th style='width:12%;'>Fin</th>
+                    <th style='width:10%;'>Turno</th>
+                    <th style='width:12%;'>Modalidad</th>
+                    <th style='width:12%;'>Estatus</th>
                 </tr>
             </thead>
             <tbody>
@@ -251,10 +280,9 @@ if ($cedulaSelected) {
             $detalleHtml .= "
             <div class='section-title' style='margin-top:20px;'>Línea de Tiempo de Cursos</div>
             <div style='text-align:center;'>
-                <img src='{$ganttImage}' style='max-width:100%; max-height:400px; border:1px solid #ccc;'>
+                <img src='{$ganttImage}' style='max-width:100%; max-height:300px; border:1px solid #ccc; border-radius:4px;'>
             </div>";
         } else if (!empty($cursos)) {
-            // Textual timeline as fallback
             $timelineHtml = "";
             $cursosValidos = array_filter($cursos, fn($c) => !empty($c['fecha_inicio']) && !empty($c['fecha_fin']) && $c['fecha_inicio'] !== '0000-00-00');
             usort($cursosValidos, fn($a, $b) => strtotime($a['fecha_inicio']) <=> strtotime($b['fecha_inicio']));
@@ -264,21 +292,21 @@ if ($cedulaSelected) {
                 $dias = round((strtotime($c['fecha_fin']) - strtotime($c['fecha_inicio'])) / (60 * 60 * 24));
                 $timelineHtml .= "<tr>
                     <td>{$c['nombre_curso']}</td>
-                    <td style='text-align:center'>{$fIni}</td>
-                    <td style='text-align:center'>{$fFin}</td>
-                    <td style='text-align:center'>{$dias} días</td>
+                    <td class='text-center'>{$fIni}</td>
+                    <td class='text-center'>{$fFin}</td>
+                    <td class='text-center'>{$dias} días</td>
                 </tr>";
             }
             if ($timelineHtml) {
                 $detalleHtml .= "
                 <div class='section-title' style='margin-top:20px;'>Línea de Tiempo Simplificada</div>
-                <table>
+                <table class='data-table'>
                     <thead>
                         <tr>
-                            <th>Curso</th>
-                            <th style='text-align:center'>Inicio</th>
-                            <th style='text-align:center'>Fin</th>
-                            <th style='text-align:center'>Duración</th>
+                            <th style='width:50%; text-align:left;'>Curso</th>
+                            <th style='width:16%;'>Inicio</th>
+                            <th style='width:16%;'>Fin</th>
+                            <th style='width:18%;'>Duración</th>
                         </tr>
                     </thead>
                     <tbody>{$timelineHtml}</tbody>
@@ -288,122 +316,41 @@ if ($cedulaSelected) {
     }
 }
 
-// Convert Logo
-$logoPath = __DIR__ . '/../../../../assets/img/inces-logo.png';
-if (file_exists($logoPath)) {
-    $logoData = base64_encode(file_get_contents($logoPath));
-    $logoSrc = 'data:image/png;base64,'.$logoData;
-} else {
-    $logoSrc = '';
-}
+// Convert Logos
+$pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../../assets/img/inces-logo.png';
 
-$html = "
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Reporte_Trayectoria_Participantes</title>
-<style>
-    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; color: #333; margin: 0; padding: 0; }
-    .header { width: 100%; border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; }
-    .header td { vertical-align: middle; }
-    .logo { width: 130px; }
-    .title { text-align: center; font-size: 20px; font-weight: bold; color: #0056b3; margin-bottom: 4px; }
-    .subtitle { text-align: center; font-size: 14px; color: #555; margin-bottom: 2px; }
-    .info { text-align: right; font-size: 10px; color: #777; line-height: 1.4; }
-    
-    .kpi-container { width: 100%; margin-bottom: 20px; text-align: center; }
-    .kpi-box { display: inline-block; text-align: center; padding: 12px 5px; margin: 0 0.5% 10px 0.5%; background: #f8f9fa; border-top: 3px solid #0056b3; border-radius: 4px; box-sizing: border-box; }
-    .kpi-val { font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #333; }
-    .kpi-label { font-size: 9px; text-transform: uppercase; color: #666; font-weight: bold; }
-    
-    .filter-box { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 11px; }
-    .filter-box strong { color: #0056b3; }
-    
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
-    th { background-color: #0056b3; color: white; padding: 10px 8px; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
-    td { border-bottom: 1px solid #dee2e6; padding: 10px 8px; }
-    tr:nth-child(even) td { background-color: #f8f9fa; }
-    
-    .section-title { font-size: 16px; font-weight: bold; color: #0056b3; margin-bottom: 15px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; }
-    .page-break { page-break-after: always; }
-</style>
-</head>
-<body>
-    <!-- HEADER -->
-    <table class='header'>
-        <tr>
-            <td style='width: 25%'><img src='{$logoSrc}' class='logo'></td>
-            <td style='width: 50%'>
-                <div class='title'>Sistema de Gestión INCES</div>
-                <div class='subtitle'>Reporte Trayectoria de Participantes</div>
-                <div class='subtitle'>Año Seleccionado: {$txtAnio}</div>
-            </td>
-            <td style='width: 25%' class='info'>
-                Generado por: {$usuarioFull}<br>
-                Fecha: " . date('d/m/Y H:i') . "
-            </td>
-        </tr>
-    </table>
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
 
-    <!-- SECCIÓN 1: RESUMEN GENERAL (KPIs) -->
-    <div class='section-title'>Resumen General</div>
-    <div class='kpi-container'>
-        <div class='kpi-box' style='border-top-color: #0d6efd; width: 15%;'>
-            <div class='kpi-val'>" . number_format($kpiData['total'], 0, '', '.') . "</div>
-            <div class='kpi-label'>Totales</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #198754; width: 15%;'>
-            <div class='kpi-val'>" . number_format($kpiData['activos'], 0, '', '.') . "</div>
-            <div class='kpi-label'>Con Cursos</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #ffc107; width: 15%;'>
-            <div class='kpi-val'>" . number_format($kpiData['sin_curso'], 0, '', '.') . "</div>
-            <div class='kpi-label'>Sin Cursos</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #0dcaf0; width: 15%;'>
-            <div class='kpi-val'>" . number_format($estadoEnSistema, 0, '', '.') . "</div>
-            <div class='kpi-label'>En Sistema</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #20c997; width: 15%;'>
-            <div class='kpi-val'>" . number_format($estadoDisponible, 0, '', '.') . "</div>
-            <div class='kpi-label'>Disponibles</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #6f42c1; width: 15%;'>
-            <div class='kpi-val'>" . number_format($estadoEnFormacion, 0, '', '.') . "</div>
-            <div class='kpi-label'>En Formación</div>
-        </div>
-    </div>
+$fechaGeneracion = date('d/m/Y h:i A');
 
-    <!-- SECCIÓN 2: FILTROS APLICADOS -->
-    <div style='background:#e9ecef; border-radius:4px; padding:8px 12px; margin-bottom:20px; font-size:10px;'>
-        <b style='color:#0056b3;'>Filtros Aplicados:</b> 
-        Participación: {$txtConCurso} | Certificados: {$txtConAprobado} | Año: {$txtAnio} | Mes: {$txtMeses} | Género: {$txtGenero} | Estado: {$txtEstado} | Edad: {$txtEdad}
-    </div>
+$pdfData = [
+    'usuarioFull' => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno' => $logoGobierno,
+    'logoInces' => $logoInces,
+    'txtAnio' => $txtAnio,
+    'txtMeses' => $txtMeses,
+    'txtGenero' => $txtGenero,
+    'txtEstado' => $txtEstado,
+    'txtEdad' => $txtEdad,
+    'txtConCurso' => $txtConCurso,
+    'txtConAprobado' => $txtConAprobado,
+    'kpiData' => $kpiData,
+    'estadoEnSistema' => $estadoEnSistema,
+    'estadoDisponible' => $estadoDisponible,
+    'estadoEnFormacion' => $estadoEnFormacion,
+    'filtrados' => $filtrados,
+    'totalEncontrados' => $totalEncontrados,
+    'conAprobado' => $conAprobado,
+    'detalleHtml' => $detalleHtml
+];
 
-    <!-- SECCIÓN 3: TABLA DE PARTICIPANTES -->
-    <div class='section-title'>Listado de Participantes <span style='color:#666; font-size:10px;'>({$totalEncontrados} registros)</span></div>
-    <table>
-        <thead>
-            {$tableHeaderHtml}
-        </thead>
-        <tbody>
-            {$tablaParticipantesHtml}
-        </tbody>
-    </table>
-
-    <!-- SECCIÓN 4, 5 y 6: DETALLE DEL PARTICIPANTE -->
-    {$detalleHtml}
-
-    <script type='text/php'>
-    if (isset(\$pdf)) {
-        \$text = 'Sistema de Gestión INCES | Fecha de generación: " . date('d/m/Y H:i') . " | Página ' . \$PAGE_NUM . ' de ' . \$PAGE_COUNT;
-        \$font = \$fontMetrics->get_font('Helvetica', 'normal');
-        \$pdf->page_text(180, 815, \$text, \$font, 8, array(0.4,0.4,0.4));
-    }
-    </script>
-</body>
-</html>";
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../../vista/reportes/pdf_templates/trayectoria_participantes.php';
+$html = ob_get_clean();
 
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
@@ -414,6 +361,7 @@ $dompdf = new Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
+
 if (ob_get_length()) ob_end_clean();
 $dompdf->stream('Reporte_Trayectoria_Participantes.pdf', ['Attachment' => false]);
 ?>

@@ -437,175 +437,42 @@ $tablaHtml .= "<tr style='font-weight:bold; background-color: #e9ecef'>
 </tr>";
 
 // Build HTML
-$logoPath = __DIR__ . '/../../../../assets/img/inces-logo.png';
-$logoData = base64_encode(file_get_contents($logoPath));
-$logoSrc = 'data:image/png;base64,'.$logoData;
+$logoPathGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
+$logoPathInces = __DIR__ . '/../../../../assets/img/inces-logo.png';
 
-$html = "
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Reporte_Participantes_Ambito</title>
-<style>
-    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 12px; color: #333; margin: 0; padding: 0; }
-    .header { width: 100%; border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; }
-    .header td { vertical-align: middle; }
-    .logo { width: 130px; }
-    .title { text-align: center; font-size: 20px; font-weight: bold; color: #0056b3; margin-bottom: 4px; }
-    .subtitle { text-align: center; font-size: 14px; color: #555; margin-bottom: 2px; }
-    .info { text-align: right; font-size: 10px; color: #777; line-height: 1.4; }
-    
-    .kpi-container { width: 100%; margin-bottom: 20px; text-align: center; }
-    .kpi-box { width: 14%; display: inline-block; text-align: center; padding: 12px 5px; margin: 0 0.5%; background: #f8f9fa; border-top: 3px solid #0056b3; border-radius: 4px; box-sizing: border-box; }
-    .kpi-val { font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #333; }
-    .kpi-label { font-size: 9px; text-transform: uppercase; color: #666; font-weight: bold; }
-    
-    .chart-container { text-align: center; margin: 20px 0; }
-    .chart { max-width: 500px; height: auto; display: inline-block; }
-    
-    .summary-box { background: #f1f3f5; padding: 15px; border-left: 4px solid #0056b3; margin-bottom: 20px; }
-    .summary-title { font-weight: bold; margin-bottom: 12px; font-size: 14px; color: #0056b3; text-transform: uppercase; }
-    .summary-item { margin-bottom: 6px; font-size: 12px; }
-    .summary-item strong { display: inline-block; width: 220px; color: #495057; }
-    
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
-    th { background-color: #0056b3; color: white; padding: 10px 8px; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
-    td { border-bottom: 1px solid #dee2e6; padding: 10px 8px; }
-    tr:nth-child(even) td { background-color: #f8f9fa; }
-    
-    .section-title { font-size: 16px; font-weight: bold; color: #0056b3; margin-bottom: 15px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; }
-    
-    .page-break { page-break-after: always; }
-</style>
-</head>
-<body>
-    <!-- HEADER -->
-    <table class='header'>
-        <tr>
-            <td style='width: 25%'><img src='{$logoSrc}' class='logo'></td>
-            <td style='width: 50%'>
-                <div class='title'>Sistema de Gestión INCES</div>
-                <div class='subtitle'>Reporte Participantes por Ámbito</div>
-                <div class='subtitle'>Año Seleccionado: {$anio}</div>
-            </td>
-            <td style='width: 25%' class='info'>
-                Generado por: {$usuarioFull}<br>
-                Fecha: " . date('d/m/Y H:i') . "
-            </td>
-        </tr>
-    </table>
+$logoGobierno = file_exists($logoPathGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPathGobierno)) : '';
+$logoInces = file_exists($logoPathInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPathInces)) : '';
 
-    <!-- PÁGINA 1: KPIs y Gráfico -->
-    <div class='kpi-container'>
-        <div class='kpi-box' style='border-top-color: #6c757d'>
-            <div class='kpi-val'>{$totalAmbitos}</div>
-            <div class='kpi-label'>Total Ámbitos</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #0d6efd'>
-            <div class='kpi-val'>" . number_format($totalPart, 0, '', '.') . "</div>
-            <div class='kpi-label'>Participantes</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #198754'>
-            <div class='kpi-val'>" . number_format($totalAprobados, 0, '', '.') . "</div>
-            <div class='kpi-label'>Aprobados</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #0dcaf0'>
-            <div class='kpi-val'>" . number_format($totalFormacion, 0, '', '.') . "</div>
-            <div class='kpi-label'>En Formación</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: #dc3545'>
-            <div class='kpi-val'>" . number_format($totalRetirados, 0, '', '.') . "</div>
-            <div class='kpi-label'>Retirados</div>
-        </div>
-        <div class='kpi-box' style='border-top-color: " . ($diferencia > 0 ? '#198754' : ($diferencia < 0 ? '#dc3545' : '#6c757d')) . "'>
-            <div class='kpi-val'>{$difStr}</div>
-            <div class='kpi-label'>Variación Anual</div>
-        </div>
-    </div>
+$fechaGeneracion = date('d/m/Y h:i A');
 
-    <div class='chart-container'>";
-if (!empty($chartImageBase64)) {
-    $html .= "<img src='{$chartImageBase64}' class='chart'>";
-}
-$html .= "</div>
+$pdfData = [
+    'anio' => $anio,
+    'usuarioFull' => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno' => $logoGobierno,
+    'logoInces' => $logoInces,
+    'totalAmbitos' => $totalAmbitos,
+    'totalPart' => $totalPart,
+    'totalAprobados' => $totalAprobados,
+    'totalFormacion' => $totalFormacion,
+    'totalRetirados' => $totalRetirados,
+    'difStr' => $difStr,
+    'diferencia' => $diferencia,
+    'maxPart' => $maxPart,
+    'maxAprob' => $maxAprob,
+    'maxTasa' => $maxTasa,
+    'maxCrecimiento' => $maxCrecimiento,
+    'tablaHtml' => $tablaHtml,
+    'rankingHtml' => $rankingHtml,
+    'interanualHtml' => $interanualHtml,
+    'seccionMensualHtml' => $seccionMensualHtml,
+    'chartImageBase64' => $chartImageBase64
+];
 
-    <div class='summary-box'>
-        <div class='summary-title'>Resumen Ejecutivo</div>
-        <div class='summary-item'><strong>Ámbito con más participantes:</strong> {$maxPart['ambito']} (" . number_format($maxPart['val'], 0, '', '.') . ")</div>
-        <div class='summary-item'><strong>Ámbito con más aprobados:</strong> {$maxAprob['ambito']} (" . number_format($maxAprob['val'], 0, '', '.') . ")</div>
-        <div class='summary-item'><strong>Mejor tasa de aprobación:</strong> {$maxTasa['ambito']} ({$maxTasa['val']}%)</div>
-        <div class='summary-item'><strong>Mayor crecimiento anual:</strong> {$maxCrecimiento['ambito']} (" . ($maxCrecimiento['val'] > 0 ? '+' : '') . number_format($maxCrecimiento['val'], 0, '', '.') . ")</div>
-    </div>
-
-    <div class='page-break'></div>
-
-    <!-- PÁGINA 2: Tabla Detallada -->
-    <div class='section-title'>Detalle por Ámbito</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Ámbito</th>
-                <th style='text-align:right'>Total</th>
-                <th style='text-align:right'>Aprobados</th>
-                <th style='text-align:right'>En Form.</th>
-                <th style='text-align:right'>Retirados</th>
-                <th style='text-align:right'>Año Anterior</th>
-                <th style='text-align:right'>Diferencia</th>
-                <th style='text-align:center'>Tasa Aprob.</th>
-            </tr>
-        </thead>
-        <tbody>
-            {$tablaHtml}
-        </tbody>
-    </table>
-
-    <div class='page-break'></div>
-
-    <!-- PÁGINA 3: Ranking y Comparación -->
-    <div class='section-title'>Ranking de Ámbitos por Participantes</div>
-    <table>
-        <thead>
-            <tr>
-                <th style='width: 15%'>Posición</th>
-                <th style='width: 55%'>Ámbito</th>
-                <th style='width: 30%; text-align:right'>Total Participantes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {$rankingHtml}
-        </tbody>
-    </table>
-
-    <div style='margin-top: 40px;' class='section-title'>Comparación Interanual</div>
-    <table>
-        <thead>
-            <tr>
-                <th style='width: 40%'>Ámbito</th>
-                <th style='width: 20%; text-align:right'>Total Año Actual</th>
-                <th style='width: 20%; text-align:right'>Total Año Anterior</th>
-                <th style='width: 20%; text-align:right'>Variación</th>
-            </tr>
-        </thead>
-        <tbody>
-            {$interanualHtml}
-        </tbody>
-    </table>
-
-    {$seccionMensualHtml}
-
-    <!-- FOOTER Paginacion (Dompdf) -->
-    <script type='text/php'>
-    if (isset(\$pdf)) {
-        \$text = 'Sistema de Gestión INCES - Página ' . \$PAGE_NUM . ' de ' . \$PAGE_COUNT;
-        \$font = \$fontMetrics->get_font('Helvetica', 'italic');
-        // x, y, text, font, size, color(RGB 0-1)
-        \$pdf->page_text(240, 810, \$text, \$font, 8, array(0.3,0.3,0.3));
-    }
-    </script>
-</body>
-</html>
-";
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_ambito.php';
+$html = ob_get_clean();
 
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);

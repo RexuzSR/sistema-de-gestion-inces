@@ -1,53 +1,17 @@
 <?php
-require('../fpdf.php');
-require_once('../../../modelo/conexion.php');
+// ============================================================
+// ReporteCursoMasParticipantes.php
+// Controlador DOMPDF (Migrado) - Reporte "Cursos con más Participantes"
+// ============================================================
 
-class PDF extends FPDF
-{
-    private $anio;
-    private $usuario;
+require_once __DIR__ . '/../../dompdf/vendor/autoload.php';
+require_once __DIR__ . '/../../../modelo/conexion.php';
 
-    function __construct($orientation = 'L', $unit = 'mm', $size = 'A4')
-    {
-        parent::__construct($orientation, $unit, $size);
-    }
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-    function setAnio($anio)
-    {
-        $this->anio = $anio;
-    }
-
-    function setUsuario($usuario)
-    {
-        $this->usuario = $usuario;
-    }
-
-    function Header()
-    {
-        // Logo de INCES
-        $this->Image('../../../../assets/img/inces-logo.png', 10, 8, 30);
-        $this->SetFont('Arial', 'B', 16);
-        // Título
-        $this->Cell(80);
-        $this->Cell(120, 10, utf8_decode('Cursos con más Participantes'), 0, 1, 'C');
-        $this->SetFont('Arial', 'I', 12);
-        $this->Cell(80);
-        $this->Cell(120, 10, utf8_decode('Año Seleccionado: ' . $this->anio), 0, 1, 'C');
-        // Usuario y fecha de generación
-        $this->SetFont('Arial', '', 10);
-        $usuarioTxt = isset($this->usuario) && strlen(trim($this->usuario)) ? $this->usuario : 'Usuario no identificado';
-        $this->Cell(0, 6, utf8_decode('Generado por: ' . $usuarioTxt), 0, 1, 'L');
-        $this->Cell(0, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'R');
-        $this->Ln(5);
-    }
-
-    function Footer()
-    {
-        // Pie de página
-        $this->SetY(-15);
-        $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, utf8_decode('Sistema de Gestión INCES - Página ') . $this->PageNo() . '/{nb}', 0, 0, 'C');
-    }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    die("Acceso denegado.");
 }
 
 // 1. Obtener parámetros
@@ -107,20 +71,6 @@ $desviacion = $cantidadCursos > 0 ? sqrt($sumaCuadrados / $cantidadCursos) : 0;
 $umbSup = $promedio + $desviacion;
 $umbInf = max(0, $promedio - $desviacion);
 
-foreach ($cursos as &$c) {
-    $p = intval($c['total_participantes']);
-    if ($p >= $umbSup) {
-        $c['clasificacion'] = 'Muy Activo';
-    } elseif ($p >= $umbInf) {
-        $c['clasificacion'] = 'Activo';
-    } else {
-        $c['clasificacion'] = 'Normal';
-    }
-}
-unset($c);
-
-$cursoMasActivo = $cursos[0]; // Ya viene ordenado DESC
-
 // Función de duración
 function getDuracionLegible($fi, $ff) {
     if (!$fi || !$ff) return 'Sin informacion';
@@ -139,17 +89,27 @@ function getDuracionLegible($fi, $ff) {
     return $m . ' mes(es) (' . $dias . ' d)';
 }
 
-$pdf = new PDF('L', 'mm', 'A4');
-// 4. Inicializar PDF (Horizontal para acomodar gráficos y tabla ancha)
-$pdf->setAnio($anio);
-// Incluir usuario desde base de datos
+foreach ($cursos as &$c) {
+    $p = intval($c['total_participantes']);
+    if ($p >= $umbSup) {
+        $c['clasificacion'] = 'Muy Activo';
+    } elseif ($p >= $umbInf) {
+        $c['clasificacion'] = 'Activo';
+    } else {
+        $c['clasificacion'] = 'Normal';
+    }
+    $c['duracion_legible'] = getDuracionLegible($c['fecha_inicio'], $c['fecha_fin']);
+}
+unset($c);
+
+$cursoMasActivo = $cursos[0]; // Ya viene ordenado DESC
+
+// Usuario
 date_default_timezone_set('America/Caracas');
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 session_name('SISTEMA_CONTROL_INCES');
 if (session_status() === PHP_SESSION_NONE) session_start();
-$conexion = new Conexion();
-$conn = $conexion->getConexion();
 $usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
@@ -167,174 +127,46 @@ if (isset($_SESSION['id_usuario'])) {
         if ($resultUsuario && !empty(trim($resultUsuario['nombre_completo']))) {
             $usuarioFull = trim($resultUsuario['nombre_completo']);
         }
-    } catch (Exception $e) {
-        // Fallback si la consulta falla
-    }
-}
-$pdf->setUsuario($usuarioFull);
-$pdf->AliasNbPages();
-$pdf->AddPage();
-
-// --- SECCIÓN: Top 3 Cursos ---
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->SetFillColor(240, 240, 240);
-$pdf->Cell(0, 10, utf8_decode(' Clasificación Top 3 '), 0, 1, 'L', true);
-$pdf->Ln(5);
-
-$xInicio = $pdf->GetX();
-$yInicio = $pdf->GetY();
-$cardWidth = 85;
-
-for ($i = 0; $i < min(3, count($cursos)); $i++) {
-    $curso = $cursos[$i];
-    $xOffset = $xInicio + ($i * ($cardWidth + 10)); // 10mm gap
-    $pdf->SetXY($xOffset, $yInicio);
-    
-    // Dibujar borde de tarjeta
-    $pdf->Rect($xOffset, $yInicio, $cardWidth, 35);
-    
-    // Contenido de tarjeta
-    $pdf->SetFont('Arial', 'B', 12);
-    $nombre = utf8_decode($curso['nombre_curso']);
-    if (strlen($nombre) > 35) $nombre = substr($nombre, 0, 32) . '...';
-    
-    $pdf->SetXY($xOffset + 2, $yInicio + 5);
-    $pdf->Cell($cardWidth - 4, 6, ($i+1) . '. ' . $nombre, 0, 1, 'C');
-    
-    $pdf->SetFont('Arial', '', 11);
-    $pdf->SetXY($xOffset + 2, $yInicio + 15);
-    $pdf->Cell($cardWidth - 4, 6, utf8_decode($curso['total_participantes'] . ' participantes'), 0, 1, 'C');
-    
-    $pdf->SetFont('Arial', 'I', 10);
-    $pdf->SetXY($xOffset + 2, $yInicio + 25);
-    $pdf->Cell($cardWidth - 4, 6, utf8_decode('Estado: ' . $curso['clasificacion']), 0, 1, 'C');
+    } catch (Exception $e) { }
 }
 
-$pdf->Ln(45); // Espacio después de las tarjetas
+$pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../../assets/img/inces-logo.png';
 
-// --- SECCIÓN: Métricas Resumen ---
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->Cell(0, 10, utf8_decode(' Métricas Resumen '), 0, 1, 'L', true);
-$pdf->Ln(5);
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
 
-$yMetrics = $pdf->GetY();
-$metricWidth = 65;
+$fechaGeneracion = date('d/m/Y h:i A');
 
-// Métrica 1
-$pdf->SetXY(10, $yMetrics);
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell($metricWidth, 6, utf8_decode('Total Participantes:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10, $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, number_format($totalParticipantesGlobal), 0, 1, 'C');
+$pdfData = [
+    'anio' => $anio,
+    'usuarioFull' => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno' => $logoGobierno,
+    'logoInces' => $logoInces,
+    'cursos' => $cursos,
+    'totalParticipantesGlobal' => $totalParticipantesGlobal,
+    'promedio' => $promedio,
+    'cantidadCursos' => $cantidadCursos,
+    'cursoMasActivo' => $cursoMasActivo,
+    'chartImageBase64' => $chartImageBase64
+];
 
-// Métrica 2
-$pdf->SetXY(10 + $metricWidth, $yMetrics);
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell($metricWidth, 6, utf8_decode('Promedio / Curso:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10 + $metricWidth, $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, round($promedio), 0, 1, 'C');
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_mas_participantes.php';
+$html = ob_get_clean();
 
-// Métrica 3
-$pdf->SetXY(10 + ($metricWidth * 2), $yMetrics);
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell($metricWidth, 6, utf8_decode('Cursos Analizados:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10 + ($metricWidth * 2), $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, $cantidadCursos, 0, 1, 'C');
+$options = new Options();
+$options->set('isHtml5ParserEnabled', true);
+$options->set('isRemoteEnabled', true);
+$options->set('isPhpEnabled', true);
 
-// Métrica 4
-$pdf->SetXY(10 + ($metricWidth * 3), $yMetrics);
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell(80, 6, utf8_decode('Curso más Activo:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 10);
-$pdf->SetXY(10 + ($metricWidth * 3), $yMetrics + 8);
-$nomMax = utf8_decode($cursoMasActivo['nombre_curso']);
-if(strlen($nomMax) > 40) $nomMax = substr($nomMax, 0, 37).'...';
-$pdf->Cell(80, 6, $nomMax, 0, 1, 'C');
+$dompdf = new Dompdf($options);
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'landscape');
+$dompdf->render();
 
-$pdf->Ln(20);
-
-// --- SECCIÓN: Gráfico ---
-if (!empty($chartImageBase64)) {
-    $imgData = str_replace('data:image/png;base64,', '', $chartImageBase64);
-    $imgData = base64_decode($imgData);
-    $tempImg = sys_get_temp_dir() . '/chart_cmp_' . uniqid() . '.png';
-    file_put_contents($tempImg, $imgData);
-    
-    // Check if chart fits on page (A4 landscape height is 210mm, footer is at 195mm)
-    if ($pdf->GetY() + 90 > 190) {
-        $pdf->AddPage();
-    } else {
-        $pdf->Ln(10);
-    }
-    
-    // Posicionar gráfico
-    // Asumimos orientación Horizontal. A4 Ancho = 297mm. Dejamos margen.
-    $pdf->Image($tempImg, 15, $pdf->GetY(), 260, 80);
-    unlink($tempImg);
-    $pdf->Ln(85);
-}
-
-// Check si hay espacio para la tabla, si no, nueva página
-if ($pdf->GetY() > 140) {
-    $pdf->AddPage();
-} else {
-    $pdf->Ln(10);
-}
-
-// --- SECCIÓN: Tabla de Clasificación ---
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->Cell(0, 10, utf8_decode(' Tabla de Clasificación de Cursos '), 0, 1, 'L', true);
-$pdf->Ln(5);
-
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->SetFillColor(200, 200, 200);
-// Anchos de columnas (Total 277 en horizontal)
-$w = array(15, 85, 30, 40, 40, 35, 30);
-// Posición, Curso, Participantes, Estatus, Modalidad, Duración y Estado
-$pdf->Cell($w[0], 8, 'Pos.', 1, 0, 'C', true);
-$pdf->Cell($w[1], 8, 'Curso', 1, 0, 'C', true);
-$pdf->Cell($w[2], 8, 'Participantes', 1, 0, 'C', true);
-$pdf->Cell($w[3], 8, 'Estatus', 1, 0, 'C', true);
-$pdf->Cell($w[4], 8, 'Modalidad', 1, 0, 'C', true);
-$pdf->Cell($w[5], 8, utf8_decode('Duración'), 1, 0, 'C', true);
-$pdf->Cell($w[6], 8, 'Estado', 1, 0, 'C', true);
-$pdf->Ln();
-
-$pdf->SetFont('Arial', '', 9);
-$pos = 1;
-foreach ($cursos as $row) {
-    // Control de salto de página
-    if ($pdf->GetY() > 185) {
-        $pdf->AddPage();
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell($w[0], 8, 'Pos.', 1, 0, 'C', true);
-        $pdf->Cell($w[1], 8, 'Curso', 1, 0, 'C', true);
-        $pdf->Cell($w[2], 8, 'Participantes', 1, 0, 'C', true);
-        $pdf->Cell($w[3], 8, 'Estatus', 1, 0, 'C', true);
-        $pdf->Cell($w[4], 8, 'Modalidad', 1, 0, 'C', true);
-        $pdf->Cell($w[5], 8, utf8_decode('Duración'), 1, 0, 'C', true);
-        $pdf->Cell($w[6], 8, 'Estado', 1, 0, 'C', true);
-        $pdf->Ln();
-        $pdf->SetFont('Arial', '', 9);
-    }
-    
-    $nom = utf8_decode($row['nombre_curso']);
-    if (strlen($nom) > 48) $nom = substr($nom, 0, 45) . '...';
-    
-    $pdf->Cell($w[0], 7, $pos, 1, 0, 'C');
-    $pdf->Cell($w[1], 7, $nom, 1, 0, 'L');
-    $pdf->Cell($w[2], 7, $row['total_participantes'], 1, 0, 'C');
-    $pdf->Cell($w[3], 7, utf8_decode($row['estatus'] ?? 'N/D'), 1, 0, 'C');
-    $pdf->Cell($w[4], 7, utf8_decode($row['modalidad'] ?? 'N/D'), 1, 0, 'C');
-    $pdf->Cell($w[5], 7, utf8_decode(getDuracionLegible($row['fecha_inicio'], $row['fecha_fin'])), 1, 0, 'C');
-    $pdf->Cell($w[6], 7, utf8_decode($row['clasificacion']), 1, 0, 'C');
-    $pdf->Ln();
-    $pos++;
-}
-
-// Salida
-$pdf->Output('I', 'Reporte_Cursos_Mas_Participantes.pdf');
+if (ob_get_length()) ob_end_clean();
+$dompdf->stream('Reporte_Cursos_Mas_Participantes.pdf', ['Attachment' => false]);
 ?>

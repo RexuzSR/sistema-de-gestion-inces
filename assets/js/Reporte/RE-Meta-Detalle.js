@@ -711,7 +711,67 @@ function limpiarRecursosDet() {
     tipoGraficoDet        = 'bar';
 }
 
+async function exportarPdfDetalleMeta() {
+    if (!metaDetSeleccionada) {
+        alert("Debe seleccionar una meta antes de exportar.");
+        return;
+    }
+
+    const btnTop = document.getElementById('btn-print-report');
+    const oldHtmlTop = btnTop ? btnTop.innerHTML : '';
+
+    try {
+        if (btnTop) {
+            btnTop.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>';
+            btnTop.disabled = true;
+        }
+
+        const canvas = document.getElementById('canvasGraficoDet');
+        const graficoBase64 = canvas ? canvas.toDataURL('image/png', 1.0) : '';
+
+        const payload = {
+            anio: anioDetActual,
+            meta: metaDetSeleccionada,
+            participantes: datosPartOriginales,
+            kpis: buildKPIsDet(datosPartOriginales, metaDetSeleccionada),
+            panelActivo: panelActivoDet,
+            tipoGrafico: tipoGraficoDet,
+            graficoBase64: graficoBase64
+        };
+
+        const response = await fetch('../controlador/Reporte/api_reportes.php?accion=exportar_pdf_detalle_meta', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error en el servidor: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        if (blob.size === 0) {
+            throw new Error("El archivo PDF generado está vacío");
+        }
+
+        const fileUrl = URL.createObjectURL(blob);
+        window.open(fileUrl, '_blank');
+
+    } catch (error) {
+        console.error("Error al exportar PDF del detalle de meta:", error);
+        alert("Ocurrió un error al generar el PDF: " + error.message);
+    } finally {
+        if (btnTop) {
+            btnTop.innerHTML = oldHtmlTop;
+            btnTop.disabled = false;
+        }
+    }
+}
+
 window.cargarDetalleMeta  = cargarDetalleMeta;
 window.limpiarRecursosDet = limpiarRecursosDet;
+window.exportarPdfDetalleMeta = exportarPdfDetalleMeta;
 
 console.log('RE-Meta-Detalle.js cargado');

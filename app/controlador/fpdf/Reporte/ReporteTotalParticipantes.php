@@ -330,141 +330,43 @@ if (!empty($tablaMensual)) {
 // Chart
 $chartHtml = "";
 if (!empty($chartImageBase64) && strpos($chartImageBase64, 'data:image') === 0) {
-    $chartHtml = "
-    <div class='page-break'></div>
+    $chartHtml = "<div class='page-break'></div>
     <div class='section-title'>Gráfico: Total de Participantes</div>
-    <div style='text-align:center; margin-top:10px;'>
-        <img src='{$chartImageBase64}' style='width:100%; max-height:280px; border:1px solid #cbd5e1; border-radius:6px;'>
+    <div class='chart-box'>
+        <img src='{$chartImageBase64}' alt='Grafico'>
     </div>";
 }
 
-$html = "
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Reporte_Total_Participantes</title>
-<style>
-    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11px; color: #334155; margin: 0; padding: 0; }
-    .header { width: 100%; border-bottom: 2px solid #0d6efd; padding-bottom: 8px; margin-bottom: 15px; }
-    .header td { vertical-align: middle; }
-    .logo { width: 120px; }
-    .title { font-size: 18px; font-weight: bold; color: #0d6efd; margin-bottom: 3px; }
-    .subtitle { font-size: 12px; color: #475569; margin-bottom: 2px; }
-    .info { text-align: right; font-size: 9px; color: #64748b; line-height: 1.3; }
-    
-    .section-title { font-size: 12px; font-weight: bold; color: #0d6efd; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    .filter-box { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 8px 12px; border-radius: 6px; margin-bottom: 15px; font-size: 10px; }
-    .filter-box strong { color: #856404; }
-    
-    /* KPI Cards layout */
-    .kpis-container { width: 100%; margin-bottom: 15px; display: block; height: 50px; }
-    .kpi-card { width: 18.8%; float: left; margin-right: 1.5%; background: #f8fafc; padding: 8px 5px; border-radius: 6px; border: 1px solid #e2e8f0; box-sizing: border-box; text-align: center; height: 48px; }
-    .kpi-card:last-child { margin-right: 0; }
-    .kpi-card.info { border-left: 3px solid #0dcaf0; }
-    .kpi-card.primary { border-left: 3px solid #0d6efd; }
-    .kpi-card.success { border-left: 3px solid #198754; }
-    .kpi-card.danger { border-left: 3px solid #dc3545; }
-    .kpi-card.warning { border-left: 3px solid #ffc107; }
-    
-    .kpi-val { font-size: 13px; font-weight: bold; margin-bottom: 2px; }
-    .kpi-card.info .kpi-val { color: #079ab8; }
-    .kpi-card.primary .kpi-val { color: #0a4fc4; }
-    .kpi-card.success .kpi-val { color: #0f6840; }
-    .kpi-card.danger .kpi-val { color: #b02a37; }
-    .kpi-card.warning .kpi-val { color: #997404; }
-    
-    .kpi-title { font-size: 8px; font-weight: bold; color: #64748b; text-transform: uppercase; line-height: 1; }
-    
-    /* Tables */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px; }
-    th { background-color: #f1f5f9; color: #1e293b; padding: 6px 8px; text-align: left; font-weight: bold; border: 1px solid #cbd5e1; text-transform: uppercase; font-size: 9px; }
-    td { border: 1px solid #cbd5e1; padding: 6px 8px; }
-    tr:nth-child(even) td { background-color: #f8fafc; }
-    .tfoot-total td { background-color: #f1f5f9 !important; font-weight: bold; color: #0f172a; border-top: 2px solid #94a3b8; }
-    
-    .page-break { page-break-after: always; }
-</style>
-</head>
-<body>
-    <!-- HEADER -->
-    <table class='header' style='border:none; margin:0;'>
-        <tr style='background:none;'>
-            <td style='width: 25%; border:none; background:none;'><img src='{$logoSrc}' class='logo'></td>
-            <td style='width: 50%; border:none; text-align:center; background:none;'>
-                <div class='title'>Sistema de Gestión INCES</div>
-                <div class='subtitle' style='font-weight:bold; font-size:13px;'>Reporte: Total de Participantes</div>
-                <div class='subtitle'>Año Base Activo: {$anioBase}</div>
-            </td>
-            <td style='width: 25%; border:none; background:none;' class='info'>
-                Generado por: {$usuarioFull}<br>
-                Fecha: " . date('d/m/Y H:i') . "
-            </td>
-        </tr>
-    </table>
+$pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../../assets/img/inces-logo.png';
 
-    <!-- FILTROS -->
-    {$filtrosHtml}
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
 
-    <!-- KPIs -->
-    <div class='section-title'>Resumen General</div>
-    <div class='kpis-container'>
-        <div class='kpi-card info'>
-            <div class='kpi-val'>{$totalSistemaValor}</div>
-            <div class='kpi-title'>Total en Sistema</div>
-        </div>
-        <div class='kpi-card primary'>
-            <div class='kpi-val'>{$nuevosVal}</div>
-            <div class='kpi-title'>Nuevos Particip.</div>
-        </div>
-        <div class='kpi-card success'>
-            <div class='kpi-val'>{$activosVal}</div>
-            <div class='kpi-title'>Activos Actual</div>
-        </div>
-        <div class='kpi-card danger'>
-            <div class='kpi-val'>{$retiradosVal}</div>
-            <div class='kpi-title'>Finalizaron / Baja</div>
-        </div>
-        <div class='kpi-card warning'>
-            <div class='kpi-val'>{$retencionVal}%</div>
-            <div class='kpi-title'>Tasa Retencion</div>
-        </div>
-    </div>
+$fechaGeneracion = date('d/m/Y h:i A');
 
-    <!-- DISTRIBUCIÓN ESTADOS -->
-    <div class='section-title'>Distribución por Estado Actual</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Estado</th>
-                <th style='text-align:center;'>Cantidad Total</th>
-                <th style='text-align:center;'>Filtrado Actualmente</th>
-            </tr>
-        </thead>
-        <tbody>
-            {$tablaEstadosHtml}
-        </tbody>
-    </table>
+$pdfData = [
+    'anioBase' => $anioBase,
+    'usuarioFull' => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno' => $logoGobierno,
+    'logoInces' => $logoInces,
+    'filtrosHtml' => $filtrosHtml,
+    'totalSistemaValor' => $totalSistemaValor,
+    'nuevosVal' => $nuevosVal,
+    'activosVal' => $activosVal,
+    'retiradosVal' => $retiradosVal,
+    'retencionVal' => $retencionVal,
+    'tablaEstadosHtml' => $tablaEstadosHtml,
+    'panelDetalleHtml' => $panelDetalleHtml,
+    'seccionMensualHtml' => $seccionMensualHtml,
+    'chartHtml' => $chartHtml
+];
 
-    <!-- DETALLE KPI SELECCIONADO (Si aplica) -->
-    {$panelDetalleHtml}
-
-    <!-- REGISTRO MENSUAL Y AGRUPACIONES (PÁGINA 2) -->
-    {$seccionMensualHtml}
-
-    <!-- GRÁFICO (PÁGINA 3) -->
-    {$chartHtml}
-
-    <script type='text/php'>
-    if (isset(\$pdf)) {
-        \$text = 'Sistema de Gestión INCES | Fecha de generación: " . date('d/m/Y H:i') . " | Página ' . \$PAGE_NUM . ' de ' . \$PAGE_COUNT;
-        \$font = \$fontMetrics->get_font('Helvetica', 'normal');
-        \$pdf->page_text(160, 815, \$text, \$font, 7.5, array(0.4,0.4,0.4));
-    }
-    </script>
-</body>
-</html>";
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../../vista/reportes/pdf_templates/total_participantes.php';
+$html = ob_get_clean();
 
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
@@ -475,6 +377,7 @@ $dompdf = new Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
+
 if (ob_get_length()) ob_end_clean();
 $dompdf->stream('Reporte_Total_Participantes.pdf', ['Attachment' => false]);
 ?>

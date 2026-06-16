@@ -1,49 +1,17 @@
 <?php
-require('../fpdf.php');
-require('../../../modelo/conexion.php');
+// ============================================================
+// ReporteTotalCursosMensual.php
+// Controlador DOMPDF (Migrado) - Reporte "Total de Cursos"
+// ============================================================
 
-class PDF extends FPDF
-{
-    private $anio;
-    private $usuario;
+require_once __DIR__ . '/../../dompdf/vendor/autoload.php';
+require_once __DIR__ . '/../../../modelo/conexion.php';
 
-    function __construct($orientation = 'P', $unit = 'mm', $size = 'A4')
-    {
-        parent::__construct($orientation, $unit, $size);
-    }
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-    function setAnio($anio)
-    {
-        $this->anio = $anio;
-    }
-
-    function setUsuario($usuario)
-    {
-        $this->usuario = $usuario;
-    }
-
-    function Header()
-    {
-        $this->Image('../../../../assets/img/inces-logo.png', 10, 8, 30);
-        $this->SetFont('Arial', 'B', 16);
-        $this->Cell(80);
-        $this->Cell(30, 10, utf8_decode('Total de Cursos'), 0, 1, 'C');
-        $this->SetFont('Arial', 'I', 12);
-        $this->Cell(80);
-        $this->Cell(30, 10, utf8_decode('Año Seleccionado: ' . $this->anio), 0, 1, 'C');
-        $this->SetFont('Arial', '', 10);
-        $usuarioTxt = isset($this->usuario) && strlen(trim($this->usuario)) ? $this->usuario : 'Usuario no identificado';
-        $this->Cell(0, 6, utf8_decode('Generado por: ' . $usuarioTxt), 0, 1, 'L');
-        $this->Cell(0, 6, utf8_decode('Fecha: ' . date('d/m/Y H:i')), 0, 1, 'R');
-        $this->Ln(5);
-    }
-
-    function Footer()
-    {
-        $this->SetY(-15);
-        $this->SetFont('Arial', 'I', 8);
-        $this->Cell(0, 10, utf8_decode('Sistema de Gestión INCES - Página ') . $this->PageNo() . '/{nb}', 0, 0, 'C');
-    }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    die("Acceso denegado.");
 }
 
 $anio = isset($_POST['anio']) ? intval($_POST['anio']) : date('Y');
@@ -90,7 +58,6 @@ $totNuevos = 0;
 $totActivos = 0;
 $totCulm = 0;
 $totEspera = 0;
-$ultimoMesValido = null;
 
 foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $m = intval($row['mes']);
@@ -112,14 +79,11 @@ foreach ($meses as $m) {
         $totActivos += $m['activos'];
         $totCulm += $m['culminados'];
         $totEspera += $m['enEspera'];
-        $ultimoMesValido = $m;
     }
     $datosMeses[] = $m;
 }
 
-// Métricas de resumen
 // Cursos Activos: contar directamente los que ACTUALMENTE tienen estatus "En proceso"
-// (creados en el año o que siguen activos) — mismo cálculo que el frontend al hacer click en KPI
 $sqlActivos = "SELECT COUNT(*) AS total
                FROM tb_curso c
                LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso
@@ -132,17 +96,12 @@ $activosUltimoMes = intval($stmtActivos->fetchColumn());
 
 $tasaCompletitud = $totNuevos > 0 ? number_format(($totCulm / $totNuevos) * 100, 1) . '%' : '-';
 
-// Iniciar PDF (Vertical P es apropiado)
-$pdf = new PDF('P', 'mm', 'A4');
-$pdf->setAnio($anio);
 // Incluir usuario desde base de datos
 date_default_timezone_set('America/Caracas');
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 session_name('SISTEMA_CONTROL_INCES');
 if (session_status() === PHP_SESSION_NONE) session_start();
-$conexion = new Conexion();
-$conn = $conexion->getConexion();
 $usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
@@ -160,129 +119,49 @@ if (isset($_SESSION['id_usuario'])) {
         if ($resultUsuario && !empty(trim($resultUsuario['nombre_completo']))) {
             $usuarioFull = trim($resultUsuario['nombre_completo']);
         }
-    } catch (Exception $e) {
-        // Fallback si la consulta falla
-    }
-}
-$pdf->setUsuario($usuarioFull);
-$pdf->AliasNbPages();
-$pdf->AddPage();
-
-// --- SECCIÓN: Métricas Resumen ---
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->SetFillColor(240, 240, 240);
-$pdf->Cell(0, 10, utf8_decode(' Métricas Resumen '), 0, 1, 'L', true);
-$pdf->Ln(5);
-
-$yMetrics = $pdf->GetY();
-$metricWidth = 47.5; // (190 / 4)
-
-// Tarjeta 1: Nuevos
-$pdf->SetXY(10, $yMetrics);
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->Cell($metricWidth, 6, utf8_decode('Nuevos Cursos:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10, $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, number_format($totNuevos), 0, 1, 'C');
-
-// Tarjeta 2: Activos
-$pdf->SetXY(10 + $metricWidth, $yMetrics);
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->Cell($metricWidth, 6, utf8_decode('Cursos Activos:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10 + $metricWidth, $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, number_format($activosUltimoMes), 0, 1, 'C');
-
-// Tarjeta 3: Culminados
-$pdf->SetXY(10 + ($metricWidth * 2), $yMetrics);
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->Cell($metricWidth, 6, utf8_decode('Cursos Culminados:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10 + ($metricWidth * 2), $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, number_format($totCulm), 0, 1, 'C');
-
-// Tarjeta 4: Completitud
-$pdf->SetXY(10 + ($metricWidth * 3), $yMetrics);
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->Cell($metricWidth, 6, utf8_decode('Tasa Completitud:'), 0, 1, 'C');
-$pdf->SetFont('Arial', '', 14);
-$pdf->SetXY(10 + ($metricWidth * 3), $yMetrics + 8);
-$pdf->Cell($metricWidth, 6, utf8_decode($tasaCompletitud), 0, 1, 'C');
-
-$pdf->Ln(20);
-
-// --- SECCIÓN: Gráfico ---
-if (!empty($chartImageBase64)) {
-    $imgData = str_replace('data:image/png;base64,', '', $chartImageBase64);
-    $imgData = base64_decode($imgData);
-    $tempImg = sys_get_temp_dir() . '/chart_tc_' . uniqid() . '.png';
-    file_put_contents($tempImg, $imgData);
-    
-    // Check if chart fits on page (A4 Portrait height is 297mm, footer is at 282mm)
-    if ($pdf->GetY() + 80 > 275) {
-        $pdf->AddPage();
-    }
-    
-    // Posicionar gráfico
-    $pdf->Image($tempImg, 15, $pdf->GetY(), 180, 75);
-    unlink($tempImg);
-    $pdf->Ln(80);
+    } catch (Exception $e) { }
 }
 
-// --- SECCIÓN: Tabla Mensual ---
-if ($pdf->GetY() + 60 > 275) {
-    $pdf->AddPage();
-}
+$pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../../assets/img/inces-logo.png';
 
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->Cell(0, 10, utf8_decode(' Registro Mensual '), 0, 1, 'L', true);
-$pdf->Ln(5);
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
 
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->SetFillColor(200, 200, 200);
+$fechaGeneracion = date('d/m/Y h:i A');
 
-$w = array(30, 30, 30, 30, 30, 40);
-// Mes, Nuevos, Activos, Culminados, En espera, Total
-$pdf->Cell($w[0], 8, 'Mes', 1, 0, 'C', true);
-$pdf->Cell($w[1], 8, 'Nuevos cursos', 1, 0, 'C', true);
-$pdf->Cell($w[2], 8, 'Cursos activos', 1, 0, 'C', true);
-$pdf->Cell($w[3], 8, 'Culminados', 1, 0, 'C', true);
-$pdf->Cell($w[4], 8, 'En espera', 1, 0, 'C', true);
-$pdf->Cell($w[5], 8, 'Total acumulado', 1, 0, 'C', true);
-$pdf->Ln();
+$pdfData = [
+    'anio' => $anio,
+    'usuarioFull' => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno' => $logoGobierno,
+    'logoInces' => $logoInces,
+    'totNuevos' => $totNuevos,
+    'activosUltimoMes' => $activosUltimoMes,
+    'totCulm' => $totCulm,
+    'tasaCompletitud' => $tasaCompletitud,
+    'datosMeses' => $datosMeses,
+    'totActivos' => $totActivos,
+    'totEspera' => $totEspera,
+    'acumulado' => $acumulado,
+    'chartImageBase64' => $chartImageBase64
+];
 
-$pdf->SetFont('Arial', '', 10);
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../../vista/reportes/pdf_templates/total_cursos_mensual.php';
+$html = ob_get_clean();
 
-foreach ($datosMeses as $mes) {
-    if ($mes['nuevos'] === null) {
-        $n = '-'; $a = '-'; $c = '-'; $e = '-'; $ac = '-';
-    } else {
-        $n = number_format($mes['nuevos']);
-        $a = number_format($mes['activos']);
-        $c = number_format($mes['culminados']);
-        $e = number_format($mes['enEspera']);
-        $ac = number_format($mes['totalAcumulado']);
-    }
-    
-    $pdf->Cell($w[0], 7, utf8_decode($mes['mes']), 1, 0, 'L');
-    $pdf->Cell($w[1], 7, $n, 1, 0, 'C');
-    $pdf->Cell($w[2], 7, $a, 1, 0, 'C');
-    $pdf->Cell($w[3], 7, $c, 1, 0, 'C');
-    $pdf->Cell($w[4], 7, $e, 1, 0, 'C');
-    $pdf->Cell($w[5], 7, $ac, 1, 0, 'C');
-    $pdf->Ln();
-}
+$options = new Options();
+$options->set('isHtml5ParserEnabled', true);
+$options->set('isRemoteEnabled', true);
+$options->set('isPhpEnabled', true);
 
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->SetFillColor(240, 240, 240);
-$pdf->Cell($w[0], 8, 'Total', 1, 0, 'L', true);
-$pdf->Cell($w[1], 8, number_format($totNuevos), 1, 0, 'C', true);
-$pdf->Cell($w[2], 8, number_format($totActivos), 1, 0, 'C', true);
-$pdf->Cell($w[3], 8, number_format($totCulm), 1, 0, 'C', true);
-$pdf->Cell($w[4], 8, number_format($totEspera), 1, 0, 'C', true);
-$pdf->Cell($w[5], 8, number_format($acumulado), 1, 0, 'C', true);
-$pdf->Ln();
+$dompdf = new Dompdf($options);
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
 
-// Salida
-$pdf->Output('I', 'Reporte_Total_Cursos.pdf');
+if (ob_get_length()) ob_end_clean();
+$dompdf->stream('Reporte_Total_Cursos.pdf', ['Attachment' => false]);
 ?>

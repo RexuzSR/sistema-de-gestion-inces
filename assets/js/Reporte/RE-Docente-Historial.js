@@ -562,7 +562,12 @@ function renderDetalleDocente() {
                 <div><label class="form-label small fw-semibold mb-1">Estatus</label><select id="histSelEstatus" class="form-select form-select-sm" style="min-width:150px;" onchange="histAplicarFiltros()"><option value="todos">Todos</option><option value="Culminado">Culminado</option><option value="En proceso">En proceso</option><option value="En pausa">En pausa</option><option value="En espera">En espera</option><option value="Cancelado">Cancelado</option></select></div>
                 <div><label class="form-label small fw-semibold mb-1">Ámbito</label><select id="histSelAmbito" class="form-select form-select-sm" style="min-width:150px;" onchange="histAplicarFiltros()"><option value="todos">Todos</option>${ambitosDisp.map(a=>`<option value="${a}">${a}</option>`).join('')}</select></div>
                 <div><label class="form-label small fw-semibold mb-1">Ordenar por</label><select id="histSelOrden" class="form-select form-select-sm" style="min-width:170px;" onchange="histAplicarFiltros()"><option value="fecha_desc">Fecha (más reciente)</option><option value="fecha_asc">Fecha (más antiguo)</option><option value="horas_desc">Más horas</option><option value="avance_desc">Mayor avance</option><option value="participantes_desc">Más participantes</option></select></div>
-                <div class="ms-auto"><label class="form-label small d-block mb-1">&nbsp;</label><button class="btn btn-sm btn-outline-secondary" onclick="histLimpiarFiltros()"><i class="bi bi-x-circle me-1"></i>Limpiar</button></div>
+                <div class="ms-auto"><label class="form-label small d-block mb-1">&nbsp;</label>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="histLimpiarFiltros()"><i class="bi bi-x-circle me-1"></i>Limpiar</button>
+                    <button class="btn btn-sm btn-danger ms-1" onclick="exportarPdfHistorialDocente()" id="btnExportarPdfHistorial">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+                    </button>
+                </div>
             </div>
             <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="card-title mb-0">Historial de Cursos<span id="histConteo" class="badge bg-secondary ms-2" style="font-size:.75rem;">${histCursos.length} cursos</span></h5></div>
             <div class="table-responsive">
@@ -767,3 +772,103 @@ window.histAplicarFiltros = histAplicarFiltros;
 window.histLimpiarFiltros = histLimpiarFiltros;
 
 console.log('RE-Docente-Historial.js v3 - Con puntaje base 5/10 por antigüedad');
+// ─── Exportar a PDF (Historial de Docente) ───────────────────────────────────
+async function exportarPdfHistorialDocente() {
+    if (!histDocente) {
+        alert("Debe seleccionar un docente antes de exportar.");
+        return;
+    }
+
+    const btn = document.getElementById('btnExportarPdfHistorial');
+    const btnTop = document.getElementById('btn-print-report');
+    const oldHtml = btn ? btn.innerHTML : '';
+    const oldHtmlTop = btnTop ? btnTop.innerHTML : '';
+    
+    try {
+        if (btn) {
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Generando...';
+            btn.disabled = true;
+        }
+        if (btnTop) {
+            btnTop.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Generando...';
+            btnTop.disabled = true;
+        }
+
+        // Obtener gráficos en base64
+        const getCanvasB64 = (id) => {
+            const canvas = document.getElementById(id);
+            return canvas ? canvas.toDataURL('image/png', 1.0) : '';
+        };
+
+        const graficoDona = getCanvasB64('histGrafDona');
+        const graficoBar = getCanvasB64('histGrafBar');
+        const graficoLinea = getCanvasB64('histGrafLinea');
+        const graficoEsp = getCanvasB64('histGrafEspecializacion');
+
+        // Obtener cálculos dinámicos
+        const desempeno = calcularIndiceDesempenoDetallado(histDocente.resumen);
+        const resumenEjecutivo = generarResumenEjecutivo(histDocente, histDocente.resumen, desempeno);
+        const evolucion = agruparCursosPorAnio(histCursosFilt);
+        const especializacion = agruparPorEspecializacion(histDocente);
+
+        const filtros = {
+            anio: histFiltAnio,
+            estatus: histFiltEstatus,
+            ambito: histFiltAmbito,
+            orden: histOrden
+        };
+
+        const payload = {
+            perfil: histDocente,
+            cursos: histCursosFilt,
+            resumen: histDocente.resumen,
+            desempeno: desempeno,
+            resumenEjecutivo: resumenEjecutivo,
+            evolucion: evolucion,
+            especializacion: especializacion,
+            filtros: filtros,
+            graficoDona: graficoDona,
+            graficoBar: graficoBar,
+            graficoLinea: graficoLinea,
+            graficoEsp: graficoEsp
+        };
+
+        const url = new URL(API_URL_HIST, window.location.href);
+        url.searchParams.set('accion', 'exportar_pdf_historial_docente');
+
+        const response = await fetch(url.toString(), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error en el servidor: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        if (blob.size === 0) {
+            throw new Error("El archivo PDF generado está vacío");
+        }
+        
+        const fileUrl = URL.createObjectURL(blob);
+        window.open(fileUrl, '_blank');
+
+    } catch (error) {
+        console.error("Error al exportar PDF del historial:", error);
+        alert("Ocurrió un error al generar el PDF: " + error.message);
+    } finally {
+        if (btn) {
+            btn.innerHTML = oldHtml;
+            btn.disabled = false;
+        }
+        if (btnTop) {
+            btnTop.innerHTML = oldHtmlTop;
+            btnTop.disabled = false;
+        }
+    }
+}
+window.exportarPdfHistorialDocente = exportarPdfHistorialDocente;
+
