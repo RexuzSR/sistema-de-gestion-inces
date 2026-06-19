@@ -92,26 +92,112 @@ if (!empty($imagenUsuario)) {
                     
                 <div class="box d-flex justify-content-center flex-column shadow-lg px-3 mt-4 metas-container">
                 
-                <!-- Barra de búsqueda -->
+                <!-- Tarjetas KPI -->
+                <div class="row g-3 mb-4 kpi-row">
+                    <!-- Total Metas -->
+                    <div class="col-md col-sm-6">
+                        <div class="kpi-card kpi-total">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cantidad total de metas registradas bajo la combinación de filtros seleccionados."></i>
+                            <div class="kpi-icon-wrapper">
+                                <i class="bi bi-bullseye"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-value" id="kpi-total">0</span>
+                                <span class="kpi-label" id="kpi-total-label">Total de Metas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cumplidas -->
+                    <div class="col-md col-sm-6">
+                        <div class="kpi-card kpi-cumplidas">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes o cerradas que alcanzaron o superaron el 100% de su objetivo de estudiantes formados (Cumplida y Sobrecumplida)."></i>
+                            <div class="kpi-icon-wrapper">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-value" id="kpi-cumplidas">0</span>
+                                <span class="kpi-label">Cumplidas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- En Riesgo -->
+                    <div class="col-md col-sm-6">
+                        <div class="kpi-card kpi-riesgo">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes (no vencidas) con un porcentaje de cumplimiento entre 60% y 99%."></i>
+                            <div class="kpi-icon-wrapper">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-value" id="kpi-riesgo">0</span>
+                                <span class="kpi-label">En Riesgo</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Vencidas -->
+                    <div class="col-md col-sm-6">
+                        <div class="kpi-card kpi-vencidas">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas cuya fecha fin ya pasó y que finalizaron con un porcentaje de cumplimiento menor al 100%."></i>
+                            <div class="kpi-icon-wrapper">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-value" id="kpi-vencidas">0</span>
+                                <span class="kpi-label">Vencidas</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Promedio General -->
+                    <div class="col-md col-sm-6">
+                        <div class="kpi-card kpi-promedio">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Promedio general del porcentaje de cumplimiento obtenido entre todas las metas filtradas."></i>
+                            <div class="kpi-icon-wrapper">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-value" id="kpi-promedio">0%</span>
+                                <span class="kpi-label">Promedio General</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de búsqueda y controles -->
                 <div class="d-flex justify-content-between align-items-center mt-4 controls-container">
-                    <div class="search-container">
+                    <form class="input-group search-bar" style="max-width: 526px">
                         <input 
                             type="text" 
                             id="searchInput"
                             class="form-control form-control-sm" 
-                            placeholder="Buscar metas...">
-                    </div>
+                            placeholder="Buscar...">
+                        <span class="input-group-text">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#fff" class="bi bi-search" viewBox="0 0 16 16">
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                            </svg>
+                        </span>
+                    </form>
 
-                    <div class="records-selector d-flex align-items-center gap-2">
-                        <label class="form-label-meta mb-0">Mostrar:</label>
-                        <select class="form-control-meta form-select-sm" id="registros">
-                            <option value="5">5</option>
-                            <option value="8" selected>8</option>
-                            <option value="10">10</option>
-                            <option value="15">15</option>
-                            <option value="20">20</option>
-                            <option value="0">Todos</option>
-                        </select>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="records-selector d-flex align-items-center gap-2">
+                            <label class="form-label-meta mb-0">Mostrar:</label>
+                            <select class="form-control-meta form-select-sm" id="registros">
+                                <option value="5">5</option>
+                                <option value="8" selected>8</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="0">Todos</option>
+                            </select>
+                        </div>
+
+                        <?php if (($_SESSION['rol'] ?? '') !== 'Apoyo'): ?>
+                        <button id="btn-addMeta" class="btn-add-meta d-flex justify-content-center align-items-center gap-2 text-white" data-bs-toggle="modal" data-bs-target="#modal-addMeta">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#fff" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                            </svg>
+                            Agregar Meta
+                        </button>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -130,10 +216,11 @@ if (!empty($imagenUsuario)) {
                     </div>
                 </div>
 
-                <div class="filters-container d-flex justify-content-between align-items-center pt-2">
-                        <!-- Filtros -->
-                        <form id="filters-form" class="d-flex align-items-center gap-2">
-                            <label class="label text-nowrap" for="tipo de meta">Tipo de objetivo:</label>
+                <!-- Panel de Filtros Premium -->
+                <div class="filters-panel-wrapper mt-3">
+                    <form id="filters-form" class="filters-grid">
+                        <div class="filter-group">
+                            <label for="TipoDeMeta-filter">Tipo de objetivo</label>
                             <select class="form-select form-select-sm" name="tipoDeMeta" id="TipoDeMeta-filter">
                                 <option value="">Todos</option>
                                 <option value="Aprobados">Aprobados</option>
@@ -142,16 +229,22 @@ if (!empty($imagenUsuario)) {
                                 <option value="Masculino">Masculino</option>
                                 <option value="Femenino">Femenino</option>
                             </select>
+                        </div>
             
-                            <label class="label" for="estado">Estado:</label>
+                        <div class="filter-group">
+                            <label for="estado-filter">Estado</label>
                             <select class="form-select form-select-sm" name="estado" id="estado-filter">
                                 <option value="">Todos</option>
+                                <option value="Sobrecumplida">Sobrecumplida</option>
                                 <option value="Cumplida">Cumplida</option>
-                                <option value="En progreso">En progreso</option>
-                                <option value="No cumplida">No cumplida</option>
+                                <option value="En riesgo">En riesgo</option>
+                                <option value="Crítica">Crítica</option>
+                                <option value="Vencida">Vencida</option>
                             </select>
+                        </div>
 
-                            <label class="label" for="periodo">Período:</label>
+                        <div class="filter-group">
+                            <label for="periodo-filter">Período</label>
                             <select class="form-select form-select-sm" name="periodo" id="periodo-filter">
                                 <option value="">Todos</option>
                                 <option value="mensual">Mensual</option>
@@ -159,29 +252,29 @@ if (!empty($imagenUsuario)) {
                                 <option value="semestral">Semestral</option>
                                 <option value="anual">Anual</option>
                             </select>
+                        </div>
 
-                             <label class="label" for="ambito">Ámbito:</label>
-                             <select class="form-select form-select-sm" name="ambito" id="ambito-filter">
-                                 <option value="">Todos</option>
-                                 <option value="Global">Global</option>
-                                 <?php foreach ($ambitos as $amb): ?>
-                                     <option value="<?php echo htmlspecialchars($amb['id_ambito']); ?>">
-                                         <?php echo htmlspecialchars($amb['nombre_ambito']); ?>
-                                     </option>
-                                 <?php endforeach; ?>
-                             </select>
-                        </form>
+                        <div class="filter-group">
+                            <label for="ambito-filter">Ámbito</label>
+                            <select class="form-select form-select-sm" name="ambito" id="ambito-filter">
+                                <option value="">Todos</option>
+                                <option value="Global">Global</option>
+                                <?php foreach ($ambitos as $amb): ?>
+                                    <option value="<?php echo htmlspecialchars($amb['id_ambito']); ?>">
+                                        <?php echo htmlspecialchars($amb['nombre_ambito']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
 
-                        <?php if (($_SESSION['rol'] ?? '') !== 'Apoyo'): ?>
-                        <button id="btn-addMeta" class="btn-add-meta d-flex justify-content-center align-items-center gap-2 text-white" data-bs-toggle="modal" data-bs-target="#modal-addMeta">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#fff" class="bi bi-plus-circle" viewBox="0 0 16 16">
-                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
-                            </svg>
-                            Agregar Meta
-                        </button>
-                        <?php endif; ?>
-                    </div>
+                        <div class="filter-group">
+                            <label for="anio-filter">Año</label>
+                            <select class="form-select form-select-sm" name="anio" id="anio-filter">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
 
                     <div class="table-responsive mt-3 table-container">
                         <table id="tabla-metas" class="table table-hover table-metas">
@@ -190,12 +283,12 @@ if (!empty($imagenUsuario)) {
                                     <th data-sort="id_meta">ID</th>
                                     <th data-sort="meta_objetivo">Meta Objetivo</th>
                                     <th data-sort="tipo_objetivo">Tipo Objetivo</th>
-                                    <th data-sort="estudiantes_formados">Estudiantes Formados</th>
+                                    <th data-sort="estudiantes_formados" class="text-end">Estudiantes Formados</th>
                                     <th data-sort="porcentaje_cumplimiento" class="text-center">% Cumplimiento</th>
                                     <th data-sort="fecha_inicio">Fecha Inicio</th>
                                     <th data-sort="fecha_fin">Fecha Fin</th>
                                     <th data-sort="estado">Estado</th>
-                                    <th>Acciones</th>
+                                    <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>

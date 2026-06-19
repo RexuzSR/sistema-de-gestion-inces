@@ -1011,6 +1011,11 @@ let metaProgressChart = null;
 function formatDate(dateString) {
     if (!dateString) return '-';
     try {
+        // Formato YYYY-MM-DD
+        const parts = dateString.split(' ')[0].split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
         const date = new Date(dateString);
         return date.toLocaleDateString('es-ES', {
             day: '2-digit',

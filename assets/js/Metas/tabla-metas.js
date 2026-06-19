@@ -4,6 +4,15 @@ $(document).ready(function () {
     let currentSearch = '';
     let filterAmbitoId = new URLSearchParams(window.location.search).get('ambito_id');
 
+    function formatFecha(fechaStr) {
+        if (!fechaStr) return '-';
+        const parts = fechaStr.split('-');
+        if (parts.length === 3) {
+            return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}/${parts[0]}`;
+        }
+        return fechaStr;
+    }
+
     function cargarMetas(page = 1, perPage = recordsPerPage, search = '') {
         currentPage = page;
         $.ajax({
@@ -17,37 +26,63 @@ $(document).ready(function () {
                 }
 
                 let metas = response.data || [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // Poblar filtro de Año dinámicamente
+                const selectAnio = $('#anio-filter');
+                const activeAnio = selectAnio.val();
                 
-                // Aplicar búsqueda en cliente
-                if (search && search.trim() !== '') {
-                    const s = search.toLowerCase();
-                    metas = metas.filter(m => (
-                        String(m.id_meta).includes(s) ||
-                        String(m.meta_objetivo).toLowerCase().includes(s) ||
-                        String(m.estudiantes_formados).includes(s) ||
-                        String(m.porcentaje_cumplimiento).includes(s) ||
-                        String(m.fecha_inicio).includes(s) ||
-                        String(m.fecha_fin).includes(s) ||
-                        String(m.estado_cumplimiento || '').toLowerCase().includes(s)
-                    ));
+                // Obtener años únicos de las metas
+                const years = [...new Set(metas.map(m => {
+                    if (!m.fecha_inicio) return null;
+                    return new Date(m.fecha_inicio + 'T00:00:00').getFullYear();
+                }).filter(Boolean))].sort((a, b) => b - a);
+
+                // Re-poblar opciones manteniendo la seleccionada
+                selectAnio.find('option:not([value=""])').remove();
+                years.forEach(yr => {
+                    selectAnio.append(`<option value="${yr}">${yr}</option>`);
+                });
+                if (activeAnio && years.includes(parseInt(activeAnio, 10))) {
+                    selectAnio.val(activeAnio);
                 }
 
-                // Aplicar filtros adicionales
+                // 1. Recalcular estado_cumplimiento basado en las nuevas reglas para todos los registros
+                metas.forEach(m => {
+                    const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
+                    const isVencida = m.fecha_fin ? (new Date(m.fecha_fin + 'T00:00:00') < today) : false;
+                    
+                    if (pct > 120) {
+                        m.estado_cumplimiento = 'Sobrecumplida';
+                    } else if (pct >= 100) {
+                        m.estado_cumplimiento = 'Cumplida';
+                    } else if (isVencida) {
+                        m.estado_cumplimiento = 'Vencida';
+                    } else if (pct >= 60) {
+                        m.estado_cumplimiento = 'En riesgo';
+                    } else {
+                        m.estado_cumplimiento = 'Crítica';
+                    }
+                });
+
+                // 2. Obtener filtros para calcular la cohorte de KPIs
                 const tipoFilter = $('#TipoDeMeta-filter').val();
                 const estadoFilter = $('#estado-filter').val();
                 const periodoFilter = $('#periodo-filter').val();
                 const ambitoFilter = $('#ambito-filter').val();
-                
-                if (tipoFilter) {
-                    metas = metas.filter(m => m.tipo_objetivo === tipoFilter);
-                }
-                
-                if (estadoFilter) {
-                    metas = metas.filter(m => m.estado_cumplimiento === estadoFilter);
-                }
+                const anioFilter = selectAnio.val();
 
+                let metasCohort = metas;
+
+                // Filtrar por Tipo de Meta
+                if (tipoFilter) {
+                    metasCohort = metasCohort.filter(m => m.tipo_objetivo === tipoFilter);
+                }
+                
+                // Filtrar por Período
                 if (periodoFilter) {
-                    metas = metas.filter(m => {
+                    metasCohort = metasCohort.filter(m => {
                         if (!m.fecha_inicio || !m.fecha_fin) return false;
                         const d1 = new Date(m.fecha_inicio + 'T00:00:00');
                         const d2 = new Date(m.fecha_fin + 'T00:00:00');
@@ -64,14 +99,132 @@ $(document).ready(function () {
                     });
                 }
 
-                // Filtrar por ámbito (catálogo o manual select)
+                // Filtrar por Ámbito
                 if (ambitoFilter) {
                     if (ambitoFilter === 'Global') {
-                        metas = metas.filter(m => !m.id_ambito || m.ambito_nombre === 'Global');
+                        metasCohort = metasCohort.filter(m => !m.id_ambito || m.ambito_nombre === 'Global');
                     } else {
-                        metas = metas.filter(m => String(m.id_ambito) === String(ambitoFilter));
+                        metasCohort = metasCohort.filter(m => String(m.id_ambito) === String(ambitoFilter));
                     }
                 }
+
+                // Filtrar por Año
+                if (anioFilter) {
+                    metasCohort = metasCohort.filter(m => {
+                        if (!m.fecha_inicio) return false;
+                        const year = new Date(m.fecha_inicio + 'T00:00:00').getFullYear();
+                        return String(year) === String(anioFilter);
+                    });
+                }
+
+                // 3. CALCULAR TARJETAS KPI (sobre metasCohort del año seleccionado o vigente)
+                const currentYear = new Date().getFullYear();
+                const selectedYear = anioFilter ? parseInt(anioFilter, 10) : currentYear;
+                const metasKpi = metasCohort.filter(m => {
+                    if (!m.fecha_inicio) return false;
+                    const year = new Date(m.fecha_inicio + 'T00:00:00').getFullYear();
+                    return year === selectedYear;
+                });
+
+                const totalMetas = metasKpi.length;
+                let cumplidasCount = 0;
+                let enRiesgoCount = 0;
+                let vencidasCount = 0;
+                let sumCumplimiento = 0;
+
+                metasKpi.forEach(m => {
+                    const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
+                    sumCumplimiento += pct;
+
+                    if (m.estado_cumplimiento === 'Sobrecumplida' || m.estado_cumplimiento === 'Cumplida') {
+                        cumplidasCount++;
+                    } else if (m.estado_cumplimiento === 'En riesgo') {
+                        enRiesgoCount++;
+                    } else if (m.estado_cumplimiento === 'Vencida') {
+                        vencidasCount++;
+                    }
+                });
+
+                const promCumplimiento = totalMetas > 0 ? (sumCumplimiento / totalMetas) : 0;
+
+                // Pintar valores KPI en DOM
+                $('#kpi-total-label').text(`Total de Metas ${selectedYear}`);
+                $('#kpi-total').text(totalMetas);
+                $('#kpi-cumplidas').text(cumplidasCount);
+                $('#kpi-riesgo').text(enRiesgoCount);
+                $('#kpi-vencidas').text(vencidasCount);
+                $('#kpi-promedio').text(promCumplimiento.toFixed(1) + '%');
+
+                // APLICAR CLASES DE SEMÁFORO VISUAL
+                // Total Metas -> azul (neutro/informativo)
+                $('.kpi-total').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
+                               .addClass('kpi-state-blue');
+
+                // Cumplidas -> verde >= 80%, amarillo 50-79%, rojo < 50%
+                const pctCumplidas = totalMetas > 0 ? (cumplidasCount / totalMetas) * 100 : 0;
+                let classCumplidas = 'kpi-state-red';
+                if (pctCumplidas >= 80) {
+                    classCumplidas = 'kpi-state-green';
+                } else if (pctCumplidas >= 50) {
+                    classCumplidas = 'kpi-state-yellow';
+                }
+                $('.kpi-cumplidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
+                                   .addClass(classCumplidas);
+
+                // En Riesgo -> verde if 0, amarillo if 1-2, rojo if >= 3
+                let classRiesgo = 'kpi-state-red';
+                if (enRiesgoCount === 0) {
+                    classRiesgo = 'kpi-state-green';
+                } else if (enRiesgoCount <= 2) {
+                    classRiesgo = 'kpi-state-yellow';
+                }
+                $('.kpi-riesgo').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
+                                .addClass(classRiesgo);
+
+                // Vencidas -> verde if 0, amarillo if 1, rojo if >= 2
+                let classVencidas = 'kpi-state-red';
+                if (vencidasCount === 0) {
+                    classVencidas = 'kpi-state-green';
+                } else if (vencidasCount === 1) {
+                    classVencidas = 'kpi-state-yellow';
+                }
+                $('.kpi-vencidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
+                                 .addClass(classVencidas);
+
+                // 4. APLICAR FILTRO DE ESTADO Y BÚSQUEDA PARA LA TABLA (sobre metasCohort)
+                let metasTabla = metasCohort;
+
+                if (estadoFilter) {
+                    metasTabla = metasTabla.filter(m => m.estado_cumplimiento === estadoFilter);
+                }
+
+                if (search && search.trim() !== '') {
+                    const s = search.toLowerCase();
+                    metasTabla = metasTabla.filter(m => (
+                        String(m.id_meta).includes(s) ||
+                        String(m.meta_objetivo).toLowerCase().includes(s) ||
+                        String(m.estudiantes_formados).includes(s) ||
+                        String(m.porcentaje_cumplimiento).includes(s) ||
+                        String(m.fecha_inicio).includes(s) ||
+                        String(m.fecha_fin).includes(s) ||
+                        String(m.estado_cumplimiento || '').toLowerCase().includes(s)
+                    ));
+                }
+
+                // 5. ORDENAR METAS POR IMPORTANCIA (Crítica, Vencida, En riesgo, Cumplida, Sobrecumplida)
+                const statePriority = {
+                    'Crítica': 1,
+                    'Vencida': 2,
+                    'En riesgo': 3,
+                    'Cumplida': 4,
+                    'Sobrecumplida': 5
+                };
+                
+                metasTabla.sort((a, b) => {
+                    const pA = statePriority[a.estado_cumplimiento] || 99;
+                    const pB = statePriority[b.estado_cumplimiento] || 99;
+                    return pA - pB;
+                });
 
                 // Mostrar/ocultar aviso de filtro activo (solo cuando se filtra por un ámbito específico de la URL)
                 if (filterAmbitoId) {
@@ -80,12 +233,12 @@ $(document).ready(function () {
                     $('#active-filter-alert').hide();
                 }
 
-                const total = metas.length;
+                const total = metasTabla.length;
                 // Paginación en cliente
-                let items = metas;
+                let items = metasTabla;
                 if (perPage !== 0) {
                     const start = (page - 1) * perPage;
-                    items = metas.slice(start, start + perPage);
+                    items = metasTabla.slice(start, start + perPage);
                 }
 
                 renderTabla(items);
@@ -104,18 +257,17 @@ $(document).ready(function () {
     }
 
     function getProgressClass(pct) {
-        if (pct >= 86) return 'progress-bar-success';
-        if (pct >= 70) return 'progress-bar-warning';
+        if (pct >= 100) return 'progress-bar-success';
+        if (pct >= 60) return 'progress-bar-warning';
         return 'progress-bar-danger';
     }
 
     function getEstadoClass(cumplimiento) {
         const c = (cumplimiento || '').toLowerCase();
-        
+        if (c === 'sobrecumplida') return 'status-active';
         if (c === 'cumplida') return 'status-active';
-        if (c === 'no cumplida') return 'status-danger';
-        if (c === 'en progreso' || c === 'en proceso' || c === 'en progreso') return 'status-pending';
-        
+        if (c === 'no cumplida' || c === 'crítica') return 'status-danger';
+        if (c === 'en progreso' || c === 'en proceso' || c === 'en riesgo') return 'status-pending';
         return 'status-pending';
     }
 
@@ -138,7 +290,7 @@ $(document).ready(function () {
         metas.forEach((m, index) => {
             const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
             const safePct = Math.min(Math.max(pct, 0), 100);
-            const overlayTextColor = (pct >= 70 && pct < 86) ? '#000' : '#fff';
+            const overlayTextColor = (pct >= 60 && pct < 100) ? '#000' : '#fff';
             
             const progressHtml = `
                 <div class="progress-container">
@@ -150,9 +302,31 @@ $(document).ready(function () {
                 </div>
             `;
 
-            const cumplimientoTexto = m.estado_cumplimiento || 'En progreso';
-            const estadoClass = getEstadoClass(m.estado_cumplimiento);
-            
+            // Determinar clases de fila y badges inteligentes
+            let badgeHtml = '';
+            let rowClass = '';
+            switch(m.estado_cumplimiento) {
+                case 'Sobrecumplida':
+                    badgeHtml = `<span class="status-badge badge-sobrecumplida"><i class="bi bi-chevron-double-up me-1"></i>SOBRECUMPLIDA</span>`;
+                    break;
+                case 'Cumplida':
+                    badgeHtml = `<span class="status-badge badge-cumplida"><i class="bi bi-check-circle-fill me-1"></i>CUMPLIDA</span>`;
+                    break;
+                case 'En riesgo':
+                    badgeHtml = `<span class="status-badge badge-riesgo"><i class="bi bi-exclamation-triangle-fill me-1"></i>EN RIESGO</span>`;
+                    break;
+                case 'Crítica':
+                    badgeHtml = `<span class="status-badge badge-critica"><i class="bi bi-exclamation-octagon-fill me-1"></i>CRÍTICA</span>`;
+                    rowClass = 'row-critica';
+                    break;
+                case 'Vencida':
+                    badgeHtml = `<span class="status-badge badge-vencida"><i class="bi bi-clock-history me-1"></i>VENCIDA</span>`;
+                    rowClass = 'row-vencida';
+                    break;
+                default:
+                    badgeHtml = `<span class="status-badge badge-vencida"><i class="bi bi-question-circle me-1"></i>INDEFINIDO</span>`;
+            }
+
             // Determinar si la meta está vencida
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -160,15 +334,15 @@ $(document).ready(function () {
             const canEditOrDelete = m.estado !== 'Cerrada' && !isVencida;
             
             rows += `
-                <tr style="--row-index: ${index};">
+                <tr class="${rowClass}" style="--row-index: ${index};">
                     <td class="font-weight-semibold">${m.id_meta}</td>
                     <td>${m.meta_objetivo}</td>
                     <td>${m.tipo_objetivo || 'Aprobados'}</td>
                     <td class="text-end">${m.estudiantes_formados}</td>
                     <td class="text-center">${progressHtml}</td>
-                    <td>${m.fecha_inicio ? new Date(m.fecha_inicio).toLocaleDateString('es-ES') : '-'}</td>
-                    <td>${m.fecha_fin ? new Date(m.fecha_fin).toLocaleDateString('es-ES') : '-'}</td>
-                    <td><span class="status-badge ${estadoClass}">${cumplimientoTexto}</span></td>
+                    <td>${m.fecha_inicio ? formatFecha(m.fecha_inicio) : '-'}</td>
+                    <td>${m.fecha_fin ? formatFecha(m.fecha_fin) : '-'}</td>
+                    <td>${badgeHtml}</td>
                     <td>
                         <div class="actions-container">
                             <button class="button-action view" data-id="${m.id_meta}" title="Ver detalles">
@@ -265,8 +439,12 @@ $(document).ready(function () {
         }, 300);
     });
 
+    $(document).on('submit', 'form.search-bar', function (e) {
+        e.preventDefault();
+    });
+
     // Filtros
-    $('#TipoDeMeta-filter, #estado-filter, #periodo-filter, #ambito-filter').on('change', function () {
+    $('#TipoDeMeta-filter, #estado-filter, #periodo-filter, #ambito-filter, #anio-filter').on('change', function () {
         const val = $(this).val();
         if ($(this).attr('id') === 'ambito-filter') {
             if (val === '' || val === 'Global') {
@@ -413,6 +591,12 @@ $(document).ready(function () {
     if (filterAmbitoId) {
         $('#ambito-filter').val(filterAmbitoId);
     }
+
+    // Inicializar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 
     // Inicializar
     cargarMetas(currentPage, recordsPerPage, currentSearch);
