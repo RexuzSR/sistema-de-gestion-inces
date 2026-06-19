@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 require('../../modelo/conexion.php');
 
 header('Content-Type: application/json');
@@ -29,4 +30,3 @@ try {
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Error en la base de datos: ' . $e->getMessage()]);
 }
-?>

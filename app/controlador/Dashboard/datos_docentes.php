@@ -45,8 +45,10 @@ $listaDoc = $conn->query("
 $docentesPorMes = array_fill(0, 12, 0);
 foreach (
     $conn->query("
-        SELECT MONTH(fecha_nacimiento) mes, COUNT(*) t
-        FROM tb_docente
+        SELECT MONTH(dc.fecha_asignacion) AS mes, COUNT(DISTINCT d.id_docente) AS t
+        FROM tb_docente d
+        INNER JOIN tb_docente_curso dc ON d.id_docente = dc.id_docente
+        WHERE YEAR(dc.fecha_asignacion) = YEAR(CURDATE())
         GROUP BY mes
         ORDER BY mes
     ")->fetchAll(PDO::FETCH_ASSOC)

@@ -119,12 +119,24 @@
     <header>
         <table class="header-table">
             <tr>
-                <td style="width: 25%;"><img src="<?php echo $logoGobierno; ?>" class="logo" alt="Gobierno"></td>
+                <td style="width: 25%;">
+                    <?php if (!empty($logoGobierno)): ?>
+                        <img src="<?php echo $logoGobierno; ?>" class="logo" alt="Gobierno">
+                    <?php else: ?>
+                        <div style="font-size: 10px; color: #666;">Logo Gobierno</div>
+                    <?php endif; ?>
+                </td>
                 <td style="width: 50%;" class="header-title">
                     <h1>Informe Gerencial</h1>
                     <p>Cursos por Área Formativa</p>
                 </td>
-                <td style="width: 25%; text-align: right;"><img src="<?php echo $logoInces; ?>" class="logo" alt="INCES"></td>
+                <td style="width: 25%; text-align: right;">
+                    <?php if (!empty($logoInces)): ?>
+                        <img src="<?php echo $logoInces; ?>" class="logo" alt="INCES">
+                    <?php else: ?>
+                        <div style="font-size: 10px; color: #666;">Logo INCES</div>
+                    <?php endif; ?>
+                </td>
             </tr>
         </table>
     </header>

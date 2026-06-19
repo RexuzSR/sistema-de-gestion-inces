@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // api_cursos_completos.php
 require_once '../../modelo/conexion.php';
 

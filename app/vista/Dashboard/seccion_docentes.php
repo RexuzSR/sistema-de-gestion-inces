@@ -360,7 +360,7 @@
 })();
 </script>
 
-<!-- Modal Detalle Docentes por Mes de Nacimiento -->
+<!-- Modal Detalle Docentes con Cursos Asignados por Mes -->
 <style>
 .modal-docente-row {
     transition: all 0.2s ease-in-out;
@@ -432,7 +432,7 @@
             </svg>
             Docentes &mdash; <span id="modal-docente-mes-nombre">Mes</span>
           </h5>
-          <p class="text-white-50 mb-0" style="font-size:.78rem;margin-top:2px;">Docentes nacidos en este mes</p>
+          <p class="text-white-50 mb-0" style="font-size:.78rem;margin-top:2px;">Docentes con cursos asignados en este mes</p>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -471,7 +471,7 @@
             </svg>
           </div>
           <p style="color:#64748b;font-weight:600;">No se encontraron docentes</p>
-          <p style="color:#94a3b8;font-size:.82rem;">No hay docentes nacidos en este mes.</p>
+          <p style="color:#94a3b8;font-size:.82rem;">No hay docentes con cursos asignados en este mes.</p>
         </div>
         <!-- Contenido -->
         <div id="modal-docente-contenido" style="display:none;">
@@ -552,7 +552,7 @@ function mostrarDetalleDocentesMes(mesNum, mesLabel) {
     var modal = new bootstrap.Modal(document.getElementById('modal-DetalleDocentesMes'));
     modal.show();
     
-    var apiUrl = '../controlador/Reporte/api_reportes.php?accion=docentes_por_mes_detalle&mes=' + mesNum;
+    var apiUrl = '../controlador/Reporte/api_reportes.php?accion=docentes_por_mes_detalle&anio=<?php echo $anioActual; ?>&mes=' + mesNum;
     
     fetch(apiUrl)
         .then(function(r) { return r.json(); })

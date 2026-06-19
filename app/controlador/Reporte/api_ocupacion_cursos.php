@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // api_ocupacion_cursos.php
 include '../../modelo/conexion.php'; // Incluimos la conexión PDO
 
@@ -27,4 +28,3 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
 header('Content-Type: application/json');
 echo json_encode($data);
-?>

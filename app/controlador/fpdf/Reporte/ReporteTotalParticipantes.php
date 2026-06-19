@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 ob_start();
 require_once __DIR__ . '/../../dompdf/autoload.inc.php';
 require_once __DIR__ . '/../../../modelo/conexion.php';
@@ -7,12 +8,12 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 
 date_default_timezone_set('America/Caracas');
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-$conexion = new Conexion();
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
+}$conexion = new Conexion();
 $conn = $conexion->getConexion();
 
 $usuarioFull = 'Usuario no identificado';
@@ -380,4 +381,3 @@ $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
 $dompdf->stream('Reporte_Total_Participantes.pdf', ['Attachment' => false]);
-?>

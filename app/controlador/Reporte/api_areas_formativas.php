@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 include_once '../../modelo/conexion.php';
 
 try {
@@ -18,4 +19,3 @@ try {
         'error' => 'Error en la base de datos: ' . $e->getMessage()
     ]);
 }
-?>

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 require_once '../../modelo/conexion.php';
 
 $añoActual = date('Y');
@@ -23,4 +24,3 @@ $resultado = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Retornar en formato JSON
 echo json_encode($resultado);
-?>

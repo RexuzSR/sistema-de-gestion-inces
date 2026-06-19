@@ -10,6 +10,9 @@ session_name('SISTEMA_CONTROL_INCES');
 
 // Iniciar sesión si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
     session_start();
 }
 

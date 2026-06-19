@@ -1,6 +1,8 @@
 <?php
-session_name('SISTEMA_CONTROL_INCES');
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
     session_start();
 }
 header('Content-Type: application/json; charset=utf-8');

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 require_once '../../modelo/conexion.php'; // Ajusta la ruta si es necesario
 
 try {
@@ -48,4 +49,3 @@ try {
 } catch (Exception $e) {
     echo json_encode(["error" => $e->getMessage()]);
 }
-?>

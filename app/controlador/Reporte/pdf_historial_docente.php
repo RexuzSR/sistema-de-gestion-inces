@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // pdf_historial_docente.php
 // Controlador DOMPDF - Reporte "Historial de Docente"
@@ -187,4 +188,3 @@ try {
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Error Crítico de PHP en DOMPDF', 'detalle' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
 }
-?>

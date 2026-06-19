@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 header('Content-Type: application/json');
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -24,4 +25,3 @@ try {
         'error' => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
-?>

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // ReporteTrayectoriaParticipantes.php
 // Controlador DOMPDF (Migrado) - Reporte "Trayectoria de Participantes"
@@ -27,12 +28,12 @@ $conn = $conexion->getConexion();
 
 // Start session if not started
 date_default_timezone_set('America/Caracas');
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-// Obtener datos del usuario
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
+}// Obtener datos del usuario
 $usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
@@ -364,4 +365,3 @@ $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
 $dompdf->stream('Reporte_Trayectoria_Participantes.pdf', ['Attachment' => false]);
-?>

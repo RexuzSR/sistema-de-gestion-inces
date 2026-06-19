@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 header('Content-Type: application/json');
 include('../../modelo/conexion.php');
 
@@ -44,4 +45,3 @@ try {
     // Manejo de errores
     echo json_encode(['error' => $e->getMessage()]);
 }
-?>

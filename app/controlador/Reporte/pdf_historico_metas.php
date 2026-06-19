@@ -1,10 +1,11 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // pdf_historico_metas.php
 // Controlador DOMPDF - Reporte "Histórico de Metas"
 // ============================================================
 
-require_once __DIR__ . '/../dompdf/autoload.inc.php';
+echo 'PDF GENERATION STARTED'; die(); require_once __DIR__ . '/../dompdf/autoload.inc.php';
 require_once __DIR__ . '/../../modelo/conexion.php';
 
 use Dompdf\Dompdf;
@@ -118,4 +119,3 @@ try {
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Error Crítico de PHP en DOMPDF', 'detalle' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
 }
-?>

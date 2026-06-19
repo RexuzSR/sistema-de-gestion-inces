@@ -99,7 +99,7 @@ try {
                 echo json_encode(['error' => 'Mes no válido']);
                 break;
             }
-            echo json_encode(getDocentesPorMesDetalle($conn, $mes));
+            echo json_encode(getDocentesPorMesDetalle($conn, $mes, $anio));
             break;
 
         case 'participantes_total':
@@ -1461,19 +1461,21 @@ function getCursosPorMesDetalle(PDO $conn, int $anio, int $mes): array {
 }
 
 /**
- * Obtener listado de docentes nacidos en un mes específico
+ * Obtener listado de docentes con cursos asignados en un mes específico
  * (coincide con la agrupación del gráfico mensual de docentes)
  */
-function getDocentesPorMesDetalle(PDO $conn, int $mes): array {
+function getDocentesPorMesDetalle(PDO $conn, int $mes, int $anio): array {
     $stmt = $conn->prepare("
-        SELECT primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-               cedula, tipo_docente, estado_docente, genero,
-               fecha_nacimiento,
-               TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad
-        FROM tb_docente
-        WHERE MONTH(fecha_nacimiento) = :mes
-        ORDER BY primer_apellido ASC, primer_nombre ASC
+        SELECT d.primer_nombre, d.segundo_nombre, d.primer_apellido, d.segundo_apellido,
+               d.cedula, d.tipo_docente, d.estado_docente, d.genero,
+               d.fecha_nacimiento,
+               TIMESTAMPDIFF(YEAR, d.fecha_nacimiento, CURDATE()) AS edad
+        FROM tb_docente d
+        INNER JOIN tb_docente_curso dc ON d.id_docente = dc.id_docente
+        WHERE MONTH(dc.fecha_asignacion) = :mes AND YEAR(dc.fecha_asignacion) = :anio
+        GROUP BY d.id_docente
+        ORDER BY d.primer_apellido ASC, d.primer_nombre ASC
     ");
-    $stmt->execute([':mes' => $mes]);
+    $stmt->execute([':mes' => $mes, ':anio' => $anio]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // ReporteTotalDocentes.php
 // Controlador DOMPDF (Migrado) - Reporte "Total de Docentes"
@@ -33,12 +34,12 @@ $conn = $conexion->getConexion();
 
 // Cargar sesión y obtener nombre del usuario generador
 date_default_timezone_set('America/Caracas');
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-$usuarioFull = 'Usuario no identificado';
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
+}$usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
                         COALESCE(primer_nombre, ''), ' ',

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // pdf_detalle_participantes_meta.php
 // Controlador DOMPDF - Reporte "Detalle de Participantes por Meta"
@@ -118,4 +119,3 @@ try {
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Error Crítico de PHP en DOMPDF', 'detalle' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
 }
-?>

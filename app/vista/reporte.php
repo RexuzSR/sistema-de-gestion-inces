@@ -4,9 +4,12 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 ini_set('session.cookie_secure', 0);
 ini_set('session.cookie_samesite', 'Strict');
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['id_usuario']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
+}if (!isset($_SESSION['id_usuario']) || !isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Location: index.php'); exit;
 }
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");

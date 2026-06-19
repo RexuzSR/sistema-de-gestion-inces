@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 require_once("../../modelo/conexion.php"); // Ajusta si cambia
 
 try {
@@ -33,4 +34,3 @@ try {
 } catch (PDOException $e) {
     echo json_encode(['error' => $e->getMessage()]);
 }
-?>

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ====================================================================
 // ─────────────────── TRAYECTORIA CURSOS ─────────────────────────────
 // Archivo: api_reportes_cursos_trayectoria.php

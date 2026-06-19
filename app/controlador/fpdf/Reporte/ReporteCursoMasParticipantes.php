@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // ReporteCursoMasParticipantes.php
 // Controlador DOMPDF (Migrado) - Reporte "Cursos con más Participantes"
@@ -106,11 +107,12 @@ $cursoMasActivo = $cursos[0]; // Ya viene ordenado DESC
 
 // Usuario
 date_default_timezone_set('America/Caracas');
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-$usuarioFull = 'Usuario no identificado';
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
+}$usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
                         COALESCE(primer_nombre, ''), ' ',
@@ -169,4 +171,3 @@ $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
 $dompdf->stream('Reporte_Cursos_Mas_Participantes.pdf', ['Attachment' => false]);
-?>

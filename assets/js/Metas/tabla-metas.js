@@ -36,6 +36,7 @@ $(document).ready(function () {
                 const tipoFilter = $('#TipoDeMeta-filter').val();
                 const estadoFilter = $('#estado-filter').val();
                 const periodoFilter = $('#periodo-filter').val();
+                const ambitoFilter = $('#ambito-filter').val();
                 
                 if (tipoFilter) {
                     metas = metas.filter(m => m.tipo_objetivo === tipoFilter);
@@ -63,17 +64,18 @@ $(document).ready(function () {
                     });
                 }
 
-                // Filtrar por ambito_id si viene de la URL
-                if (filterAmbitoId) {
-                    metas = metas.filter(m => String(m.id_ambito) === String(filterAmbitoId));
-                    
-                    // Mostrar aviso de filtro activo
-                    $('#active-filter-alert').fadeIn();
-                    
-                    // Si se encontró la meta, podemos mostrar un mensaje o resaltar
-                    if (metas.length > 0) {
-                        console.log('Filtrando por ámbito:', filterAmbitoId);
+                // Filtrar por ámbito (catálogo o manual select)
+                if (ambitoFilter) {
+                    if (ambitoFilter === 'Global') {
+                        metas = metas.filter(m => !m.id_ambito || m.ambito_nombre === 'Global');
+                    } else {
+                        metas = metas.filter(m => String(m.id_ambito) === String(ambitoFilter));
                     }
+                }
+
+                // Mostrar/ocultar aviso de filtro activo (solo cuando se filtra por un ámbito específico de la URL)
+                if (filterAmbitoId) {
+                    $('#active-filter-alert').fadeIn();
                 } else {
                     $('#active-filter-alert').hide();
                 }
@@ -264,7 +266,23 @@ $(document).ready(function () {
     });
 
     // Filtros
-    $('#TipoDeMeta-filter, #estado-filter, #periodo-filter').on('change', function () {
+    $('#TipoDeMeta-filter, #estado-filter, #periodo-filter, #ambito-filter').on('change', function () {
+        const val = $(this).val();
+        if ($(this).attr('id') === 'ambito-filter') {
+            if (val === '' || val === 'Global') {
+                filterAmbitoId = null;
+                // Limpiar URL sin recargar
+                const url = new URL(window.location);
+                url.searchParams.delete('ambito_id');
+                window.history.replaceState({}, '', url);
+            } else {
+                filterAmbitoId = val;
+                // Actualizar URL sin recargar
+                const url = new URL(window.location);
+                url.searchParams.set('ambito_id', val);
+                window.history.replaceState({}, '', url);
+            }
+        }
         cargarMetas(1, recordsPerPage, currentSearch);
     });
 
@@ -383,10 +401,18 @@ $(document).ready(function () {
         url.searchParams.delete('ambito_id');
         window.history.replaceState({}, '', url);
         
+        // Resetear selector
+        $('#ambito-filter').val('');
+        
         // Ocultar aviso y recargar tabla
         $('#active-filter-alert').fadeOut();
         cargarMetas(1, recordsPerPage, currentSearch);
     });
+
+    // Pre-seleccionar el filtro de ámbito si viene en la URL al cargar
+    if (filterAmbitoId) {
+        $('#ambito-filter').val(filterAmbitoId);
+    }
 
     // Inicializar
     cargarMetas(currentPage, recordsPerPage, currentSearch);

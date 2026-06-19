@@ -31,6 +31,13 @@ require_once '../modelo/conexion.php';
 $conexion = new Conexion();
 $conn = $conexion->getConexion();
 
+// Obtener ámbitos para el filtro
+try {
+    $ambitos = $conn->query("SELECT id_ambito, nombre_ambito FROM tb_ambito ORDER BY nombre_ambito ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $ambitos = [];
+}
+
 // Preparar los datos primero
 $nombre = htmlspecialchars($_SESSION['nombre'] ?? '');
 $apellido = htmlspecialchars($_SESSION['apellido'] ?? '');
@@ -152,6 +159,17 @@ if (!empty($imagenUsuario)) {
                                 <option value="semestral">Semestral</option>
                                 <option value="anual">Anual</option>
                             </select>
+
+                             <label class="label" for="ambito">Ámbito:</label>
+                             <select class="form-select form-select-sm" name="ambito" id="ambito-filter">
+                                 <option value="">Todos</option>
+                                 <option value="Global">Global</option>
+                                 <?php foreach ($ambitos as $amb): ?>
+                                     <option value="<?php echo htmlspecialchars($amb['id_ambito']); ?>">
+                                         <?php echo htmlspecialchars($amb['nombre_ambito']); ?>
+                                     </option>
+                                 <?php endforeach; ?>
+                             </select>
                         </form>
 
                         <?php if (($_SESSION['rol'] ?? '') !== 'Apoyo'): ?>

@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // ReporteCursoArea.php
 // Controlador DOMPDF (Migrado) - Reporte "Cursos por Área"
@@ -66,11 +67,12 @@ if (!empty($areasFiltro)) {
 
 // Incluir usuario desde base de datos
 date_default_timezone_set('America/Caracas');
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) session_start();
-$usuarioFull = 'Usuario no identificado';
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
+}$usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
                         COALESCE(primer_nombre, ''), ' ',
@@ -93,8 +95,17 @@ if (isset($_SESSION['id_usuario'])) {
 $pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
 $pathLogoInces    = __DIR__ . '/../../../../assets/img/inces-logo.png';
 
-$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
-$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
+function isGdAvailable()
+{
+    return extension_loaded('gd');
+}
+
+$logoGobierno = '';
+$logoInces = '';
+if (isGdAvailable()) {
+    $logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+    $logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
+}
 
 $fechaGeneracion = date('d/m/Y h:i A');
 
@@ -121,7 +132,17 @@ $options->set('isPhpEnabled', true);
 $dompdf = new Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'landscape');
-$dompdf->render();
+
+try {
+    $dompdf->render();
+} catch (Exception $e) {
+    if (stripos($e->getMessage(), 'PHP GD extension is required') !== false) {
+        echo '<h2>Error interno de generación de PDF</h2>';
+        echo '<p>La extensión GD de PHP no está habilitada. Habilite <code>extension=gd</code> en <code>php.ini</code> y reinicie Apache.</p>';
+        exit;
+    }
+    throw $e;
+}
 
 if (ob_get_length()) ob_end_clean();
 
@@ -135,4 +156,3 @@ if (!empty($areasFiltro)) {
 $nombreArchivo .= '.pdf';
 
 $dompdf->stream($nombreArchivo, ['Attachment' => false]);
-?>

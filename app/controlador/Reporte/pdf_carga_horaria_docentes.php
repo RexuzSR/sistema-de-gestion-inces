@@ -1,4 +1,5 @@
 <?php
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // ============================================================
 // pdf_carga_horaria_docentes.php
 // Controlador DOMPDF - Reporte "Carga Horaria por Docente"
@@ -190,4 +191,3 @@ $dompdf->setPaper('A4', 'landscape'); // Forzar apaisado para acomodar las 9 col
 $dompdf->render();
 
 $dompdf->stream('Reporte_Carga_Horaria_Docentes.pdf', ['Attachment' => false]);
-?>
