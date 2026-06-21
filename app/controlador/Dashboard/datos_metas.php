@@ -15,6 +15,57 @@
 $anioActual = (int)date('Y');
 
 // ────────────────────────────────────────────────────────────
+// SINCRONIZACIÓN DINÁMICA DE METAS ACTIVAS EN BASE DE DATOS
+// Para asegurar que los KPIs y listados muestren conteos reales de estudiantes_formados
+// ────────────────────────────────────────────────────────────
+try {
+    $realCountSql = "
+        CASE 
+            WHEN m.tipo_objetivo = 'Aprobados' THEN (
+                SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
+                FROM tb_participante_curso pc2
+                INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                WHERE pc2.estatus_participante = 'Aprobado'
+                  AND pc2.FechaFin BETWEEN m.fecha_inicio AND m.fecha_fin
+                  AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+            )
+            WHEN m.tipo_objetivo = 'Inscritos' THEN (
+                SELECT COUNT(DISTINCT CONCAT(pc2.id_participante, '-', pc2.id_curso))
+                FROM tb_participante_curso pc2
+                INNER JOIN tb_curso c2 ON pc2.id_curso = c2.id_curso
+                WHERE pc2.fecha_inscripcion BETWEEN m.fecha_inicio AND m.fecha_fin
+                  AND (m.id_ambito IS NULL OR c2.id_ambito = m.id_ambito)
+            )
+            WHEN m.tipo_objetivo = 'Ingresados' THEN (
+                SELECT COUNT(DISTINCT p.id_participante)
+                FROM tb_participante p
+                WHERE p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+            )
+            WHEN m.tipo_objetivo = 'Masculino' THEN (
+                SELECT COUNT(DISTINCT p.id_participante)
+                FROM tb_participante p
+                WHERE p.genero = 'Masculino'
+                  AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+            )
+            WHEN m.tipo_objetivo = 'Femenino' THEN (
+                SELECT COUNT(DISTINCT p.id_participante)
+                FROM tb_participante p
+                WHERE p.genero = 'Femenino'
+                  AND p.fecha_registro BETWEEN m.fecha_inicio AND m.fecha_fin
+            )
+            ELSE 0
+        END
+    ";
+    $stSync = $conn->prepare("
+        UPDATE tb_metas m
+        SET m.estudiantes_formados = {$realCountSql}
+        WHERE m.estado = 'Activa'
+          AND YEAR(m.fecha_inicio) = :anio
+    ");
+    $stSync->execute([':anio' => $anioActual]);
+} catch (Exception $e) {}
+
+// ────────────────────────────────────────────────────────────
 // KPI GENERAL — metas Activas del año actual
 // Usado en la cabecera "Progresión de Metas Activas"
 // ────────────────────────────────────────────────────────────
@@ -200,6 +251,48 @@ try {
     ");
     $st->execute([':anio' => $anioActual]);
     $cumplimientoAmbito = $st->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {}
+
+// ────────────────────────────────────────────────────────────
+// NUEVOS KPIs PARA EL TABULADOR METAS
+// ────────────────────────────────────────────────────────────
+
+// 1. Tasa de cumplimiento de metas por ámbitos (metas activas con ámbito asignado)
+$tasaCumplimientoAmbitos = 0.0;
+try {
+    $st = $conn->prepare("
+        SELECT COALESCE(ROUND(AVG(porcentaje_cumplimiento), 1), 0) AS tasa
+        FROM tb_metas
+        WHERE estado = 'Activa'
+          AND YEAR(fecha_inicio) = :anio
+          AND id_ambito IS NOT NULL
+    ");
+    $st->execute([':anio' => $anioActual]);
+    $tasaCumplimientoAmbitos = (float)$st->fetchColumn();
+} catch (Exception $e) {}
+
+// 2. Tasa de cumplimiento del objetivo de participantes anuales (meta global de Inscritos con mayor objetivo)
+$tasaMetaAnual = 0.0;
+$metaAnualObj = 0;
+$metaAnualReal = 0;
+try {
+    $st = $conn->prepare("
+        SELECT porcentaje_cumplimiento, meta_objetivo, estudiantes_formados
+        FROM tb_metas
+        WHERE estado = 'Activa'
+          AND YEAR(fecha_inicio) = :anio
+          AND tipo_objetivo = 'Inscritos'
+          AND id_ambito IS NULL
+        ORDER BY meta_objetivo DESC
+        LIMIT 1
+    ");
+    $st->execute([':anio' => $anioActual]);
+    $resMetaAnual = $st->fetch(PDO::FETCH_ASSOC);
+    if ($resMetaAnual) {
+        $tasaMetaAnual = (float)$resMetaAnual['porcentaje_cumplimiento'];
+        $metaAnualObj = (int)$resMetaAnual['meta_objetivo'];
+        $metaAnualReal = (int)$resMetaAnual['estudiantes_formados'];
+    }
 } catch (Exception $e) {}
 
 // ────────────────────────────────────────────────────────────

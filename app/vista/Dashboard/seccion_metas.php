@@ -14,6 +14,15 @@ function _semLabel(float $p): string {
     if ($p >= 50) return 'En progreso';
     return 'Atención';
 }
+function _kpiColors(float $p): array {
+    if ($p >= 95) return ['#28c76f', '#d4f4e3'];
+    if ($p >= 80) return ['#f59e0b', '#fef3c7'];
+    if ($p >= 50) return ['#f97316', '#ffedd5'];
+    return ['#ef4444', '#fee2e2'];
+}
+[$colorAmbitos, $bgAmbitos] = _kpiColors($tasaCumplimientoAmbitos);
+[$colorAnual, $bgAnual] = _kpiColors($tasaMetaAnual);
+
 $pctA = (float)($progresoAnual['pct_global']  ?? 0);
 $totA = (int)  ($progresoAnual['total_metas'] ?? 0);
 $cumA = (int)  ($progresoAnual['cumplidas']    ?? 0);
@@ -24,7 +33,51 @@ $rlA  = (int)  ($progresoAnual['real_total']   ?? 0);
 [$cA, $sA] = _semColor($pctA);
 ?>
 
-<div class="kpi-panel-inner mt-4" style="border-top-color:#ef4444;">
+<div class="row g-3 mt-1 mb-2">
+    <!-- Card 1: Tasa de cumplimiento de metas por ámbitos -->
+    <div class="col-md-6">
+        <div class="kpi-card-basic shadow-sm p-3" style="cursor: default; border-left: 4px solid <?php echo $colorAmbitos; ?>; background: #fff;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="kpi-basic-label" style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: #64748b; display: block;">Tasa Cumplimiento de Metas por Ámbitos</span>
+                    <h3 class="kpi-basic-valor mt-1" style="font-size: 2.1rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.2;"><?php echo number_format($tasaCumplimientoAmbitos, 1); ?>%</h3>
+                    <span class="text-muted" style="font-size: 0.72rem;">Promedio de metas activas con ámbito asignado</span>
+                </div>
+                <div class="kpi-basic-icon-wrap" style="background: <?php echo $bgAmbitos; ?>; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="<?php echo $colorAmbitos; ?>" viewBox="0 0 16 16">
+                        <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.742c-.934-.53-2.118-.6-3.213-.492-1.18.118-2.368.46-3.287.81zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-2" style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                <div style="width: <?php echo min($tasaCumplimientoAmbitos, 100); ?>%; height: 100%; background: <?php echo $colorAmbitos; ?>; border-radius: 3px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Cumplimiento del objetivo de participantes anuales -->
+    <div class="col-md-6">
+        <div class="kpi-card-basic shadow-sm p-3" style="cursor: default; border-left: 4px solid <?php echo $colorAnual; ?>; background: #fff;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="kpi-basic-label" style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: #64748b; display: block;">Cumplimiento Participantes Anuales</span>
+                    <h3 class="kpi-basic-valor mt-1" style="font-size: 2.1rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.2;"><?php echo number_format($tasaMetaAnual, 1); ?>%</h3>
+                    <span class="text-muted" style="font-size: 0.72rem;">Logrado: <strong><?php echo number_format($metaAnualReal); ?></strong> / <?php echo number_format($metaAnualObj); ?> participantes</span>
+                </div>
+                <div class="kpi-basic-icon-wrap" style="background: <?php echo $bgAnual; ?>; width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="<?php echo $colorAnual; ?>" viewBox="0 0 16 16">
+                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-2" style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                <div style="width: <?php echo min($tasaMetaAnual, 100); ?>%; height: 100%; background: <?php echo $colorAnual; ?>; border-radius: 3px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="kpi-panel-inner mt-3" style="border-top-color:#ef4444;">
 
     <div class="metas-progreso-anual-wrap">
 
