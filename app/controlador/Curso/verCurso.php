@@ -18,10 +18,10 @@ try {
     $conexion = new Conexion();
     $conn = $conexion->getConexion();
     
-    // Consulta para obtener información completa del curso
     $sql = "SELECT 
                 c.id_curso,
                 c.nombre_curso,
+                c.preimpreso,
                 c.fecha_inicio,
                 c.fecha_fin,
                 c.max_participantes,
@@ -60,6 +60,7 @@ try {
             'success' => true,
             'data' => [
                 'nombre' => $cursoInfo['nombre_curso'] ?? '-',
+                'preimpreso' => $cursoInfo['preimpreso'] ?? '-',
                 'programa_formacion' => $cursoInfo['programa_formacion'] ?? '-',
                 'modalidad' => $cursoInfo['nombre_modalidad'] ?? '-',
                 'turno' => $cursoInfo['turno'] ?? '-',

@@ -79,6 +79,7 @@ INSERT INTO `tb_areaformativa` (`id_areaFormativa`, `nombre_areaFormativa`) VALU
 CREATE TABLE `tb_curso` (
   `id_curso` int(11) NOT NULL,
   `nombre_curso` varchar(100) NOT NULL,
+  `preimpreso` varchar(50) DEFAULT NULL,
   `fecha_inicio` date DEFAULT NULL,
   `fecha_limite_inicio` date DEFAULT NULL,
   `fecha_fin` date DEFAULT NULL,

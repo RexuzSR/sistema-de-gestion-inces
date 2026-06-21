@@ -166,7 +166,12 @@ $(document).ready(function () {
                         }, { once: true });
                         $('#modal-addCurso').modal('hide');
                     } else {
-                        toastr.error((data && data.message) || 'Error al agregar curso');
+                        if (data && data.error === 'preimpreso_duplicado') {
+                            $('#preimpreso').addClass('is-invalid');
+                            $('#error-preimpreso').text(data.message);
+                        } else {
+                            toastr.error((data && data.message) || 'Error al agregar curso');
+                        }
                     }
                 },
                 error: function (xhr, status, error) {
@@ -190,10 +195,12 @@ $(document).ready(function () {
 
         // Limpiar errores anteriores
         $('.error-feedback').text('');
+        $('#preimpreso').removeClass('is-invalid');
 
         // Validar campos requeridos
         const camposRequeridos = [
             'nombre_curso',
+            'preimpreso',
             'id_modalidad',
             'id_ppl',
             'id_sectoreconomico',

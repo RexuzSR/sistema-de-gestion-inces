@@ -26,7 +26,7 @@ try {
     $post = array_map('sanitize', $_POST);
     
     // Validar requeridos
-    $requiredFields = ['nombre_curso', 'fecha_inicio', 'fecha_fin', 'turno', 'id_ppl'];
+    $requiredFields = ['nombre_curso', 'fecha_inicio', 'fecha_fin', 'turno', 'id_ppl', 'preimpreso'];
     foreach ($requiredFields as $field) {
         if (empty($post[$field])) {
             throw new Exception("El campo $field es obligatorio");
@@ -86,6 +86,7 @@ try {
 
     $resCurso = $cursoMgr->registrar([
         'nombre_curso'      => $post['nombre_curso'],
+        'preimpreso'        => $post['preimpreso'] ?? null,
         'fecha_inicio'      => $post['fecha_inicio'],
         'fecha_fin'         => $post['fecha_fin'],
         'max_participantes' => $post['max_participantes'] ?? 30,

@@ -549,6 +549,17 @@ $(document).ready(function () {
             validarParticipantesReinicio()
         ];
 
+        const preimpresoVal = ($('#preimpreso_Reinicio').val() || '').trim();
+        if (!preimpresoVal) {
+            $('#preimpreso_Reinicio').addClass('is-invalid');
+            $('#error-preimpreso_Reinicio').text('El código preimpreso es requerido').show();
+            toastr.warning('Complete el código preimpreso');
+            return;
+        } else {
+            $('#preimpreso_Reinicio').removeClass('is-invalid');
+            $('#error-preimpreso_Reinicio').hide();
+        }
+
         if (!$('#nuevaFechaInicio').val() || !$('#nuevaFechaFin').val()) {
             toastr.warning('Complete todos los campos de fecha'); return;
         }
@@ -566,6 +577,7 @@ $(document).ready(function () {
             contentType: 'application/json',
             data: JSON.stringify({
                 id_curso:              idCurso,
+                preimpreso:            preimpresoVal,
                 id_modalidad:          $('#id_modalidad_Reinicio').val(),
                 id_sectoreconomico:    $('#id_sectoreconomico_Reinicio').val(),
                 id_subtipo:            $('#id_subtipo_Reinicio').val(),
@@ -587,7 +599,12 @@ $(document).ready(function () {
                     $('#cursoModal').modal('hide');
                     cargarTablaCursos();
                 } else {
-                    toastr.error(resp.message || 'Error al reiniciar el curso');
+                    if (resp.error === 'preimpreso_duplicado') {
+                        $('#preimpreso_Reinicio').addClass('is-invalid');
+                        $('#error-preimpreso_Reinicio').text(resp.message).show();
+                    } else {
+                        toastr.error(resp.message || 'Error al reiniciar el curso');
+                    }
                 }
             },
             error: function () { toastr.error('Error del servidor al reiniciar el curso'); }
@@ -604,6 +621,8 @@ $(document).ready(function () {
         const minInicioStr = minInicio.toISOString().split('T')[0];
 
             $('#reiniciarCursoId').val('');
+            $('#preimpreso_Reinicio').val('');
+            $('#preimpreso-anterior-help').text('Preimpreso anterior: -');
             $('#nuevaFechaInicio, #nuevaFechaFin, #fechaLimiteInicio, #horas_totales_Reinicio').val('');
             $('#id_modalidad_Reinicio, #id_sectoreconomico_Reinicio, #id_subtipo_Reinicio, #id_ambito_Reinicio, #turno_Reinicio, #horas_por_clase_Reinicio').val('');
             $('#min_participantes_Reinicio, #max_participantes_Reinicio').val('');
@@ -642,6 +661,12 @@ $(document).ready(function () {
             .then(data => {
                 if (data.error) throw new Error(data.error);
                 $('#reiniciarCursoId').val(idCurso);
+                
+                // Cargar preimpreso anterior y sugerir el siguiente
+                const preimpresoAnt = data.preimpreso || '';
+                $('#preimpreso-anterior-help').text('Preimpreso anterior: ' + (preimpresoAnt || '-'));
+                $('#preimpreso_Reinicio').val(sugerirSiguientePreimpreso(preimpresoAnt));
+
                 $('#id_modalidad_Reinicio').val(data.id_modalidad || '');
                 $('#id_sectoreconomico_Reinicio').val(data.id_sectoreconomico || '');
                 $('#id_subtipo_Reinicio').val(data.id_subtipo || '');
@@ -656,4 +681,19 @@ $(document).ready(function () {
                 console.error('Error cargando datos del curso para reinicio:', err);
             });
         }
+
+    function sugerirSiguientePreimpreso(actual) {
+        if (!actual) return '';
+        try {
+            const match = String(actual).trim().match(/^(\d+)(.*)$/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                const resto = match[2];
+                return (num + 1) + resto;
+            }
+        } catch (e) {
+            console.error("Error al sugerir siguiente preimpreso:", e);
+        }
+        return actual;
+    }
 });

@@ -227,6 +227,10 @@
 
               <div class="info-grid">
                 <div class="info-row-light">
+                  <span class="info-label-light">Código Preimpreso</span>
+                  <span id="preimpreso-view" class="info-value-light fw-bold text-primary">-</span>
+                </div>
+                <div class="info-row-light">
                   <span class="info-label-light">Programa de Formación</span>
                   <span id="programaFormación-view" class="info-value-light">-</span>
                 </div>

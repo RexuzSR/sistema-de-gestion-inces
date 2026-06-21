@@ -101,43 +101,70 @@ search-bar {
     border-spacing: 0;
 }
 
-.table-cursos thead {
-    background-color: #000000;
-    /* Negro sólido */
+.table-cursos thead, #tabla-cursos thead {
+    background-color: #0f2d59 !important;
 }
 
-.table-cursos thead {
-    background-color: #020d19 !important;
-}
-
-.table-cursos thead th {
-    background-color: #020d19 !important;
+.table-cursos thead th, #tabla-cursos thead th {
+    background-color: #0f2d59 !important;
     color: white;
     font-weight: 600;
-    padding: 16px 12px;
+    padding: 8px 4px;
     border: none;
     text-transform: uppercase;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     letter-spacing: 0.5px;
+    position: relative;
+    white-space: normal !important;
+    vertical-align: middle;
+    text-align: center;
 }
 
-.table-cursos tbody tr {
-    transition: var(--transition);
+#tabla-cursos thead th:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.25);
 }
 
-.table-cursos tbody tr:hover {
-    background-color: rgba(2, 13, 25, 0.03);
-    transform: translateX(4px);
+.table-cursos tbody tr, #tabla-cursos tbody tr {
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.table-cursos tbody td {
-    padding: 14px 12px;
+.table-cursos tbody tr:hover, #tabla-cursos tbody tr:hover {
+    background-color: rgba(15, 129, 254, 0.04) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 129, 254, 0.08);
+}
+
+.table-cursos tbody td, #tabla-cursos tbody td {
+    padding: 8px 4px;
     vertical-align: middle;
     border-bottom: 1px solid #f0f0f0;
     color: black;
+    white-space: nowrap;
+    font-size: 0.8rem;
 }
 
-.table-cursos tbody tr:last-child td {
+#tabla-cursos tbody td:nth-child(2), #tabla-cursos thead th:nth-child(2) {
+    white-space: normal !important;
+    min-width: 130px;
+    max-width: 175px;
+}
+
+#tabla-cursos tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+#tabla-cursos tbody tr:nth-child(even):hover {
+    background-color: rgba(15, 129, 254, 0.06) !important;
+}
+
+.table-cursos tbody tr:last-child td, #tabla-cursos tbody tr:last-child td {
     border-bottom: none;
 }
 
@@ -210,6 +237,24 @@ search-bar {
 .button.delete {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
     box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* Compactar botones en la tabla de cursos para ahorrar espacio horizontal */
+#tabla-cursos .button {
+    width: 25px;
+    height: 25px;
+    border-radius: 5px;
+    margin: 1px;
+}
+#tabla-cursos .button svg {
+    width: 11px;
+    height: 11px;
+}
+
+#tabla-cursos .badge {
+    padding: 4px 6px !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.2px !important;
 }
 
 /* ============================================
@@ -622,4 +667,224 @@ search-bar {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* ============================================
+   ESTILOS COMPLEMENTARIOS PARA LAS MEJORAS
+   ============================================ */
+
+/* Badges Modernos */
+.badge-espera {
+    background-color: rgba(100, 116, 139, 0.12) !important;
+    color: #475569 !important;
+    border: 1px solid rgba(100, 116, 139, 0.2);
+}
+.badge-proceso {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    color: #047857 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.badge-culminado {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: #b91c1c !important;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.badge-diferido {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+    color: #d97706 !important;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.badge-pausa {
+    background-color: rgba(59, 130, 246, 0.12) !important;
+    color: #1d4ed8 !important;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+.badge-proximo-iniciar {
+    background-color: rgba(217, 119, 6, 0.12) !important;
+    color: #b45309 !important;
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+/* Indicador de Ocupación */
+.occupancy-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-width: 110px;
+}
+.occupancy-text {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #334155;
+}
+.occupancy-progress-bar {
+    height: 6px;
+    width: 100%;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 4px 0;
+    border: 1px solid #cbd5e1;
+}
+.occupancy-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+.progress-fill-available {
+    background: linear-gradient(90deg, #10b981, #34d399); /* Verde */
+}
+.progress-fill-warning {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24); /* Amarillo/naranja */
+}
+.progress-fill-full {
+    background: linear-gradient(90deg, #ef4444, #f87171); /* Rojo */
+}
+.occupancy-alert {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+.alert-available {
+    color: #10b981;
+}
+.alert-warning {
+    color: #d97706;
+}
+.alert-full {
+    color: #ef4444;
+}
+
+/* Tarjetas KPI - Estilos Premium */
+.kpi-row {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+.kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    position: relative;
+}
+.kpi-info-icon {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    z-index: 10;
+}
+.kpi-info-icon:hover {
+    color: #475569;
+    transform: scale(1.1);
+}
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+}
+.kpi-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+.kpi-content {
+    display: flex;
+    flex-direction: column;
+}
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+}
+.kpi-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+/* Bordes superiores de tarjetas KPI */
+.kpi-card.kpi-total { border-top: 4px solid #3b82f6; }
+.kpi-card.kpi-total .kpi-icon-wrapper { background-color: #eff6ff; color: #3b82f6; }
+
+.kpi-card.kpi-proceso { border-top: 4px solid #10b981; }
+.kpi-card.kpi-proceso .kpi-icon-wrapper { background-color: #ecfdf5; color: #10b981; }
+
+.kpi-card.kpi-espera { border-top: 4px solid #64748b; }
+.kpi-card.kpi-espera .kpi-icon-wrapper { background-color: #f1f5f9; color: #64748b; }
+
+.kpi-card.kpi-diferidos { border-top: 4px solid #f59e0b; }
+.kpi-card.kpi-diferidos .kpi-icon-wrapper { background-color: #fffbeb; color: #f59e0b; }
+
+.kpi-card.kpi-culminados { border-top: 4px solid #ef4444; }
+.kpi-card.kpi-culminados .kpi-icon-wrapper { background-color: #fef2f2; color: #ef4444; }
+
+.kpi-card.kpi-cupos { border-top: 4px solid #06b6d4; }
+.kpi-card.kpi-cupos .kpi-icon-wrapper { background-color: #ecfeff; color: #06b6d4; }
+
+/* Estados dinámicos de semáforo para KPI cards */
+.kpi-card.kpi-state-blue {
+    border-top: 4px solid #3b82f6 !important;
+    border-left: none !important;
+}
+.kpi-card.kpi-state-blue .kpi-icon-wrapper {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #3b82f6 !important;
+}
+
+.kpi-card.kpi-state-green {
+    border-top: 4px solid #22c55e !important;
+    border-left: none !important;
+}
+.kpi-card.kpi-state-green .kpi-icon-wrapper {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    color: #22c55e !important;
+}
+
+.kpi-card.kpi-state-yellow {
+    border-top: 4px solid #f59e0b !important;
+    border-left: none !important;
+}
+.kpi-card.kpi-state-yellow .kpi-icon-wrapper {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    color: #f59e0b !important;
+}
+
+.kpi-card.kpi-state-red {
+    border-top: 4px solid #ef4444 !important;
+    border-left: none !important;
+}
+.kpi-card.kpi-state-red .kpi-icon-wrapper {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+}
+
+/* Resumen Contextual */
+#contextual-summary {
+    background: rgba(15, 129, 254, 0.05);
+    border-left: 4px solid #0f2d59;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #1e293b;
+    font-weight: 500;
+    line-height: 1.5;
 }

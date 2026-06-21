@@ -20,6 +20,7 @@ $nuevaFechaInicio     = $input['nueva_fecha_inicio']    ?? null;
 $nuevaFechaFin        = $input['nueva_fecha_fin']       ?? null;
 $modo                 = $input['modo']                  ?? 'diferido';
 $mantenerParticipantes = (bool)($input['mantener_participantes'] ?? false);
+$preimpreso           = $input['preimpreso']            ?? null;
 
 if (!$idCurso || !$nuevaFechaInicio || !$nuevaFechaFin) {
     echo json_encode(['success' => false, 'message' => 'Datos incompletos.']);
@@ -46,7 +47,8 @@ $resultado = $cursoManager->reiniciarCurso(
     $horas_por_clase,
     $horas_totales,
     $min_participantes,
-    $max_participantes
+    $max_participantes,
+    $preimpreso
 );
 
 echo json_encode($resultado);

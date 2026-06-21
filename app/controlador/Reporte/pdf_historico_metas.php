@@ -5,7 +5,7 @@ error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 // Controlador DOMPDF - Reporte "Histórico de Metas"
 // ============================================================
 
-echo 'PDF GENERATION STARTED'; die(); require_once __DIR__ . '/../dompdf/autoload.inc.php';
+require_once __DIR__ . '/../dompdf/autoload.inc.php';
 require_once __DIR__ . '/../../modelo/conexion.php';
 
 use Dompdf\Dompdf;

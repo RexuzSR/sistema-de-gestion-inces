@@ -58,6 +58,10 @@ $result_modalidades = $conn->query($query_modalidades);
 $query_estados = "SELECT id_estatusCurso, nombre_estatusCurso FROM tb_estatuscurso WHERE nombre_estatusCurso != 'En pausa'";
 $result_estados = $conn->query($query_estados);
 
+// Consultar opciones para el selector de Año
+$query_anios = "SELECT DISTINCT YEAR(fecha_inicio) AS anio FROM tb_curso WHERE fecha_inicio IS NOT NULL AND fecha_inicio != '0000-00-00' ORDER BY anio DESC";
+$result_anios = $conn->query($query_anios);
+
 // Preparar los datos primero
 $nombre = htmlspecialchars($_SESSION['nombre'] ?? '');
 $apellido = htmlspecialchars($_SESSION['apellido'] ?? '');
@@ -90,7 +94,7 @@ if (!empty($imagenUsuario)) {
     <link rel="stylesheet" href="../../assets/css/toastr.min.css">
     <link rel="stylesheet" href="../../assets/css/home.css">
     <link rel="stylesheet" href="../../assets/css/crud.css">
-    <link rel="stylesheet" href="../../assets/css/curso.css">
+    <link rel="stylesheet" href="../../assets/css/curso.css?v=<?php echo time(); ?>">
     <link rel="icon" href="../../assets/img/inces-logo.png" type="image/png">
     <!-- Flatpickr (datepicker que permite deshabilitar fines de semana) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -130,13 +134,96 @@ if (!empty($imagenUsuario)) {
             <!-- Header -->
             <?php $pageTitle = 'Cursos'; include __DIR__ . '/partials/header.php'; ?>
 
-            <!-- Main -->
-            <div>
+            <!-- Main Content -->
+            <div class="contenedor">
 
-                <div class="mt-3"> 
+                <div class="box d-flex justify-content-center flex-column shadow-lg px-3 mt-4 pt-1" style="width: 98% !important;">
+                    <!-- Tarjetas KPI -->
+                    <div class="row g-3 mb-4 kpi-row">
+                        <!-- Total Cursos -->
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="kpi-card kpi-total">
+                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de cursos registrados bajo los filtros seleccionados."></i>
+                                <div class="kpi-icon-wrapper">
+                                    <i class="bi bi-book-half"></i>
+                                </div>
+                                <div class="kpi-content">
+                                    <span class="kpi-value" id="kpi-total">0</span>
+                                    <span class="kpi-label">Total Cursos</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- En Proceso -->
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="kpi-card kpi-proceso">
+                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos que se encuentran actualmente en dictado/formación."></i>
+                                <div class="kpi-icon-wrapper">
+                                    <i class="bi bi-play-circle-fill"></i>
+                                </div>
+                                <div class="kpi-content">
+                                    <span class="kpi-value" id="kpi-proceso">0</span>
+                                    <span class="kpi-label">En Proceso</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- En Espera -->
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="kpi-card kpi-espera">
+                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos planificados en espera de fecha de inicio o requisitos mínimos."></i>
+                                <div class="kpi-icon-wrapper">
+                                    <i class="bi bi-hourglass-split"></i>
+                                </div>
+                                <div class="kpi-content">
+                                    <span class="kpi-value" id="kpi-espera">0</span>
+                                    <span class="kpi-label">En Espera</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Diferidos -->
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="kpi-card kpi-diferidos">
+                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos cuya fecha de inicio se ha pospuesto por falta de requisitos o participantes mínimos."></i>
+                                <div class="kpi-icon-wrapper">
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                </div>
+                                <div class="kpi-content">
+                                    <span class="kpi-value" id="kpi-diferidos">0</span>
+                                    <span class="kpi-label">Diferidos</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Culminados -->
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="kpi-card kpi-culminados">
+                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos finalizados con carga de notas y participantes aprobados/reprobados."></i>
+                                <div class="kpi-icon-wrapper">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                                <div class="kpi-content">
+                                    <span class="kpi-value" id="kpi-culminados">0</span>
+                                    <span class="kpi-label">Culminados</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Cupos Disponibles -->
+                        <div class="col-xl-2 col-md-4 col-sm-6">
+                            <div class="kpi-card kpi-cupos">
+                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de cupos libres / capacidad total de participantes en los cursos."></i>
+                                <div class="kpi-icon-wrapper">
+                                    <i class="bi bi-people-fill"></i>
+                                </div>
+                                <div class="kpi-content">
+                                    <div class="d-flex align-items-baseline gap-1">
+                                        <span class="kpi-value" id="kpi-cupos">0</span>
+                                        <span class="text-muted" id="kpi-cupos-total" style="font-size: 0.9rem; font-weight: 500;">/ 0</span>
+                                    </div>
+                                    <span class="kpi-label">Cupos Disponibles</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                   <div class="box container container-fluid pt-1" >
-                    <!-- Barra de búsqueda -->
+                     <!-- Barra de búsqueda -->
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <form class="input-group search-bar">
                             <input 
@@ -181,6 +268,14 @@ if (!empty($imagenUsuario)) {
             <?php endwhile; ?>
         </select>
 
+        <label class="label" for="anio_filter">Año:</label>
+        <select class="form-select form-select-sm" name="anio_filter" id="anio_filter">
+            <option value="">Todos</option>
+            <?php while ($row = $result_anios->fetch(PDO::FETCH_ASSOC)): ?>
+                <option value="<?= htmlspecialchars($row['anio']); ?>"><?= htmlspecialchars($row['anio']); ?></option>
+            <?php endwhile; ?>
+        </select>
+
         <!-- botón de Filtros -->
         <button id="btn-filter" class="filter" title="Limpiar Filtros" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#fff" class="bi bi-filter" viewBox="0 0 16 16">
                     <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/>
@@ -199,6 +294,15 @@ if (!empty($imagenUsuario)) {
                     </div>
 
                     
+                     <!-- Contenedor del Resumen Contextual -->
+                     <div class="row g-3 mb-3 mt-1">
+                         <div class="col-12">
+                             <div id="contextual-summary" class="p-3 shadow-sm mb-2" style="display: none;">
+                                 <!-- Se poblará dinámicamente -->
+                             </div>
+                         </div>
+                     </div>
+
                      <!-- Tabla de estudiantes -->
             <div class="table-responsive">
                 <table id="tabla-cursos" class="table rounded-5 mt-3 table-hover w-100">
@@ -207,13 +311,14 @@ if (!empty($imagenUsuario)) {
                             <th>ID</th>
                             <th>Curso</th>
                             <th>Modalidad</th>
-                            <th class="text-nowrap">Num Inscritos</th>
-                            <th class="text-nowrap">Cupos Disponibles</th>
+                            <th class="text-center">Ocupación</th>
+                            <th class="text-center">Cupos Libres</th>
                             <th>Turno</th>
+                            <th>Duración</th>
                             <th class="text-nowrap">Fecha Inicio</th>
                             <th>Fecha Fin</th>
                             <th>Estado</th>
-                            <th class="px-4">Acciones</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -237,7 +342,10 @@ if (!empty($imagenUsuario)) {
                     </div>
                 </div>
 
-                  <!-- Borré este tramo que también era estático para la paginación -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <?php include '../modales/Curso/cursoModal.php'; ?>
     <?php include '../modales/Curso/modal-addCurso.php'; ?>
@@ -257,7 +365,7 @@ if (!empty($imagenUsuario)) {
     <script src="../../assets/js/toastr/toastr.min.js"></script>
     <script src="../../assets/js/toastr/toastr-config.js"></script>
     <script src="../../assets/js/home.js"></script>
-    <script src="../../assets/js/Curso/tabla-curso.js"></script>
+    <script src="../../assets/js/Curso/tabla-curso.js?v=<?php echo time(); ?>"></script>
     <script src="../../assets/js/Curso/verCurso.js"></script>
     <script src="../../assets/js/Curso/editarCurso.js"></script>
     <script src="../../assets/js/Curso/AsignarParticipante.js"></script>

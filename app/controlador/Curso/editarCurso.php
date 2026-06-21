@@ -22,6 +22,7 @@ try {
     $data = [
         'id_curso'                  => $_POST['id_curso']                  ?? null,
         'nombre_curso-Edit'         => $_POST['nombre_curso-Edit']         ?? null,
+        'preimpreso-Edit'           => $_POST['preimpreso-Edit']           ?? null,
         'id_ppl-Edit'               => $_POST['id_ppl-Edit']               ?? null,
         'id_nombrecurso-Edit'       => $_POST['id_nombrecurso-Edit']       ?? null,
         'fecha_inicio-Edit'         => $_POST['fecha_inicio-Edit']         ?? null,

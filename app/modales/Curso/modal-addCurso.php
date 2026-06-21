@@ -95,6 +95,19 @@
                                         <input type="hidden" name="confirmar_nuevo_curso" id="confirmar_nuevo_curso" value="0">
                                         <div class="error-feedback small text-danger mt-1" id="error-nombre_curso"></div>
                                     </div>
+
+                                    <!-- Código Preimpreso -->
+                                    <div class="col-12 mb-2">
+                                        <label for="preimpreso" class="form-label fw-medium">
+                                            Código Preimpreso
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-wrapper">
+                                            <input class="form-control form-control-sm input-shadow" type="text" id="preimpreso" name="preimpreso" placeholder="Ej. 110-2026" maxlength="50" required autocomplete="off">
+                                            <div class="focus-line"></div>
+                                        </div>
+                                        <div class="error-feedback small text-danger mt-1" id="error-preimpreso"></div>
+                                    </div>
                                 </div>
                             </div>
 

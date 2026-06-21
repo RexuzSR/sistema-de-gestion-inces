@@ -149,6 +149,22 @@ $(document).ready(function () {
         $('#error-' + id).text('');
     }
 
+    function validatePreimpresoEdit() {
+        const v = ($('#preimpreso-Edit').val() || '').trim();
+        if (!v) {
+            showError('preimpreso-Edit', 'El código preimpreso es requerido');
+            return false;
+        }
+        if (v.length > 50) {
+            showError('preimpreso-Edit', 'Máximo 50 caracteres');
+            return false;
+        }
+        showSuccess('preimpreso-Edit');
+        return true;
+    }
+
+    $('#preimpreso-Edit').on('input change', validatePreimpresoEdit);
+
     function validateNombreCursoEdit() {
         const selected = $('#catalogo_nombre_curso-Edit').val();
         const hiddenName = ($('#nombre_curso-Edit').val() || '').trim();
@@ -352,6 +368,7 @@ $(document).ready(function () {
                 if (data.error) throw new Error(data.error);
 
                 $('#id_curso-Edit').val(idCurso);
+                $('#preimpreso-Edit').val(data.preimpreso || '');
                 $('#nombre_curso-Edit').val(data.nombre_curso || '');
                 $('#turno-Edit').val(data.turno || '');
                 const hpcEl = document.getElementById('horas_por_clase-Edit');
@@ -472,6 +489,7 @@ $(document).ready(function () {
 
         const checks = [
             validateNombreCursoEdit(),
+            validatePreimpresoEdit(),
             validateSelect('id_modalidad-Edit', 'Seleccione una modalidad'),
             validateSelect('id_ppl-Edit', 'Seleccione un perfil productivo laboral'),
             validateSelect('id_sectoreconomico-Edit', 'Seleccione un sector económico'),
@@ -508,7 +526,11 @@ $(document).ready(function () {
                     $('#modal-editCurso').modal('hide');
                     $(document).trigger('cursos:actualizados');
                 } else {
-                    toastr.error(resp.message || 'Error al actualizar el curso');
+                    if (resp && resp.error === 'preimpreso_duplicado') {
+                        showError('preimpreso-Edit', resp.message);
+                    } else {
+                        toastr.error(resp.message || 'Error al actualizar el curso');
+                    }
                 }
             },
             error: function (xhr, status, err) {

@@ -155,7 +155,8 @@
 .table-container {
     background: white;
     border-radius: var(--border-radius);
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     box-shadow: var(--box-shadow);
     margin-top: 10px;
     border: 1px solid #e9ecef;
@@ -168,9 +169,9 @@
     margin: 0;
 }
 
-/* ENCABEZADOS DE LA TABLA EN NEGRO SÓLIDO */
+/* ENCABEZADOS DE LA TABLA EN AZUL INSTITUCIONAL */
 .table-metas thead {
-    background: #000000 !important;
+    background: #0f2d59 !important;
 }
 
 .table-metas thead th {
@@ -183,7 +184,7 @@
     letter-spacing: 0.5px;
     position: relative;
     white-space: nowrap;
-    background: #000000 !important;
+    background: #0f2d59 !important;
 }
 
 /* Líneas divisorias entre columnas en el encabezado */
@@ -198,14 +199,14 @@
 }
 
 .table-metas tbody tr {
-    transition: var(--transition);
-    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .table-metas tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.03); /* Negro más suave para hover */
-    transform: translateX(4px);
-    box-shadow: inset 4px 0 0 var(--primary-color);
+    background-color: rgba(15, 129, 254, 0.04) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 129, 254, 0.08);
 }
 
 .table-metas tbody tr:nth-child(even) {
@@ -213,7 +214,7 @@
 }
 
 .table-metas tbody tr:nth-child(even):hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(15, 129, 254, 0.06) !important;
 }
 
 .table-metas tbody td {
@@ -221,6 +222,7 @@
     vertical-align: middle;
     color: #2d3748;
     font-weight: 500;
+    white-space: nowrap; /* Evita envolturas feas en columnas secundarias, fechas, badges y acciones */
 }
 
 .table-metas tbody td:first-child {
@@ -239,6 +241,7 @@
     background-color: #edf2f7;
     margin: 4px 0;
     border: 1px solid #e2e8f0;
+    min-width: 120px;
 }
 
 .progress-bar-custom {
@@ -616,10 +619,6 @@
 /* ============================================
    ESTILOS ESPECÍFICOS PARA COLUMNAS
    ============================================ */
-/* Columna de cumplimiento centrada */
-.table-metas tbody td:nth-child(5) {
-    text-align: center;
-}
 
 /* Columna de ID con estilo especial */
 .table-metas tbody td:first-child {
@@ -813,12 +812,15 @@
     border: 1px solid rgba(30, 41, 59, 0.2);
 }
 
-/* Resaltado de Filas Críticas / Vencidas */
+/* Resaltado de Filas Críticas / Vencidas / Próximas */
 .row-critica {
     background-color: rgba(239, 68, 68, 0.02) !important;
 }
 .row-vencida {
     background-color: rgba(30, 41, 59, 0.02) !important;
+}
+.row-proxima {
+    background-color: rgba(245, 158, 11, 0.02) !important;
 }
 
 .row-critica:hover {
@@ -828,6 +830,10 @@
 .row-vencida:hover {
     background-color: rgba(30, 41, 59, 0.05) !important;
     box-shadow: inset 4px 0 0 #1e293b !important;
+}
+.row-proxima:hover {
+    background-color: rgba(245, 158, 11, 0.05) !important;
+    box-shadow: inset 4px 0 0 #f59e0b !important;
 }
 
 /* ============================================
@@ -907,3 +913,81 @@
         gap: 10px;
     }
 }
+
+/* ============================================
+   ESTILOS COMPLEMENTARIOS PARA LAS MEJORAS
+   ============================================ */
+.badge-proxima {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+    color: #b45309 !important;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.cumplimiento-subtext {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 5px;
+    display: block;
+    text-transform: none;
+    letter-spacing: 0.1px;
+}
+
+.cumplimiento-subtext.resta {
+    color: #ef4444; /* Rojo */
+}
+
+.cumplimiento-subtext.supera {
+    color: #3b82f6; /* Azul */
+}
+
+.cumplimiento-subtext.exacta {
+    color: #10b981; /* Verde */
+}
+
+/* KPI de Metas Sobrecumplidas */
+.kpi-sobrecumplidas .kpi-icon-wrapper {
+    background-color: #ecfeff;
+    color: #0891b2;
+}
+.kpi-sobrecumplidas {
+    border-top: 4px solid #0891b2;
+}
+
+/* Contenedor del gráfico y resumen contextual */
+.chart-card-wrapper {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: var(--transition);
+}
+
+.chart-card-wrapper:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+}
+
+#contextual-summary {
+    background: rgba(15, 129, 254, 0.05);
+    border-left: 4px solid #0f2d59;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    color: #1e293b;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.table-metas tbody td.logrado-meta-cell {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #334155;
+}
+
+.badge-encaminada {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+    color: #047857 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}

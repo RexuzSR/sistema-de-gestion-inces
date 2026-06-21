@@ -3,6 +3,27 @@ $(document).ready(function () {
     let recordsPerPage = parseInt($('#registros').val()) || 8;
     let currentSearch = '';
     let filterAmbitoId = new URLSearchParams(window.location.search).get('ambito_id');
+    let isInitialLoad = true;
+
+    function getMetaPeriodo(m) {
+        if (!m.fecha_inicio || !m.fecha_fin) return 'global';
+        const d1 = new Date(m.fecha_inicio + 'T00:00:00');
+        const d2 = new Date(m.fecha_fin + 'T00:00:00');
+        const timeDiff = d2.getTime() - d1.getTime();
+        const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
+        
+        if (daysDiff >= 27 && daysDiff <= 32) return 'mensual';
+        if (daysDiff >= 88 && daysDiff <= 93) return 'trimestral';
+        if (daysDiff >= 179 && daysDiff <= 185) return 'semestral';
+        if (daysDiff >= 364 && daysDiff <= 367) return 'anual';
+        return 'global';
+    }
+
+    function getVencimientoThreshold(periodo) {
+        if (periodo === 'mensual') return 7;
+        if (periodo === 'trimestral') return 15;
+        return 30; // semestral, anual, global, etc.
+    }
 
     function formatFecha(fechaStr) {
         if (!fechaStr) return '-';
@@ -13,6 +34,30 @@ $(document).ready(function () {
         return fechaStr;
     }
 
+    function animateCounter(selector, endVal, isPercent = false, decimalPlaces = 0) {
+        const el = $(selector)[0];
+        if (!el) return;
+        const startVal = parseFloat(el.textContent) || 0;
+        if (startVal === endVal) {
+            el.innerHTML = endVal.toFixed(decimalPlaces) + (isPercent ? '%' : '');
+            return;
+        }
+        let startTimestamp = null;
+        const duration = 600;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const currentVal = progress * (endVal - startVal) + startVal;
+            el.innerHTML = currentVal.toFixed(decimalPlaces) + (isPercent ? '%' : '');
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                el.innerHTML = endVal.toFixed(decimalPlaces) + (isPercent ? '%' : '');
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
     function cargarMetas(page = 1, perPage = recordsPerPage, search = '') {
         currentPage = page;
         $.ajax({
@@ -21,7 +66,7 @@ $(document).ready(function () {
             dataType: 'json',
             success: function (response) {
                 if (response.error) {
-                    $('#tabla-metas tbody').html(`<tr><td colspan="9" class="text-center message-error">Error: ${response.message}</td></tr>`);
+                    $('#tabla-metas tbody').html(`<tr><td colspan="8" class="text-center message-error">Error: ${response.message}</td></tr>`);
                     return;
                 }
 
@@ -31,7 +76,7 @@ $(document).ready(function () {
 
                 // Poblar filtro de Año dinámicamente
                 const selectAnio = $('#anio-filter');
-                const activeAnio = selectAnio.val();
+                const currentYear = new Date().getFullYear();
                 
                 // Obtener años únicos de las metas
                 const years = [...new Set(metas.map(m => {
@@ -39,12 +84,24 @@ $(document).ready(function () {
                     return new Date(m.fecha_inicio + 'T00:00:00').getFullYear();
                 }).filter(Boolean))].sort((a, b) => b - a);
 
+                // Asegurar que el año actual esté en la lista
+                if (!years.includes(currentYear)) {
+                    years.push(currentYear);
+                    years.sort((a, b) => b - a);
+                }
+
                 // Re-poblar opciones manteniendo la seleccionada
                 selectAnio.find('option:not([value=""])').remove();
                 years.forEach(yr => {
                     selectAnio.append(`<option value="${yr}">${yr}</option>`);
                 });
-                if (activeAnio && years.includes(parseInt(activeAnio, 10))) {
+
+                // Si es la carga inicial, pre-seleccionar el año vigente
+                let activeAnio = selectAnio.val();
+                if (isInitialLoad && !activeAnio) {
+                    activeAnio = String(currentYear);
+                    selectAnio.val(activeAnio);
+                } else if (activeAnio && years.includes(parseInt(activeAnio, 10))) {
                     selectAnio.val(activeAnio);
                 }
 
@@ -52,14 +109,24 @@ $(document).ready(function () {
                 metas.forEach(m => {
                     const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
                     const isVencida = m.fecha_fin ? (new Date(m.fecha_fin + 'T00:00:00') < today) : false;
+                    const diffTime = m.fecha_fin ? (new Date(m.fecha_fin + 'T00:00:00') - today) : null;
+                    const diffDays = diffTime !== null ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : null;
                     
-                    if (pct > 120) {
+                    const periodo = getMetaPeriodo(m);
+                    const threshold = getVencimientoThreshold(periodo);
+                    const isProxima = diffDays !== null && diffDays >= 0 && diffDays <= threshold;
+
+                    if (pct > 100) {
                         m.estado_cumplimiento = 'Sobrecumplida';
-                    } else if (pct >= 100) {
+                    } else if (pct === 100) {
                         m.estado_cumplimiento = 'Cumplida';
                     } else if (isVencida) {
                         m.estado_cumplimiento = 'Vencida';
-                    } else if (pct >= 60) {
+                    } else if (isProxima && pct < 100) {
+                        m.estado_cumplimiento = 'Próxima a vencer';
+                    } else if (pct >= 90) {
+                        m.estado_cumplimiento = 'Encaminada';
+                    } else if (pct >= 70) {
                         m.estado_cumplimiento = 'En riesgo';
                     } else {
                         m.estado_cumplimiento = 'Crítica';
@@ -83,18 +150,7 @@ $(document).ready(function () {
                 // Filtrar por Período
                 if (periodoFilter) {
                     metasCohort = metasCohort.filter(m => {
-                        if (!m.fecha_inicio || !m.fecha_fin) return false;
-                        const d1 = new Date(m.fecha_inicio + 'T00:00:00');
-                        const d2 = new Date(m.fecha_fin + 'T00:00:00');
-                        const timeDiff = d2.getTime() - d1.getTime();
-                        const daysDiff = Math.round(timeDiff / (1000 * 3600 * 24));
-                        
-                        let p = '';
-                        if (daysDiff >= 27 && daysDiff <= 32) p = 'mensual';
-                        else if (daysDiff >= 88 && daysDiff <= 93) p = 'trimestral';
-                        else if (daysDiff >= 179 && daysDiff <= 185) p = 'semestral';
-                        else if (daysDiff >= 364 && daysDiff <= 367) p = 'anual';
-                        
+                        const p = getMetaPeriodo(m);
                         return p === periodoFilter;
                     });
                 }
@@ -117,17 +173,16 @@ $(document).ready(function () {
                     });
                 }
 
-                // 3. CALCULAR TARJETAS KPI (sobre metasCohort del año seleccionado o vigente)
-                const currentYear = new Date().getFullYear();
-                const selectedYear = anioFilter ? parseInt(anioFilter, 10) : currentYear;
-                const metasKpi = metasCohort.filter(m => {
+                // 3. CALCULAR TARJETAS KPI (sobre metasCohort: filtrado por año si está seleccionado, de lo contrario todas)
+                const metasKpi = anioFilter ? metasCohort.filter(m => {
                     if (!m.fecha_inicio) return false;
                     const year = new Date(m.fecha_inicio + 'T00:00:00').getFullYear();
-                    return year === selectedYear;
-                });
+                    return String(year) === String(anioFilter);
+                }) : metasCohort;
 
                 const totalMetas = metasKpi.length;
                 let cumplidasCount = 0;
+                let sobrecumplidasCount = 0;
                 let enRiesgoCount = 0;
                 let vencidasCount = 0;
                 let sumCumplimiento = 0;
@@ -136,7 +191,9 @@ $(document).ready(function () {
                     const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
                     sumCumplimiento += pct;
 
-                    if (m.estado_cumplimiento === 'Sobrecumplida' || m.estado_cumplimiento === 'Cumplida') {
+                    if (m.estado_cumplimiento === 'Sobrecumplida') {
+                        sobrecumplidasCount++;
+                    } else if (m.estado_cumplimiento === 'Cumplida') {
                         cumplidasCount++;
                     } else if (m.estado_cumplimiento === 'En riesgo') {
                         enRiesgoCount++;
@@ -148,14 +205,26 @@ $(document).ready(function () {
                 const promCumplimiento = totalMetas > 0 ? (sumCumplimiento / totalMetas) : 0;
 
                 // Pintar valores KPI en DOM
-                $('#kpi-total-label').text(`Total de Metas ${selectedYear}`);
-                $('#kpi-total').text(totalMetas);
-                $('#kpi-cumplidas').text(cumplidasCount);
-                $('#kpi-riesgo').text(enRiesgoCount);
-                $('#kpi-vencidas').text(vencidasCount);
-                $('#kpi-promedio').text(promCumplimiento.toFixed(1) + '%');
+                const labelText = anioFilter ? `Total de Metas ${anioFilter}` : 'Total de Metas (Todos)';
+                $('#kpi-total-label').text(labelText);
+                if (isInitialLoad) {
+                    animateCounter('#kpi-total', totalMetas);
+                    animateCounter('#kpi-cumplidas', cumplidasCount);
+                    animateCounter('#kpi-sobrecumplidas', sobrecumplidasCount);
+                    animateCounter('#kpi-riesgo', enRiesgoCount);
+                    animateCounter('#kpi-vencidas', vencidasCount);
+                    animateCounter('#kpi-promedio', promCumplimiento, true, 1);
+                    isInitialLoad = false;
+                } else {
+                    $('#kpi-total').text(totalMetas);
+                    $('#kpi-cumplidas').text(cumplidasCount);
+                    $('#kpi-sobrecumplidas').text(sobrecumplidasCount);
+                    $('#kpi-riesgo').text(enRiesgoCount);
+                    $('#kpi-vencidas').text(vencidasCount);
+                    $('#kpi-promedio').text(promCumplimiento.toFixed(1) + '%');
+                }
 
-                // APLICAR CLASES DE SEMÁFORO VISUAL
+                // APLICAR CLASES DE SEMÁFORO VISUAL A TARJETAS KPI
                 // Total Metas -> azul (neutro/informativo)
                 $('.kpi-total').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
                                .addClass('kpi-state-blue');
@@ -170,6 +239,11 @@ $(document).ready(function () {
                 }
                 $('.kpi-cumplidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
                                    .addClass(classCumplidas);
+
+                // Sobrecumplidas -> verde si > 0, azul si 0
+                let classSobrecumplidas = sobrecumplidasCount > 0 ? 'kpi-state-green' : 'kpi-state-blue';
+                $('.kpi-sobrecumplidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
+                                       .addClass(classSobrecumplidas);
 
                 // En Riesgo -> verde if 0, amarillo if 1-2, rojo if >= 3
                 let classRiesgo = 'kpi-state-red';
@@ -191,6 +265,14 @@ $(document).ready(function () {
                 $('.kpi-vencidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
                                  .addClass(classVencidas);
 
+                // Pintar resumen contextual
+                const scopeText = anioFilter ? `el año ${anioFilter}` : 'el período seleccionado';
+                let summaryText = `Actualmente existen <strong>${totalMetas}</strong> metas para ${scopeText}, de las cuales <strong>${cumplidasCount + sobrecumplidasCount}</strong> están cumplidas, <strong>${enRiesgoCount}</strong> en riesgo y <strong>${vencidasCount}</strong> vencidas.`;
+                if (totalMetas === 0) {
+                    summaryText = anioFilter ? `No existen metas registradas para el año ${anioFilter}.` : 'No existen metas registradas para el período seleccionado.';
+                }
+                $('#contextual-summary').html(summaryText).show();
+
                 // 4. APLICAR FILTRO DE ESTADO Y BÚSQUEDA PARA LA TABLA (sobre metasCohort)
                 let metasTabla = metasCohort;
 
@@ -211,13 +293,17 @@ $(document).ready(function () {
                     ));
                 }
 
-                // 5. ORDENAR METAS POR IMPORTANCIA (Crítica, Vencida, En riesgo, Cumplida, Sobrecumplida)
+
+
+                // 5. ORDENAR METAS POR IMPORTANCIA (Crítica, Vencida, Próxima a vencer, En riesgo, Encaminada, Cumplida, Sobrecumplida)
                 const statePriority = {
                     'Crítica': 1,
                     'Vencida': 2,
-                    'En riesgo': 3,
-                    'Cumplida': 4,
-                    'Sobrecumplida': 5
+                    'Próxima a vencer': 3,
+                    'En riesgo': 4,
+                    'Encaminada': 5,
+                    'Cumplida': 6,
+                    'Sobrecumplida': 7
                 };
                 
                 metasTabla.sort((a, b) => {
@@ -251,14 +337,14 @@ $(document).ready(function () {
                 }
             },
             error: function () {
-                $('#tabla-metas tbody').html('<tr><td colspan="9" class="text-center message-error">Error al cargar los datos.</td></tr>');
+                $('#tabla-metas tbody').html('<tr><td colspan="8" class="text-center message-error">Error al cargar los datos.</td></tr>');
             }
         });
     }
 
     function getProgressClass(pct) {
-        if (pct >= 100) return 'progress-bar-success';
-        if (pct >= 60) return 'progress-bar-warning';
+        if (pct >= 90) return 'progress-bar-success';
+        if (pct >= 70) return 'progress-bar-warning';
         return 'progress-bar-danger';
     }
 
@@ -267,7 +353,7 @@ $(document).ready(function () {
         if (c === 'sobrecumplida') return 'status-active';
         if (c === 'cumplida') return 'status-active';
         if (c === 'no cumplida' || c === 'crítica') return 'status-danger';
-        if (c === 'en progreso' || c === 'en proceso' || c === 'en riesgo') return 'status-pending';
+        if (c === 'en progreso' || c === 'en proceso' || c === 'en riesgo' || c === 'encaminada') return 'status-pending';
         return 'status-pending';
     }
 
@@ -282,7 +368,7 @@ $(document).ready(function () {
 
     function renderTabla(metas) {
         if (!Array.isArray(metas) || metas.length === 0) {
-            $('#tabla-metas tbody').html('<tr><td colspan="9" class="text-center message-empty">No hay metas registradas</td></tr>');
+            $('#tabla-metas tbody').html('<tr><td colspan="8" class="text-center message-empty">No hay metas registradas</td></tr>');
             return;
         }
 
@@ -290,16 +376,28 @@ $(document).ready(function () {
         metas.forEach((m, index) => {
             const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
             const safePct = Math.min(Math.max(pct, 0), 100);
-            const overlayTextColor = (pct >= 60 && pct < 100) ? '#000' : '#fff';
+            const overlayTextColor = (pct >= 70 && pct < 90) ? '#000' : '#fff';
             
+            const logrado = parseInt(m.estudiantes_formados, 10) || 0;
+            const metaVal = parseInt(m.meta_objetivo, 10) || 0;
+            let subtextHtml = '';
+            if (logrado < metaVal) {
+                subtextHtml = `<span class="cumplimiento-subtext resta"><i class="bi bi-arrow-right-short"></i>Restan ${metaVal - logrado} para cumplir</span>`;
+            } else if (logrado > metaVal) {
+                subtextHtml = `<span class="cumplimiento-subtext supera"><i class="bi bi-chevron-double-up"></i>Superada por ${logrado - metaVal}</span>`;
+            } else {
+                subtextHtml = `<span class="cumplimiento-subtext exacta"><i class="bi bi-check-all"></i>Cumplida exactamente</span>`;
+            }
+
             const progressHtml = `
                 <div class="progress-container">
                     <div class="progress-bar-custom ${getProgressClass(pct)}" style="width: ${safePct}%;">
                         <span class="progress-text ${overlayTextColor === '#000' ? 'progress-text-dark' : ''}">
-                            ${safePct.toFixed(2)}%
+                            ${pct.toFixed(2)}%
                         </span>
                     </div>
                 </div>
+                ${subtextHtml}
             `;
 
             // Determinar clases de fila y badges inteligentes
@@ -311,6 +409,13 @@ $(document).ready(function () {
                     break;
                 case 'Cumplida':
                     badgeHtml = `<span class="status-badge badge-cumplida"><i class="bi bi-check-circle-fill me-1"></i>CUMPLIDA</span>`;
+                    break;
+                case 'Encaminada':
+                    badgeHtml = `<span class="status-badge badge-encaminada"><i class="bi bi-play-circle-fill me-1"></i>ENCAMINADA</span>`;
+                    break;
+                case 'Próxima a vencer':
+                    badgeHtml = `<span class="status-badge badge-proxima"><i class="bi bi-clock me-1"></i>PRÓXIMA A VENCER</span>`;
+                    rowClass = 'row-proxima';
                     break;
                 case 'En riesgo':
                     badgeHtml = `<span class="status-badge badge-riesgo"><i class="bi bi-exclamation-triangle-fill me-1"></i>EN RIESGO</span>`;
@@ -336,9 +441,8 @@ $(document).ready(function () {
             rows += `
                 <tr class="${rowClass}" style="--row-index: ${index};">
                     <td class="font-weight-semibold">${m.id_meta}</td>
-                    <td>${m.meta_objetivo}</td>
                     <td>${m.tipo_objetivo || 'Aprobados'}</td>
-                    <td class="text-end">${m.estudiantes_formados}</td>
+                    <td class="text-center logrado-meta-cell">${m.estudiantes_formados} / ${m.meta_objetivo}</td>
                     <td class="text-center">${progressHtml}</td>
                     <td>${m.fecha_inicio ? formatFecha(m.fecha_inicio) : '-'}</td>
                     <td>${m.fecha_fin ? formatFecha(m.fecha_fin) : '-'}</td>

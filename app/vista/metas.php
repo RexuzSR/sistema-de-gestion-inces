@@ -110,7 +110,7 @@ if (!empty($imagenUsuario)) {
                     <!-- Cumplidas -->
                     <div class="col-md col-sm-6">
                         <div class="kpi-card kpi-cumplidas">
-                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes o cerradas que alcanzaron o superaron el 100% de su objetivo de estudiantes formados (Cumplida y Sobrecumplida)."></i>
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas que alcanzaron exactamente el 100% de su objetivo de estudiantes formados."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-check-circle-fill"></i>
                             </div>
@@ -120,10 +120,23 @@ if (!empty($imagenUsuario)) {
                             </div>
                         </div>
                     </div>
+                    <!-- Sobrecumplidas -->
+                    <div class="col-md col-sm-6">
+                        <div class="kpi-card kpi-sobrecumplidas">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas que superaron el 100% de su objetivo de estudiantes formados."></i>
+                            <div class="kpi-icon-wrapper">
+                                <i class="bi bi-chevron-double-up"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-value" id="kpi-sobrecumplidas">0</span>
+                                <span class="kpi-label">Sobrecumplidas</span>
+                            </div>
+                        </div>
+                    </div>
                     <!-- En Riesgo -->
                     <div class="col-md col-sm-6">
                         <div class="kpi-card kpi-riesgo">
-                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes (no vencidas) con un porcentaje de cumplimiento entre 60% y 99%."></i>
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes con un porcentaje de cumplimiento entre 70% y 89%."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-exclamation-triangle-fill"></i>
                             </div>
@@ -146,16 +159,16 @@ if (!empty($imagenUsuario)) {
                             </div>
                         </div>
                     </div>
-                    <!-- Promedio General -->
+                    <!-- Avance Promedio del Período -->
                     <div class="col-md col-sm-6">
                         <div class="kpi-card kpi-promedio">
-                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Promedio general del porcentaje de cumplimiento obtenido entre todas las metas filtradas."></i>
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Avance promedio del porcentaje de cumplimiento obtenido entre todas las metas filtradas."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
                             <div class="kpi-content">
                                 <span class="kpi-value" id="kpi-promedio">0%</span>
-                                <span class="kpi-label">Promedio General</span>
+                                <span class="kpi-label">Avance Promedio del Período</span>
                             </div>
                         </div>
                     </div>
@@ -237,6 +250,8 @@ if (!empty($imagenUsuario)) {
                                 <option value="">Todos</option>
                                 <option value="Sobrecumplida">Sobrecumplida</option>
                                 <option value="Cumplida">Cumplida</option>
+                                <option value="Encaminada">Encaminada</option>
+                                <option value="Próxima a vencer">Próxima a vencer</option>
                                 <option value="En riesgo">En riesgo</option>
                                 <option value="Crítica">Crítica</option>
                                 <option value="Vencida">Vencida</option>
@@ -276,21 +291,29 @@ if (!empty($imagenUsuario)) {
                     </form>
                 </div>
 
-                    <div class="table-responsive mt-3 table-container">
-                        <table id="tabla-metas" class="table table-hover table-metas">
-                            <thead>
-                                <tr>
-                                    <th data-sort="id_meta">ID</th>
-                                    <th data-sort="meta_objetivo">Meta Objetivo</th>
-                                    <th data-sort="tipo_objetivo">Tipo Objetivo</th>
-                                    <th data-sort="estudiantes_formados" class="text-end">Estudiantes Formados</th>
-                                    <th data-sort="porcentaje_cumplimiento" class="text-center">% Cumplimiento</th>
-                                    <th data-sort="fecha_inicio">Fecha Inicio</th>
-                                    <th data-sort="fecha_fin">Fecha Fin</th>
-                                    <th data-sort="estado">Estado</th>
-                                    <th class="text-center">Acciones</th>
-                                </tr>
-                            </thead>
+                <!-- Contenedor del Resumen Contextual -->
+                <div class="row g-3 mb-4 mt-1">
+                    <div class="col-12">
+                        <div id="contextual-summary" class="p-3 shadow-sm mb-2" style="display: none;">
+                            <!-- Se poblará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive mt-3 table-container">
+                    <table id="tabla-metas" class="table table-hover table-metas">
+                        <thead>
+                            <tr>
+                                <th data-sort="id_meta">ID</th>
+                                <th data-sort="tipo_objetivo">Tipo Objetivo</th>
+                                <th class="text-center">Logrado / Meta</th>
+                                <th data-sort="porcentaje_cumplimiento" class="text-center">% Cumplimiento</th>
+                                <th data-sort="fecha_inicio">Fecha Inicio</th>
+                                <th data-sort="fecha_fin">Fecha Fin</th>
+                                <th data-sort="estado">Estado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
                             <tbody>
                                 <!-- Los datos se cargarán dinámicamente con JavaScript -->
                             </tbody>

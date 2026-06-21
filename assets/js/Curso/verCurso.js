@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 : '-';
               document.getElementById('programaFormación-view').textContent = programaText;
 
+              document.getElementById('preimpreso-view').textContent = curso.preimpreso || '-';
               document.getElementById('modalidad-view').textContent = curso.modalidad || '-';
               document.getElementById('turno-view').textContent = curso.turno || '-';
               document.getElementById('tipoFormacion-view').textContent = curso.tipoFormacion || '-';

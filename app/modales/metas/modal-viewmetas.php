@@ -1043,16 +1043,16 @@ function formatDateTime(dateTimeString) {
 
 function getColorByPercentage(percentage) {
     percentage = parseFloat(percentage) || 0;
-    if (percentage < 30) return 'rojo';
-    if (percentage < 70) return 'amarillo';
+    if (percentage < 70) return 'rojo';
+    if (percentage < 90) return 'amarillo';
     return 'verde';
 }
 
 function getColorByEstado(estado) {
     const estadoLower = (estado || '').toLowerCase();
-    if (estadoLower.includes('activa') || estadoLower.includes('cumplida')) return 'verde';
-    if (estadoLower.includes('pendiente') || estadoLower.includes('progreso')) return 'amarillo';
-    if (estadoLower.includes('cerrada') || estadoLower.includes('no cumplida')) return 'rojo';
+    if (estadoLower.includes('activa') || estadoLower.includes('cumplida') || estadoLower.includes('encaminada') || estadoLower.includes('sobrecumplida')) return 'verde';
+    if (estadoLower.includes('pendiente') || estadoLower.includes('progreso') || estadoLower.includes('riesgo') || estadoLower.includes('vencer') || estadoLower.includes('próxima')) return 'amarillo';
+    if (estadoLower.includes('cerrada') || estadoLower.includes('no cumplida') || estadoLower.includes('crítica') || estadoLower.includes('vencida')) return 'rojo';
     if (estadoLower.includes('espera')) return 'azul';
     return 'gris';
 }
@@ -1074,16 +1074,25 @@ function getEstadoBadge(estado, tipo = 'estado') {
     const estadoLower = (estado || '').toLowerCase();
     
     if (tipo === 'cumplimiento') {
-        if (estadoLower.includes('cumplida') || estadoLower.includes('completado')) {
+        if (estadoLower.includes('sobrecumplida')) {
+            badgeClass = 'verde';
+            icon = 'bi-chevron-double-up';
+        } else if (estadoLower.includes('cumplida') || estadoLower.includes('completado')) {
             badgeClass = 'verde';
             icon = 'bi-check-circle';
-        } else if (estadoLower.includes('progreso') || estadoLower.includes('curso')) {
+        } else if (estadoLower.includes('encaminada')) {
+            badgeClass = 'verde';
+            icon = 'bi-play-circle';
+        } else if (estadoLower.includes('vencer') || estadoLower.includes('próxima')) {
+            badgeClass = 'amarillo';
+            icon = 'bi-clock';
+        } else if (estadoLower.includes('progreso') || estadoLower.includes('curso') || estadoLower.includes('riesgo')) {
             badgeClass = 'amarillo';
             icon = 'bi-arrow-clockwise';
         } else if (estadoLower.includes('pendiente')) {
             badgeClass = 'azul';
             icon = 'bi-clock';
-        } else if (estadoLower.includes('no cumplida') || estadoLower.includes('atrasada')) {
+        } else if (estadoLower.includes('no cumplida') || estadoLower.includes('atrasada') || estadoLower.includes('crítica') || estadoLower.includes('vencida')) {
             badgeClass = 'rojo';
             icon = 'bi-x-circle';
         }
