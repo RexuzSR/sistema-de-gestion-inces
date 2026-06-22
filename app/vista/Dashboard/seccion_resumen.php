@@ -587,7 +587,16 @@
                                                 style="<?php echo $trNavStyle; ?>" <?php echo $trNavHover; ?> title="Ver participante">
                                                 <td style="padding:7px 10px;font-weight:600;"><?php echo htmlspecialchars($p['primer_nombre'].' '.$p['primer_apellido']); ?></td>
                                                 <td style="padding:7px 10px;color:#64748b;"><?php echo htmlspecialchars($p['cedula']); ?></td>
-                                                <td style="padding:7px 10px;"><?php echo mkBadge(htmlspecialchars($p['estado']),'#f1f5f9','#475569'); ?></td>
+                                                <td style="padding:7px 10px;">
+                                                    <?php
+                                                    $est = $p['estado'];
+                                                    if ($est === 'Diferido') {
+                                                        echo mkBadge('Diferido', '#fee2e2', '#b91c1c');
+                                                    } else {
+                                                        echo mkBadge(htmlspecialchars($est), '#f1f5f9', '#475569');
+                                                    }
+                                                    ?>
+                                                </td>
                                                 <td style="padding:7px 10px;"><?php echo mkGenero($p['genero']); ?></td>
                                             </tr>
                                             <?php endforeach; ?>

@@ -97,6 +97,9 @@ try {
     include __DIR__ . '/../../vista/reportes/pdf_templates/historico_metas.php';
     $html = ob_get_clean();
 
+    $nombreArchivo = 'Reporte_Historico_Metas_' . ($anio ?? date('Y')) . '.pdf';
+    $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
     $options = new Options();
     $options->set('isHtml5ParserEnabled', true);
     $options->set('isRemoteEnabled', true);
@@ -107,7 +110,7 @@ try {
     $dompdf->setPaper('A4', 'landscape'); // Orientación APAISADA
     $dompdf->render();
 
-    $dompdf->stream('Reporte_Historico_Metas.pdf', ['Attachment' => false]);
+    $dompdf->stream($nombreArchivo, ['Attachment' => false]);
 } catch (Exception $e) {
     if (ob_get_level() > 0) ob_end_clean();
     http_response_code(500);

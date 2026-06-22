@@ -475,6 +475,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_ambito.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Reporte_Participantes_Ambito_' . $anio . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -485,4 +488,4 @@ $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 if (ob_get_length()) ob_end_clean();
-$dompdf->stream('Reporte_Participantes_Ambito.pdf', ['Attachment' => false]);
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

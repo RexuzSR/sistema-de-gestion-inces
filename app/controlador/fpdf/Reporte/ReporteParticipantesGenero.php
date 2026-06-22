@@ -96,6 +96,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_genero.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Reporte_Generos_Cursos_' . date('Y') . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -107,4 +110,4 @@ $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
-$dompdf->stream('Reporte_Generos_Cursos.pdf', ['Attachment' => false]);
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

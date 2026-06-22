@@ -102,6 +102,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_aprobados.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Reporte_Participantes_Aprobados_' . $anioTabla . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -113,4 +116,4 @@ $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
-$dompdf->stream('Reporte_Participantes_Aprobados_' . $anioTabla . '.pdf', ['Attachment' => false]);
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

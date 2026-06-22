@@ -161,6 +161,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/total_docentes.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Informe_Total_Docentes_' . $anioBase . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 // Inicializar Dompdf
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
@@ -175,4 +178,4 @@ $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 // Enviar
-$dompdf->stream('Informe_Total_Docentes_' . $anioBase . '.pdf', ["Attachment" => false]);
+$dompdf->stream($nombreArchivo, ["Attachment" => false]);

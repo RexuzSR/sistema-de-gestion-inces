@@ -539,12 +539,6 @@
                 border: 1px solid #0281fe;
                 box-shadow: 0 0 10px rgba(2, 129, 254, 0.3);
               ">Total: <span id="contador-participantes-tabla">0</span></span>
-              <button class="btn action-icon-light" onclick="enviarRecordatorioMasivo()" title="Enviar recordatorio a todos">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0281fe" stroke-width="2">
-                  <path d="M22 2L11 13"></path>
-                  <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-                </svg>
-              </button>
             </div>
           </div>
 

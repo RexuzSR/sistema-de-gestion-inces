@@ -122,6 +122,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/total_curso.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Reporte_Cursos_Comparativo_' . date('Y') . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -133,4 +136,4 @@ $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
-$dompdf->stream('Reporte_Cursos_Comparativo.pdf', ['Attachment' => false]);
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

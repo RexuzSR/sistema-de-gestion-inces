@@ -112,7 +112,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', 1);
     session_name('SISTEMA_CONTROL_INCES');
     session_start();
-}$usuarioFull = 'Usuario no identificado';
+}
+$usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {
     $sqlUsuario = "SELECT TRIM(CONCAT(
                         COALESCE(primer_nombre, ''), ' ',
@@ -159,6 +160,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_mas_participantes.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Reporte_Cursos_Mas_Participantes_' . $anio . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -170,4 +174,4 @@ $dompdf->setPaper('A4', 'landscape');
 $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
-$dompdf->stream('Reporte_Cursos_Mas_Participantes.pdf', ['Attachment' => false]);
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

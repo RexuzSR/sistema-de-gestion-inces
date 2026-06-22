@@ -70,7 +70,7 @@ $kPctForm = (function ($c) {
 // ── KPI: Inactivos (incluye "En sistema") ──
 $kInactivos = (function ($c) {
     $tot   = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $inact = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado IN ('Inactivo','En sistema', 'Disponible')")->fetchColumn();
+    $inact = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado IN ('Inactivo','En sistema')")->fetchColumn();
     return [
         'inactivos' => $inact,
         'total'     => $tot,
@@ -181,7 +181,7 @@ $cardInactivos = $conn->query("
            TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad,
            fecha_registro
     FROM tb_participante
-    WHERE estado IN ('Inactivo','En sistema')
+    WHERE estado IN ('Inactivo','En sistema','Diferido')
     ORDER BY primer_apellido
 ")->fetchAll(PDO::FETCH_ASSOC);
 

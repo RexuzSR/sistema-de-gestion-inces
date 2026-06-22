@@ -166,6 +166,12 @@ try {
     include __DIR__ . '/../../vista/reportes/pdf_templates/historial_docente.php';
     $html = ob_get_clean();
 
+    $cedulaDocente = $perfil['cedula'] ?? 'Docente';
+    $nombreDocente = trim(($perfil['primer_nombre'] ?? '') . '_' . ($perfil['primer_apellido'] ?? ''));
+    $nombreDocente = preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $nombreDocente));
+    $nombreArchivo = 'Reporte_Historial_Docente_' . $cedulaDocente . '_' . $nombreDocente . '.pdf';
+    $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
     $options = new Options();
     $options->set('isHtml5ParserEnabled', true);
     $options->set('isRemoteEnabled', true);
@@ -176,7 +182,7 @@ try {
     $dompdf->setPaper('A4', 'portrait');
     $dompdf->render();
 
-    $dompdf->stream('Reporte_Historial_Docente.pdf', ['Attachment' => false]);
+    $dompdf->stream($nombreArchivo, ['Attachment' => false]);
 } catch (Exception $e) {
     if (ob_get_level() > 0) ob_end_clean();
     http_response_code(500);

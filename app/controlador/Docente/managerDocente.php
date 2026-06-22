@@ -109,7 +109,8 @@ class docente {
 
             return [
                 "success" => true,
-                "message" => "Docente registrado con éxito"
+                "message" => "Docente registrado con éxito",
+                "id_docente" => $id_docente
             ];
         } catch (PDOException $e) {
             error_log("Error PDO al registrar docente: " . $e->getMessage());

@@ -124,6 +124,18 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_area.php';
 $html = ob_get_clean();
 
+// Nombre del archivo
+$nombreArchivo = 'Reporte_Cursos_';
+if (!empty($areasFiltro)) {
+    $nombreArchivo .= 'Filtrado_' . substr(implode('_', $areasFiltro), 0, 30);
+} else {
+    $nombreArchivo .= 'Completo';
+}
+$nombreArchivo .= '.pdf';
+
+// Reemplazar el título de la página con el nombre de archivo descriptivo para metadatos
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -146,13 +158,5 @@ try {
 
 if (ob_get_length()) ob_end_clean();
 
-// Nombre del archivo
-$nombreArchivo = 'Reporte_Cursos_';
-if (!empty($areasFiltro)) {
-    $nombreArchivo .= 'Filtrado_' . substr(implode('_', $areasFiltro), 0, 30);
-} else {
-    $nombreArchivo .= 'Completo';
-}
-$nombreArchivo .= '.pdf';
-
 $dompdf->stream($nombreArchivo, ['Attachment' => false]);
+

@@ -43,7 +43,7 @@ if (isset($data['id_ambito']) && $data['id_ambito'] !== '') {
 }
 
 // Validar tipo de objetivo
-$allowedTipos = ['Aprobados','Inscritos','aprobados','inscritos'];
+$allowedTipos = ['Aprobados','Inscritos','Ingresados','Masculino','Femenino','aprobados','inscritos','ingresados','masculino','femenino'];
 if (isset($data['tipo_objetivo']) && $data['tipo_objetivo'] !== '') {
     $tipo = $data['tipo_objetivo'];
     if (!in_array($tipo, $allowedTipos)) {
@@ -51,7 +51,7 @@ if (isset($data['tipo_objetivo']) && $data['tipo_objetivo'] !== '') {
         exit;
     }
     // Normalizar a mayúscula inicial que espera la BD
-    $data['tipo_objetivo'] = ucfirst(strtolower($tipo)) === 'Aprobados' ? 'Aprobados' : 'Inscritos';
+    $data['tipo_objetivo'] = ucfirst(strtolower($tipo));
 } else {
     $data['tipo_objetivo'] = 'Aprobados';
 }

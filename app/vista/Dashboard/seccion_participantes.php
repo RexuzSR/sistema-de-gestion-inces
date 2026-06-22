@@ -705,10 +705,10 @@ if (typeof CHART_MAP !== 'undefined') {
         ...DATA.asignacion.map(p => ({ ...p, _subtipo: 'Asignado' }))
     ].sort((a, b) => (a.primer_apellido || '').localeCompare(b.primer_apellido || ''));
 
-    /* Sin curso activo = Disponible + Inactivo + En sistema */
+    /* Sin curso activo = Disponible + Inactivo + En sistema + Diferido */
     const _sinCursoRaw = [
         ...DATA.disponibles.map(p => ({ ...p, _subtipo: 'Disponible' })),
-        ...DATA.inactivos.map(p   => ({ ...p, _subtipo: p.estado === 'En sistema' ? 'En sistema' : 'Sin curso' }))
+        ...DATA.inactivos.map(p   => ({ ...p, _subtipo: p.estado === 'En sistema' ? 'En sistema' : (p.estado === 'Diferido' ? 'Diferido' : 'Sin curso') }))
     ].sort((a, b) => (a.primer_apellido || '').localeCompare(b.primer_apellido || ''));
 
     /* La card data-kpi="disponibles" debe mostrar el conjunto completo sin curso */
@@ -738,9 +738,11 @@ if (typeof CHART_MAP !== 'undefined') {
             thead:  ['#','Nombre','Cédula','Género','Grado','Edad','Estado'],
             row: (p, i) => {
                 const subColor = p._subtipo === 'Disponible' ? '#92400e'
-                               : p._subtipo === 'En sistema' ? '#475569' : '#64748b';
+                               : p._subtipo === 'En sistema' ? '#475569'
+                               : p._subtipo === 'Diferido'   ? '#b91c1c' : '#64748b';
                 const subBg    = p._subtipo === 'Disponible' ? '#fef9ec'
-                               : p._subtipo === 'En sistema' ? '#f1f5f9' : '#f8fafc';
+                               : p._subtipo === 'En sistema' ? '#f1f5f9'
+                               : p._subtipo === 'Diferido'   ? '#fee2e2' : '#f8fafc';
                 return `
                 <tr class="part-row-link" data-cedula="${esc(p.cedula)}" style="cursor:pointer;">
                     <td style="color:#94a3b8;font-size:.72rem;">${i+1}</td>
@@ -999,7 +1001,7 @@ if (typeof CHART_MAP !== 'undefined') {
           <div class="empty-state-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
               <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-              <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252(1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+              <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
             </svg>
           </div>
           <h6 class="fw-bold text-dark mb-1">Sin registros</h6>

@@ -97,6 +97,10 @@ try {
     include __DIR__ . '/../../vista/reportes/pdf_templates/detalle_participantes_meta.php';
     $html = ob_get_clean();
 
+    $metaId = $meta['id_meta'] ?? ($meta['id'] ?? 'Meta');
+    $nombreArchivo = 'Reporte_Detalle_Meta_Participantes_' . $metaId . '.pdf';
+    $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
     $options = new Options();
     $options->set('isHtml5ParserEnabled', true);
     $options->set('isRemoteEnabled', true);
@@ -107,7 +111,7 @@ try {
     $dompdf->setPaper('A4', 'portrait'); // Orientación RETRATO (Portrait)
     $dompdf->render();
 
-    $dompdf->stream('Reporte_Detalle_Meta_Participantes.pdf', ['Attachment' => false]);
+    $dompdf->stream($nombreArchivo, ['Attachment' => false]);
 } catch (Exception $e) {
     if (ob_get_level() > 0) ob_end_clean();
     http_response_code(500);

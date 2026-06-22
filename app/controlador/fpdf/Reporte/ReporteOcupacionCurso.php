@@ -105,6 +105,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/ocupacion_curso.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Reporte_Ocupacion_Cursos_' . date('Y') . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -116,4 +119,4 @@ $dompdf->setPaper('A4', 'landscape');
 $dompdf->render();
 
 if (ob_get_length()) ob_end_clean();
-$dompdf->stream('Reporte_Ocupacion_Cursos.pdf', ['Attachment' => false]);
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

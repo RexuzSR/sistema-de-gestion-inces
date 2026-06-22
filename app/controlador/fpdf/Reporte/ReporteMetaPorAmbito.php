@@ -254,6 +254,9 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/meta_por_ambito.php';
 $html = ob_get_clean();
 
+$nombreArchivo = 'Informe_Gerencial_Metas_' . $anioTabla . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
 // Inicializar Dompdf
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
@@ -268,4 +271,4 @@ $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
 // Enviar
-$dompdf->stream('Informe_Gerencial_Metas_' . $anioTabla . '.pdf', ["Attachment" => false]);
+$dompdf->stream($nombreArchivo, ["Attachment" => false]);
