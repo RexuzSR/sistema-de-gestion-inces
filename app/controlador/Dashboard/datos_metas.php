@@ -258,44 +258,15 @@ try {
 // ────────────────────────────────────────────────────────────
 
 // 1. Tasa de cumplimiento de metas por ámbitos (metas activas con ámbito asignado)
-$tasaCumplimientoAmbitos = 0.0;
-try {
-    $st = $conn->prepare("
-        SELECT COALESCE(ROUND(AVG(porcentaje_cumplimiento), 1), 0) AS tasa
-        FROM tb_metas
-        WHERE estado = 'Activa'
-          AND YEAR(fecha_inicio) = :anio
-          AND id_ambito IS NOT NULL
-    ");
-    $st->execute([':anio' => $anioActual]);
-    $tasaCumplimientoAmbitos = (float)$st->fetchColumn();
-} catch (Exception $e) {}
+$tasaCumplimientoAmbitos = IndicadorHelper::getCumplimientoMetasAmbito($conn)['pct'];
 
-// 2. Tasa de cumplimiento del objetivo de participantes anuales (meta global de Inscritos con mayor objetivo)
-$tasaMetaAnual = 0.0;
-$metaAnualObj = 0;
-$metaAnualReal = 0;
-try {
-    $st = $conn->prepare("
-        SELECT porcentaje_cumplimiento, meta_objetivo, estudiantes_formados
-        FROM tb_metas
-        WHERE estado = 'Activa'
-          AND YEAR(fecha_inicio) = :anio
-          AND tipo_objetivo = 'Inscritos'
-          AND id_ambito IS NULL
-        ORDER BY meta_objetivo DESC
-        LIMIT 1
-    ");
-    $st->execute([':anio' => $anioActual]);
-    $resMetaAnual = $st->fetch(PDO::FETCH_ASSOC);
-    if ($resMetaAnual) {
-        $tasaMetaAnual = (float)$resMetaAnual['porcentaje_cumplimiento'];
-        $metaAnualObj = (int)$resMetaAnual['meta_objetivo'];
-        $metaAnualReal = (int)$resMetaAnual['estudiantes_formados'];
-    }
-} catch (Exception $e) {}
+// 2. Tasa de cumplimiento del objetivo de participantes anuales
+$resAnual = IndicadorHelper::getCumplimientoParticipantesAnual($conn);
+$tasaMetaAnual = $resAnual['pct'];
+$metaAnualObj = $resAnual['objetivo'];
+$metaAnualReal = $resAnual['real'];
 
 // ────────────────────────────────────────────────────────────
 // SEMÁFORO GENERAL de metas
 // ────────────────────────────────────────────────────────────
-$s_meta = sem($kMetas['promedio_pct'] ?? 0, 80, 95);
+$s_meta = IndicadorHelper::evaluarSemaforo('US_CUMP_METAS', $kMetas['promedio_pct'] ?? 0)['alerta'];

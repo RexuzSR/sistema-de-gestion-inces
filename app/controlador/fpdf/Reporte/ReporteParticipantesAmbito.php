@@ -475,7 +475,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_ambito.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Participantes_Ambito_' . $anio . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Participantes_por_Ambito_' . $anio . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();

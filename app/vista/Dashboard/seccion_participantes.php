@@ -229,7 +229,7 @@
             $pctConCurso = $total_part > 0 ? round($conCurso / $total_part * 100, 1) : 0;
             $pctFormKpi  = $total_part > 0 ? round((int)$kAsignacion['en_formacion'] / $total_part * 100, 1) : 0;
             $pctAsigKpi  = $total_part > 0 ? round((int)$kAsignacion['asignados']    / $total_part * 100, 1) : 0;
-            $sConCurso   = sem($pctConCurso, 70, 84);
+            $sConCurso   = IndicadorHelper::evaluarSemaforo('PI_ASIG_EFECTIVA', $pctConCurso)['alerta'];
 
             /* Sin curso activo (disponibles para asignar) */
             $sinCurso    = $total_part - $conCurso;         /* todos los demás */
@@ -239,7 +239,7 @@
             $cntSistema  = (int)$kInactivos['inactivos'];   /* kInactivos agrupa En sistema */
             $cntDiferido = max(0, $sinCurso - $cntDisp - $cntSistema);
             /* Semáforo invertido: muchos sin curso = rojo */
-            $sSinCurso   = sem($pctSinCurso, 20, 35, true);
+            $sSinCurso   = IndicadorHelper::evaluarSemaforo('US_PART_DISP', $pctSinCurso)['alerta'];
             ?>
 
             <div class="row g-3 justify-content-center mx-auto" id="kpi-cards-participantes" style="max-width:1050px;">

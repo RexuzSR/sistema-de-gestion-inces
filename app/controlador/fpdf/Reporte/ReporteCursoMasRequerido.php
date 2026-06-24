@@ -97,7 +97,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_mas_requerido.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Cursos_Mas_Requeridos_' . $anio . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Cursos_Mas_Requeridos_' . $anio . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();

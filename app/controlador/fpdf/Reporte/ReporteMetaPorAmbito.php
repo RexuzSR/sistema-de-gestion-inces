@@ -254,7 +254,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/meta_por_ambito.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Informe_Gerencial_Metas_' . $anioTabla . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Metas_por_Ambito_' . $anioTabla . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 // Inicializar Dompdf

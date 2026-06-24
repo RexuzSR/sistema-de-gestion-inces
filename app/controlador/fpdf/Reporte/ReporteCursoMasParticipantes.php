@@ -160,7 +160,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_mas_participantes.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Cursos_Mas_Participantes_' . $anio . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Cursos_Mas_Participantes_' . $anio . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();

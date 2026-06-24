@@ -118,16 +118,7 @@ $cursosDetalle = $conn->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // ── KPI: Utilización de cupos ──
-$kUtilizacion = (function ($c) {
-    $r = $c->query("
-        SELECT COALESCE(SUM(num_inscritos),0) i,
-               COALESCE(SUM(max_participantes),1) q
-        FROM tb_curso
-        WHERE id_estatusCurso IN (1,2,3,4)
-    ")->fetch(PDO::FETCH_ASSOC);
-    $p = $r['q'] > 0 ? round($r['i'] / $r['q'] * 100, 1) : 0;
-    return ['inscritos' => $r['i'], 'cupos' => $r['q'], 'pct' => $p];
-})($conn);
+$kUtilizacion = IndicadorHelper::getUtilizacionCupos($conn);
 
 // ── KPI: Cupos perdidos ──
 $kCuposPerdidos = [
@@ -139,66 +130,13 @@ $kCuposPerdidos = [
 ];
 
 // ── KPI: Promedio de inscritos por curso activo ──
-$kPromedio = $conn->query("
-    SELECT COUNT(*) total_cursos,
-           COALESCE(ROUND(AVG(num_inscritos),1),0) promedio
-    FROM tb_curso
-    WHERE id_estatusCurso IN (1,2,3,4)
-")->fetch(PDO::FETCH_ASSOC);
+$kPromedio = [
+    'total_cursos' => (int)$conn->query("SELECT COUNT(*) FROM tb_curso WHERE id_curso != 1 AND id_estatusCurso IN (1,2,3,4)")->fetchColumn(),
+    'promedio' => IndicadorHelper::getPromedioParticipantes($conn)['pct']
+];
 
 // ── KPI: Programas ejecutados (iniciados) ──
-$kEjecucion = ['ejecutados' => 0, 'planificados' => 0, 'pct' => 0, 'fuente' => 'cursos'];
-try {
-    $metasCursos = $conn->query("
-        SELECT COUNT(*) AS total,
-               COALESCE(ROUND(AVG(porcentaje_cumplimiento),1),0) AS pct_promedio,
-               SUM(CASE WHEN estado_cumplimiento = 'Cumplida' THEN 1 ELSE 0 END) AS cumplidas
-        FROM tb_metas
-        WHERE estado = 'Activa'
-          AND QUARTER(fecha_inicio) = QUARTER(CURDATE())
-          AND YEAR(fecha_inicio)    = YEAR(CURDATE())
-          AND (LOWER(tipo_objetivo) LIKE '%curso%'
-            OR LOWER(tipo_objetivo) LIKE '%formac%'
-            OR LOWER(tipo_objetivo) LIKE '%program%')
-    ")->fetch(PDO::FETCH_ASSOC);
-    if ((int)$metasCursos['total'] > 0) {
-        $total_meta = (int)$metasCursos['total'];
-        $cumplidas_meta = (int)$metasCursos['cumplidas'];
-        $pct_meta = $total_meta > 0 ? round($cumplidas_meta / $total_meta * 100, 1) : 0;
-        $kEjecucion = [
-            'ejecutados'   => $cumplidas_meta,
-            'planificados' => $total_meta,
-            'pct'          => $pct_meta,
-            'fuente'       => 'metas',
-        ];
-    } else {
-        $planif = (int)$conn->query("
-            SELECT COUNT(*) FROM tb_curso
-            WHERE id_curso != 1
-              AND QUARTER(fecha_inicio) = QUARTER(CURDATE())
-              AND YEAR(fecha_inicio)    = YEAR(CURDATE())
-        ")->fetchColumn();
-                // Contar como "ejecutados" aquellos cursos que están en formación/en proceso
-                $ejecut = (int)$conn->query(" 
-                        SELECT COUNT(*) FROM tb_curso c
-                        JOIN tb_estatuscurso e ON c.id_estatusCurso = e.id_estatusCurso
-                        WHERE c.id_curso != 1
-                            AND QUARTER(c.fecha_inicio) = QUARTER(CURDATE())
-                            AND YEAR(c.fecha_inicio)    = YEAR(CURDATE())
-                            AND (
-                                        e.id_estatusCurso = 3
-                                 OR LOWER(e.nombre_estatusCurso) LIKE '%form%'
-                                 OR LOWER(e.nombre_estatusCurso) LIKE '%proceso%'
-                            )
-                ")->fetchColumn();
-        $kEjecucion = [
-            'ejecutados'   => $ejecut,
-            'planificados' => $planif,
-            'pct'          => $planif > 0 ? round($ejecut / $planif * 100, 1) : 0,
-            'fuente'       => 'cursos',
-        ];
-    }
-} catch(Exception $e) {}
+$kEjecucion = IndicadorHelper::getProgramasEjecutadosPlanificados($conn);
 
 // ── Años disponibles para filtro ──
 $aniosDisponibles = [];
@@ -386,10 +324,10 @@ $cursosPorMes = (function ($c) {
 })($conn);
 
 // ── Semáforos específicos de cursos ──
-$s_util      = sem($kUtilizacion['pct'], 70, 89);
-$s_ejecucion = $kEjecucion['pct'] >= 85 ? 'verde' : ($kEjecucion['pct'] >= 75 ? 'amarillo' : 'rojo');
-$s_formMes   = $totalFormMes  > 15 ? 'verde' : ($totalFormMes  >= 10 ? 'amarillo' : 'rojo');
-$s_formTrim  = $totalFormTrim > 45 ? 'verde' : ($totalFormTrim >= 30 ? 'amarillo' : 'rojo');
+$s_util      = IndicadorHelper::evaluarSemaforo('PP_UTIL_CUPOS', $kUtilizacion['pct'])['alerta'];
+$s_ejecucion = IndicadorHelper::evaluarSemaforo('PI_PROG_PLANIFICADOS', $kEjecucion['pct'])['alerta'];
+$s_formMes   = IndicadorHelper::evaluarSemaforo('PI_FORM_AMBITO_MENS', $totalFormMes)['alerta'];
+$s_formTrim  = IndicadorHelper::evaluarSemaforo('PI_FORM_AMBITO_TRIM', $totalFormTrim)['alerta'];
 
 // ── Auxiliares de período para los selectores ──
 $mesActualNum       = (int)date('n');

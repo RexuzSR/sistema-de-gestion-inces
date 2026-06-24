@@ -46,26 +46,10 @@ $ultimosPart = $conn->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // ── KPI: Disponibles sin asignar ──
-$kDisponibles = (function ($c) {
-    $tot = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $d   = $c->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'Disponible'")->fetchColumn();
-    return [
-        'disponibles' => $d,
-        'total'       => $tot,
-        'pct'         => $tot > 0 ? round($d / $tot * 100, 1) : 0,
-    ];
-})($conn);
+$kDisponibles = IndicadorHelper::getParticipantesDisponiblesSinAsignacion($conn);
 
 // ── KPI: En formación ──
-$kPctForm = (function ($c) {
-    $tot = $c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $f   = $c->query("SELECT COUNT(*) FROM tb_participante p WHERE LOWER(p.estado) LIKE '%en form%'")->fetchColumn();
-    return [
-        'en_formacion' => $f,
-        'total'        => $tot,
-        'pct'          => $tot > 0 ? round($f / $tot * 100, 1) : 0,
-    ];
-})($conn);
+$kPctForm = IndicadorHelper::getParticipantesEnFormacion($conn);
 
 // ── KPI: Inactivos (incluye "En sistema") ──
 $kInactivos = (function ($c) {
@@ -78,24 +62,10 @@ $kInactivos = (function ($c) {
     ];
 })($conn);
 
-// ── KPI: Índice de asignación (Participantes asignados a cursos / Total participantes)
-$kAsignacion = (function ($c) {
-    $tot = (int)$c->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-    $a   = (int)$c->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'Asignado'")->fetchColumn();
-    $f   = (int)$c->query("SELECT COUNT(*) FROM tb_participante p WHERE LOWER(p.estado) LIKE '%en form%'")->fetchColumn();
-    // participantes activos = Asignados + En formación
-    $act = $a + $f;
-    // pct ahora según la fórmula solicitada: (Participantes asignados a cursos / Total participantes) * 100
-    // Aquí interpretamos "Participantes asignados a cursos" como los activos (Asignados + En formación)
-    $pct = $tot > 0 ? round($act / $tot * 100, 1) : 0;
-    return [
-        'asignados'         => $a,
-        'en_formacion'      => $f,
-        'activos'           => $act,
-        'total'             => $tot,
-        'pct'               => $pct,
-    ];
-})($conn);
+// ── KPI: Índice de asignación ──
+$kAsignacion = IndicadorHelper::getAsignacionEfectiva($conn);
+$kAsignacion['asignados'] = (int)$conn->query("SELECT COUNT(*) FROM tb_participante p WHERE p.estado = 'Asignado'")->fetchColumn();
+$kAsignacion['en_formacion'] = $kPctForm['en_formacion'];
 
 // ── KPI: Promedio de inscritos por curso activo ──
 $kPromedio = $conn->query("
@@ -186,12 +156,12 @@ $cardInactivos = $conn->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // ── Semáforos específicos de participantes ──
-$promPct  = $kPromedio['total_cursos'] > 0 ? round($kPromedio['promedio'] / 30 * 100, 1) : 0;
-$s_disp   = sem($kDisponibles['pct'], 20, 29, true);
-$s_form   = sem($kPctForm['pct'], 60, 79);
-$s_asig   = sem($kAsignacion['pct'], 70, 84);
+$promPct  = $kPromedio['promedio'];
+$s_disp   = IndicadorHelper::evaluarSemaforo('US_PART_DISP', $kDisponibles['pct'])['alerta'];
+$s_form   = IndicadorHelper::evaluarSemaforo('AC_PART_FORMACION', $kPctForm['pct'])['alerta'];
+$s_asig   = IndicadorHelper::evaluarSemaforo('PI_ASIG_EFECTIVA', $kAsignacion['pct'])['alerta'];
 $s_inact  = sem($kInactivos['pct'], 20, 35, true);
-$s_prom   = sem($promPct, 60, 84);
+$s_prom   = IndicadorHelper::evaluarSemaforo('PI_PROM_PARTICIPANTES', $promPct)['alerta'];
 
 // ── JSON para JS (cards seleccionables) ──
 $jsCardDisponibles = json_encode($cardDisponibles, JSON_UNESCAPED_UNICODE);

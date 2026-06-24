@@ -98,7 +98,8 @@ try {
     $html = ob_get_clean();
 
     $metaId = $meta['id_meta'] ?? ($meta['id'] ?? 'Meta');
-    $nombreArchivo = 'Reporte_Detalle_Meta_Participantes_' . $metaId . '.pdf';
+    $fechaNombreArchivo = date('Y-m-d');
+    $nombreArchivo = 'INCES_Detalle_Meta_' . $metaId . '_' . $fechaNombreArchivo . '.pdf';
     $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
     $options = new Options();

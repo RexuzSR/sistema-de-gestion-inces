@@ -24,8 +24,15 @@ function _kpiColors(float $p): array {
     return ['#ef4444', '#fdf2f2', 'rojo'];
 }
 
-[$colorAmbitos, $bgAmbitos, $semAmbitos] = _kpiColors($tasaCumplimientoAmbitos);
-[$colorAnual, $bgAnual, $semAnual] = _kpiColors($tasaMetaAnual);
+$resSemAmbitos = IndicadorHelper::evaluarSemaforo('US_CUMP_METAS', $tasaCumplimientoAmbitos);
+$semAmbitos = $resSemAmbitos['alerta'];
+$colorAmbitos = $semAmbitos === 'verde' ? '#28c76f' : ($semAmbitos === 'amarillo' ? '#f59e0b' : '#ef4444');
+$bgAmbitos = $semAmbitos === 'verde' ? '#e6f7ed' : ($semAmbitos === 'amarillo' ? '#fef8e6' : '#fdf2f2');
+
+$resSemAnual = IndicadorHelper::evaluarSemaforo('AC_OBJ_PARTICIPANTES_ANUAL', $tasaMetaAnual);
+$semAnual = $resSemAnual['alerta'];
+$colorAnual = $semAnual === 'verde' ? '#28c76f' : ($semAnual === 'amarillo' ? '#f59e0b' : '#ef4444');
+$bgAnual = $semAnual === 'verde' ? '#e6f7ed' : ($semAnual === 'amarillo' ? '#fef8e6' : '#fdf2f2');
 
 $pctA = (float)($progresoAnual['pct_global']  ?? 0);
 $totA = (int)  ($progresoAnual['total_metas'] ?? 0);

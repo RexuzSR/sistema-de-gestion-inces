@@ -294,13 +294,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_trayectoria.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Trayectoria_Cursos_';
-if (!empty($anio)) {
-    $nombreArchivo .= $anio;
-} else {
-    $nombreArchivo .= date('Y');
-}
-$nombreArchivo .= '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Trayectoria_Cursos_' . (!empty($anio) ? $anio : date('Y')) . '_' . $fechaNombreArchivo . '.pdf';
 
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 

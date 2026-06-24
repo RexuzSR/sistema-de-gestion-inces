@@ -125,13 +125,8 @@ include __DIR__ . '/../../../vista/reportes/pdf_templates/curso_area.php';
 $html = ob_get_clean();
 
 // Nombre del archivo
-$nombreArchivo = 'Reporte_Cursos_';
-if (!empty($areasFiltro)) {
-    $nombreArchivo .= 'Filtrado_' . substr(implode('_', $areasFiltro), 0, 30);
-} else {
-    $nombreArchivo .= 'Completo';
-}
-$nombreArchivo .= '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Cursos_por_Area_' . $fechaNombreArchivo . '.pdf';
 
 // Reemplazar el título de la página con el nombre de archivo descriptivo para metadatos
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);

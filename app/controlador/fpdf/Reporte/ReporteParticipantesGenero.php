@@ -96,7 +96,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_genero.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Generos_Cursos_' . date('Y') . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Participantes_por_Genero_' . date('Y') . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();

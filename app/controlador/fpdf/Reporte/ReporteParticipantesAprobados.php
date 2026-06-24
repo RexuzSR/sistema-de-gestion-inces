@@ -102,7 +102,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/participantes_aprobados.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Participantes_Aprobados_' . $anioTabla . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Participantes_Aprobados_' . $anioTabla . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();

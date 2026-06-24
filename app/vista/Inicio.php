@@ -18,6 +18,7 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
 include('../modelo/conexion.php');
+include('../modelo/IndicadorHelper.php');
 $conexion = new Conexion();
 $conn = $conexion->getConexion();
 $conn->exec("SET NAMES 'utf8mb4'");
@@ -196,6 +197,13 @@ window.HOME_CHARTS = {
             }
             if (target === 'resumen' && typeof renderMiniChartsMensuales === 'function') {
                 setTimeout(() => renderMiniChartsMensuales(), 80);
+            }
+            // Gráficas especiales de la sección Cursos que no pasan por renderGraficasBasicas
+            if (target === 'cursos') {
+                setTimeout(() => {
+                    if (typeof window.buildAmbitoPeriodo === 'function') window.buildAmbitoPeriodo();
+                    if (typeof window.buildCursosMensual === 'function')  window.buildCursosMensual();
+                }, 120);
             }
         });
     });

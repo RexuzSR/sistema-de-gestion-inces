@@ -105,7 +105,8 @@ extract($pdfData);
 include __DIR__ . '/../../../vista/reportes/pdf_templates/ocupacion_curso.php';
 $html = ob_get_clean();
 
-$nombreArchivo = 'Reporte_Ocupacion_Cursos_' . date('Y') . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Ocupacion_Cursos_' . date('Y') . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();

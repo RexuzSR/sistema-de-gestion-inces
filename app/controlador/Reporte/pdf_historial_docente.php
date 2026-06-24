@@ -167,9 +167,8 @@ try {
     $html = ob_get_clean();
 
     $cedulaDocente = $perfil['cedula'] ?? 'Docente';
-    $nombreDocente = trim(($perfil['primer_nombre'] ?? '') . '_' . ($perfil['primer_apellido'] ?? ''));
-    $nombreDocente = preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $nombreDocente));
-    $nombreArchivo = 'Reporte_Historial_Docente_' . $cedulaDocente . '_' . $nombreDocente . '.pdf';
+    $fechaNombreArchivo = date('Y-m-d');
+    $nombreArchivo = 'INCES_Historial_Docente_' . $cedulaDocente . '_' . $fechaNombreArchivo . '.pdf';
     $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
     $options = new Options();

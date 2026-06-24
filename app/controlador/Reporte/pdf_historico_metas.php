@@ -97,7 +97,8 @@ try {
     include __DIR__ . '/../../vista/reportes/pdf_templates/historico_metas.php';
     $html = ob_get_clean();
 
-    $nombreArchivo = 'Reporte_Historico_Metas_' . ($anio ?? date('Y')) . '.pdf';
+    $fechaNombreArchivo = date('Y-m-d');
+    $nombreArchivo = 'INCES_Historico_Metas_' . ($anio ?? date('Y')) . '_' . $fechaNombreArchivo . '.pdf';
     $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
     $options = new Options();

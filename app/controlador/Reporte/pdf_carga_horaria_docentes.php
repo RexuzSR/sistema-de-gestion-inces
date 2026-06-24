@@ -180,7 +180,8 @@ include __DIR__ . '/../../vista/reportes/pdf_templates/carga_horaria_docentes.ph
 $html = ob_get_clean();
 
 // 7. Renderizar DOMPDF
-$nombreArchivo = 'Reporte_Carga_Horaria_Docentes_' . $anioCarga . '.pdf';
+$fechaNombreArchivo = date('Y-m-d');
+$nombreArchivo = 'INCES_Carga_Horaria_Docentes_' . $anioCarga . '_' . $fechaNombreArchivo . '.pdf';
 $html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
 
 $options = new Options();
