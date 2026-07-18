@@ -13,6 +13,15 @@
                 <!-- El buscador se monta aquí por buscador.js al cargar -->
             </div>
 
+            <!-- Botón Dashboard -->
+            <div class="dashboard-link-container" style="margin-right: 15px;">
+                <a href="#" id="btn-dashboard-prueba" class="notification-btn-modern" aria-label="Ir al Dashboard" style="display: flex; text-decoration: none; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-table" viewBox="0 0 16 16">
+                        <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm15 2h-4v3h4zm0 4h-4v3h4zm0 4h-4v3h3a1 1 0 0 0 1-1zm-5 3v-3H6v3zm-5 0v-3H1v2a1 1 0 0 0 1 1zm-4-4h4V8H1zm0-4h4V4H1zm5-3v3h4V4zm4 4H6v3h4z"/>
+                    </svg>
+                </a>
+            </div>
+
             <!-- Notificaciones -->
             <div class="notification-container">
                 <button id="notification-btn-modern" class="notification-btn-modern" type="button" aria-label="Notificaciones">
@@ -90,9 +99,24 @@
     </div>
 </div>
 
-<!-- Lógica de dropdowns del header -->
+<!-- Lógica de dropdowns del header y botón Prueba -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const btnDashboardPrueba = document.getElementById('btn-dashboard-prueba');
+    if (btnDashboardPrueba) {
+        btnDashboardPrueba.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionPrueba = document.getElementById('section-prueba');
+            if (sectionPrueba) {
+                // Estamos en Inicio.php, simulamos Ctrl+Q
+                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'q', ctrlKey: true }));
+            } else {
+                // No estamos en Inicio, redirigimos con un parámetro
+                window.location.href = 'Inicio.php?prueba=true';
+            }
+        });
+    }
+
     const notificationBtn        = document.getElementById('notification-btn-modern');
     const notificationsDropdown  = document.getElementById('notifications-dropdown');
     const userProfileToggle      = document.getElementById('user-profile-toggle');

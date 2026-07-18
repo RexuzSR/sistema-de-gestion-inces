@@ -250,11 +250,11 @@ if (!empty($imagenUsuario)) {
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       
-    <div class="modal-header  text-white" style="background-color: #020d19;">
+            <div class="modal-header text-white" style="background-color: #020d19;" data-bs-theme="dark">
                 <h5 class="modal-title" id="labelModalAsignarCurso">
                     Gestión de Cursos
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" style="filter: invert(1);" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
             <div class="modal-body">

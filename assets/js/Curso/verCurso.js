@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const sexoText = genero === 'F' ? 'Femenino' : 'Masculino';
 
             $tablaParticipantes.append(`
-                <tr>
+                <tr class="ver-participante-row" data-id="${p.id_participante}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
                   <td style="padding: 12px; color: #1e293b;">${ced}</td>
                   <td style="padding: 12px; color: #1e293b;">${nombre}</td>
                   <td style="padding: 12px; color: #1e293b;">${apellido}</td>
@@ -575,7 +575,14 @@ $(document).on('click', '#btn-matricula-pdf', function (e) {
       'noopener,noreferrer'
     );
   } else {
-    console.error('ID de curso no encontrado:', cursoId);
     toastr.error('Error: No se pudo identificar el curso');
+  }
+});
+
+// ========== SINCRONIZAR CIERRE DE MODALES ANIDADOS ==========
+$('#modal-viewCurso').on('hidden.bs.modal', function () {
+  // Si el modal de ver participante está abierto, ciérralo también
+  if ($('#modal-viewParticipante').hasClass('show')) {
+    $('#modal-viewParticipante').modal('hide');
   }
 });

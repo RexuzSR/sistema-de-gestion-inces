@@ -888,3 +888,27 @@ search-bar {
     font-weight: 500;
     line-height: 1.5;
 }
+
+/* Modal Side-by-Side View */
+@media (min-width: 992px) {
+    .modal-left-side .modal-dialog {
+        margin-left: 2%;
+        margin-right: auto;
+        width: 47%;
+        max-width: 47% !important;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-right-side {
+        pointer-events: none; /* Permite que los clics pasen a través del fondo invisible */
+    }
+    
+    .modal-right-side .modal-dialog {
+        margin-right: 2%;
+        margin-left: auto;
+        width: 47%;
+        max-width: 47% !important;
+        transition: all 0.3s ease;
+        pointer-events: auto; /* Restaura los clics dentro del modal en sí */
+    }
+}

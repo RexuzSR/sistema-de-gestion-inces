@@ -7,6 +7,7 @@ function cargarCursosPendientes(idParticipante) {
     $.ajax({
         url: '../../app/controlador/ParticipanteCurso/obtenerCursosParticipante.php',
         method: 'GET',
+        cache: false,
         data: { id_participante: idParticipante },
         dataType: 'json',
         success: function (data) {
@@ -72,6 +73,7 @@ function cargarCursosNoInscritos(idParticipante) {
     $.ajax({
         url: '../../app/controlador/ParticipanteCurso/obtenerCursosNoInscritos.php',
         method: 'GET',
+        cache: false,
         data: { id_participante: idParticipante },
         dataType: 'json',
         success: function (data) {
@@ -106,6 +108,7 @@ $(document).on('click', '.curso', function () {
     $.ajax({
         url: '../../app/controlador/ParticipanteCurso/obtenerDatos.php',
         method: 'GET',
+        cache: false,
         data: { id_participante: id_participante },
         dataType: 'json',
         success: function (data) {
@@ -166,6 +169,10 @@ $('#formAsignarCurso').submit(function (e) {
         return;
     }
 
+    // Disable submit button to prevent multiple clicks
+    const $submitBtn = $(this).find('button[type="submit"]');
+    $submitBtn.prop('disabled', true);
+
     // 5. Enviar por AJAX
     $.ajax({
         type: "POST",
@@ -175,20 +182,33 @@ $('#formAsignarCurso').submit(function (e) {
         success: function (response) {
             if (response.success) {
                 toastr.success('Curso asignado correctamente');
-                cargarTabla();
+                if (typeof window.recargarTablaParticipantes === 'function') {
+                    window.recargarTablaParticipantes();
+                }
                 $('#formAsignarCurso')[0].reset(); // Limpiar el formulario
+                $submitBtn.prop('disabled', true); // Mantenerlo bloqueado hasta que seleccione otro curso
+                
                 // Actualizamos la lista de cursos pendientes sin cerrar el modal
                 cargarCursosPendientes(formData.id_participante);
                 cargarCursosNoInscritos(formData.id_participante);
 
             } else {
-
+                toastr.error(response.message || 'Error al asignar curso');
+                $submitBtn.prop('disabled', false);
             }
         },
         error: function (xhr, status, error) {
             toastr.error('Error de conexión: ' + error);
+            $submitBtn.prop('disabled', false);
         }
     });
+});
+
+// Habilitar botón al seleccionar un curso
+$('#asignarCurso').on('change', function () {
+    if ($(this).val() !== '' && $(this).val() !== 'nuevo_curso') {
+        $('#formAsignarCurso').find('button[type="submit"]').prop('disabled', false);
+    }
 });
 
 

@@ -335,7 +335,7 @@ $(document).ready(function () {
                     <td>${curso.id_curso}</td>
                     <td>
                         <div class="fw-bold text-dark" style="font-size: 0.9rem;">${curso.nombre_curso}</div>
-                        ${curso.preimpreso ? `<span class="badge bg-light text-secondary border mt-1" style="font-size: 0.7rem; font-weight: 500;">${curso.preimpreso}</span>` : ''}
+                        ${curso.preimpreso ? `<span class="badge bg-secondary text-white mt-1" style="font-size: 0.7rem; font-weight: 500;">${curso.preimpreso}</span>` : ''}
                     </td>
                     <td>${curso.nombre_modalidad === 'Semi presencial' ? 'Semi-pres.' : curso.nombre_modalidad}</td>
                     <td class="text-center">${occupancyHtml}</td>

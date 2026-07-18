@@ -49,7 +49,7 @@ class Curso {
             
             // 1. A 'Diferido' (2): Llegó la fecha inicio o límite, pero faltan requisitos
             $sqlDiferido = "UPDATE tb_curso c
-                            SET id_estatusCurso = 2 
+                            SET id_estatusCurso = 2, fue_diferido = 1
                             WHERE id_estatusCurso IN (1, 3) 
                             AND (fecha_inicio <= :hoy OR (fecha_limite_inicio IS NOT NULL AND fecha_limite_inicio <= :hoy))
                             AND (

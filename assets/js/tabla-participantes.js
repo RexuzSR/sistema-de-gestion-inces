@@ -450,6 +450,9 @@ $(document).ready(function () {
 
     // Inicializar tabla la primera vez
     initTabla();
+    
+    // Exponer la función para recargar la tabla desde otros scripts (ej. asignarCurso.js)
+    window.recargarTablaParticipantes = initTabla;
 });
 
 // Actualización de cursos

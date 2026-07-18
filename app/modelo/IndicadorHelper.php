@@ -207,24 +207,14 @@ class IndicadorHelper {
 
         $sql = "SELECT COALESCE(ROUND(AVG(porcentaje_cumplimiento), 1), 0.0) AS pct
                 FROM tb_metas
-                WHERE estado = 'Activa'
-                  AND id_ambito IS NOT NULL
-                  AND MONTH(fecha_inicio) = :mes
-                  AND YEAR(fecha_inicio) = :anio";
+                WHERE id_ambito IS NOT NULL
+                  AND YEAR(fecha_inicio) = :anio
+                  AND MONTH(fecha_inicio) <= :mes
+                  AND MONTH(fecha_fin) >= :mes";
         $st = $conn->prepare($sql);
         $st->execute([':mes' => $mes, ':anio' => $anio]);
         $pct = (float)$st->fetchColumn();
 
-        // Fallback al acumulado del año si no hay metas específicas de este mes
-        if ($pct == 0.0) {
-            $st2 = $conn->prepare("SELECT COALESCE(ROUND(AVG(porcentaje_cumplimiento), 1), 0.0) AS pct
-                                   FROM tb_metas
-                                   WHERE estado = 'Activa'
-                                     AND id_ambito IS NOT NULL
-                                     AND YEAR(fecha_inicio) = :anio");
-            $st2->execute([':anio' => $anio]);
-            $pct = (float)$st2->fetchColumn();
-        }
         return ['pct' => $pct];
     }
 
@@ -313,7 +303,7 @@ class IndicadorHelper {
         $tot = (int)$stTotal->fetchColumn();
 
         $sqlAsig = "SELECT COUNT(*) FROM tb_participante 
-                    WHERE estado IN ('Asignado', 'En formacion') 
+                    WHERE (estado = 'Asignado' OR LOWER(estado) LIKE '%en form%') 
                       AND MONTH(fecha_registro) = :mes AND YEAR(fecha_registro) = :anio";
         $stAsig = $conn->prepare($sqlAsig);
         $stAsig->execute([':mes' => $mes, ':anio' => $anio]);
@@ -322,7 +312,7 @@ class IndicadorHelper {
         // Fallback al histórico general si no hay registros en ese mes
         if ($tot === 0) {
             $tot = (int)$conn->query("SELECT COUNT(*) FROM tb_participante")->fetchColumn();
-            $asig = (int)$conn->query("SELECT COUNT(*) FROM tb_participante WHERE estado IN ('Asignado', 'En formacion')")->fetchColumn();
+            $asig = (int)$conn->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'Asignado' OR LOWER(estado) LIKE '%en form%'")->fetchColumn();
         }
 
         $pct = $tot > 0 ? round($asig / $tot * 100, 1) : 0.0;
@@ -484,6 +474,27 @@ class IndicadorHelper {
 
     /**
      * PERSPECTIVA: APRENDIZAJE Y CRECIMIENTO - INDICADOR 1
+     * % tasa de cumplimiento del plan de capacitación anual
+     */
+    public static function getCumplimientoCapacitacionesAnual($conn, $anio = null) {
+        $anio = $anio ?? (int)date('Y');
+        
+        $sql = "SELECT 
+                    COUNT(*) AS planificadas,
+                    COUNT(CASE WHEN id_estatusCurso IN (3, 5) THEN 1 END) AS ejecutadas
+                FROM tb_curso
+                WHERE id_curso != 1
+                  AND YEAR(fecha_inicio) = :anio";
+        $st = $conn->prepare($sql);
+        $st->execute([':anio' => $anio]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+
+        $pct = $r['planificadas'] > 0 ? round($r['ejecutadas'] / $r['planificadas'] * 100, 1) : 0.0;
+        return ['planificadas' => (int)$r['planificadas'], 'ejecutadas' => (int)$r['ejecutadas'], 'pct' => $pct];
+    }
+
+    /**
+     * PERSPECTIVA: APRENDIZAJE Y CRECIMIENTO - INDICADOR AUX
      * % tasa de cumplimiento del objetivo de participantes anuales
      */
     public static function getCumplimientoParticipantesAnual($conn, $anio = null) {
@@ -510,6 +521,44 @@ class IndicadorHelper {
         }
         return ['pct' => 0.0, 'objetivo' => 0, 'real' => 0];
     }
+
+    /**
+     * PROMEDIO DE PARTICIPANTES POR FORMACIÓN (Global)
+     */
+    public static function getPromedioParticipantesPorFormacion($conn) {
+        $sql = "SELECT AVG(sub.inscritos_reales) AS prom 
+                FROM (
+                    SELECT c.id_curso, COUNT(pc.id_participante) as inscritos_reales
+                    FROM tb_curso c
+                    LEFT JOIN tb_participante_curso pc ON c.id_curso = pc.id_curso
+                    WHERE c.id_curso != 1
+                    GROUP BY c.id_curso
+                ) sub";
+        $r = $conn->query($sql)->fetch(PDO::FETCH_ASSOC);
+        return $r ? round((float)$r['prom'], 1) : 0.0;
+    }
+
+    /**
+     * DETALLE DE PROMEDIO DE PARTICIPANTES POR FORMACIÓN (Lista)
+     */
+    public static function getDetallePromedioPorFormacion($conn) {
+        $sql = "SELECT c.nombre_curso, 
+                       COUNT(DISTINCT c.id_curso) as veces_dictado, 
+                       ROUND(AVG(sub.inscritos_reales), 1) as prom_participantes,
+                       ROUND(AVG(c.max_participantes), 1) as prom_cupos,
+                       SUM(sub.inscritos_reales) as total_participantes 
+                FROM tb_curso c
+                LEFT JOIN (
+                    SELECT id_curso, COUNT(id_participante) as inscritos_reales
+                    FROM tb_participante_curso
+                    GROUP BY id_curso
+                ) sub ON c.id_curso = sub.id_curso
+                WHERE c.id_curso != 1 
+                GROUP BY c.nombre_curso 
+                ORDER BY prom_participantes DESC, veces_dictado DESC";
+        return $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 
     /**
      * PERSPECTIVA: APRENDIZAJE Y CRECIMIENTO - INDICADOR 2

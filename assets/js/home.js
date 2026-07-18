@@ -455,7 +455,35 @@ function makeDonut(canvasId, labels, data, colores) {
                     }
                 },
                 animation: { duration: 1000, easing: 'easeOutQuart' }
-            }
+            },
+            plugins: [{
+                id: 'donutCenterText',
+                beforeDraw: function(chart) {
+                    const { width, height, ctx } = chart;
+                    ctx.restore();
+                    const total = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+                    
+                    const fontSizeTotal = (height / 120).toFixed(2);
+                    ctx.font = "bold " + fontSizeTotal + "em 'Inter', sans-serif";
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#1e293b";
+                    
+                    const text = total.toString();
+                    const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                    const textY = height / 2;
+                    
+                    ctx.fillText(text, textX, textY);
+                    
+                    const fontSizeLabel = (height / 300).toFixed(2);
+                    ctx.font = "600 " + fontSizeLabel + "em 'Inter', sans-serif";
+                    ctx.fillStyle = "#64748b";
+                    const labelText = "TOTAL";
+                    const labelX = Math.round((width - ctx.measureText(labelText).width) / 2);
+                    ctx.fillText(labelText, labelX, textY + 22);
+                    
+                    ctx.save();
+                }
+            }]
         });
     } catch (e) { }
 }
@@ -538,7 +566,7 @@ function makeMiniBarMes(canvasId, data, color) {
                         if (!area) return color;
                         const gradient = c.createLinearGradient(0, area.bottom, 0, area.top);
                         const isActual = context.dataIndex === mesActual;
-                        const baseCol = isActual ? color : color + '33';
+                        const baseCol = isActual ? color : color + '66';
                         gradient.addColorStop(0, baseCol.replace(')', ', 0.5)').replace('rgb', 'rgba'));
                         gradient.addColorStop(1, baseCol);
                         return gradient;
@@ -750,7 +778,35 @@ function makeDonutAmbitoSol(canvasId, labels, data) {
                     }
                 },
                 animation: { duration: 1000, easing: 'easeOutQuart' }
-            }
+            },
+            plugins: [{
+                id: 'donutCenterTextAmbito',
+                beforeDraw: function(chart) {
+                    const { width, height, ctx } = chart;
+                    ctx.restore();
+                    const sum = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+                    
+                    const fontSizeTotal = (height / 120).toFixed(2);
+                    ctx.font = "bold " + fontSizeTotal + "em 'Inter', sans-serif";
+                    ctx.textBaseline = "middle";
+                    ctx.fillStyle = "#1e293b";
+                    
+                    const text = sum.toString();
+                    const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                    const textY = height / 2;
+                    
+                    ctx.fillText(text, textX, textY);
+                    
+                    const fontSizeLabel = (height / 300).toFixed(2);
+                    ctx.font = "600 " + fontSizeLabel + "em 'Inter', sans-serif";
+                    ctx.fillStyle = "#64748b";
+                    const labelText = "TOTAL";
+                    const labelX = Math.round((width - ctx.measureText(labelText).width) / 2);
+                    ctx.fillText(labelText, labelX, textY + 22);
+                    
+                    ctx.save();
+                }
+            }]
         });
     } catch (e) { }
 }

@@ -227,3 +227,9 @@ $s_formados   = sem($pctFormados, 30, 59);   // <30% rojo · 30-59% amarillo · 
 
 // ── JSON para JS ──
 $jsCardFormados = json_encode($cardFormados, JSON_UNESCAPED_UNICODE);
+
+// ── KPI: Promedio de participantes por formación ──
+$promedioParticipantes = IndicadorHelper::getPromedioParticipantesPorFormacion($conn);
+$detallePromedioParticipantes = IndicadorHelper::getDetallePromedioPorFormacion($conn);
+$jsCardPromedioParticipantes = json_encode($detallePromedioParticipantes, JSON_UNESCAPED_UNICODE);
+$s_prom_part = IndicadorHelper::evaluarSemaforo('PI_PROM_PARTICIPANTES', $promedioParticipantes)['alerta'];

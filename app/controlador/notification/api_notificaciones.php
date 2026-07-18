@@ -12,7 +12,7 @@ try {
 
     // Actualizamos dinámicamente el estado igual que managerCurso para garantizar precisión
     // 1 o 3 -> 2 (Diferido): Llegó la fecha límite o de inicio, y faltan inscritos o docentes (Si estaba 'En proceso' por error, regresa a Diferido)
-    $sqlDiferido = "UPDATE tb_curso c SET id_estatusCurso = 2 
+    $sqlDiferido = "UPDATE tb_curso c SET id_estatusCurso = 2, fue_diferido = 1 
                     WHERE id_estatusCurso IN (1, 3) 
                     AND (fecha_inicio <= CURDATE() OR (fecha_limite_inicio IS NOT NULL AND fecha_limite_inicio <= CURDATE()))
                     AND (num_inscritos < IFNULL(c.min_participantes, 12) OR NOT EXISTS (SELECT 1 FROM tb_docente_curso dc WHERE dc.id_curso = c.id_curso))";
@@ -87,6 +87,35 @@ try {
              $evento['notif_id'] = "curso-" . $curso['id_curso'] . "-est-" . $curso['id_estatusCurso'];
 
              $notificaciones[] = $evento;
+        }
+    }
+
+    // ==========================================
+    // NOTIFICACIONES DE METAS
+    // ==========================================
+    require_once '../Metas/managerMetas.php';
+    $metasManager = new Metas();
+    $metas = $metasManager->obtenerMetas();
+
+    foreach ($metas as $meta) {
+        // Verificar si está activa, sin datos, y han pasado más de 2 días
+        if ($meta['estado'] !== 'Cerrada' && $meta['estudiantes_formados'] == 0 && !empty($meta['created_at'])) {
+            $diasDesdeCreacion = floor((time() - strtotime($meta['created_at'])) / (60 * 60 * 24));
+            
+            if ($diasDesdeCreacion > 2) {
+                $eventoMeta = [
+                    'id' => $meta['id_meta'],
+                    'tipo' => 'alerta_meta',
+                    'titulo' => 'Meta estancada',
+                    'mensaje' => "La meta de {$meta['tipo_objetivo']} ({$meta['meta_objetivo']}) lleva más de 2 días creada y aún no recibe datos.",
+                    'fecha_evento' => date('Y-m-d', strtotime($meta['created_at'])),
+                    'color' => '#8b5cf6', // Morado para resaltarlo de los otros
+                    'icono' => '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-exclamation-octagon-fill" viewBox="0 0 16 16"><path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353L11.46.146zM8 4c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 4zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>',
+                    'timestamp' => strtotime($meta['created_at']),
+                    'notif_id' => "meta-" . $meta['id_meta'] . "-sin-datos"
+                ];
+                $notificaciones[] = $eventoMeta;
+            }
         }
     }
 

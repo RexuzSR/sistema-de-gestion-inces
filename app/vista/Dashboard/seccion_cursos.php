@@ -342,7 +342,7 @@
                     </div>
                 </div>
                 <div class="ej-cards-row">
-                    <div class="ej-card">
+                    <div class="ej-card ej-card-clickable" id="card-porcentaje" data-tipo="todos" style="cursor:pointer;">
                         <div class="ej-card-icon" style="background:#d1fae5;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#10b981" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05"/></svg></div>
                         <div class="ej-card-body">
                             <span class="ej-card-val semaforo-text-<?php echo $s_ejecucion; ?>" id="ej-pct-val"><?php echo $kEjecucion['pct']; ?>%</span>
@@ -351,7 +351,7 @@
                         </div>
                         <span class="ej-card-hint">Ver detalle</span>
                     </div>
-                    <div class="ej-card ej-card-clickable" id="card-planificados" data-tipo="pendiente" style="cursor:pointer;">
+                    <div class="ej-card ej-card-clickable" id="card-planificados" data-tipo="todos" style="cursor:pointer;">
                         <div class="ej-card-icon" style="background:#dbeafe;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#3b82f6" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/></svg></div>
                         <div class="ej-card-body">
                             <span class="ej-card-val" style="color:#1e293b;" id="ej-plan-val"><?php echo $kEjecucion['planificados']; ?></span>
@@ -843,6 +843,8 @@
         return { planif: p, inic: i, pct: p > 0 ? Math.round(i / p * 100) : 0 };
     }
     function filtrarTipo(tipo) {
+        if (tipo === 'todos') return CURSOS_HISTORICO.filter(c => matchEj(c.anio, c.mes, c.trimestre));
+        if (tipo === 'diferido') return CURSOS_HISTORICO.filter(c => c.fue_diferido == 1 && matchEj(c.anio, c.mes, c.trimestre));
         return CURSOS_HISTORICO.filter(c => c.tipo_ejecucion === tipo && matchEj(c.anio, c.mes, c.trimestre));
     }
 
@@ -853,6 +855,7 @@
         const dot   = document.getElementById('ej-detalle-dot');
         if (!wrap || !body) return;
         const cfg = {
+            todos:     { label: 'Todos los Cursos',     color: '#6366f1' },
             pendiente: { label: 'Cursos Pendientes',    color: '#3b82f6' },
             iniciado:  { label: 'Cursos en Formación',  color: '#22c55e' },
             diferido:  { label: 'Cursos Diferidos',      color: '#d97706' }
@@ -896,7 +899,7 @@
         const elPct = document.getElementById('ej-pct-val');
         if (elPct) { elPct.textContent = pct + '%'; elPct.className = 'ej-card-val ' + semK(pct); }
         st('ej-iniciados-sub', inic + ' de ' + planif + ' planificados');
-        st('ej-plan-val', pen.length); st('ej-plan-sub', 'pendientes de iniciar');
+        st('ej-plan-val', planif); st('ej-plan-sub', label);
         st('ej-ejec-val', inic);       st('ej-ejec-sub', label);
         st('ej-dif-val',  dif.length); st('ej-dif-sub',  label);
 
@@ -908,14 +911,15 @@
         st('ej-periodo-label', 'Meta ≥ 85% · ' + label);
 
         if (ejCardActiva) {
-            const datos = ejCardActiva === 'pendiente' ? pen
+            const datos = ejCardActiva === 'todos' ? filtrarTipo('todos')
+                        : ejCardActiva === 'pendiente' ? pen
                         : ejCardActiva === 'iniciado'  ? filtrarTipo('iniciado')
                         : dif;
             renderDetalleCards(datos, ejCardActiva, label);
         }
     }
 
-    ['card-planificados', 'card-iniciados', 'card-diferidos'].forEach(id => {
+    ['card-porcentaje', 'card-planificados', 'card-iniciados', 'card-diferidos'].forEach(id => {
         const card = document.getElementById(id);
         if (!card) return;
         card.addEventListener('click', () => {
@@ -927,14 +931,15 @@
                 if (w) w.style.display = 'none';
                 return;
             }
-            ['card-planificados','card-iniciados','card-diferidos'].forEach(cid => {
+            ['card-porcentaje', 'card-planificados','card-iniciados','card-diferidos'].forEach(cid => {
                 const c = document.getElementById(cid);
                 if (c) c.classList.remove('ej-card-activa');
             });
             ejCardActiva = tipo;
             card.classList.add('ej-card-activa');
             renderDetalleCards(
-                tipo === 'pendiente' ? filtrarTipo('pendiente')
+                tipo === 'todos' ? filtrarTipo('todos')
+                : tipo === 'pendiente' ? filtrarTipo('pendiente')
                 : tipo === 'iniciado'  ? filtrarTipo('iniciado')
                 : filtrarTipo('diferido'),
                 tipo, labelEj()
@@ -947,7 +952,7 @@
         ejCardActiva = null;
         const w = document.getElementById('ej-detalle-wrap');
         if (w) w.style.display = 'none';
-        ['card-planificados','card-iniciados','card-diferidos'].forEach(cid => {
+        ['card-porcentaje', 'card-planificados','card-iniciados','card-diferidos'].forEach(cid => {
             const c = document.getElementById(cid);
             if (c) c.classList.remove('ej-card-activa');
         });
@@ -1356,7 +1361,7 @@
           </svg>
           Cursos iniciados en <span id="modal-curso-mes-nombre">Mes</span> &middot; <span id="modal-curso-mes-anio"><?php echo $anioActual; ?></span>
         </h5>
-        <button type="button" class="modal-close-btn-custom" data-bs-dismiss="modal" aria-label="Close">
+        <button type="button" class="modal-close-btn-custom" data-bs-dismiss="modal" aria-label="Close" style="position: absolute; right: 24px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
           </svg>

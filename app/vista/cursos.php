@@ -142,7 +142,7 @@ if (!empty($imagenUsuario)) {
                     <div class="row g-3 mb-4 kpi-row">
                         <!-- Total Cursos -->
                         <div class="col-xl-2 col-md-4 col-sm-6">
-                            <div class="kpi-card kpi-total">
+                            <div class="kpi-card kpi-total" style="cursor: pointer;" onclick="$('#estado_filter').val('').trigger('change');">
                                 <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de cursos registrados bajo los filtros seleccionados."></i>
                                 <div class="kpi-icon-wrapper">
                                     <i class="bi bi-book-half"></i>
@@ -155,7 +155,7 @@ if (!empty($imagenUsuario)) {
                         </div>
                         <!-- En Proceso -->
                         <div class="col-xl-2 col-md-4 col-sm-6">
-                            <div class="kpi-card kpi-proceso">
+                            <div class="kpi-card kpi-proceso" style="cursor: pointer;" onclick="$('#estado_filter').val('3').trigger('change');">
                                 <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos que se encuentran actualmente en dictado/formación."></i>
                                 <div class="kpi-icon-wrapper">
                                     <i class="bi bi-play-circle-fill"></i>
@@ -168,7 +168,7 @@ if (!empty($imagenUsuario)) {
                         </div>
                         <!-- En Espera -->
                         <div class="col-xl-2 col-md-4 col-sm-6">
-                            <div class="kpi-card kpi-espera">
+                            <div class="kpi-card kpi-espera" style="cursor: pointer;" onclick="$('#estado_filter').val('1').trigger('change');">
                                 <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos planificados en espera de fecha de inicio o requisitos mínimos."></i>
                                 <div class="kpi-icon-wrapper">
                                     <i class="bi bi-hourglass-split"></i>
@@ -181,7 +181,7 @@ if (!empty($imagenUsuario)) {
                         </div>
                         <!-- Diferidos -->
                         <div class="col-xl-2 col-md-4 col-sm-6">
-                            <div class="kpi-card kpi-diferidos">
+                            <div class="kpi-card kpi-diferidos" style="cursor: pointer;" onclick="$('#estado_filter').val('2').trigger('change');">
                                 <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos cuya fecha de inicio se ha pospuesto por falta de requisitos o participantes mínimos."></i>
                                 <div class="kpi-icon-wrapper">
                                     <i class="bi bi-exclamation-circle-fill"></i>
@@ -194,7 +194,7 @@ if (!empty($imagenUsuario)) {
                         </div>
                         <!-- Culminados -->
                         <div class="col-xl-2 col-md-4 col-sm-6">
-                            <div class="kpi-card kpi-culminados">
+                            <div class="kpi-card kpi-culminados" style="cursor: pointer;" onclick="$('#estado_filter').val('5').trigger('change');">
                                 <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cursos finalizados con carga de notas y participantes aprobados/reprobados."></i>
                                 <div class="kpi-icon-wrapper">
                                     <i class="bi bi-check-circle-fill"></i>
@@ -350,6 +350,7 @@ if (!empty($imagenUsuario)) {
     <?php include '../modales/Curso/cursoModal.php'; ?>
     <?php include '../modales/Curso/modal-addCurso.php'; ?>
     <?php include '../modales/modal-addParticipante.php'; ?>
+    <?php include '../modales/modal-viewParticipante.php'; ?>
     <?php include '../modales/Curso/GuardarModal.php'; ?>
     <?php include '../modales/Curso/modalReiniciarCurso.php'; ?>
     <?php include '../modales/Curso/modal-deleteCurso.php'; ?>
@@ -375,6 +376,7 @@ if (!empty($imagenUsuario)) {
     <script src="../../assets/js/Curso/eliminarCurso.js"></script>
     <script src="../../assets/js/Curso/agregarCurso.js"></script>
     <script src="../../assets/js/registrarParticipante.js"></script>
+    <script src="../../assets/js/viewParticipante.js"></script>
     <script src="../../assets/js/notifications.js"></script>
 
 

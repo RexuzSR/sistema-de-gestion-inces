@@ -245,7 +245,7 @@
             <div class="row g-3 justify-content-center mx-auto" id="kpi-cards-participantes" style="max-width:1050px;">
 
                 <!-- ── Card A: Con curso activo (En formación + Asignado) ── -->
-                <div class="col-6 col-xl-4">
+                <div class="col-6 col-xl-3">
                     <div class="panel-mini-kpi semaforo-borde-<?php echo $sConCurso; ?> kpi-seleccionable"
                          data-kpi="activos">
                         <span class="kpi-selector-dot"></span>
@@ -275,7 +275,7 @@
                 </div>
 
                 <!-- ── Card B: Disponibles para asignar (sin curso activo) ── -->
-                <div class="col-6 col-xl-4">
+                <div class="col-6 col-xl-3">
                     <div class="panel-mini-kpi semaforo-borde-<?php echo $sSinCurso; ?> kpi-seleccionable"
                          data-kpi="disponibles">
                         <span class="kpi-selector-dot"></span>
@@ -317,7 +317,7 @@
                 </div>
 
                 <!-- ── Card C: Participantes formados ── -->
-                <div class="col-6 col-xl-4">
+                <div class="col-6 col-xl-3">
                     <div class="panel-mini-kpi kpi-seleccionable semaforo-borde-<?php echo $s_formados; ?>"
                          style="color:<?php echo $s_formados==='verde'?'#28c76f':($s_formados==='amarillo'?'#f59e0b':'#ef4444'); ?>;"
                          data-kpi="formados">
@@ -339,6 +339,34 @@
                         <div class="kpi-adv-barra-fondo mt-2">
                             <div class="kpi-adv-barra semaforo-fill-<?php echo $s_formados; ?>"
                                  style="width:<?php echo min($pctFormados, 100); ?>%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Card D: Promedio de Participantes por Formación ── -->
+                <div class="col-6 col-xl-3">
+                    <div class="panel-mini-kpi kpi-seleccionable semaforo-borde-<?php echo $s_prom_part; ?>"
+                         style="color:<?php echo $s_prom_part==='verde'?'#28c76f':($s_prom_part==='amarillo'?'#f59e0b':'#ef4444'); ?>;"
+                         data-kpi="promedio_participantes"
+                         data-bs-toggle="modal" data-bs-target="#modal-DetallePromedioCursos">
+                        <span class="kpi-selector-dot"></span>
+                        <div class="panel-mini-kpi-header">
+                            <span class="panel-mini-kpi-label">Promedio de participantes por formación</span>
+                            <span class="semaforo-badge semaforo-<?php echo $s_prom_part; ?>"><?php echo semL($s_prom_part); ?></span>
+                        </div>
+                        <div class="panel-mini-kpi-valor semaforo-text-<?php echo $s_prom_part; ?>"><?php echo number_format($promedioParticipantes, 1); ?></div>
+                        <div class="panel-mini-kpi-sub d-flex flex-column gap-1 mt-1">
+                            <span>
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0ea5e9;margin-right:4px;"></span>
+                                Meta: <strong>&ge; 90% ocupación</strong>
+                            </span>
+                            <span style="color:#94a3b8;font-size:.7rem;">
+                                Histórico de cursos
+                            </span>
+                        </div>
+                        <div class="kpi-adv-barra-fondo mt-2">
+                            <div class="kpi-adv-barra semaforo-fill-<?php echo $s_prom_part; ?>"
+                                 style="width:<?php echo min(100, $promedioParticipantes * 3); /* visual scaling */ ?>%;"></div>
                         </div>
                     </div>
                 </div>
@@ -1255,3 +1283,87 @@ function escHtml(str) {
         .replace(/'/g, '&#039;');
 }
 </script>
+
+<!-- Modal: Detalle Promedio de Cursos -->
+<div class="modal fade" id="modal-DetallePromedioCursos" tabindex="-1" aria-labelledby="modalDetallePromedioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <!-- Header con gradiente premium -->
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #0ea5e9, #3b82f6, #6366f1); padding: 18px 24px; border-bottom: none;">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalDetallePromedioLabel">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2.5 7.5A.5.5 0 0 1 3 8h2a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm10.5 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0V8h-2a.5.5 0 0 1 0-1h2.5z"/>
+          </svg>
+          Promedio de Participantes Histórico por Formación
+        </h5>
+        <button type="button" class="modal-close-btn-custom" data-bs-dismiss="modal" aria-label="Close" style="position: absolute; right: 24px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Cuerpo del modal -->
+      <div class="modal-body p-4" style="background-color: #f8fafc; min-height: 250px;">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 4px;">
+            <thead>
+              <tr style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                <th class="border-0 pb-3 ps-3">Formación</th>
+                <th class="border-0 pb-3 text-center">Veces Dictado</th>
+                <th class="border-0 pb-3 text-center">Promedio Participantes</th>
+                <th class="border-0 pb-3 text-center">Promedio Cupos</th>
+                <th class="border-0 pb-3 text-end pe-3">Total Histórico</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              $dataPromedio = json_decode($jsCardPromedioParticipantes, true);
+              if (empty($dataPromedio)) {
+                  echo '<tr><td colspan="5" class="text-center py-4 text-muted">No hay datos suficientes para mostrar</td></tr>';
+              } else {
+                  foreach ($dataPromedio as $row):
+                      $prom = $row['prom_participantes'];
+                      $cupos = $row['prom_cupos'];
+                      $colorProm = $prom >= 20 ? '#10b981' : ($prom >= 15 ? '#f59e0b' : '#ef4444');
+              ?>
+              <tr style="background-color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s ease;">
+                <td class="ps-3 fw-semibold text-dark" style="border-top-left-radius: 8px; border-bottom-left-radius: 8px;">
+                  <?php echo htmlspecialchars($row['nombre_curso']); ?>
+                </td>
+                <td class="text-center text-secondary fw-semibold">
+                  <span class="badge" style="background-color: #e2e8f0; color: #475569; font-size: .8rem; padding: 5px 10px; border-radius: 6px;">
+                    <?php echo $row['veces_dictado']; ?>
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span style="font-size: 1.1rem; font-weight: 700; color: <?php echo $colorProm; ?>;">
+                    <?php echo number_format($prom, 1); ?>
+                  </span>
+                </td>
+                <td class="text-center text-secondary">
+                  <?php echo number_format($cupos, 1); ?> cupos
+                </td>
+                <td class="text-end pe-3 text-secondary fw-semibold" style="border-top-right-radius: 8px; border-bottom-right-radius: 8px;">
+                  <?php echo number_format($row['total_participantes']); ?> <small class="text-muted fw-normal">inscritos</small>
+                </td>
+              </tr>
+              <?php
+                  endforeach;
+              }
+              ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Footer del modal -->
+      <div class="modal-footer" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 12px 24px;">
+        <span class="text-muted fw-semibold" style="font-size: 0.85rem;">
+          Total Formaciones Analizadas: <?php echo count($dataPromedio); ?>
+        </span>
+        <button type="button" class="btn btn-secondary ms-auto" data-bs-dismiss="modal" style="border-radius: 20px; padding: 6px 20px; font-weight: 600;">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

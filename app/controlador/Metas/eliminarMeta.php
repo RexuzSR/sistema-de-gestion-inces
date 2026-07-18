@@ -22,6 +22,12 @@ $tipoObj = $metaData['tipo_objetivo'] ?? 'Meta';
 $metaVal = $metaData['meta_objetivo'] ?? '0';
 $descripcion = "$tipoObj ($metaVal)";
 
+// Validación: No eliminar meta si ya ha recibido datos (estudiantes formados)
+if (isset($metaData['estudiantes_formados']) && $metaData['estudiantes_formados'] > 0) {
+    echo json_encode(['success' => false, 'message' => 'No se puede eliminar la meta porque ya registra progreso (participantes alcanzados).']);
+    exit;
+}
+
 $result = $metasManager->eliminar($id);
 
 if ($result['success']) {

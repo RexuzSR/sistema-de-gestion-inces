@@ -118,6 +118,7 @@ $conn = null;
         <?php include 'Dashboard/seccion_cursos.php'; ?>
         <?php include 'Dashboard/seccion_docentes.php'; ?>
         <?php include 'Dashboard/seccion_metas.php'; ?>
+        <?php include 'Dashboard/Prueba.php'; ?>
 
     </div>
 </div>
@@ -222,6 +223,7 @@ function switchPeriodo(tipo) {
 <script src="../../assets/js/chart.js"></script>
 <script src="../../assets/js/grafica.js"></script>
 <script src="../../assets/js/home.js"></script>
+<script src="../../assets/js/teclas.js"></script>
 <script src="../../assets/js/notifications.js"></script>
 <script src="../../assets/js/toastr/toastr.min.js"></script>
 <script src="../../assets/js/toastr/toastr-config.js"></script>

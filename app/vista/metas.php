@@ -96,7 +96,7 @@ if (!empty($imagenUsuario)) {
                 <div class="row g-3 mb-4 kpi-row">
                     <!-- Total Metas -->
                     <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-total">
+                        <div class="kpi-card kpi-total" style="cursor: pointer;" onclick="$('#estado-filter').val('').trigger('change');">
                             <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cantidad total de metas registradas bajo la combinación de filtros seleccionados."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-bullseye"></i>
@@ -109,7 +109,7 @@ if (!empty($imagenUsuario)) {
                     </div>
                     <!-- Cumplidas -->
                     <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-cumplidas">
+                        <div class="kpi-card kpi-cumplidas" style="cursor: pointer;" onclick="$('#estado-filter').val('Cumplida').trigger('change');">
                             <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas que alcanzaron exactamente el 100% de su objetivo de estudiantes formados."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-check-circle-fill"></i>
@@ -122,7 +122,7 @@ if (!empty($imagenUsuario)) {
                     </div>
                     <!-- Sobrecumplidas -->
                     <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-sobrecumplidas">
+                        <div class="kpi-card kpi-sobrecumplidas" style="cursor: pointer;" onclick="$('#estado-filter').val('Sobrecumplida').trigger('change');">
                             <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas que superaron el 100% de su objetivo de estudiantes formados."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-chevron-double-up"></i>
@@ -135,8 +135,8 @@ if (!empty($imagenUsuario)) {
                     </div>
                     <!-- En Riesgo -->
                     <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-riesgo">
-                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes con un porcentaje de cumplimiento entre 70% y 89%."></i>
+                        <div class="kpi-card kpi-riesgo" style="cursor: pointer;" onclick="$('#estado-filter').val('En riesgo').trigger('change');">
+                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas vigentes con un porcentaje de cumplimiento menor al 75% y las próximas a vencer."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-exclamation-triangle-fill"></i>
                             </div>
@@ -148,7 +148,7 @@ if (!empty($imagenUsuario)) {
                     </div>
                     <!-- Vencidas -->
                     <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-vencidas">
+                        <div class="kpi-card kpi-vencidas" style="cursor: pointer;" onclick="$('#estado-filter').val('Vencida').trigger('change');">
                             <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas cuya fecha fin ya pasó y que finalizaron con un porcentaje de cumplimiento menor al 100%."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-x-circle-fill"></i>
@@ -253,7 +253,6 @@ if (!empty($imagenUsuario)) {
                                 <option value="Encaminada">Encaminada</option>
                                 <option value="Próxima a vencer">Próxima a vencer</option>
                                 <option value="En riesgo">En riesgo</option>
-                                <option value="Crítica">Crítica</option>
                                 <option value="Vencida">Vencida</option>
                             </select>
                         </div>

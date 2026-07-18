@@ -124,12 +124,10 @@ $(document).ready(function () {
                         m.estado_cumplimiento = 'Vencida';
                     } else if (isProxima && pct < 100) {
                         m.estado_cumplimiento = 'Próxima a vencer';
-                    } else if (pct >= 90) {
+                    } else if (pct >= 75) {
                         m.estado_cumplimiento = 'Encaminada';
-                    } else if (pct >= 70) {
-                        m.estado_cumplimiento = 'En riesgo';
                     } else {
-                        m.estado_cumplimiento = 'Crítica';
+                        m.estado_cumplimiento = 'En riesgo';
                     }
                 });
 
@@ -146,7 +144,6 @@ $(document).ready(function () {
                 if (tipoFilter) {
                     metasCohort = metasCohort.filter(m => m.tipo_objetivo === tipoFilter);
                 }
-                
                 // Filtrar por Período
                 if (periodoFilter) {
                     metasCohort = metasCohort.filter(m => {
@@ -195,7 +192,7 @@ $(document).ready(function () {
                         sobrecumplidasCount++;
                     } else if (m.estado_cumplimiento === 'Cumplida') {
                         cumplidasCount++;
-                    } else if (m.estado_cumplimiento === 'En riesgo') {
+                    } else if (m.estado_cumplimiento === 'En riesgo' || m.estado_cumplimiento === 'Próxima a vencer') {
                         enRiesgoCount++;
                     } else if (m.estado_cumplimiento === 'Vencida') {
                         vencidasCount++;
@@ -277,7 +274,11 @@ $(document).ready(function () {
                 let metasTabla = metasCohort;
 
                 if (estadoFilter) {
-                    metasTabla = metasTabla.filter(m => m.estado_cumplimiento === estadoFilter);
+                    if (estadoFilter === 'En riesgo') {
+                        metasTabla = metasTabla.filter(m => m.estado_cumplimiento === 'En riesgo' || m.estado_cumplimiento === 'Próxima a vencer');
+                    } else {
+                        metasTabla = metasTabla.filter(m => m.estado_cumplimiento === estadoFilter);
+                    }
                 }
 
                 if (search && search.trim() !== '') {
@@ -382,7 +383,11 @@ $(document).ready(function () {
             const metaVal = parseInt(m.meta_objetivo, 10) || 0;
             let subtextHtml = '';
             if (logrado < metaVal) {
-                subtextHtml = `<span class="cumplimiento-subtext resta"><i class="bi bi-arrow-right-short"></i>Restan ${metaVal - logrado} para cumplir</span>`;
+                if (m.estado_cumplimiento === 'Vencida') {
+                    subtextHtml = `<span class="cumplimiento-subtext resta"><i class="bi bi-arrow-right-short"></i>Faltaron ${metaVal - logrado} para cumplir</span>`;
+                } else {
+                    subtextHtml = `<span class="cumplimiento-subtext resta"><i class="bi bi-arrow-right-short"></i>Restan ${metaVal - logrado} para cumplir</span>`;
+                }
             } else if (logrado > metaVal) {
                 subtextHtml = `<span class="cumplimiento-subtext supera"><i class="bi bi-chevron-double-up"></i>Superada por ${logrado - metaVal}</span>`;
             } else {
@@ -461,11 +466,13 @@ $(document).ready(function () {
                                         <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
                                     </svg>
                                 </button>
+                                ${m.estudiantes_formados == 0 ? `
                                 <button class="button-action delete" data-id="${m.id_meta}" data-bs-toggle="modal" data-bs-target="#modal-deleteMeta" title="Eliminar">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill text-white" viewBox="0 0 16 16">
                                         <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
                                     </svg>
                                 </button>
+                                ` : ''}
                             ` : ''}
                         </div>
                     </td>

@@ -1,4 +1,4 @@
-$(document).on('click', '.button.view', function () {
+$(document).on('click', '[data-bs-target="#modal-viewParticipante"], .ver-participante-row', function () {
     const idParticipante = $(this).data('id');
 
     // Cargar datos básicos
@@ -150,4 +150,34 @@ function cargarCursosActivos(idParticipante) {
             console.error('Error:', error);
             toastr.error('Error al cargar los cursos');
         });
-}
+} // Fin de cargarCursosActivos
+// Solución para modales anidados (cuando se abre verParticipante sobre verCurso)
+$('#modal-viewParticipante').on('show.bs.modal', function () {
+    const zIndex = 1060 + (10 * $('.modal:visible').length);
+    $(this).css('z-index', zIndex);
+    
+    // Si el modal de ver curso está abierto, ponerlos lado a lado
+    if ($('#modal-viewCurso').hasClass('show')) {
+        $('#modal-viewCurso').addClass('modal-left-side');
+        $(this).addClass('modal-right-side');
+        
+        setTimeout(function() {
+            // Eliminar el backdrop extra para poder seguir clickeando en el modal del curso
+            $('.modal-backdrop').last().remove();
+        }, 0);
+    } else {
+        setTimeout(function() {
+            $('.modal-backdrop').last().css('z-index', zIndex - 1);
+        }, 0);
+    }
+});
+
+$('#modal-viewParticipante').on('hidden.bs.modal', function () {
+    $(this).removeClass('modal-right-side');
+    $('#modal-viewCurso').removeClass('modal-left-side');
+    
+    if ($('.modal:visible').length) {
+        // Restaurar el scroll en el body si hay otro modal abierto
+        $('body').addClass('modal-open');
+    }
+});

@@ -183,12 +183,7 @@ try {
             MONTH(c.fecha_inicio)    AS mes,
             QUARTER(c.fecha_inicio)  AS trimestre,
             COUNT(*)                 AS planificados,
-            SUM(CASE
-                WHEN LOWER(e.nombre_estatusCurso) LIKE '%finaliz%'
-                  OR LOWER(e.nombre_estatusCurso) LIKE '%complet%'
-                  OR LOWER(e.nombre_estatusCurso) LIKE '%en curso%'
-                  OR LOWER(e.nombre_estatusCurso) LIKE '%inici%'
-                THEN 1 ELSE 0 END) AS iniciados
+            SUM(CASE WHEN c.id_estatusCurso IN (3, 5) THEN 1 ELSE 0 END) AS iniciados
         FROM tb_curso c
         JOIN tb_estatuscurso e ON c.id_estatusCurso = e.id_estatusCurso
         WHERE c.id_curso != 1 AND c.fecha_inicio IS NOT NULL
@@ -210,6 +205,7 @@ try {
             c.num_inscritos,
             c.max_participantes,
             c.horas_totales,
+            c.fue_diferido,
             e.nombre_estatusCurso,
             COALESCE(m.nombre_modalidad,'—') AS nombre_modalidad,
             COALESCE(a.nombre_ambito,'—')    AS nombre_ambito,
@@ -219,7 +215,7 @@ try {
             CASE
                 WHEN LOWER(e.nombre_estatusCurso) LIKE '%dif%'
                     THEN 'diferido'
-                WHEN e.id_estatusCurso = 3
+                WHEN e.id_estatusCurso IN (3, 5)
                   OR LOWER(e.nombre_estatusCurso) LIKE '%form%'
                   OR LOWER(e.nombre_estatusCurso) LIKE '%proceso%'
                   OR LOWER(e.nombre_estatusCurso) LIKE '%en curso%'

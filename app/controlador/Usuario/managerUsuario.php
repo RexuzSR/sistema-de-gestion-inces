@@ -126,7 +126,7 @@ public function actualizarEstadoCursos() {
                 elseif ($curso['fecha_inicio'] <= $fechaActual) {
                     // Si cumple mínimo: 3 = En proceso; Si no cumple: 2 = Diferido
                     $nuevoEstado = ($curso['num_inscritos'] >= $curso['min_participantes']) ? 3 : 2;
-                    $updateCurso = "UPDATE tb_curso SET id_estatusCurso = :estado WHERE id_curso = :id_curso";
+                    $updateCurso = "UPDATE tb_curso SET id_estatusCurso = :estado, fue_diferido = IF(:estado = 2, 1, fue_diferido) WHERE id_curso = :id_curso";
                     $stmtUpdateCurso = $this->conn->prepare($updateCurso);
                     $stmtUpdateCurso->bindParam(':estado', $nuevoEstado, PDO::PARAM_INT);
                     $stmtUpdateCurso->bindParam(':id_curso', $idCurso);

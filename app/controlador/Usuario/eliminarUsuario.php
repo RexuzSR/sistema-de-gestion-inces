@@ -33,6 +33,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
         $userData = json_decode($userDataJson, true);
         $nombreUsuario = $userData['nombre_usuario'] ?? "ID: $idParticipante";
 
+        // VALIDACIÓN DE SEGURIDAD: Un Administrador no puede eliminar a otro Administrador
+        $currentLoggedRol = $_SESSION['rol'] ?? '';
+        if (isset($userData['rol']) && $userData['rol'] === 'Administrador' && $currentLoggedRol === 'Administrador') {
+            echo json_encode([
+                "success" => false,
+                "message" => "❌ Un Administrador no tiene permisos para eliminar a otro Administrador."
+            ]);
+            exit;
+        }
+
         $response = $usuarioMgr->eliminar($idParticipante);
 
         if ($response['success'] && isset($_SESSION['id_usuario'])) {
