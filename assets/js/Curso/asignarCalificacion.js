@@ -19,7 +19,11 @@ function cargarTablaCursos() {
                         rows += `
                             <tr>
                                 <td>${curso.id_curso}</td>
-                                <td>${curso.nombre_curso}</td>
+                                <td>
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">${curso.nombre_curso}</div>
+                                    ${curso.preimpreso ? `<span class="badge bg-secondary text-white mt-1" style="font-size: 0.7rem; font-weight: 500;">${curso.preimpreso}</span>` : ''}
+                                    ${parseInt(curso.reiniciado, 10) === 1 ? `<span class="badge text-white mt-1 ms-1" style="font-size: 0.7rem; font-weight: 500; background: linear-gradient(135deg, #f59e0b, #d97706) !important; border: none;" title="Este curso ya ha sido clonado/reiniciado"><i class="bi bi-arrow-repeat me-1"></i>Reiniciado</span>` : ''}
+                                </td>
                                 <td>${curso.nombre_modalidad}</td>
                                 <td>${curso.num_inscritos}</td>
                                 <td>${cupos}</td>
@@ -126,8 +130,8 @@ $(document).ready(function () {
                                     <div>
                                         <select class="form-select form-select-sm w-auto estado-select" style="max-width:140px;"
                                                 data-id="${p.id_participante_curso}" ${culminado ? '' : 'disabled'}>
-                                            <option value="" ${!estado || (estado !== 'Aprobado' && estado !== 'Reprobado' && estado !== 'Ausente') ? 'selected' : ''}>Seleccionar</option>
-                                            <option value="Aprobado"  ${estado === 'Aprobado'  ? 'selected' : ''}>Aprobado</option>
+                                            <option value="">Seleccionar</option>
+                                            <option value="Aprobado"  ${(!estado || (estado !== 'Reprobado' && estado !== 'Ausente')) ? 'selected' : ''}>Aprobado</option>
                                             <option value="Reprobado" ${estado === 'Reprobado' ? 'selected' : ''}>Reprobado</option>
                                             <option value="Ausente"   ${estado === 'Ausente'   ? 'selected' : ''}>Ausente</option>
                                         </select>
@@ -288,11 +292,6 @@ $(document).ready(function () {
     $('#btnReiniciarCurso').on('click', function () {
         const idCurso = $(this).data('id');
 
-        if (cambiosSinGuardar) {
-            toastr.warning('Hay cambios sin guardar en las calificaciones. Por favor, guarda los cambios antes de reiniciar el curso.');
-            return;
-        }
-
         if (estadoActualCurso === 5) {
             // --- CULMINADO ---
             // Validar que todos los participantes tengan nota final
@@ -308,7 +307,7 @@ $(document).ready(function () {
             });
 
             if (notasFaltantes > 0) {
-                toastr.warning(`Faltan notas por asignar a ${notasFaltantes} participante(s). Asigna y guarda todas las calificaciones antes de reiniciar.`);
+                toastr.warning(`Faltan notas por asignar a ${notasFaltantes} participante(s). Asigna todas las calificaciones antes de reiniciar.`);
                 return;
             }
             if (estadosInvalidos > 0) {
@@ -549,15 +548,21 @@ $(document).ready(function () {
             validarParticipantesReinicio()
         ];
 
+        const idCurso             = $(this).data('id');
+        const modo                = $(this).data('modo') || 'diferido';
+        const mantenerParticipantes = $('#chkMantenerParticipantes').is(':checked');
+
         const preimpresoVal = ($('#preimpreso_Reinicio').val() || '').trim();
-        if (!preimpresoVal) {
-            $('#preimpreso_Reinicio').addClass('is-invalid');
-            $('#error-preimpreso_Reinicio').text('El código preimpreso es requerido').show();
-            toastr.warning('Complete el código preimpreso');
-            return;
-        } else {
-            $('#preimpreso_Reinicio').removeClass('is-invalid');
-            $('#error-preimpreso_Reinicio').hide();
+        if (modo !== 'diferido') {
+            if (!preimpresoVal) {
+                $('#preimpreso_Reinicio').addClass('is-invalid');
+                $('#error-preimpreso_Reinicio').text('El código preimpreso es requerido').show();
+                toastr.warning('Complete el código preimpreso');
+                return;
+            } else {
+                $('#preimpreso_Reinicio').removeClass('is-invalid');
+                $('#error-preimpreso_Reinicio').hide();
+            }
         }
 
         if (!$('#nuevaFechaInicio').val() || !$('#nuevaFechaFin').val()) {
@@ -567,9 +572,18 @@ $(document).ready(function () {
             toastr.warning('Verifique los errores en el formulario antes de reiniciar'); return;
         }
 
-        const idCurso             = $(this).data('id');
-        const modo                = $(this).data('modo') || 'diferido';
-        const mantenerParticipantes = $('#chkMantenerParticipantes').is(':checked');
+        // Recopilar calificaciones de los participantes actualmente seleccionadas en la UI
+        const notas = [];
+        $('.estado-select').each(function () {
+            const idPartCurso = $(this).data('id');
+            const estado = $(this).val();
+            if (idPartCurso && estado) {
+                notas.push({
+                    id_participante_curso: idPartCurso,
+                    estado: estado
+                });
+            }
+        });
 
         $.ajax({
             url: '../../app/controlador/Curso/reiniciarCurso.php',
@@ -590,7 +604,8 @@ $(document).ready(function () {
                 nueva_fecha_inicio:    $('#nuevaFechaInicio').val(),
                 nueva_fecha_fin:       $('#nuevaFechaFin').val(),
                 modo:                  modo,
-                mantener_participantes: mantenerParticipantes
+                mantener_participantes: mantenerParticipantes,
+                participantes_notas:    notas
             }),
             success: function (resp) {
                 if (resp.success) {
@@ -662,10 +677,15 @@ $(document).ready(function () {
                 if (data.error) throw new Error(data.error);
                 $('#reiniciarCursoId').val(idCurso);
                 
-                // Cargar preimpreso anterior y sugerir el siguiente
+                // Cargar preimpreso anterior y sugerir el siguiente o mantener
                 const preimpresoAnt = data.preimpreso || '';
-                $('#preimpreso-anterior-help').text('Preimpreso anterior: ' + (preimpresoAnt || '-'));
-                $('#preimpreso_Reinicio').val(sugerirSiguientePreimpreso(preimpresoAnt));
+                if (data.id_estatusCurso == 2) {
+                    $('#preimpreso_Reinicio').prop('disabled', true).val(preimpresoAnt);
+                    $('#preimpreso-anterior-help').text('Se mantendrá el preimpreso original (Curso Diferido).');
+                } else {
+                    $('#preimpreso_Reinicio').prop('disabled', false).val(sugerirSiguientePreimpreso(preimpresoAnt));
+                    $('#preimpreso-anterior-help').text('Preimpreso anterior: ' + (preimpresoAnt || '-'));
+                }
 
                 $('#id_modalidad_Reinicio').val(data.id_modalidad || '');
                 $('#id_sectoreconomico_Reinicio').val(data.id_sectoreconomico || '');

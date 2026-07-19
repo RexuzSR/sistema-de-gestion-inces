@@ -29,7 +29,8 @@ try {
             'edad' => isset($p['edad']) ? $p['edad'] : null,
             'genero' => $p['genero'] ?? null,
             'id_discapacidad' => $p['id_discapacidad'] ?? 1,
-            'nombre_discapacidad' => $p['nombre_discapacidad'] ?? 'Ninguna'
+            'nombre_discapacidad' => $p['nombre_discapacidad'] ?? 'Ninguna',
+            'estatus_participante' => $p['estatus_participante'] ?? null
         ];
     }
     

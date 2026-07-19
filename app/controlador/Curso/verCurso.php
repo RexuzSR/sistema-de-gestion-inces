@@ -21,6 +21,7 @@ try {
     $sql = "SELECT 
                 c.id_curso,
                 c.nombre_curso,
+                c.id_estatusCurso,
                 c.preimpreso,
                 c.fecha_inicio,
                 c.fecha_fin,
@@ -59,6 +60,8 @@ try {
         $data = [
             'success' => true,
             'data' => [
+                'id_curso' => $cursoInfo['id_curso'],
+                'id_estatus' => $cursoInfo['id_estatusCurso'],
                 'nombre' => $cursoInfo['nombre_curso'] ?? '-',
                 'preimpreso' => $cursoInfo['preimpreso'] ?? '-',
                 'programa_formacion' => $cursoInfo['programa_formacion'] ?? '-',

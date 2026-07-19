@@ -2,6 +2,7 @@
 var modalGeneroChartInst = modalGeneroChartInst || null;
 var modalEdadChartInst = modalEdadChartInst || null;
 var modalDiscapacidadChartInst = modalDiscapacidadChartInst || null;
+var modalRendimientoChartInst = modalRendimientoChartInst || null;
 var cachedStats = cachedStats || null;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -239,7 +240,8 @@ document.addEventListener('DOMContentLoaded', function () {
               }
 
               // Cargar los participantes
-              cargarParticipantesCurso(cursoId); // Renombrado para evitar conflicto
+              const statusId = parseInt(curso.id_estatus) || 0;
+              cargarParticipantesCurso(cursoId, statusId); // Renombrado para evitar conflicto
 
               // CERRAR MODAL DOCENTE SI ESTÁ ABIERTO (para evitar solapamiento)
               const modalDocente = $('#modal-viewDocente');
@@ -267,8 +269,8 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Función para cargar los participantes del curso
-  function cargarParticipantesCurso(idCurso) {
-    console.log('Intentando cargar participantes para curso ID:', idCurso);
+  function cargarParticipantesCurso(idCurso, idEstatus = null) {
+    console.log('Intentando cargar participantes para curso ID:', idCurso, 'Estatus:', idEstatus);
     // Limpiar cualquier filtro previo al cargar un curso
     if (typeof window.limpiarFiltroParticipantes === 'function') {
       window.limpiarFiltroParticipantes();
@@ -277,9 +279,32 @@ document.addEventListener('DOMContentLoaded', function () {
       window.limpiarFiltroParticipantesTab2();
     }
     const $tablaParticipantes = $('#tabla-participantes-curso');
+    const $headerRow = $tablaParticipantes.closest('table').find('thead tr');
+    const colCount = (idEstatus === 5) ? 6 : 5;
+    
+    // Renderizar cabecera dinámica según si está Culminado
+    if (idEstatus === 5) {
+        $headerRow.html(`
+            <th style="color: #0281fe; font-weight: 600; padding: 12px; border-radius: 12px 0 0 12px;">Cédula</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Nombre</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Apellido</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Edad</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Sexo</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px; border-radius: 0 12px 12px 0;">Calificación</th>
+        `);
+    } else {
+        $headerRow.html(`
+            <th style="color: #0281fe; font-weight: 600; padding: 12px; border-radius: 12px 0 0 12px;">Cédula</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Nombre</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Apellido</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px;">Edad</th>
+            <th style="color: #0281fe; font-weight: 600; padding: 12px; border-radius: 0 12px 12px 0;">Sexo</th>
+        `);
+    }
+
     console.log('Elemento tabla encontrado:', $tablaParticipantes.length > 0 ? 'SÍ' : 'NO');
     $tablaParticipantes.empty();
-
+ 
     $.ajax({
       url: '../../app/controlador/Curso/obtenerInscritos.php',
       method: 'GET',
@@ -290,14 +315,14 @@ document.addEventListener('DOMContentLoaded', function () {
         // Manejar varios formatos: array directo, o { success: true, data: [...] }, o { success:false }
         if (response && response.success === false) {
           console.warn('Endpoint devolvió error:', response.error || response.message);
-          $tablaParticipantes.html(`<tr><td colspan="5" class="text-warning text-center">${response.error || response.message || 'No se pudo obtener inscritos'}</td></tr>`);
+          $tablaParticipantes.html(`<tr><td colspan="${colCount}" class="text-warning text-center">${response.error || response.message || 'No se pudo obtener inscritos'}</td></tr>`);
           return;
         }
-
+ 
         let participantes = [];
         if (Array.isArray(response)) participantes = response;
         else if (response && Array.isArray(response.data)) participantes = response.data;
-
+ 
         // Contadores para las estadísticas de las donas
         let mascCount = 0;
         let femCount = 0;
@@ -310,6 +335,11 @@ document.addEventListener('DOMContentLoaded', function () {
         let edadSuma = 0;
         let edadConDatos = 0;
 
+        // Contadores para rendimiento académico (calificaciones)
+        let aprobados = 0;
+        let reprobados = 0;
+        let ausentes = 0;
+ 
         if (participantes.length > 0) {
           participantes.forEach(p => {
             const cedNum = parseInt(p.cedula);
@@ -319,12 +349,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const apellido = p.apellido || '';
             const edad = p.edad || 'N/A';
             const genero = p.genero || 'N/A';
-
+ 
             // Incrementar género
             const genStr = String(genero).toUpperCase();
             if (genStr.startsWith('M') || genStr === 'MASCULINO') mascCount++;
             else if (genStr.startsWith('F') || genStr === 'FEMENINO') femCount++;
-
+ 
             // Incrementar rango de edad
             const edadInt = parseInt(edad);
             if (!isNaN(edadInt)) {
@@ -334,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function () {
               else if (edadInt <= 29) de18a29++;
               else mas30++;
             }
-
+ 
             // Incrementar discapacidad
             const discId = parseInt(p.id_discapacidad);
             const discNombre = p.nombre_discapacidad || 'Ninguna';
@@ -345,10 +375,30 @@ document.addEventListener('DOMContentLoaded', function () {
               sinDisc++;
             }
 
+            // Incrementar rendimiento académico
+            const est = p.estatus_participante || '';
+            if (est === 'Aprobado') aprobados++;
+            else if (est === 'Reprobado') reprobados++;
+            else if (est === 'Ausente') ausentes++;
+ 
             const esFemenino = genStr.startsWith('F') || genStr === 'FEMENINO';
             const sexoClass = esFemenino ? 'badge-femenino' : 'badge-masculino';
             const sexoText = esFemenino ? 'Femenino' : 'Masculino';
 
+            // Celda de calificación si el curso está culminado
+            let califTd = '';
+            if (idEstatus === 5) {
+                const calif = p.estatus_participante || '-';
+                let badgeCalifClass = 'badge-ausente';
+                if (calif === 'Aprobado') badgeCalifClass = 'badge-aprobado';
+                else if (calif === 'Reprobado') badgeCalifClass = 'badge-reprobado';
+                else if (calif === 'Ausente') badgeCalifClass = 'badge-ausente';
+                else if (calif === 'Asignado') badgeCalifClass = 'badge-asignado';
+                else if (calif === 'En formación') badgeCalifClass = 'badge-formacion';
+                
+                califTd = `<td style="padding: 12px;"><span class="${badgeCalifClass}">${calif}</span></td>`;
+            }
+ 
             $tablaParticipantes.append(`
                 <tr class="ver-participante-row" data-id="${p.id_participante}" data-genero="${sexoText}" data-edad="${edad}" data-discapacidad="${discId > 1 ? 'si' : 'no'}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
                   <td style="padding: 12px; color: #1e293b;">${ced}</td>
@@ -358,15 +408,16 @@ document.addEventListener('DOMContentLoaded', function () {
                   <td style="padding: 12px;">
                     <span class="${sexoClass}">${sexoText}</span>
                   </td>
+                  ${califTd}
                 </tr>
               `);
           });
         } else {
-          $tablaParticipantes.append('<tr><td colspan="5" class="text-muted text-center">No hay participantes inscritos</td></tr>');
+          $tablaParticipantes.append(`<tr><td colspan="${colCount}" class="text-muted text-center">No hay participantes inscritos</td></tr>`);
         }
-
+ 
         const edadPromedio = edadConDatos > 0 ? Math.round(edadSuma / edadConDatos) : '-';
-
+ 
         // Guardar las estadísticas para cuando la pestaña se haga visible
         cachedStats = { 
           masc: mascCount, 
@@ -378,15 +429,19 @@ document.addEventListener('DOMContentLoaded', function () {
           sinDisc,
           total: participantes.length,
           edadPromedio,
-          discapacidadesLista
+          discapacidadesLista,
+          aprobados,
+          reprobados,
+          ausentes,
+          idEstatus
         };
-
+ 
         // Si la pestaña ya estuviera activa, renderizar de inmediato
         if ($('#participants-tab-pane').hasClass('active')) {
-          renderModalCharts(mascCount, femCount, bajo18, de18a29, mas30, conDisc, sinDisc, participantes.length, edadPromedio, discapacidadesLista);
+          renderModalCharts(mascCount, femCount, bajo18, de18a29, mas30, conDisc, sinDisc, participantes.length, edadPromedio, discapacidadesLista, aprobados, reprobados, ausentes, idEstatus);
         }
       },
-
+ 
       error: function (xhr, status, error) {
         console.error('Error cargando participantes:', {
           status: xhr.status,
@@ -394,19 +449,36 @@ document.addEventListener('DOMContentLoaded', function () {
           responseText: xhr.responseText,
           error: error
         });
-        $tablaParticipantes.html(`<tr><td colspan="5" class="text-danger text-center">Error cargando inscritos (${xhr.status} ${xhr.statusText})</td></tr>`);
+        $tablaParticipantes.html(`<tr><td colspan="${colCount}" class="text-danger text-center">Error cargando inscritos (${xhr.status} ${xhr.statusText})</td></tr>`);
       }
     });
   }
 
   // Función para renderizar los gráficos de donas
-  function renderModalCharts(masc, fem, bajo18, de18a29, mas30, conDisc, sinDisc, total = 0, edadPromedio = '-', discapacidadesLista = {}) {
+  function renderModalCharts(
+      masc, fem, bajo18, de18a29, mas30, conDisc, sinDisc, total = 0, edadPromedio = '-', discapacidadesLista = {},
+      aprobados = 0, reprobados = 0, ausentes = 0, idEstatus = null
+  ) {
     try {
       if (typeof Chart === 'undefined') {
         console.warn('Chart.js no está cargado. Reintentando renderizar gráficas en 200ms...');
-        setTimeout(() => renderModalCharts(masc, fem, bajo18, de18a29, mas30, conDisc, sinDisc, total, edadPromedio, discapacidadesLista), 200);
+        setTimeout(() => renderModalCharts(masc, fem, bajo18, de18a29, mas30, conDisc, sinDisc, total, edadPromedio, discapacidadesLista, aprobados, reprobados, ausentes, idEstatus), 200);
         return;
       }
+
+      // Ajustar diseño de columnas según estatus del curso (Culminado = 5)
+      if (idEstatus === 5) {
+          $('#col-genero-chart, #col-edad-chart, #col-discapacidad-chart, #card-rendimiento-academico')
+              .removeClass('col-md-4')
+              .addClass('col-md-3');
+          $('#card-rendimiento-academico').removeClass('d-none');
+      } else {
+          $('#col-genero-chart, #col-edad-chart, #col-discapacidad-chart')
+              .removeClass('col-md-3')
+              .addClass('col-md-4');
+          $('#card-rendimiento-academico').addClass('d-none');
+      }
+
       const totalGen = masc + fem || 1;
       const totalEdad = bajo18 + de18a29 + mas30 || 1;
       const totalDisc = conDisc + sinDisc || 1;
@@ -505,14 +577,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       }
 
-      // 2. Gráfica de Edades
+      // 2. Gráfica de Edad
       const ctxEdad = document.getElementById('modalCursoEdadChart');
       if (ctxEdad) {
         if (modalEdadChartInst) { modalEdadChartInst.destroy(); }
         modalEdadChartInst = new Chart(ctxEdad, {
           type: 'doughnut',
           data: {
-            labels: ['< 18 años', '18-29 años', '30+ años'],
+            labels: ['<18 años', '18-29 años', '30+ años'],
             datasets: [{
               data: [bajo18, de18a29, mas30],
               backgroundColor: ['#38bdf8', '#7367f0', '#f59e0b'],
@@ -647,6 +719,86 @@ document.addEventListener('DOMContentLoaded', function () {
               ctx.font = "600 0.65rem 'Inter', sans-serif";
               ctx.fillStyle = "#94a3b8";
               const label = "TOTAL";
+              const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+              const labelY = (height / 2) + 14;
+              ctx.fillText(label, labelX, labelY);
+              ctx.restore();
+            }
+          }]
+        });
+      }
+
+      // 4. Gráfica de Rendimiento Académico (Aprobados)
+      const ctxRend = document.getElementById('modalCursoRendimientoChart');
+      if (ctxRend && idEstatus === 5) {
+        const totalRend = aprobados + reprobados + ausentes || 1;
+        
+        // Actualizar texto de diagnóstico
+        const rText = document.getElementById('debug-rendimiento-text');
+        if (rText) rText.textContent = `(Aprobados: ${aprobados} / Reprobados: ${reprobados} / Ausentes: ${ausentes})`;
+
+        if (modalRendimientoChartInst) { modalRendimientoChartInst.destroy(); }
+        modalRendimientoChartInst = new Chart(ctxRend, {
+          type: 'doughnut',
+          data: {
+            labels: ['Aprobados', 'Reprobados', 'Ausentes'],
+            datasets: [{
+              data: [aprobados, reprobados, ausentes],
+              backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
+              borderWidth: 0,
+              borderRadius: 8,
+              spacing: 3,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            onClick: (evt, elements) => {
+              if (elements && elements.length > 0) {
+                const index = elements[0].index;
+                const label = modalRendimientoChartInst.data.labels[index];
+                window.filtrarYMostrarEnTab2('rendimiento', label);
+              }
+            },
+            onHover: (evt, activeElements) => {
+              evt.native.target.style.cursor = activeElements && activeElements.length ? 'pointer' : 'default';
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalRend * 100)}%)`
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'donutCenterTextRend',
+            beforeDraw: function(chart) {
+              const { width, height, ctx } = chart;
+              ctx.save();
+              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.textBaseline = "middle";
+              ctx.fillStyle = "#0f172a";
+              
+              // Mostrar porcentaje de aprobados en el centro
+              const pct = totalRend ? Math.round((aprobados / (aprobados + reprobados + ausentes || 1)) * 100) : 0;
+              const text = pct + "%";
+              
+              const textX = Math.round((width - ctx.measureText(text).width) / 2);
+              const textY = (height / 2) - 8;
+              ctx.fillText(text, textX, textY);
+              
+              ctx.font = "600 0.65rem 'Inter', sans-serif";
+              ctx.fillStyle = "#94a3b8";
+              const label = "APROBADOS";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
               const labelY = (height / 2) + 14;
               ctx.fillText(label, labelX, labelY);
@@ -1070,6 +1222,7 @@ $('#modal-viewCurso').on('hidden.bs.modal', function () {
   if (modalGeneroChartInst) { modalGeneroChartInst.destroy(); modalGeneroChartInst = null; }
   if (modalEdadChartInst) { modalEdadChartInst.destroy(); modalEdadChartInst = null; }
   if (modalDiscapacidadChartInst) { modalDiscapacidadChartInst.destroy(); modalDiscapacidadChartInst = null; }
+  if (modalRendimientoChartInst) { modalRendimientoChartInst.destroy(); modalRendimientoChartInst = null; }
 
   // Limpiar filtros de la viñeta 2
   if (typeof window.limpiarFiltroParticipantesTab2 === 'function') {
@@ -1110,7 +1263,11 @@ $(document).on('click', '#courseModalTab button', function (e) {
         cachedStats.sinDisc,
         cachedStats.total,
         cachedStats.edadPromedio,
-        cachedStats.discapacidadesLista
+        cachedStats.discapacidadesLista,
+        cachedStats.aprobados || 0,
+        cachedStats.reprobados || 0,
+        cachedStats.ausentes || 0,
+        cachedStats.idEstatus
       );
     }, 150);
   }

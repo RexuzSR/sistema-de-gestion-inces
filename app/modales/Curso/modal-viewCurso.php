@@ -691,7 +691,7 @@ if (typeof Chart === 'undefined') {
         <div class="row g-4">
           
           <!-- Tarjeta 1: Género -->
-          <div class="col-md-4 animate-on-show" data-delay="100">
+          <div class="col-md-4 animate-on-show" id="col-genero-chart" data-delay="100">
             <div style="
               background: linear-gradient(145deg, #ffffff, #f8fafc);
               border: 1px solid rgba(2, 129, 254, 0.15);
@@ -769,7 +769,7 @@ if (typeof Chart === 'undefined') {
           </div>
 
           <!-- Tarjeta 2: Edad -->
-          <div class="col-md-4 animate-on-show" data-delay="200">
+          <div class="col-md-4 animate-on-show" id="col-edad-chart" data-delay="200">
             <div style="
               background: linear-gradient(145deg, #ffffff, #f8fafc);
               border: 1px solid rgba(56, 189, 248, 0.15);
@@ -844,7 +844,7 @@ if (typeof Chart === 'undefined') {
           </div>
 
           <!-- Tarjeta 3: Discapacidad -->
-          <div class="col-md-4 animate-on-show" data-delay="300">
+          <div class="col-md-4 animate-on-show" id="col-discapacidad-chart" data-delay="300">
             <div style="
               background: linear-gradient(145deg, #ffffff, #f8fafc);
               border: 1px solid rgba(139, 92, 246, 0.15);
@@ -914,6 +914,82 @@ if (typeof Chart === 'undefined') {
               </div>
             </div>
           </div>
+
+          <!-- Tarjeta 4: Rendimiento Académico (Aprobados) -->
+          <div class="col-md-4 animate-on-show d-none" id="card-rendimiento-academico" data-delay="400">
+            <div style="
+              background: linear-gradient(145deg, #ffffff, #f8fafc);
+              border: 1px solid rgba(16, 185, 129, 0.15);
+              border-radius: 24px;
+              padding: 25px 20px 20px;
+              text-align: center;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              position: relative;
+              overflow: hidden;
+              height: 100%;
+              min-height: 340px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            " onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 20px 40px -12px rgba(16,185,129,0.25), 0 0 0 1px rgba(16,185,129,0.2)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.04)'">
+              
+              <!-- Línea decorativa superior -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 15%;
+                right: 15%;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, #10b981, #34d399, #6ee7b7, transparent);
+                border-radius: 0 0 10px 10px;
+                filter: blur(1px);
+              "></div>
+
+              <!-- Icono de rendimiento -->
+              <div style="
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 12px;
+                border: 1px solid rgba(16, 185, 129, 0.15);
+              ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+
+              <h6 class="fw-bold mb-1" style="color: #0f172a; font-size: 0.95rem;">Porcentaje de Aprobados</h6>
+              <span id="debug-rendimiento-text" style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 15px; display: block;"></span>
+              
+              <div style="position: relative; width: 160px; height: 160px; margin: 0 auto;">
+                <canvas id="modalCursoRendimientoChart"></canvas>
+              </div>
+
+              <!-- Leyenda personalizada -->
+              <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Aprobados</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Reprobados</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #6b7280; box-shadow: 0 0 10px rgba(107,114,128,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Ausentes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Resumen rápido de datos -->
@@ -1032,6 +1108,53 @@ if (typeof Chart === 'undefined') {
 </div>
 
 <style>
+/* Badges de Calificación */
+.badge-aprobado {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #34d399;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.badge-reprobado {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #f87171;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.badge-ausente {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.badge-asignado {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.badge-formacion {
+    background: #ffedd5;
+    color: #9a3412;
+    border: 1px solid #fdba74;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 /* Estilo personalizado de las pestañas en el modal de curso */
 #courseModalTab .nav-link {
     color: #64748b;

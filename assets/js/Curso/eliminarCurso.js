@@ -28,7 +28,11 @@
                         rows += `
                             <tr>
                                 <td>${curso.id_curso}</td>
-                                <td>${curso.nombre_curso}</td>
+                                <td>
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">${curso.nombre_curso}</div>
+                                    ${curso.preimpreso ? `<span class="badge bg-secondary text-white mt-1" style="font-size: 0.7rem; font-weight: 500;">${curso.preimpreso}</span>` : ''}
+                                    ${parseInt(curso.reiniciado, 10) === 1 ? `<span class="badge text-white mt-1 ms-1" style="font-size: 0.7rem; font-weight: 500; background: linear-gradient(135deg, #f59e0b, #d97706) !important; border: none;" title="Este curso ya ha sido clonado/reiniciado"><i class="bi bi-arrow-repeat me-1"></i>Reiniciado</span>` : ''}
+                                </td>
                                 <td>${curso.nombre_modalidad}</td>
                                 <td>${curso.num_inscritos}</td>
                                 <td>${cuposDisponibles}</td>

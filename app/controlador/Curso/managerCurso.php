@@ -521,6 +521,7 @@ class Curso {
                         a.nombre_ambito,
                         c.fecha_creacion,
                         c.fecha_actualizacion,
+                        c.reiniciado,
                         (SELECT COUNT(*) FROM tb_participante_curso pc WHERE pc.id_curso = c.id_curso) AS registros_participante_curso,
                         (c.num_inscritos < IFNULL(c.min_participantes, 12)) AS sin_participantes_suficientes,
                         NOT EXISTS (SELECT 1 FROM tb_docente_curso dc2 WHERE dc2.id_curso = c.id_curso) AS sin_docente
@@ -563,6 +564,7 @@ class Curso {
                         c.id_ambito, 
                         c.programa_formacion, 
                         c.turno, 
+                        c.reiniciado,
                         m.nombre_modalidad, 
                         e.nombre_estatuscurso,
                         se.nombre_sectoreconomico AS sectoreconomico_nombre,
@@ -884,6 +886,20 @@ class Curso {
 
     public function eliminarCurso($id) {
         try {
+            // Verificar si el curso ya ha sido reiniciado (histórico imborrable)
+            $sqlCheckReiniciado = "SELECT reiniciado FROM tb_curso WHERE id_curso = :id";
+            $stmtCheckReiniciado = $this->conn->prepare($sqlCheckReiniciado);
+            $stmtCheckReiniciado->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmtCheckReiniciado->execute();
+            $reiniciadoVal = $stmtCheckReiniciado->fetchColumn();
+            
+            if ($reiniciadoVal == 1) {
+                return [
+                    "success" => false,
+                    "message" => "No se puede eliminar el curso original, ya que ha sido reiniciado."
+                ];
+            }
+
             // Primero, verificar si el curso tiene participantes asociados
             $sqlVerificar = "SELECT COUNT(*) FROM tb_participante_curso WHERE id_curso = :id";
             $stmtVerificar = $this->conn->prepare($sqlVerificar);
@@ -1004,7 +1020,8 @@ class Curso {
                         p.genero,
                         p.id_discapacidad,
                         d.nombre_discapacidad,
-                        pc.id_participante_curso
+                        pc.id_participante_curso,
+                        pc.estatus_participante
                     FROM tb_participante_curso pc
                     JOIN tb_participante p ON pc.id_participante = p.id_participante
                     LEFT JOIN tb_discapacidad d ON p.id_discapacidad = d.id_discapacidad
@@ -1442,7 +1459,9 @@ class Curso {
             error_log("Error en obtenerDatosReferencia: " . $e->getMessage());
             return [];
         }
-    }public function reiniciarCurso(
+    }
+
+    public function reiniciarCurso(
         $idCurso,
         $nuevaFechaInicio,
         $nuevaFechaFin,
@@ -1457,14 +1476,10 @@ class Curso {
         $horas_totales = null,
         $min_participantes = null,
         $max_participantes = null,
-        $preimpreso = null
+        $preimpreso = null,
+        $participantesNotas = null
     ) {
     try {
-        // Validar que el preimpreso no llegue vacío (requerido en backend)
-        if (empty($preimpreso)) {
-            return ['success' => false, 'message' => 'El código preimpreso es obligatorio.', 'error' => 'preimpreso_vacio'];
-        }
-
         // Validar que el curso exista y tenga estado válido
         $sqlCheck = "SELECT * FROM tb_curso WHERE id_curso = :id";
         $stmtCheck = $this->conn->prepare($sqlCheck);
@@ -1483,6 +1498,27 @@ class Curso {
             return ['success' => false, 'message' => 'Solo se pueden reiniciar cursos Diferidos o Culminados.'];
         }
 
+        // Si el curso actual ya ha sido reiniciado, no permitir
+        if ((int)$current['reiniciado'] === 1) {
+            return ['success' => false, 'message' => 'Este curso ya ha sido reiniciado una vez y no se puede volver a reiniciar.'];
+        }
+
+        // Para cursos culminados (estatus 5), el preimpreso es obligatorio y debe ser único.
+        // Para cursos diferidos (estatus 2), el preimpreso no cambia, por lo que no es obligatorio ni se valida colisión.
+        if ($estadoActual === 5) {
+            if (empty($preimpreso)) {
+                return ['success' => false, 'message' => 'El código preimpreso es obligatorio.', 'error' => 'preimpreso_vacio'];
+            }
+            $colision = $this->validarUnicidadPreimpreso($preimpreso);
+            if ($colision !== null) {
+                return [
+                    'success' => false,
+                    'message' => 'El código preimpreso ya está registrado en otro curso.',
+                    'error' => 'preimpreso_duplicado'
+                ];
+            }
+        }
+
         // Validar fechas
         $fechaInicio = DateTime::createFromFormat('Y-m-d', $nuevaFechaInicio);
         $fechaFin    = DateTime::createFromFormat('Y-m-d', $nuevaFechaFin);
@@ -1491,16 +1527,6 @@ class Curso {
         }
         if ($fechaInicio >= $fechaFin) {
             return ['success' => false, 'message' => 'La fecha de inicio debe ser anterior a la fecha de fin.'];
-        }
-
-        // Validar unicidad del preimpreso (el preimpreso es de formato libre por decisión de diseño temporal)
-        $colision = $this->validarUnicidadPreimpreso($preimpreso);
-        if ($colision !== null) {
-            return [
-                'success' => false,
-                'message' => 'El código preimpreso ya está registrado en otro curso.',
-                'error' => 'preimpreso_duplicado'
-            ];
         }
 
         // Normalizar los nuevos valores usando los del curso actual cuando no se proporcionan.
@@ -1546,112 +1572,193 @@ class Curso {
         // ============================================================
         $this->conn->beginTransaction();
 
-        // 1. Insertar el nuevo curso clonado (no destructivo)
-        $sqlInsert = "INSERT INTO tb_curso (
-                          nombre_curso, preimpreso, fecha_inicio, fecha_limite_inicio, fecha_fin, 
-                          horas_totales, horas_por_clase, horas_completadas, max_participantes, min_participantes, 
-                          num_inscritos, id_modalidad, tipo_formacion, id_estatusCurso, id_sectoreconomico, 
-                          id_subtipo, id_areaFormativa, id_ambito, id_ppl, id_nombre_especifico, 
-                          turno, programa_formacion, fecha_creacion, fecha_actualizacion
-                      ) VALUES (
-                          :nombre_curso, :preimpreso, :fecha_inicio, :fecha_limite_inicio, :fecha_fin, 
-                          :horas_totales, :horas_por_clase, 0, :max_participantes, :min_participantes, 
-                          0, :id_modalidad, :tipo_formacion, 1, :id_sectoreconomico, 
-                          :id_subtipo, :id_areaFormativa, :id_ambito, :id_ppl, :id_nombre_especifico, 
-                          :turno, :programa_formacion, NOW(), NOW()
-                      )";
-        $stmtInsert = $this->conn->prepare($sqlInsert);
-        $resInsert = $stmtInsert->execute([
-            ':nombre_curso' => $current['nombre_curso'],
-            ':preimpreso' => $preimpreso,
-            ':fecha_inicio' => $nuevaFechaInicio,
-            ':fecha_limite_inicio' => $nuevaFechaLimite,
-            ':fecha_fin' => $nuevaFechaFin,
-            ':horas_totales' => $horas_totales,
-            ':horas_por_clase' => $horas_por_clase,
-            ':max_participantes' => $max_participantes,
-            ':min_participantes' => $min_participantes,
-            ':id_modalidad' => $id_modalidad,
-            ':tipo_formacion' => $current['tipo_formacion'],
-            ':id_sectoreconomico' => $id_sectoreconomico,
-            ':id_subtipo' => $id_subtipo,
-            ':id_areaFormativa' => $current['id_areaFormativa'],
-            ':id_ambito' => $id_ambito,
-            ':id_ppl' => $current['id_ppl'],
-            ':id_nombre_especifico' => $current['id_nombre_especifico'],
-            ':turno' => $turno,
-            ':programa_formacion' => $current['programa_formacion']
-        ]);
-
-        if (!$resInsert) {
-            throw new Exception("Error al insertar el nuevo curso en la base de datos.");
+        // Por defecto, todos los participantes del curso culminado que no tengan nota final se aprueban
+        if ($estadoActual === 5) {
+            $sqlDefaultNotas = "UPDATE tb_participante_curso 
+                                SET estatus_participante = 'Aprobado' 
+                                WHERE id_curso = :id_curso 
+                                  AND (estatus_participante IS NULL 
+                                       OR estatus_participante NOT IN ('Aprobado', 'Reprobado', 'Ausente'))";
+            $stmtDef = $this->conn->prepare($sqlDefaultNotas);
+            $stmtDef->execute([':id_curso' => $idCurso]);
         }
 
-        $newIdCurso = $this->conn->lastInsertId();
-        if (!$newIdCurso) {
-            throw new Exception("Fallo al obtener el ID del nuevo curso insertado.");
+        // 1. Asignar notas a los participantes si se envían
+        if (!empty($participantesNotas) && is_array($participantesNotas)) {
+            foreach ($participantesNotas as $nota) {
+                $idParticipanteCurso = isset($nota['id_participante_curso']) ? (int)$nota['id_participante_curso'] : null;
+                $estado = isset($nota['estado']) ? $nota['estado'] : null;
+                if ($idParticipanteCurso && $estado) {
+                    $resNota = $this->guardarNotas($idParticipanteCurso, $estado);
+                    if (isset($resNota['success']) && !$resNota['success']) {
+                        throw new Exception("Error al guardar notas: " . $resNota['message']);
+                    }
+                }
+            }
         }
 
-        // 2. Obtener participantes del curso viejo
-        $sqlGetPart = "SELECT DISTINCT id_participante, fecha_inscripcion 
-                       FROM tb_participante_curso 
+        $newIdCurso = null;
+
+        if ($estadoActual === 2) {
+            // --- MODO DIFERIDO: Reprogramar curso existente (solo cambiar fechas y mantener preimpreso) ---
+            $sqlUpd = "UPDATE tb_curso SET
+                           fecha_inicio = :fecha_inicio,
+                           fecha_limite_inicio = :fecha_limite_inicio,
+                           fecha_fin = :fecha_fin,
+                           horas_totales = :horas_totales,
+                           horas_por_clase = :horas_por_clase,
+                           max_participantes = :max_participantes,
+                           min_participantes = :min_participantes,
+                           id_modalidad = :id_modalidad,
+                           id_sectoreconomico = :id_sectoreconomico,
+                           id_subtipo = :id_subtipo,
+                           id_ambito = :id_ambito,
+                           turno = :turno,
+                           id_estatusCurso = 1, -- Volver a En espera
+                           fecha_actualizacion = NOW()
                        WHERE id_curso = :id_curso";
+            $stmtUpd = $this->conn->prepare($sqlUpd);
+            $resUpd = $stmtUpd->execute([
+                ':fecha_inicio' => $nuevaFechaInicio,
+                ':fecha_limite_inicio' => $nuevaFechaLimite,
+                ':fecha_fin' => $nuevaFechaFin,
+                ':horas_totales' => $horas_totales,
+                ':horas_por_clase' => $horas_por_clase,
+                ':max_participantes' => $max_participantes,
+                ':min_participantes' => $min_participantes,
+                ':id_modalidad' => $id_modalidad,
+                ':id_sectoreconomico' => $id_sectoreconomico,
+                ':id_subtipo' => $id_subtipo,
+                ':id_ambito' => $id_ambito,
+                ':turno' => $turno,
+                ':id_curso' => $idCurso
+            ]);
+
+            if (!$resUpd) {
+                throw new Exception("Error al actualizar el curso diferido en la base de datos.");
+            }
+
+            // Actualizar FechaInicio y FechaFin de los participantes asignados a este curso
+            $sqlUpdPartDates = "UPDATE tb_participante_curso SET
+                                    FechaInicio = :fecha_inicio,
+                                    FechaFin = :fecha_fin,
+                                    estatus_participante = 'Asignado'
+                                WHERE id_curso = :id_curso AND estatus_participante IN ('Asignado', 'Diferido', 'En formación')";
+            $stmtUpdPartDates = $this->conn->prepare($sqlUpdPartDates);
+            $stmtUpdPartDates->execute([
+                ':fecha_inicio' => $nuevaFechaInicio,
+                ':fecha_fin' => $nuevaFechaFin,
+                ':id_curso' => $idCurso
+            ]);
+
+            $newIdCurso = $idCurso;
+
+        } else {
+            // --- MODO CULMINADO: Clonar el curso y dejar el original como registro histórico ---
+            $sqlInsert = "INSERT INTO tb_curso (
+                              nombre_curso, preimpreso, fecha_inicio, fecha_limite_inicio, fecha_fin, 
+                              horas_totales, horas_por_clase, horas_completadas, max_participantes, min_participantes, 
+                              num_inscritos, id_modalidad, tipo_formacion, id_estatusCurso, id_sectoreconomico, 
+                              id_subtipo, id_areaFormativa, id_ambito, id_ppl, id_nombre_especifico, 
+                              turno, programa_formacion, fecha_creacion, fecha_actualizacion, reiniciado
+                          ) VALUES (
+                              :nombre_curso, :preimpreso, :fecha_inicio, :fecha_limite_inicio, :fecha_fin, 
+                              :horas_totales, :horas_por_clase, 0, :max_participantes, :min_participantes, 
+                              0, :id_modalidad, :tipo_formacion, 1, :id_sectoreconomico, 
+                              :id_subtipo, :id_areaFormativa, :id_ambito, :id_ppl, :id_nombre_especifico, 
+                              :turno, :programa_formacion, NOW(), NOW(), 0
+                          )";
+            $stmtInsert = $this->conn->prepare($sqlInsert);
+            $resInsert = $stmtInsert->execute([
+                ':nombre_curso' => $current['nombre_curso'],
+                ':preimpreso' => $preimpreso,
+                ':fecha_inicio' => $nuevaFechaInicio,
+                ':fecha_limite_inicio' => $nuevaFechaLimite,
+                ':fecha_fin' => $nuevaFechaFin,
+                ':horas_totales' => $horas_totales,
+                ':horas_por_clase' => $horas_por_clase,
+                ':max_participantes' => $max_participantes,
+                ':min_participantes' => $min_participantes,
+                ':id_modalidad' => $id_modalidad,
+                ':tipo_formacion' => $current['tipo_formacion'],
+                ':id_sectoreconomico' => $id_sectoreconomico,
+                ':id_subtipo' => $id_subtipo,
+                ':id_areaFormativa' => $current['id_areaFormativa'],
+                ':id_ambito' => $id_ambito,
+                ':id_ppl' => $current['id_ppl'],
+                ':id_nombre_especifico' => $current['id_nombre_especifico'],
+                ':turno' => $turno,
+                ':programa_formacion' => $current['programa_formacion']
+            ]);
+
+            if (!$resInsert) {
+                throw new Exception("Error al insertar el nuevo curso en la base de datos.");
+            }
+
+            $newIdCurso = $this->conn->lastInsertId();
+            if (!$newIdCurso) {
+                throw new Exception("Fallo al obtener el ID del nuevo curso insertado.");
+            }
+
+            // Marcar el curso original como reiniciado
+            $stmtUpdOriginal = $this->conn->prepare("UPDATE tb_curso SET reiniciado = 1 WHERE id_curso = :id");
+            $stmtUpdOriginal->execute([':id' => $idCurso]);
+
+            // Copiar los participantes a la nueva cohorte si se mantiene (para diferido clonado, aunque culminado normalmente no mantiene)
+            if ($modo === 'diferido' && $mantenerParticipantes) {
+                // Obtener participantes del curso viejo
+                $sqlGetPart = "SELECT DISTINCT id_participante, fecha_inscripcion 
+                               FROM tb_participante_curso 
+                               WHERE id_curso = :id_curso";
+                $stmtGetPart = $this->conn->prepare($sqlGetPart);
+                $stmtGetPart->execute([':id_curso' => $idCurso]);
+                $participantes = $stmtGetPart->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($participantes as $p) {
+                    $idParticipante = $p['id_participante'];
+
+                    // Insertar en la nueva cohorte
+                    $sqlNewPart = "INSERT INTO tb_participante_curso (id_participante, id_curso, fecha_inscripcion, FechaInicio, FechaFin, estatus_participante) 
+                                   VALUES (:id_p, :new_id, :fecha_insc, :fecha_inicio, :fecha_fin, 'Asignado')";
+                    $stmtNewPart = $this->conn->prepare($sqlNewPart);
+                    $resNew = $stmtNewPart->execute([
+                        ':id_p' => $idParticipante,
+                        ':new_id' => $newIdCurso,
+                        ':fecha_insc' => $p['fecha_inscripcion'],
+                        ':fecha_inicio' => $nuevaFechaInicio,
+                        ':fecha_fin' => $nuevaFechaFin
+                    ]);
+                    if (!$resNew) {
+                        throw new Exception("Error al inscribir participante ID {$idParticipante} en el nuevo curso.");
+                    }
+
+                    // Marcar como Diferido en la cohorte anterior (histórica)
+                    $sqlOldPart = "UPDATE tb_participante_curso 
+                                   SET estatus_participante = 'Diferido' 
+                                   WHERE id_curso = :old_id AND id_participante = :id_p";
+                    $stmtOldPart = $this->conn->prepare($sqlOldPart);
+                    $resOld = $stmtOldPart->execute([
+                        ':old_id' => $idCurso,
+                        ':id_p' => $idParticipante
+                    ]);
+                    if (!$resOld) {
+                        throw new Exception("Error al actualizar estado del participante ID {$idParticipante} en el curso histórico.");
+                    }
+                }
+
+                // Actualizar num_inscritos en el nuevo curso
+                $numInscritos = count($participantes);
+                $sqlUpdCount = "UPDATE tb_curso SET num_inscritos = :num WHERE id_curso = :id";
+                $stmtUpdCount = $this->conn->prepare($sqlUpdCount);
+                $stmtUpdCount->execute([':num' => $numInscritos, ':id' => $newIdCurso]);
+            }
+        }
+
+        // Obtener participantes vinculados al curso (para actualizar sus estados globales en tb_participante)
+        $sqlGetPart = "SELECT DISTINCT id_participante FROM tb_participante_curso WHERE id_curso = :id_curso";
         $stmtGetPart = $this->conn->prepare($sqlGetPart);
         $stmtGetPart->execute([':id_curso' => $idCurso]);
         $participantes = $stmtGetPart->fetchAll(PDO::FETCH_ASSOC);
-
-        // 3. Procesar participantes según el modo e intenciones
-        if ($modo === 'diferido' && $mantenerParticipantes) {
-            // Copiar los participantes a la nueva cohorte y marcar la cohorte anterior como Diferido
-            foreach ($participantes as $p) {
-                $idParticipante = $p['id_participante'];
-
-                // Insertar en la nueva cohorte
-                $sqlNewPart = "INSERT INTO tb_participante_curso (id_participante, id_curso, fecha_inscripcion, FechaInicio, FechaFin, estatus_participante) 
-                               VALUES (:id_p, :new_id, :fecha_insc, :fecha_inicio, :fecha_fin, 'Asignado')";
-                $stmtNewPart = $this->conn->prepare($sqlNewPart);
-                $resNew = $stmtNewPart->execute([
-                    ':id_p' => $idParticipante,
-                    ':new_id' => $newIdCurso,
-                    ':fecha_insc' => $p['fecha_inscripcion'],
-                    ':fecha_inicio' => $nuevaFechaInicio,
-                    ':fecha_fin' => $nuevaFechaFin
-                ]);
-                if (!$resNew) {
-                    throw new Exception("Error al inscribir participante ID {$idParticipante} en el nuevo curso.");
-                }
-
-                // Marcar como Diferido en la cohorte anterior (histórica)
-                $sqlOldPart = "UPDATE tb_participante_curso 
-                               SET estatus_participante = 'Diferido' 
-                               WHERE id_curso = :old_id AND id_participante = :id_p";
-                $stmtOldPart = $this->conn->prepare($sqlOldPart);
-                $resOld = $stmtOldPart->execute([
-                    ':old_id' => $idCurso,
-                    ':id_p' => $idParticipante
-                ]);
-                if (!$resOld) {
-                    throw new Exception("Error al actualizar estado del participante ID {$idParticipante} en el curso histórico.");
-                }
-            }
-
-            // Actualizar num_inscritos en el nuevo curso
-            $numInscritos = count($participantes);
-            $sqlUpdCount = "UPDATE tb_curso SET num_inscritos = :num WHERE id_curso = :id";
-            $stmtUpdCount = $this->conn->prepare($sqlUpdCount);
-            $stmtUpdCount->execute([':num' => $numInscritos, ':id' => $newIdCurso]);
-
-        } else {
-            // Si el curso anterior fue diferido pero NO se mantienen participantes,
-            // marcamos a los asignados del curso anterior como Diferidos en la BD para sanear historial.
-            if ($modo === 'diferido') {
-                $sqlOldPart = "UPDATE tb_participante_curso 
-                               SET estatus_participante = 'Diferido' 
-                               WHERE id_curso = :old_id AND estatus_participante = 'Asignado'";
-                $stmtOldPart = $this->conn->prepare($sqlOldPart);
-                $stmtOldPart->execute([':old_id' => $idCurso]);
-            }
-        }
 
         // 4. Actualizar estado general de todos los participantes involucrados en tb_participante
         foreach ($participantes as $p) {
@@ -1683,19 +1790,22 @@ class Curso {
             $stmtUpdPart->execute([':estado' => $nuevoEstadoPart, ':id_p' => $idParticipante]);
         }
 
-        // 5. Clonar docentes asociados (clonar el docente al nuevo curso)
+        // 5. Clonar/actualizar docentes asociados
         $sqlDocentes = "SELECT id_docente FROM tb_docente_curso WHERE id_curso = :id_curso";
         $stmtDoc = $this->conn->prepare($sqlDocentes);
         $stmtDoc->execute([':id_curso' => $idCurso]);
         $docentes = $stmtDoc->fetchAll(PDO::FETCH_COLUMN);
 
         foreach ($docentes as $idDocente) {
-            $sqlInsertDoc = "INSERT INTO tb_docente_curso (id_docente, id_curso, fecha_asignacion) 
-                             VALUES (:id_d, :new_id, CURDATE())";
-            $stmtInsertDoc = $this->conn->prepare($sqlInsertDoc);
-            $resDoc = $stmtInsertDoc->execute([':id_d' => $idDocente, ':new_id' => $newIdCurso]);
-            if (!$resDoc) {
-                throw new Exception("Error al asociar docente ID {$idDocente} al nuevo curso.");
+            // Si clonamos (no diferido), insertamos la relación en el nuevo curso
+            if ($estadoActual !== 2) {
+                $sqlInsertDoc = "INSERT INTO tb_docente_curso (id_docente, id_curso, fecha_asignacion) 
+                                 VALUES (:id_d, :new_id, CURDATE())";
+                $stmtInsertDoc = $this->conn->prepare($sqlInsertDoc);
+                $resDoc = $stmtInsertDoc->execute([':id_d' => $idDocente, ':new_id' => $newIdCurso]);
+                if (!$resDoc) {
+                    throw new Exception("Error al asociar docente ID {$idDocente} al nuevo curso.");
+                }
             }
 
             // Actualizar estado general del docente
@@ -1719,9 +1829,13 @@ class Curso {
         // 6. Confirmar transacción
         $this->conn->commit();
 
-        $mensaje = ($modo === 'culminado' || !$mantenerParticipantes)
-            ? 'Curso reiniciado correctamente en estado En espera. La nueva cohorte inicia sin participantes.'
-            : 'Curso reiniciado correctamente en estado En espera. Los participantes fueron migrados a la nueva cohorte con las nuevas fechas.';
+        if ($estadoActual === 2) {
+            $mensaje = 'Curso diferido reprogramado/reiniciado correctamente en estado En espera.';
+        } else {
+            $mensaje = ($modo === 'culminado' || !$mantenerParticipantes)
+                ? 'Curso reiniciado correctamente en estado En espera. La nueva cohorte inicia sin participantes.'
+                : 'Curso reiniciado correctamente en estado En espera. Los participantes fueron migrados a la nueva cohorte con las nuevas fechas.';
+        }
 
         return ['success' => true, 'message' => $mensaje, 'id_curso' => $newIdCurso];
 
