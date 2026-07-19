@@ -193,3 +193,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="/Sistema%20de%20Gestion%20Inces/assets/js/partials/categorias_reportes.js"></script>
 <!-- Buscador global — debe cargarse después del script de dropdowns -->
 <script src="/Sistema%20de%20Gestion%20Inces/assets/js/partials/buscador.js"></script>
+
+<script>
+// Evitar el acceso a páginas protegidas desde el historial del navegador después del cierre de sesión
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted || (typeof window.performance !== 'undefined' && window.performance.navigation.type === 2)) {
+        window.location.reload();
+    }
+});
+</script>

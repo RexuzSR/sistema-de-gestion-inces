@@ -212,8 +212,7 @@ $(document).ready(function () {
                     // Llenar formulario con los campos correctos
                     $('#idParticipante').val(participante.id_participante);
                     $('#cedula-Edit').val(participante.cedula);
-                    const cedNum = parseInt(participante.cedula);
-                    const nacVal = (!isNaN(cedNum) && cedNum >= 80000000) ? 'E' : 'V';
+                    const nacVal = participante.nacionalidad || 'V';
                     $('#nacionalidad-Edit').val(nacVal).trigger('change');
 
                     // Separar prefijo y número

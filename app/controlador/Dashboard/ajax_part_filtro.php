@@ -66,6 +66,7 @@ $sql = "
         p.primer_apellido,
         p.cedula,
         p.genero,
+        p.nacionalidad,
         COALESCE(d.nombre_discapacidad, 'Ninguna') AS nombre_discapacidad,
         c.id_curso,
         c.nombre_curso,

@@ -28,6 +28,7 @@ try {
                 'primer_apellido' => $participante->primer_apellido,
                 'segundo_apellido' => $participante->segundo_apellido,
                 'cedula' => $participante->cedula,
+                'nacionalidad' => $participante->nacionalidad ?? 'V',
                 'telefono' => $participante->telefono,
                 'correo' => $participante->correo,
                 'fecha_nacimiento' => $participante->fecha_nacimiento, // Formato Y-m-d

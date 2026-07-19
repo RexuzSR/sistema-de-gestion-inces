@@ -269,4 +269,4 @@ $metaAnualReal = $resAnual['real'];
 // ────────────────────────────────────────────────────────────
 // SEMÁFORO GENERAL de metas
 // ────────────────────────────────────────────────────────────
-$s_meta = IndicadorHelper::evaluarSemaforo('US_CUMP_METAS', $kMetas['promedio_pct'] ?? 0)['alerta'];
+$s_meta = IndicadorHelper::evaluarSemaforo('US_CUMP_METAS', min((float)($kMetas['promedio_pct'] ?? 0), 100.0))['alerta'];

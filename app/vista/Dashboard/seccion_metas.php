@@ -84,8 +84,8 @@ if ($c3_empty) {
     $c3_prog = $c3_pct; $c3_bar = $c3_color;
 }
 
-// KPI Card 4 Data
-$c4_val_raw = (float)($kMetas['promedio_pct'] ?? 0.0);
+// / KPI Card 4 Data
+$c4_val_raw = min((float)($kMetas['promedio_pct'] ?? 0.0), 100.0);
 $c4_empty = ($c4_val_raw <= 0.0);
 if ($c4_empty) {
     $c4_color = '#e2e8f0'; $c4_bg = '#f8fafc'; $c4_icon_color = '#94a3b8';
@@ -365,7 +365,7 @@ if ($c4_empty) {
                             
                             <div class="metas-avance-cifras">
                                 <div class="metas-avance-cifra">
-                                    <span class="metas-avance-cifra-val" style="color: <?php echo $cMa; ?>;"><?php echo number_format((float)$ma['porcentaje_cumplimiento'], 1); ?>%</span>
+                                    <span class="metas-avance-cifra-val" style="color: <?php echo $cMa; ?>;"><?php echo number_format($pMa, 1); ?>%</span>
                                     <span class="metas-avance-cifra-lbl">cumplimiento</span>
                                 </div>
                                 <div class="metas-avance-cifra">
@@ -615,7 +615,7 @@ if ($c4_empty) {
                                     <div class="metas-progress-track" style="height: 6px; flex-grow: 1;">
                                         <div class="metas-progress-fill semaforo-fill-<?php echo $mSem; ?>" style="width: <?php echo min($mPct, 100); ?>%;"></div>
                                     </div>
-                                    <span class="fw-semibold semaforo-text-<?php echo $mSem; ?>" style="font-size: 0.75rem; min-width: 45px; text-align: right;"><?php echo $mPct; ?>%</span>
+                                    <span class="fw-semibold semaforo-text-<?php echo $mSem; ?>" style="font-size: 0.75rem; min-width: 45px; text-align: right;"><?php echo min($mPct, 100); ?>%</span>
                                 </div>
                             </td>
                             <td style="text-align: center;">

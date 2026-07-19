@@ -96,7 +96,7 @@ if (!empty($imagenUsuario)) {
                 <div class="row g-3 mb-4 kpi-row">
                     <!-- Total Metas -->
                     <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-total" style="cursor: pointer;" onclick="$('#estado-filter').val('').trigger('change');">
+                        <div class="kpi-card kpi-total" style="cursor: pointer;">
                             <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Cantidad total de metas registradas bajo la combinación de filtros seleccionados."></i>
                             <div class="kpi-icon-wrapper">
                                 <i class="bi bi-bullseye"></i>
@@ -120,19 +120,7 @@ if (!empty($imagenUsuario)) {
                             </div>
                         </div>
                     </div>
-                    <!-- Sobrecumplidas -->
-                    <div class="col-md col-sm-6">
-                        <div class="kpi-card kpi-sobrecumplidas" style="cursor: pointer;" onclick="$('#estado-filter').val('Sobrecumplida').trigger('change');">
-                            <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Metas que superaron el 100% de su objetivo de estudiantes formados."></i>
-                            <div class="kpi-icon-wrapper">
-                                <i class="bi bi-chevron-double-up"></i>
-                            </div>
-                            <div class="kpi-content">
-                                <span class="kpi-value" id="kpi-sobrecumplidas">0</span>
-                                <span class="kpi-label">Sobrecumplidas</span>
-                            </div>
-                        </div>
-                    </div>
+
                     <!-- En Riesgo -->
                     <div class="col-md col-sm-6">
                         <div class="kpi-card kpi-riesgo" style="cursor: pointer;" onclick="$('#estado-filter').val('En riesgo').trigger('change');">
@@ -248,7 +236,6 @@ if (!empty($imagenUsuario)) {
                             <label for="estado-filter">Estado</label>
                             <select class="form-select form-select-sm" name="estado" id="estado-filter">
                                 <option value="">Todos</option>
-                                <option value="Sobrecumplida">Sobrecumplida</option>
                                 <option value="Cumplida">Cumplida</option>
                                 <option value="Encaminada">Encaminada</option>
                                 <option value="Próxima a vencer">Próxima a vencer</option>

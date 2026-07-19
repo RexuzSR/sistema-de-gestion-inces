@@ -165,7 +165,7 @@ class IndicadorHelper {
             $r = $conn->query($sqlFallback)->fetch(PDO::FETCH_ASSOC);
         }
 
-        $pct = $r['q'] > 0 ? round($r['i'] / $r['q'] * 100, 1) : 0.0;
+        $pct = $r['q'] > 0 ? min(round($r['i'] / $r['q'] * 100, 1), 100.0) : 0.0;
         return ['inscritos' => (int)$r['i'], 'cupos' => (int)$r['q'], 'pct' => $pct];
     }
 
@@ -193,7 +193,7 @@ class IndicadorHelper {
             $d = (int)$conn->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'Disponible'")->fetchColumn();
         }
 
-        $pct = $tot > 0 ? round($d / $tot * 100, 1) : 0.0;
+        $pct = $tot > 0 ? min(round($d / $tot * 100, 1), 100.0) : 0.0;
         return ['disponibles' => $d, 'total' => $tot, 'pct' => $pct];
     }
 
@@ -215,7 +215,7 @@ class IndicadorHelper {
         $st->execute([':mes' => $mes, ':anio' => $anio]);
         $pct = (float)$st->fetchColumn();
 
-        return ['pct' => $pct];
+        return ['pct' => min($pct, 100.0)];
     }
 
     /**
@@ -237,7 +237,7 @@ class IndicadorHelper {
         $st->execute([':trimestre' => $trimestre, ':anio' => $anio]);
         $r = $st->fetch(PDO::FETCH_ASSOC);
         
-        $pct = $r['total'] > 0 ? round($r['cancelados'] / $r['total'] * 100, 1) : 0.0;
+        $pct = $r['total'] > 0 ? min(round($r['cancelados'] / $r['total'] * 100, 1), 100.0) : 0.0;
         return ['cancelados' => (int)$r['cancelados'], 'total' => (int)$r['total'], 'pct' => $pct];
     }
 
@@ -315,7 +315,7 @@ class IndicadorHelper {
             $asig = (int)$conn->query("SELECT COUNT(*) FROM tb_participante WHERE estado = 'Asignado' OR LOWER(estado) LIKE '%en form%'")->fetchColumn();
         }
 
-        $pct = $tot > 0 ? round($asig / $tot * 100, 1) : 0.0;
+        $pct = $tot > 0 ? min(round($asig / $tot * 100, 1), 100.0) : 0.0;
         return ['activos' => $asig, 'total' => $tot, 'pct' => $pct];
     }
 
@@ -354,7 +354,7 @@ class IndicadorHelper {
             $inscritosTop3 += (int)$t['inscripciones'];
         }
 
-        $pct = round(($inscritosTop3 / $totalInsc) * 100, 1);
+        $pct = min(round(($inscritosTop3 / $totalInsc) * 100, 1), 100.0);
         return ['pct' => $pct, 'total_inscritos' => $totalInsc, 'inscritos_top3' => $inscritosTop3];
     }
 
@@ -387,7 +387,7 @@ class IndicadorHelper {
             $r = $conn->query($sqlFallback)->fetch(PDO::FETCH_ASSOC);
         }
 
-        $pct = $r['cupos'] > 0 ? round($r['inscritos'] / $r['cupos'] * 100, 1) : 0.0;
+        $pct = $r['cupos'] > 0 ? min(round($r['inscritos'] / $r['cupos'] * 100, 1), 100.0) : 0.0;
         return ['pct' => $pct];
     }
 
@@ -410,7 +410,7 @@ class IndicadorHelper {
         $st->execute([':trimestre' => $trimestre, ':anio' => $anio]);
         $r = $st->fetch(PDO::FETCH_ASSOC);
 
-        $pct = $r['planificados'] > 0 ? round($r['ejecutados'] / $r['planificados'] * 100, 1) : 0.0;
+        $pct = $r['planificados'] > 0 ? min(round($r['ejecutados'] / $r['planificados'] * 100, 1), 100.0) : 0.0;
         return ['planificados' => (int)$r['planificados'], 'ejecutados' => (int)$r['ejecutados'], 'pct' => $pct];
     }
 
@@ -489,7 +489,7 @@ class IndicadorHelper {
         $st->execute([':anio' => $anio]);
         $r = $st->fetch(PDO::FETCH_ASSOC);
 
-        $pct = $r['planificadas'] > 0 ? round($r['ejecutadas'] / $r['planificadas'] * 100, 1) : 0.0;
+        $pct = $r['planificadas'] > 0 ? min(round($r['ejecutadas'] / $r['planificadas'] * 100, 1), 100.0) : 0.0;
         return ['planificadas' => (int)$r['planificadas'], 'ejecutadas' => (int)$r['ejecutadas'], 'pct' => $pct];
     }
 
@@ -514,7 +514,7 @@ class IndicadorHelper {
         
         if ($r) {
             return [
-                'pct' => (float)$r['porcentaje_cumplimiento'],
+                'pct' => min((float)$r['porcentaje_cumplimiento'], 100.0),
                 'objetivo' => (int)$r['meta_objetivo'],
                 'real' => (int)$r['estudiantes_formados']
             ];
@@ -586,7 +586,7 @@ class IndicadorHelper {
             $form = (int)$conn->query("SELECT COUNT(*) FROM tb_participante WHERE LOWER(estado) LIKE '%en form%'")->fetchColumn();
         }
 
-        $pct = $tot > 0 ? round($form / $tot * 100, 1) : 0.0;
+        $pct = $tot > 0 ? min(round($form / $tot * 100, 1), 100.0) : 0.0;
         return ['en_formacion' => $form, 'total' => $tot, 'pct' => $pct];
     }
 }

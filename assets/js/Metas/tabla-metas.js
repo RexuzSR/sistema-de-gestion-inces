@@ -91,23 +91,28 @@ $(document).ready(function () {
                 }
 
                 // Re-poblar opciones manteniendo la seleccionada
+                let activeAnio = selectAnio.val(); // Leer ANTES de borrar opciones
                 selectAnio.find('option:not([value=""])').remove();
                 years.forEach(yr => {
                     selectAnio.append(`<option value="${yr}">${yr}</option>`);
                 });
 
                 // Si es la carga inicial, pre-seleccionar el año vigente
-                let activeAnio = selectAnio.val();
                 if (isInitialLoad && !activeAnio) {
                     activeAnio = String(currentYear);
-                    selectAnio.val(activeAnio);
-                } else if (activeAnio && years.includes(parseInt(activeAnio, 10))) {
+                }
+                // Restaurar la selección si existe entre las opciones disponibles
+                if (activeAnio && years.includes(parseInt(activeAnio, 10))) {
                     selectAnio.val(activeAnio);
                 }
 
                 // 1. Recalcular estado_cumplimiento basado en las nuevas reglas para todos los registros
                 metas.forEach(m => {
-                    const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
+                    let pct = parseFloat(m.porcentaje_cumplimiento) || 0;
+                    if (pct > 100) {
+                        pct = 100;
+                        m.porcentaje_cumplimiento = 100;
+                    }
                     const isVencida = m.fecha_fin ? (new Date(m.fecha_fin + 'T00:00:00') < today) : false;
                     const diffTime = m.fecha_fin ? (new Date(m.fecha_fin + 'T00:00:00') - today) : null;
                     const diffDays = diffTime !== null ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : null;
@@ -116,9 +121,7 @@ $(document).ready(function () {
                     const threshold = getVencimientoThreshold(periodo);
                     const isProxima = diffDays !== null && diffDays >= 0 && diffDays <= threshold;
 
-                    if (pct > 100) {
-                        m.estado_cumplimiento = 'Sobrecumplida';
-                    } else if (pct === 100) {
+                    if (pct >= 100) {
                         m.estado_cumplimiento = 'Cumplida';
                     } else if (isVencida) {
                         m.estado_cumplimiento = 'Vencida';
@@ -179,7 +182,6 @@ $(document).ready(function () {
 
                 const totalMetas = metasKpi.length;
                 let cumplidasCount = 0;
-                let sobrecumplidasCount = 0;
                 let enRiesgoCount = 0;
                 let vencidasCount = 0;
                 let sumCumplimiento = 0;
@@ -188,9 +190,7 @@ $(document).ready(function () {
                     const pct = parseFloat(m.porcentaje_cumplimiento) || 0;
                     sumCumplimiento += pct;
 
-                    if (m.estado_cumplimiento === 'Sobrecumplida') {
-                        sobrecumplidasCount++;
-                    } else if (m.estado_cumplimiento === 'Cumplida') {
+                    if (m.estado_cumplimiento === 'Cumplida') {
                         cumplidasCount++;
                     } else if (m.estado_cumplimiento === 'En riesgo' || m.estado_cumplimiento === 'Próxima a vencer') {
                         enRiesgoCount++;
@@ -207,7 +207,6 @@ $(document).ready(function () {
                 if (isInitialLoad) {
                     animateCounter('#kpi-total', totalMetas);
                     animateCounter('#kpi-cumplidas', cumplidasCount);
-                    animateCounter('#kpi-sobrecumplidas', sobrecumplidasCount);
                     animateCounter('#kpi-riesgo', enRiesgoCount);
                     animateCounter('#kpi-vencidas', vencidasCount);
                     animateCounter('#kpi-promedio', promCumplimiento, true, 1);
@@ -215,7 +214,6 @@ $(document).ready(function () {
                 } else {
                     $('#kpi-total').text(totalMetas);
                     $('#kpi-cumplidas').text(cumplidasCount);
-                    $('#kpi-sobrecumplidas').text(sobrecumplidasCount);
                     $('#kpi-riesgo').text(enRiesgoCount);
                     $('#kpi-vencidas').text(vencidasCount);
                     $('#kpi-promedio').text(promCumplimiento.toFixed(1) + '%');
@@ -227,20 +225,12 @@ $(document).ready(function () {
                                .addClass('kpi-state-blue');
 
                 // Cumplidas -> verde >= 80%, amarillo 50-79%, rojo < 50%
-                const pctCumplidas = totalMetas > 0 ? (cumplidasCount / totalMetas) * 100 : 0;
-                let classCumplidas = 'kpi-state-red';
-                if (pctCumplidas >= 80) {
-                    classCumplidas = 'kpi-state-green';
-                } else if (pctCumplidas >= 50) {
-                    classCumplidas = 'kpi-state-yellow';
-                }
+                // Cumplidas -> verde si > 0, azul si 0
+                let classCumplidas = cumplidasCount > 0 ? 'kpi-state-green' : 'kpi-state-blue';
                 $('.kpi-cumplidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
                                    .addClass(classCumplidas);
 
-                // Sobrecumplidas -> verde si > 0, azul si 0
-                let classSobrecumplidas = sobrecumplidasCount > 0 ? 'kpi-state-green' : 'kpi-state-blue';
-                $('.kpi-sobrecumplidas').removeClass('kpi-state-green kpi-state-yellow kpi-state-red kpi-state-blue')
-                                       .addClass(classSobrecumplidas);
+
 
                 // En Riesgo -> verde if 0, amarillo if 1-2, rojo if >= 3
                 let classRiesgo = 'kpi-state-red';
@@ -264,7 +254,7 @@ $(document).ready(function () {
 
                 // Pintar resumen contextual
                 const scopeText = anioFilter ? `el año ${anioFilter}` : 'el período seleccionado';
-                let summaryText = `Actualmente existen <strong>${totalMetas}</strong> metas para ${scopeText}, de las cuales <strong>${cumplidasCount + sobrecumplidasCount}</strong> están cumplidas, <strong>${enRiesgoCount}</strong> en riesgo y <strong>${vencidasCount}</strong> vencidas.`;
+                let summaryText = `Actualmente existen <strong>${totalMetas}</strong> metas para ${scopeText}, de las cuales <strong>${cumplidasCount}</strong> están cumplidas, <strong>${enRiesgoCount}</strong> en riesgo y <strong>${vencidasCount}</strong> vencidas.`;
                 if (totalMetas === 0) {
                     summaryText = anioFilter ? `No existen metas registradas para el año ${anioFilter}.` : 'No existen metas registradas para el período seleccionado.';
                 }
@@ -707,6 +697,25 @@ $(document).ready(function () {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Evento de click para alternar entre ver todas las metas y las del año actual
+    // Usamos data-showing-all para rastrear el estado de forma fiable (sin depender del valor del select)
+    let kpiTotalShowingAll = false;
+    $(document).on('click', '.kpi-total', function () {
+        $('#estado-filter').val('');
+        const selectAnio = $('#anio-filter');
+        const currentYear = String(new Date().getFullYear());
+
+        if (kpiTotalShowingAll) {
+            // Estaba mostrando todos -> volver al año actual
+            kpiTotalShowingAll = false;
+            selectAnio.val(currentYear).trigger('change');
+        } else {
+            // Estaba en el año actual -> mostrar todos
+            kpiTotalShowingAll = true;
+            selectAnio.val('').trigger('change');
+        }
     });
 
     // Inicializar

@@ -45,10 +45,10 @@ public function registrar($data) {
         // Insertar participante con estado fijo 'En sistema'
         $sqlParticipante = "INSERT INTO tb_participante (
             primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
-            cedula, edad, correo, fecha_nacimiento, estado, grado_institucion, genero, id_discapacidad
+            cedula, nacionalidad, edad, correo, fecha_nacimiento, estado, grado_institucion, genero, id_discapacidad
         ) VALUES (
             :primer_nombre, :segundo_nombre, :primer_apellido, :segundo_apellido,
-            :cedula, :edad, :correo, :fecha_nacimiento, 'En sistema', :grado_institucion, :genero, :id_discapacidad
+            :cedula, :nacionalidad, :edad, :correo, :fecha_nacimiento, 'En sistema', :grado_institucion, :genero, :id_discapacidad
         )";
 
         $stmt = $this->conn->prepare($sqlParticipante);
@@ -58,6 +58,7 @@ public function registrar($data) {
             ':primer_apellido' => $data['primer_apellido'],
             ':segundo_apellido' => $data['segundo_apellido'],
             ':cedula' => $data['cedula'],
+            ':nacionalidad' => $data['nacionalidad'] ?? 'V',
             ':edad' => $edad,
             ':correo' => $data['correo'],
             ':fecha_nacimiento' => $data['fecha_nacimiento'],
@@ -226,6 +227,7 @@ public function eliminar($id) {
                     primer_apellido = :primer_apellido,
                     segundo_apellido = :segundo_apellido,
                     cedula = :cedula,
+                    nacionalidad = :nacionalidad,
                     edad = :edad,
                     correo = :correo,
                     fecha_nacimiento = :fecha_nacimiento,
@@ -243,6 +245,7 @@ public function eliminar($id) {
                 ':primer_apellido' => $data['primer_apellido'],
                 ':segundo_apellido' => $data['segundo_apellido'] ?? null,
                 ':cedula' => $data['cedula'],
+                ':nacionalidad' => $data['nacionalidad'] ?? 'V',
                 ':edad' => $edad,
                 ':correo' => $data['correo'],
                 ':fecha_nacimiento' => $data['fecha_nacimiento'],

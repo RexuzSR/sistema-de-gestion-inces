@@ -392,8 +392,44 @@
                         <canvas id="chartPartCursos"></canvas>
                     </div>
 
-                    <!-- Lista de participantes filtrada — cuadrícula responsiva -->
-                    <div id="tbodyPartCursos" class="part-grid-list"></div>
+                    <!-- Gráficas de donas demográficas (Sexo, Nacionalidad, Discapacidad) -->
+                    <div id="donutsPartCursosContainer" class="mt-3 p-3 bg-white border rounded shadow-sm">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                            <h6 class="fw-bold mb-0 text-dark" id="donutsPartCursosTitle" style="font-size: 0.88rem;">
+                                <i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribución Demográfica de Inscritos (Todos los Cursos)
+                            </h6>
+                            <span id="donutsPartCursosSubtitle" style="font-size: 0.8rem;" class="text-muted">Haz clic en un curso de la gráfica superior para filtrar</span>
+                        </div>
+                        <div class="row g-3">
+                            <!-- Donut 1: Sexo -->
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded text-center bg-light-subtle h-100 d-flex flex-column align-items-center justify-content-center">
+                                    <span class="fw-semibold text-secondary mb-2" style="font-size: 0.8rem;">Distribución por Sexo</span>
+                                    <div style="position: relative; width: 100%; max-width: 200px; height: 170px;">
+                                        <canvas id="chartDonutSexo"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Donut 2: Nacionalidad -->
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded text-center bg-light-subtle h-100 d-flex flex-column align-items-center justify-content-center">
+                                    <span class="fw-semibold text-secondary mb-2" style="font-size: 0.8rem;">Nacionalidad (Venezolanos / Extranjeros)</span>
+                                    <div style="position: relative; width: 100%; max-width: 200px; height: 170px;">
+                                        <canvas id="chartDonutNacionalidad"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Donut 3: Discapacidad -->
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded text-center bg-light-subtle h-100 d-flex flex-column align-items-center justify-content-center">
+                                    <span class="fw-semibold text-secondary mb-2" style="font-size: 0.8rem;">Discapacidad (Tipos)</span>
+                                    <div style="position: relative; width: 100%; max-width: 200px; height: 170px;">
+                                        <canvas id="chartDonutDiscapacidad"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                 </div><!-- /chart-panel-participantes-cursos -->
 
@@ -834,6 +870,10 @@
     let loadingReq = null;   /* AbortController del fetch en curso */
     let lastFetchedParticipantes = []; /* copia local de participantes */
 
+    let chartDonutSexoInst = null;
+    let chartDonutNacInst  = null;
+    let chartDonutDiscInst = null;
+
     /* ── Leer filtros actuales ──────────────────────────────── */
     function getFilters() {
         const params = new URLSearchParams();
@@ -852,7 +892,7 @@
         return params;
     }
 
-    /* ── Renderizar gráfica ─────────────────────────────────── */
+    /* ── Renderizar gráfica principal de barras ─────────────── */
     function renderChart(cursos) {
         const canvas = document.getElementById('chartPartCursos');
         if (!canvas || typeof Chart === 'undefined') return;
@@ -910,7 +950,7 @@
                     const cursoClickeado = cursos[index];
                     if (cursoClickeado) {
                         const filtered = lastFetchedParticipantes.filter(p => p.id_curso === cursoClickeado.id_curso);
-                        renderTable(filtered);
+                        renderDonuts(filtered, cursoClickeado.nombre_curso);
                         
                         // Resaltar barra seleccionada y atenuar el resto
                         chartInst.data.datasets[0].backgroundColor = vals.map((_, i) => {
@@ -961,57 +1001,167 @@
         });
     }
 
-    /* ── Renderizar lista de participantes ─────────────────────── */
-    function renderTable(participantes) {
-        const container = document.getElementById('tbodyPartCursos');
-        if (!container) return;
+    /* ── Renderizar Gráficas de Donas Demográficas ───────────── */
+    function renderDonuts(participantes, cursoNombre = null) {
+        const titleEl = document.getElementById('donutsPartCursosTitle');
+        const subTitleEl = document.getElementById('donutsPartCursosSubtitle');
+
+        if (titleEl) {
+            if (cursoNombre) {
+                titleEl.innerHTML = `<i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribución Demográfica: <span class="text-primary">${cursoNombre}</span>`;
+                if (subTitleEl) subTitleEl.innerHTML = `<button class="btn btn-xs btn-outline-secondary py-0 px-2" id="btnResetDonutCurso" style="font-size:0.75rem;">Ver Todos los Cursos</button>`;
+            } else {
+                titleEl.innerHTML = `<i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribución Demográfica de Inscritos (Todos los Cursos)`;
+                if (subTitleEl) subTitleEl.innerHTML = `Haz clic en un curso de la gráfica superior para filtrar`;
+            }
+        }
+
+        const btnReset = document.getElementById('btnResetDonutCurso');
+        if (btnReset) {
+            btnReset.onclick = function(e) {
+                e.preventDefault();
+                renderDonuts(lastFetchedParticipantes);
+                if (chartInst && chartInst.data && chartInst.data.datasets[0]) {
+                    const vals = chartInst.data.datasets[0].data;
+                    const maxI = vals.indexOf(Math.max(...vals));
+                    chartInst.data.datasets[0].backgroundColor = vals.map((_, i) => i === maxI ? '#7367f0' : PALETA[i % PALETA.length]);
+                    chartInst.update();
+                }
+            };
+        }
+
+        if (chartDonutSexoInst) { chartDonutSexoInst.destroy(); chartDonutSexoInst = null; }
+        if (chartDonutNacInst)  { chartDonutNacInst.destroy();  chartDonutNacInst  = null; }
+        if (chartDonutDiscInst) { chartDonutDiscInst.destroy(); chartDonutDiscInst = null; }
 
         if (!participantes || participantes.length === 0) {
-            container.innerHTML = '<div class="part-card-empty">Sin resultados para el curso seleccionado.</div>';
             return;
         }
 
-        container.innerHTML = '';
+        // 1. Conteo Sexo
+        let mas = 0, fem = 0;
         participantes.forEach(p => {
-            const esFem    = p.genero === 'Femenino';
-            const badgeGen = esFem
-                ? '<span class="part-badge-genero part-badge-f">F</span>'
-                : '<span class="part-badge-genero part-badge-m">M</span>';
-
-            /* Chip de discapacidad (solo si no es Ninguna) */
-            const chipDisc = p.nombre_discapacidad !== 'Ninguna'
-                ? `<span class="part-chip part-chip-warn" title="${p.nombre_discapacidad}">♿ ${p.nombre_discapacidad}</span>`
-                : '';
-
-            /* Chips de ámbito y PPL */
-            const chipAmbito = `<span class="part-chip part-chip-green" title="${p.nombre_ambito}">${p.nombre_ambito}</span>`;
-            const chipPPL    = `<span class="part-chip part-chip-blue" title="${p.nombre_ppl}">${p.nombre_ppl}</span>`;
-
-            const card = document.createElement('div');
-            card.className = 'part-card-item part-row-link';
-            card.dataset.cedula = p.cedula;
-            card.innerHTML = `
-                <div class="part-card-top">
-                    ${badgeGen}
-                    <span class="part-card-name">${p.primer_nombre} ${p.primer_apellido}</span>
-                    <span class="part-card-cedula">${p.cedula}</span>
-                </div>
-                <div class="part-card-curso" title="${p.nombre_curso}">${p.nombre_curso}</div>
-                <div class="part-card-chips">${chipAmbito}${chipPPL}${chipDisc}</div>`;
-            container.appendChild(card);
+            if (p.genero === 'Femenino') fem++;
+            else mas++;
         });
+
+        // 2. Conteo Nacionalidad
+        let ven = 0, ext = 0;
+        participantes.forEach(p => {
+            const cedNum = parseInt(p.cedula, 10);
+            if (p.nacionalidad === 'E' || (!isNaN(cedNum) && cedNum >= 80000000)) {
+                ext++;
+            } else {
+                ven++;
+            }
+        });
+
+        // 3. Conteo Discapacidad
+        const discCounts = {};
+        participantes.forEach(p => {
+            const discName = (p.nombre_discapacidad && p.nombre_discapacidad.trim() !== '') ? p.nombre_discapacidad : 'Ninguna';
+            discCounts[discName] = (discCounts[discName] || 0) + 1;
+        });
+
+        const commonDonutOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 500 },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 10, font: { size: 10 }, padding: 8 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const val = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                            return ` ${label}: ${val} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        };
+
+        // Render Donut Sexo
+        const canvasSexo = document.getElementById('chartDonutSexo');
+        if (canvasSexo && typeof Chart !== 'undefined') {
+            chartDonutSexoInst = new Chart(canvasSexo, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Femenino', 'Masculino'],
+                    datasets: [{
+                        data: [fem, mas],
+                        backgroundColor: ['#ec4899', '#0ea5e9'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: commonDonutOptions
+            });
+        }
+
+        // Render Donut Nacionalidad
+        const canvasNac = document.getElementById('chartDonutNacionalidad');
+        if (canvasNac && typeof Chart !== 'undefined') {
+            chartDonutNacInst = new Chart(canvasNac, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Venezolanos', 'Extranjeros'],
+                    datasets: [{
+                        data: [ven, ext],
+                        backgroundColor: ['#28c76f', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: commonDonutOptions
+            });
+        }
+
+        // Render Donut Discapacidad
+        const canvasDisc = document.getElementById('chartDonutDiscapacidad');
+        if (canvasDisc && typeof Chart !== 'undefined') {
+            const discLabels = Object.keys(discCounts);
+            const discData   = Object.values(discCounts);
+
+            const discColorsMap = {
+                'Ninguna': '#94a3b8',
+                'Visual': '#7367f0',
+                'Auditiva': '#00c8e0',
+                'Motora': '#ef4444',
+                'Intelectual': '#6366f1',
+                'Múltiple': '#a855f7'
+            };
+
+            const discBgColors = discLabels.map((lbl, idx) => {
+                return discColorsMap[lbl] || PALETA[idx % PALETA.length];
+            });
+
+            chartDonutDiscInst = new Chart(canvasDisc, {
+                type: 'doughnut',
+                data: {
+                    labels: discLabels,
+                    datasets: [{
+                        data: discData,
+                        backgroundColor: discBgColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: commonDonutOptions
+            });
+        }
     }
 
     /* ── Estado de carga ────────────────────────────────────── */
     function setLoading(on) {
         const btn = document.getElementById('btnLimpiarFiltrosPartCursos');
-        const tbody = document.getElementById('tbodyPartCursos');
-        if (on) {
-            if (tbody) tbody.innerHTML = '<div class="part-card-empty"><span class="spinner-border spinner-border-sm me-2"></span>Cargando…</div>';
-            if (btn)  btn.disabled = true;
-        } else {
-            if (btn) btn.disabled = false;
-        }
+        if (on && btn)  btn.disabled = true;
+        else if (!on && btn) btn.disabled = false;
     }
 
     /* ── Fetch + render ─────────────────────────────────────── */
@@ -1031,18 +1181,11 @@
                 setLoading(false);
                 lastFetchedParticipantes = data.participantes || [];
                 renderChart(data.cursos       || []);
-                
-                // En vez de detallar participantes abajo, esperar al clic en la gráfica
-                const container = document.getElementById('tbodyPartCursos');
-                if (container) {
-                    container.innerHTML = '<div class="part-card-empty">Seleccione una barra en la gráfica para ver los participantes de ese curso.</div>';
-                }
+                renderDonuts(lastFetchedParticipantes);
             })
             .catch(err => {
                 if (err.name !== 'AbortError') {
                     setLoading(false);
-                    const tbody = document.getElementById('tbodyPartCursos');
-                    if (tbody) tbody.innerHTML = '<div class="part-card-empty text-danger">Error al cargar datos.</div>';
                 }
             });
     }
