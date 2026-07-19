@@ -2,6 +2,139 @@
      SECCIÓN 2 — PARTICIPANTES
      Vista: app/vista/Dashboard/seccion_participantes.php
 ════════════════════════════════════════════════════════════ -->
+
+<style>
+/* ── Lista de participantes por curso ────────────────────── */
+
+/* Grid responsivo de tarjetas de participantes */
+.part-grid-list {
+    display: grid;
+    /* Auto-fill: mínimo 220px por columna, máximo 1fr  */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 2px 2px 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #e2e8f0 transparent;
+}
+.part-grid-list::-webkit-scrollbar { height: 5px; width: 5px; }
+.part-grid-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+
+/* En pantallas pequeñas, 1 columna */
+@media (max-width: 640px) {
+    .part-grid-list {
+        grid-template-columns: 1fr;
+        max-height: 260px;
+    }
+}
+
+/* Tarjeta de un participante */
+.part-card-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .12s;
+    line-height: 1.35;
+}
+.part-card-item:hover {
+    background: #f0f4ff;
+    border-color: #c7d2fe;
+    transform: translateX(2px);
+}
+
+/* Fila superior: badge género + nombre + cédula */
+.part-card-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+.part-badge-genero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0;
+}
+.part-badge-m { background: #dbeafe; color: #1d4ed8; }
+.part-badge-f { background: #fce7f3; color: #be185d; }
+
+.part-card-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1e293b;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.part-card-cedula {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Nombre del curso */
+.part-card-curso {
+    font-size: 0.71rem;
+    color: #475569;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+    padding-left: 24px;  /* alinear con el nombre (desp. del badge) */
+}
+
+/* Chips de categoría */
+.part-card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    padding-left: 24px;
+}
+.part-chip {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;       /* más espacio para nombres de PPL largos */
+    letter-spacing: .01em;
+}
+.part-chip-green { background: #dcfce7; color: #15803d; }
+.part-chip-blue  { background: #e0f2fe; color: #0369a1; }
+.part-chip-warn  { background: #fef9c3; color: #854d0e; }
+
+/* Estado vacío / carga */
+.part-card-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    padding: 24px 12px;
+}
+
+/* Ajuste responsivo interno de las cards */
+@media (max-width: 400px) {
+    .part-chip { max-width: 120px; }
+    .part-card-name { font-size: 0.74rem; }
+    .part-card-curso { font-size: 0.67rem; }
+}
+</style>
+
 <div class="dashboard-section" id="section-participantes">
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -176,32 +309,93 @@
                 <!-- TAB: Por Curso -->
                 <div class="chart-tab-panel" id="chart-panel-participantes-cursos">
                     <p class="chart-panel-title">Distribución de inscritos por curso</p>
-                    <div class="chart-tab-duo-layout">
-                        <div class="chart-tab-canvas-wrap" style="height:280px;">
-                            <canvas id="chartPartCursos"></canvas>
-                        </div>
-                        <div class="chart-tab-side-table">
-                            <table class="table table-sm table-striped mb-0">
-                                <thead><tr><th>Participante</th><th>Cédula</th><th>Curso</th></tr></thead>
-                                <tbody>
-                                <?php foreach ($cardFormacion as $p): ?>
-                                    <tr class="part-row-link" data-cedula="<?php echo htmlspecialchars($p['cedula']); ?>" style="cursor:pointer;">
-                                        <td class="fw-semibold"><?php echo htmlspecialchars($p['primer_nombre'].' '.$p['primer_apellido']); ?></td>
-                                        <td><?php echo htmlspecialchars($p['cedula']); ?></td>
-                                        <td style="font-size:.73rem;color:#475569;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                                            title="<?php echo htmlspecialchars($p['cursos'] ?? '—'); ?>">
-                                            <?php echo htmlspecialchars($p['cursos'] ?? '—'); ?>
-                                        </td>
-                                    </tr>
+                    
+                    <!-- Panel de filtros interactivos para análisis por curso -->
+                    <div class="filter-bar mb-3 p-3 bg-white border rounded shadow-sm d-flex flex-wrap gap-2 align-items-end" style="font-size: 0.85rem;">
+                        <!-- Ámbito -->
+                        <div class="filter-group flex-fill" style="min-width: 140px;">
+                            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.73rem;">Ámbito</label>
+                            <select id="filterPartCursosAmbito" class="form-select form-select-sm border-secondary-subtle">
+                                <option value="">Todos</option>
+                                <?php foreach ($filterAmbitos ?? [] as $ambito): ?>
+                                    <option value="<?php echo htmlspecialchars($ambito); ?>"><?php echo htmlspecialchars($ambito); ?></option>
                                 <?php endforeach; ?>
-                                <?php if (empty($cardFormacion)): ?>
-                                    <tr><td colspan="3" class="text-center text-muted py-3">Sin participantes en formación.</td></tr>
-                                <?php endif; ?>
-                                </tbody>
-                            </table>
+                            </select>
                         </div>
+                        <!-- PPL -->
+                        <div class="filter-group flex-fill" style="min-width: 140px;">
+                            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.73rem;">PPL</label>
+                            <select id="filterPartCursosPPL" class="form-select form-select-sm border-secondary-subtle">
+                                <option value="">Todos</option>
+                                <?php foreach ($filterPPLs ?? [] as $ppl): ?>
+                                    <option value="<?php echo htmlspecialchars($ppl); ?>"><?php echo htmlspecialchars($ppl); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <!-- Año -->
+                        <div class="filter-group flex-fill" style="min-width: 85px;">
+                            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.73rem;">Año</label>
+                            <select id="filterPartCursosAnio" class="form-select form-select-sm border-secondary-subtle">
+                                <option value="">Todos</option>
+                                <?php foreach ($filterAnios ?? [] as $anio): ?>
+                                    <option value="<?php echo (int)$anio; ?>"><?php echo (int)$anio; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <!-- Mes (estático) -->
+                        <div class="filter-group flex-fill" style="min-width: 105px;">
+                            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.73rem;">Mes</label>
+                            <select id="filterPartCursosMes" class="form-select form-select-sm border-secondary-subtle">
+                                <option value="">Todos</option>
+                                <option value="1">Enero</option>
+                                <option value="2">Febrero</option>
+                                <option value="3">Marzo</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Mayo</option>
+                                <option value="6">Junio</option>
+                                <option value="7">Julio</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Septiembre</option>
+                                <option value="10">Octubre</option>
+                                <option value="11">Noviembre</option>
+                                <option value="12">Diciembre</option>
+                            </select>
+                        </div>
+                        <!-- Sexo (estático) -->
+                        <div class="filter-group flex-fill" style="min-width: 105px;">
+                            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.73rem;">Sexo</label>
+                            <select id="filterPartCursosSexo" class="form-select form-select-sm border-secondary-subtle">
+                                <option value="">Todos</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                            </select>
+                        </div>
+                        <!-- Discapacidad -->
+                        <div class="filter-group flex-fill" style="min-width: 130px;">
+                            <label class="form-label fw-semibold text-secondary mb-1" style="font-size: 0.73rem;">Discapacidad</label>
+                            <select id="filterPartCursosDiscapacidad" class="form-select form-select-sm border-secondary-subtle">
+                                <option value="">Todas</option>
+                                <?php foreach ($filterDiscapacidades ?? [] as $disc): ?>
+                                    <option value="<?php echo htmlspecialchars($disc); ?>"><?php echo htmlspecialchars($disc); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <button id="btnLimpiarFiltrosPartCursos" class="btn btn-sm btn-light border fw-semibold text-secondary px-3" style="height: 31px;" title="Limpiar todos los filtros">
+                                ↺ Limpiar
+                            </button>
+                        </div>
+                    </div><!-- /filter-bar -->
+
+                    <!-- Gráfica (ancho completo) -->
+                    <div style="height:260px; margin-bottom:16px;">
+                        <canvas id="chartPartCursos"></canvas>
                     </div>
-                </div>
+
+                    <!-- Lista de participantes filtrada — cuadrícula responsiva -->
+                    <div id="tbodyPartCursos" class="part-grid-list"></div>
+
+                </div><!-- /chart-panel-participantes-cursos -->
 
             </div>
         </div><!-- /chart-tabs-wrapper participantes -->
@@ -609,113 +803,287 @@
 })();
 
 
-/* ── Gráfica de barras horizontales: inscritos por curso ───── */
-window.renderPartCursos = function () {
-    const ctx = document.getElementById('chartPartCursos');
-    if (!ctx || typeof Chart === 'undefined') return;
-    if (window._chartPartCursos) window._chartPartCursos.destroy();
-
-    const raw = <?php
-        /* Agrupa cursosDetalle por nombre y toma solo los que tienen inscritos */
-        $cd_js = array_filter($cursosDetalle ?? [], fn($c) => (int)$c['num_inscritos'] > 0);
-        usort($cd_js, fn($a,$b) => (int)$b['num_inscritos'] - (int)$a['num_inscritos']);
-        $cd_js = array_values(array_slice($cd_js, 0, 15)); /* máx 15 para legibilidad */
-        echo json_encode(array_map(fn($c) => [
-            'nombre'    => $c['nombre_curso'],
-            'inscritos' => (int)$c['num_inscritos'],
-            'cupos'     => (int)$c['max_participantes'],
-        ], $cd_js), JSON_UNESCAPED_UNICODE);
+/* ── Gráfica + tabla filtrable de inscritos por curso (AJAX) ─ */
+(function () {
+    /* URL del endpoint — generada desde PHP para asegurar la ruta correcta */
+    const ENDPOINT = <?php
+        // Construir URL relativa al directorio raíz del proyecto
+        $scriptUrl = $_SERVER['PHP_SELF']; // ej: /Sistema de Gestion Inces/app/vista/Inicio.php
+        $base = preg_replace('#/app/vista/.*$#', '', $scriptUrl);
+        echo json_encode($base . '/app/controlador/Dashboard/ajax_part_filtro.php');
     ?>;
 
-    if (!raw.length) return;
+    /* IDs de los filtros */
+    const FILTER_IDS = [
+        'filterPartCursosAmbito',
+        'filterPartCursosPPL',
+        'filterPartCursosAnio',
+        'filterPartCursosMes',
+        'filterPartCursosSexo',
+        'filterPartCursosDiscapacidad'
+    ];
 
-    const labels  = raw.map(c => c.nombre.length > 28 ? c.nombre.slice(0,26)+'…' : c.nombre);
-    const vals    = raw.map(c => c.inscritos);
-    const maxI    = vals.indexOf(Math.max(...vals));
-    const PALETA  = ['#00c8e0','#7367f0','#28c76f','#f59e0b','#0ea5e9','#ec4899',
-                     '#10b981','#6366f1','#ef4444','#8b5cf6','#f97316','#14b8a6',
-                     '#a855f7','#fb923c','#22d3ee'];
-    const bgColors = vals.map((_, i) => i === maxI ? '#7367f0' : PALETA[i % PALETA.length]);
+    /* Paleta de colores para la gráfica */
+    const PALETA = [
+        '#7367f0','#00c8e0','#28c76f','#f59e0b','#0ea5e9','#ec4899',
+        '#10b981','#6366f1','#ef4444','#8b5cf6','#f97316','#14b8a6',
+        '#a855f7','#fb923c','#22d3ee'
+    ];
 
-    /* Plugin: valor al final de cada barra */
-    const pluginValH = {
-        id: 'valH',
-        afterDatasetsDraw(chart) {
-            const { ctx: c, scales: { x } } = chart;
-            chart.getDatasetMeta(0).data.forEach((bar, i) => {
-                const v = vals[i];
-                c.save();
-                c.fillStyle    = '#475569';
-                c.font         = '600 10px Roboto, sans-serif';
-                c.textAlign    = 'left';
-                c.textBaseline = 'middle';
-                c.fillText(v, bar.x + 5, bar.y);
-                c.restore();
-            });
+    let chartInst  = null;   /* instancia Chart.js activa */
+    let loadingReq = null;   /* AbortController del fetch en curso */
+    let lastFetchedParticipantes = []; /* copia local de participantes */
+
+    /* ── Leer filtros actuales ──────────────────────────────── */
+    function getFilters() {
+        const params = new URLSearchParams();
+        const map = {
+            filterPartCursosAmbito       : 'ambito',
+            filterPartCursosPPL          : 'ppl',
+            filterPartCursosAnio         : 'anio',
+            filterPartCursosMes          : 'mes',
+            filterPartCursosSexo         : 'sexo',
+            filterPartCursosDiscapacidad : 'discapacidad'
+        };
+        Object.entries(map).forEach(([id, key]) => {
+            const el = document.getElementById(id);
+            if (el && el.value) params.set(key, el.value);
+        });
+        return params;
+    }
+
+    /* ── Renderizar gráfica ─────────────────────────────────── */
+    function renderChart(cursos) {
+        const canvas = document.getElementById('chartPartCursos');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        if (chartInst) { chartInst.destroy(); chartInst = null; }
+
+        if (!cursos || cursos.length === 0) {
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            return;
         }
-    };
 
-    window._chartPartCursos = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                data:            vals,
-                backgroundColor: bgColors,
-                borderRadius:    5,
-                borderSkipped:   false,
-                barThickness:    18,
-            }]
-        },
-        options: {
-            indexAxis:           'y',
-            responsive:          true,
-            maintainAspectRatio: false,
-            animation: { duration: 700, easing: 'easeOutQuart' },
-            layout:   { padding: { right: 36 } },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        title:  items => raw[items[0].dataIndex].nombre,
-                        label:  item  => {
-                            const r   = raw[item.dataIndex];
-                            const pct = r.cupos > 0 ? Math.round(r.inscritos / r.cupos * 100) : 0;
-                            return ` ${r.inscritos} inscritos de ${r.cupos} cupos (${pct}% uso)`;
-                        }
+        const labels   = cursos.map(c => c.nombre_curso.length > 28 ? c.nombre_curso.slice(0,26)+'…' : c.nombre_curso);
+        const vals     = cursos.map(c => c.inscritos);
+        const maxI     = vals.indexOf(Math.max(...vals));
+        const bgColors = vals.map((_, i) => i === maxI ? '#7367f0' : PALETA[i % PALETA.length]);
+
+        /* Plugin: etiquetas de valor al lado de las barras */
+        const pluginValH = {
+            id: 'valH',
+            afterDatasetsDraw(chart) {
+                const { ctx: c } = chart;
+                chart.getDatasetMeta(0).data.forEach((bar, i) => {
+                    c.save();
+                    c.fillStyle    = '#475569';
+                    c.font         = '600 10px Roboto, sans-serif';
+                    c.textAlign    = 'left';
+                    c.textBaseline = 'middle';
+                    c.fillText(vals[i], bar.x + 5, bar.y);
+                    c.restore();
+                });
+            }
+        };
+
+        chartInst = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data:            vals,
+                    backgroundColor: bgColors,
+                    borderRadius:    5,
+                    borderSkipped:   false,
+                    barThickness:    18,
+                }]
+            },
+            options: {
+                indexAxis:           'y',
+                responsive:          true,
+                maintainAspectRatio: false,
+                animation: { duration: 600, easing: 'easeOutQuart' },
+                layout:   { padding: { right: 38 } },
+                onClick: (event, elements) => {
+                    if (!elements.length) return;
+                    const index = elements[0].index;
+                    const cursoClickeado = cursos[index];
+                    if (cursoClickeado) {
+                        const filtered = lastFetchedParticipantes.filter(p => p.id_curso === cursoClickeado.id_curso);
+                        renderTable(filtered);
+                        
+                        // Resaltar barra seleccionada y atenuar el resto
+                        chartInst.data.datasets[0].backgroundColor = vals.map((_, i) => {
+                            const baseCol = i === maxI ? '#7367f0' : PALETA[i % PALETA.length];
+                            return i === index ? baseCol : baseCol + '33';
+                        });
+                        chartInst.update();
+                    }
+                },
+                onHover: (event, chartElement) => {
+                    const target = event.native ? event.native.target : (event.target || event.srcElement);
+                    if (target) {
+                        target.style.cursor = chartElement.length ? 'pointer' : 'default';
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title:  items => cursos[items[0].dataIndex].nombre_curso,
+                            label:  item  => {
+                                const r   = cursos[item.dataIndex];
+                                const pct = r.cupos > 0 ? Math.round(r.inscritos / r.cupos * 100) : 0;
+                                return ` ${r.inscritos} inscritos de ${r.cupos} cupos (${pct}% uso)`;
+                            }
+                        },
+                        backgroundColor: 'rgba(15,23,42,.88)',
+                        titleFont: { size: 12, weight: 600 },
+                        bodyFont:  { size: 11 },
+                        padding: 10, cornerRadius: 7
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid:   { color: 'rgba(0,0,0,.05)' },
+                        border: { display: false },
+                        ticks:  { font: { size: 10 }, color: '#94a3b8', precision: 0 }
                     },
-                    backgroundColor: 'rgba(15,23,42,.88)',
-                    titleFont: { size: 12, weight: 600 },
-                    bodyFont:  { size: 11 },
-                    padding: 10, cornerRadius: 7
+                    y: {
+                        grid:   { display: false },
+                        border: { display: false },
+                        ticks:  { font: { size: 10 }, color: '#334155' }
+                    }
                 }
             },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    grid:   { color: 'rgba(0,0,0,.05)' },
-                    border: { display: false },
-                    ticks:  { font: { size: 10 }, color: '#94a3b8', precision: 0 }
-                },
-                y: {
-                    grid:   { display: false },
-                    border: { display: false },
-                    ticks:  { font: { size: 10 }, color: '#334155' }
-                }
-            }
-        },
-        plugins: [pluginValH]
-    });
-};
+            plugins: [pluginValH]
+        });
+    }
 
-/* Registrar en CHART_MAP para que home.js lo active al cambiar de tab */
-if (typeof CHART_MAP !== 'undefined') {
-    if (!CHART_MAP.participantes) CHART_MAP.participantes = {};
-    CHART_MAP.participantes.cursos = {
-        chartId: 'chartPartCursos',
-        render:  'renderPartCursos'
+    /* ── Renderizar lista de participantes ─────────────────────── */
+    function renderTable(participantes) {
+        const container = document.getElementById('tbodyPartCursos');
+        if (!container) return;
+
+        if (!participantes || participantes.length === 0) {
+            container.innerHTML = '<div class="part-card-empty">Sin resultados para el curso seleccionado.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        participantes.forEach(p => {
+            const esFem    = p.genero === 'Femenino';
+            const badgeGen = esFem
+                ? '<span class="part-badge-genero part-badge-f">F</span>'
+                : '<span class="part-badge-genero part-badge-m">M</span>';
+
+            /* Chip de discapacidad (solo si no es Ninguna) */
+            const chipDisc = p.nombre_discapacidad !== 'Ninguna'
+                ? `<span class="part-chip part-chip-warn" title="${p.nombre_discapacidad}">♿ ${p.nombre_discapacidad}</span>`
+                : '';
+
+            /* Chips de ámbito y PPL */
+            const chipAmbito = `<span class="part-chip part-chip-green" title="${p.nombre_ambito}">${p.nombre_ambito}</span>`;
+            const chipPPL    = `<span class="part-chip part-chip-blue" title="${p.nombre_ppl}">${p.nombre_ppl}</span>`;
+
+            const card = document.createElement('div');
+            card.className = 'part-card-item part-row-link';
+            card.dataset.cedula = p.cedula;
+            card.innerHTML = `
+                <div class="part-card-top">
+                    ${badgeGen}
+                    <span class="part-card-name">${p.primer_nombre} ${p.primer_apellido}</span>
+                    <span class="part-card-cedula">${p.cedula}</span>
+                </div>
+                <div class="part-card-curso" title="${p.nombre_curso}">${p.nombre_curso}</div>
+                <div class="part-card-chips">${chipAmbito}${chipPPL}${chipDisc}</div>`;
+            container.appendChild(card);
+        });
+    }
+
+    /* ── Estado de carga ────────────────────────────────────── */
+    function setLoading(on) {
+        const btn = document.getElementById('btnLimpiarFiltrosPartCursos');
+        const tbody = document.getElementById('tbodyPartCursos');
+        if (on) {
+            if (tbody) tbody.innerHTML = '<div class="part-card-empty"><span class="spinner-border spinner-border-sm me-2"></span>Cargando…</div>';
+            if (btn)  btn.disabled = true;
+        } else {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    /* ── Fetch + render ─────────────────────────────────────── */
+    function applyFilters() {
+        /* Cancelar fetch anterior si existe */
+        if (loadingReq) { loadingReq.abort(); }
+        loadingReq = new AbortController();
+
+        const params = getFilters();
+        const url    = ENDPOINT + (params.toString() ? '?' + params.toString() : '');
+
+        setLoading(true);
+
+        fetch(url, { signal: loadingReq.signal })
+            .then(r => r.json())
+            .then(data => {
+                setLoading(false);
+                lastFetchedParticipantes = data.participantes || [];
+                renderChart(data.cursos       || []);
+                
+                // En vez de detallar participantes abajo, esperar al clic en la gráfica
+                const container = document.getElementById('tbodyPartCursos');
+                if (container) {
+                    container.innerHTML = '<div class="part-card-empty">Seleccione una barra en la gráfica para ver los participantes de ese curso.</div>';
+                }
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    setLoading(false);
+                    const tbody = document.getElementById('tbodyPartCursos');
+                    if (tbody) tbody.innerHTML = '<div class="part-card-empty text-danger">Error al cargar datos.</div>';
+                }
+            });
+    }
+
+    /* ── Adjuntar listeners a los filtros (protegido contra duplicados) ── */
+    let _listenersAttached = false;
+    function attachListeners() {
+        if (_listenersAttached) return;
+        _listenersAttached = true;
+
+        FILTER_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', applyFilters);
+        });
+
+        const btnLimpiar = document.getElementById('btnLimpiarFiltrosPartCursos');
+        if (btnLimpiar) {
+            btnLimpiar.addEventListener('click', () => {
+                FILTER_IDS.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                applyFilters();
+            });
+        }
+    }
+
+    /* ── Punto de entrada público — llamado por home.js al activar el tab ── */
+    window.renderPartCursos = function () {
+        attachListeners();
+        applyFilters();
     };
-}
+
+    /* ── Fallback: adjuntar listeners en DOMContentLoaded si el tab ya estaba activo ── */
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachListeners);
+    } else {
+        attachListeners(); /* DOM ya listo */
+    }
+})();
+
 
 
 /* ── Cards KPI seleccionables (panel de detalle) ──────────── */

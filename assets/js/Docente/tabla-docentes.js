@@ -29,10 +29,14 @@ $(document).ready(function () {
                                         : participante.estado;
 
 
+                        const docCedNum = parseInt(participante.cedula);
+                        const docPref = (!isNaN(docCedNum) && docCedNum >= 80000000) ? 'E-' : 'V-';
+                        const docCedStr = participante.cedula ? (docPref + participante.cedula) : '';
+
                         rows += `
                             <tr>
                                 <td>${participante.id_docente}</td>
-                                <td>${participante.cedula}</td>
+                                <td>${docCedStr}</td>
                                 <td>${participante.nombre}</td>
                                 <td>${participante.apellido}</td>
                                 <td>${participante.genero}</td>

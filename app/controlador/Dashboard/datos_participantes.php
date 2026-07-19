@@ -233,3 +233,60 @@ $promedioParticipantes = IndicadorHelper::getPromedioParticipantesPorFormacion($
 $detallePromedioParticipantes = IndicadorHelper::getDetallePromedioPorFormacion($conn);
 $jsCardPromedioParticipantes = json_encode($detallePromedioParticipantes, JSON_UNESCAPED_UNICODE);
 $s_prom_part = IndicadorHelper::evaluarSemaforo('PI_PROM_PARTICIPANTES', $promedioParticipantes)['alerta'];
+
+
+// ── [NUEVO] Inscripciones detalladas para filtros dinámicos en cliente ──
+$enrollments_raw = [];
+try {
+    $conn->exec("SET NAMES 'utf8mb4'");
+    $enrollments_raw = $conn->query("
+        SELECT 
+            p.primer_nombre,
+            p.primer_apellido,
+            p.cedula,
+            p.genero,
+            COALESCE(d.nombre_discapacidad, 'Ninguna') AS nombre_discapacidad,
+            c.id_curso,
+            c.nombre_curso,
+            COALESCE(a.nombre_ambito, 'Sin ambito') AS nombre_ambito,
+            c.fecha_inicio,
+            YEAR(c.fecha_inicio) AS anio,
+            MONTH(c.fecha_inicio) AS mes,
+            COALESCE(ppl.nombre_ppl, 'Sin PPL') AS nombre_ppl,
+            c.max_participantes
+        FROM tb_participante_curso pc
+        JOIN tb_participante p ON pc.id_participante = p.id_participante
+        LEFT JOIN tb_discapacidad d ON p.id_discapacidad = d.id_discapacidad
+        JOIN tb_curso c ON pc.id_curso = c.id_curso
+        LEFT JOIN tb_ambito a ON c.id_ambito = a.id_ambito
+        LEFT JOIN tb_ppl ppl ON c.id_ppl = ppl.id_ppl
+        WHERE c.id_curso != 1
+        ORDER BY c.fecha_inicio DESC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch(Exception $e) { $enrollments_raw = []; }
+
+// Sanitizar UTF-8 de cada campo de texto para evitar errores de JSON
+$enrollments_clean = array_map(function($row) {
+    foreach ($row as $k => $v) {
+        if (is_string($v)) {
+            $row[$k] = mb_convert_encoding($v, 'UTF-8', 'UTF-8');
+        }
+    }
+    return $row;
+}, $enrollments_raw);
+
+// Pre-calcular valores únicos por filtro en PHP (para los <select> del HTML)
+$filterAmbitos = array_values(array_filter(array_unique(array_column($enrollments_clean, 'nombre_ambito'))));
+sort($filterAmbitos);
+$filterPPLs = array_values(array_filter(array_unique(array_column($enrollments_clean, 'nombre_ppl'))));
+sort($filterPPLs);
+$filterAnios = array_values(array_filter(array_unique(array_column($enrollments_clean, 'anio'))));
+rsort($filterAnios);
+$filterDiscapacidades = array_values(array_filter(array_unique(array_column($enrollments_clean, 'nombre_discapacidad'))));
+sort($filterDiscapacidades);
+
+// JSON seguro para JS (con flags extra de escape por si acaso)
+$jsEnrollmentsData = json_encode($enrollments_clean, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
+if ($jsEnrollmentsData === false) {
+    $jsEnrollmentsData = '[]';
+}

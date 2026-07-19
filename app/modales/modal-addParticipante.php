@@ -142,14 +142,28 @@
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
                             Cédula <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="number" class="form-control neon-input" id="cedula" name="cedula" required placeholder="Ej: 12345678" style="
-                            border: 1.5px solid #e2e8f0;
-                            border-radius: 12px;
-                            padding: 10px 16px;
-                            font-size: 0.95rem;
-                            transition: all 0.3s ease;
-                            background: #ffffff;
-                        " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                        <div class="input-group">
+                            <select class="form-select neon-input" id="nacionalidad" name="nacionalidad" style="
+                                max-width: 80px;
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 12px 0 0 12px;
+                                padding: 10px 12px;
+                                font-size: 0.95rem;
+                                transition: all 0.3s ease;
+                                background: #ffffff;
+                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                <option value="V" selected>V</option>
+                                <option value="E">E</option>
+                            </select>
+                            <input type="number" class="form-control neon-input" id="cedula" name="cedula" required placeholder="Ej: 12345678" style="
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 0 12px 12px 0;
+                                padding: 10px 16px;
+                                font-size: 0.95rem;
+                                transition: all 0.3s ease;
+                                background: #ffffff;
+                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                        </div>
                         <div class="invalid-feedback" id="error-cedula" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Cédula inválida (7-8 dígitos)</div>
                         <div class="text-danger mt-1 fw-medium" id="cedula-repetida" style="display: none; font-size: 0.8rem; color: #dc2626 !important;">CÉDULA YA REGISTRADA</div>
                     </div>

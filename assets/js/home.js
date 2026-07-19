@@ -27,9 +27,10 @@ const PALETA_AMBITO = ['#6366f1', '#0ea5e9', '#28c76f', '#f59e0b', '#ef4444', '#
 ════════════════════════════════════════════════════════════ */
 const CHART_MAP = {
     participantes: {
-        estado: { chartId: 'chartPartEstado', render: 'renderPartEstado' },
-        genero: { chartId: 'chartPartGenero', render: 'renderPartGenero' },
-        grado: { chartId: 'chartPartGrado', render: 'renderPartGrado' },
+        estado:  { chartId: 'chartPartEstado',  render: 'renderPartEstado'  },
+        genero:  { chartId: 'chartPartGenero',  render: 'renderPartGenero'  },
+        grado:   { chartId: 'chartPartGrado',   render: 'renderPartGrado'   },
+        cursos:  { chartId: 'chartPartCursos',  render: 'renderPartCursos'  },
     },
     cursos: {
         estatus: { chartId: 'chartCursosEstatus', render: 'renderCursosEstatus' },

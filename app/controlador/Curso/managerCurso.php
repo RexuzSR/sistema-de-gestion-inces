@@ -1002,9 +1002,12 @@ class Curso {
                         p.cedula,
                         p.edad,
                         p.genero,
+                        p.id_discapacidad,
+                        d.nombre_discapacidad,
                         pc.id_participante_curso
                     FROM tb_participante_curso pc
                     JOIN tb_participante p ON pc.id_participante = p.id_participante
+                    LEFT JOIN tb_discapacidad d ON p.id_discapacidad = d.id_discapacidad
                     WHERE pc.id_curso = :id_curso
                     AND LOWER(TRIM(pc.estatus_participante)) != 'retirado'";
             

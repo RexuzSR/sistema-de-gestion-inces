@@ -18,7 +18,9 @@ $(document).on('click', '[data-bs-target="#modal-viewParticipante"], .ver-partic
                 // Llenar datos personales
                 $('#nombre-view').text(participante.nombre);
                 $('#apellido-view').text(participante.apellido);
-                $('#cedula-view').text(participante.cedula);
+                const cedulaNum = parseInt(participante.cedula);
+                const prefijo = (!isNaN(cedulaNum) && cedulaNum >= 80000000) ? 'E-' : 'V-';
+                $('#cedula-view').text(prefijo + participante.cedula);
                 $('#edad-view').text(participante.edad + ' años');
                 $('#correo-view').text(participante.correo);
                 $('#telefono-view').text(telefono);
@@ -26,6 +28,7 @@ $(document).on('click', '[data-bs-target="#modal-viewParticipante"], .ver-partic
                 $('#fechaRegistro-view').text(participante.fecha_registro);
                 $('#gradoInstruccion-view').text(participante.grado_institucion);
                 $('#sexo-view').text(participante.genero);
+                $('#discapacidad-view').text(participante.nombre_discapacidad || 'Ninguna');
 
 
                 $('#modal-viewParticipante')

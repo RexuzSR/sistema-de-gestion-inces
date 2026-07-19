@@ -1,4 +1,11 @@
+// Variables globales para las gráficas del modal
+var modalGeneroChartInst = modalGeneroChartInst || null;
+var modalEdadChartInst = modalEdadChartInst || null;
+var modalDiscapacidadChartInst = modalDiscapacidadChartInst || null;
+var cachedStats = cachedStats || null;
+
 document.addEventListener('DOMContentLoaded', function () {
+
   document.body.addEventListener('click', function (event) {
     // Buscar tarjeta del modal participante O botón de la tabla cursos
     const target = event.target.closest('.view-curso-card') || event.target.closest('.button.view-curso');
@@ -8,6 +15,11 @@ document.addEventListener('DOMContentLoaded', function () {
       console.log('Click en tarjeta curso, ID:', cursoId); // Depuración
 
       if (cursoId) {
+        // Reiniciar pestaña activa a Información del Curso (de forma segura usando clases)
+        $('#courseModalTab button').removeClass('active');
+        $('#courseModalTab button#info-tab').addClass('active');
+        $('#courseModalTabContent .tab-pane').removeClass('show active');
+        $('#info-tab-pane').addClass('show active');
         // Cargar información del curso
         fetch(`../../app/controlador/Curso/verCurso.php?id=${cursoId}`)
           .then(response => response.json())
@@ -128,7 +140,9 @@ document.addEventListener('DOMContentLoaded', function () {
                   if (docenteData.success) {
                     const d = docenteData.docente;
                     document.getElementById('docente-nombre').textContent = d.nombre || defaultText;
-                    document.getElementById('docente-cedula').textContent = d.cedula || defaultText;
+                    const docCedNum = parseInt(d.cedula);
+                    const docPref = (!isNaN(docCedNum) && docCedNum >= 80000000) ? 'E-' : 'V-';
+                    document.getElementById('docente-cedula').textContent = d.cedula ? (docPref + d.cedula) : defaultText;
                     document.getElementById('docente-edad').textContent = d.edad || defaultText;
 
                     if (contenedorDocente) {
@@ -255,6 +269,13 @@ document.addEventListener('DOMContentLoaded', function () {
   // Función para cargar los participantes del curso
   function cargarParticipantesCurso(idCurso) {
     console.log('Intentando cargar participantes para curso ID:', idCurso);
+    // Limpiar cualquier filtro previo al cargar un curso
+    if (typeof window.limpiarFiltroParticipantes === 'function') {
+      window.limpiarFiltroParticipantes();
+    }
+    if (typeof window.limpiarFiltroParticipantesTab2 === 'function') {
+      window.limpiarFiltroParticipantesTab2();
+    }
     const $tablaParticipantes = $('#tabla-participantes-curso');
     console.log('Elemento tabla encontrado:', $tablaParticipantes.length > 0 ? 'SÍ' : 'NO');
     $tablaParticipantes.empty();
@@ -277,19 +298,59 @@ document.addEventListener('DOMContentLoaded', function () {
         if (Array.isArray(response)) participantes = response;
         else if (response && Array.isArray(response.data)) participantes = response.data;
 
+        // Contadores para las estadísticas de las donas
+        let mascCount = 0;
+        let femCount = 0;
+        let bajo18 = 0;
+        let de18a29 = 0;
+        let mas30 = 0;
+        let conDisc = 0;
+        let sinDisc = 0;
+        let discapacidadesLista = {};
+        let edadSuma = 0;
+        let edadConDatos = 0;
+
         if (participantes.length > 0) {
           participantes.forEach(p => {
-            const ced = p.cedula || 'N/A';
+            const cedNum = parseInt(p.cedula);
+            const pref = (!isNaN(cedNum) && cedNum >= 80000000) ? 'E-' : 'V-';
+            const ced = p.cedula ? (pref + p.cedula) : 'N/A';
             const nombre = p.nombre || p.nombre_completo || 'N/A';
             const apellido = p.apellido || '';
             const edad = p.edad || 'N/A';
             const genero = p.genero || 'N/A';
 
-            const sexoClass = genero === 'F' ? 'badge-femenino' : 'badge-masculino';
-            const sexoText = genero === 'F' ? 'Femenino' : 'Masculino';
+            // Incrementar género
+            const genStr = String(genero).toUpperCase();
+            if (genStr.startsWith('M') || genStr === 'MASCULINO') mascCount++;
+            else if (genStr.startsWith('F') || genStr === 'FEMENINO') femCount++;
+
+            // Incrementar rango de edad
+            const edadInt = parseInt(edad);
+            if (!isNaN(edadInt)) {
+              edadSuma += edadInt;
+              edadConDatos++;
+              if (edadInt < 18) bajo18++;
+              else if (edadInt <= 29) de18a29++;
+              else mas30++;
+            }
+
+            // Incrementar discapacidad
+            const discId = parseInt(p.id_discapacidad);
+            const discNombre = p.nombre_discapacidad || 'Ninguna';
+            if (!isNaN(discId) && discId > 1) {
+              conDisc++;
+              discapacidadesLista[discNombre] = (discapacidadesLista[discNombre] || 0) + 1;
+            } else {
+              sinDisc++;
+            }
+
+            const esFemenino = genStr.startsWith('F') || genStr === 'FEMENINO';
+            const sexoClass = esFemenino ? 'badge-femenino' : 'badge-masculino';
+            const sexoText = esFemenino ? 'Femenino' : 'Masculino';
 
             $tablaParticipantes.append(`
-                <tr class="ver-participante-row" data-id="${p.id_participante}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
+                <tr class="ver-participante-row" data-id="${p.id_participante}" data-genero="${sexoText}" data-edad="${edad}" data-discapacidad="${discId > 1 ? 'si' : 'no'}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
                   <td style="padding: 12px; color: #1e293b;">${ced}</td>
                   <td style="padding: 12px; color: #1e293b;">${nombre}</td>
                   <td style="padding: 12px; color: #1e293b;">${apellido}</td>
@@ -302,6 +363,27 @@ document.addEventListener('DOMContentLoaded', function () {
           });
         } else {
           $tablaParticipantes.append('<tr><td colspan="5" class="text-muted text-center">No hay participantes inscritos</td></tr>');
+        }
+
+        const edadPromedio = edadConDatos > 0 ? Math.round(edadSuma / edadConDatos) : '-';
+
+        // Guardar las estadísticas para cuando la pestaña se haga visible
+        cachedStats = { 
+          masc: mascCount, 
+          fem: femCount, 
+          bajo18, 
+          de18a29, 
+          mas30, 
+          conDisc, 
+          sinDisc,
+          total: participantes.length,
+          edadPromedio,
+          discapacidadesLista
+        };
+
+        // Si la pestaña ya estuviera activa, renderizar de inmediato
+        if ($('#participants-tab-pane').hasClass('active')) {
+          renderModalCharts(mascCount, femCount, bajo18, de18a29, mas30, conDisc, sinDisc, participantes.length, edadPromedio, discapacidadesLista);
         }
       },
 
@@ -316,6 +398,409 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+
+  // Función para renderizar los gráficos de donas
+  function renderModalCharts(masc, fem, bajo18, de18a29, mas30, conDisc, sinDisc, total = 0, edadPromedio = '-', discapacidadesLista = {}) {
+    try {
+      if (typeof Chart === 'undefined') {
+        console.warn('Chart.js no está cargado. Reintentando renderizar gráficas en 200ms...');
+        setTimeout(() => renderModalCharts(masc, fem, bajo18, de18a29, mas30, conDisc, sinDisc, total, edadPromedio, discapacidadesLista), 200);
+        return;
+      }
+      const totalGen = masc + fem || 1;
+      const totalEdad = bajo18 + de18a29 + mas30 || 1;
+      const totalDisc = conDisc + sinDisc || 1;
+
+      // Actualizar textos de diagnóstico
+      const gText = document.getElementById('debug-genero-text');
+      if (gText) gText.textContent = `(Masc: ${masc} / Fem: ${fem})`;
+      const eText = document.getElementById('debug-edad-text');
+      if (eText) eText.textContent = `(<18: ${bajo18} / 18-29: ${de18a29} / 30+: ${mas30})`;
+      const dText = document.getElementById('debug-disc-text');
+      if (dText) {
+        const listaDetalle = Object.entries(discapacidadesLista).map(([n, c]) => `${n}: ${c}`).join(', ');
+        dText.textContent = listaDetalle ? `(Con: ${conDisc} [${listaDetalle}] / Sin: ${sinDisc})` : `(Con: ${conDisc} / Sin: ${sinDisc})`;
+      }
+
+      // Actualizar resumen rápido de datos
+      const resTotal = document.getElementById('resumen-total');
+      if (resTotal) resTotal.textContent = total;
+
+      const resEdad = document.getElementById('resumen-edad-promedio');
+      if (resEdad) resEdad.textContent = edadPromedio !== '-' ? `${edadPromedio} años` : '-';
+
+      const resPctMasc = document.getElementById('resumen-porcentaje-hombres');
+      if (resPctMasc) resPctMasc.textContent = `${Math.round((masc / totalGen) * 100)}%`;
+
+      const resPctFem = document.getElementById('resumen-porcentaje-mujeres');
+      if (resPctFem) resPctFem.textContent = `${Math.round((fem / totalGen) * 100)}%`;
+
+      // 1. Gráfica de Género
+      const ctxGen = document.getElementById('modalCursoGeneroChart');
+      if (ctxGen) {
+        if (modalGeneroChartInst) { modalGeneroChartInst.destroy(); }
+        modalGeneroChartInst = new Chart(ctxGen, {
+          type: 'doughnut',
+          data: {
+            labels: ['Masculino', 'Femenino'],
+            datasets: [{
+              data: [masc, fem],
+              backgroundColor: ['#0281fe', '#ec4899'],
+              borderWidth: 0,
+              borderRadius: 8,
+              spacing: 3,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            onClick: (evt, elements) => {
+              if (elements && elements.length > 0) {
+                const index = elements[0].index;
+                const label = modalGeneroChartInst.data.labels[index];
+                window.filtrarYMostrarEnTab2('genero', label);
+              }
+            },
+            onHover: (evt, activeElements) => {
+              evt.native.target.style.cursor = activeElements && activeElements.length ? 'pointer' : 'default';
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalGen * 100)}%)`
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'donutCenterText',
+            beforeDraw: function(chart) {
+              const { width, height, ctx } = chart;
+              ctx.save();
+              const totalVal = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.textBaseline = "middle";
+              ctx.fillStyle = "#0f172a";
+              const text = totalVal.toString();
+              const textX = Math.round((width - ctx.measureText(text).width) / 2);
+              const textY = (height / 2) - 8;
+              ctx.fillText(text, textX, textY);
+              ctx.font = "600 0.65rem 'Inter', sans-serif";
+              ctx.fillStyle = "#94a3b8";
+              const label = "ALUMNOS";
+              const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+              const labelY = (height / 2) + 14;
+              ctx.fillText(label, labelX, labelY);
+              ctx.restore();
+            }
+          }]
+        });
+      }
+
+      // 2. Gráfica de Edades
+      const ctxEdad = document.getElementById('modalCursoEdadChart');
+      if (ctxEdad) {
+        if (modalEdadChartInst) { modalEdadChartInst.destroy(); }
+        modalEdadChartInst = new Chart(ctxEdad, {
+          type: 'doughnut',
+          data: {
+            labels: ['< 18 años', '18-29 años', '30+ años'],
+            datasets: [{
+              data: [bajo18, de18a29, mas30],
+              backgroundColor: ['#38bdf8', '#7367f0', '#f59e0b'],
+              borderWidth: 0,
+              borderRadius: 8,
+              spacing: 3,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            onClick: (evt, elements) => {
+              if (elements && elements.length > 0) {
+                const index = elements[0].index;
+                const label = modalEdadChartInst.data.labels[index];
+                window.filtrarYMostrarEnTab2('edad', label);
+              }
+            },
+            onHover: (evt, activeElements) => {
+              evt.native.target.style.cursor = activeElements && activeElements.length ? 'pointer' : 'default';
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalEdad * 100)}%)`
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'donutCenterText',
+            beforeDraw: function(chart) {
+              const { width, height, ctx } = chart;
+              ctx.save();
+              const totalVal = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.textBaseline = "middle";
+              ctx.fillStyle = "#0f172a";
+              const text = totalVal.toString();
+              const textX = Math.round((width - ctx.measureText(text).width) / 2);
+              const textY = (height / 2) - 8;
+              ctx.fillText(text, textX, textY);
+              ctx.font = "600 0.65rem 'Inter', sans-serif";
+              ctx.fillStyle = "#94a3b8";
+              const label = "EDADES";
+              const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+              const labelY = (height / 2) + 14;
+              ctx.fillText(label, labelX, labelY);
+              ctx.restore();
+            }
+          }]
+        });
+      }
+
+      // 3. Gráfica de Discapacidad
+      const ctxDisc = document.getElementById('modalCursoDiscapacidadChart');
+      if (ctxDisc) {
+        if (modalDiscapacidadChartInst) { modalDiscapacidadChartInst.destroy(); }
+        modalDiscapacidadChartInst = new Chart(ctxDisc, {
+          type: 'doughnut',
+          data: {
+            labels: ['Con Discapacidad', 'Sin Discapacidad'],
+            datasets: [{
+              data: [conDisc, sinDisc],
+              backgroundColor: ['#f59e0b', '#10b981'],
+              borderWidth: 0,
+              borderRadius: 8,
+              spacing: 3,
+              hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            onClick: (evt, elements) => {
+              if (elements && elements.length > 0) {
+                const index = elements[0].index;
+                const label = modalDiscapacidadChartInst.data.labels[index];
+                window.filtrarYMostrarEnTab2('discapacidad', label);
+              }
+            },
+            onHover: (evt, activeElements) => {
+              evt.native.target.style.cursor = activeElements && activeElements.length ? 'pointer' : 'default';
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                padding: 8,
+                cornerRadius: 8,
+                titleFont: { size: 11 },
+                bodyFont: { size: 11 },
+                callbacks: {
+                  label: c => {
+                    if (c.label === 'Con Discapacidad' && Object.keys(discapacidadesLista).length > 0) {
+                      const detalles = Object.entries(discapacidadesLista).map(([n, val]) => `${n}: ${val}`).join(', ');
+                      return [
+                        ` ${c.label}: ${c.parsed}`,
+                        ` (${detalles})`
+                      ];
+                    }
+                    return ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalDisc * 100)}%)`;
+                  }
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'donutCenterText',
+            beforeDraw: function(chart) {
+              const { width, height, ctx } = chart;
+              ctx.save();
+              const totalVal = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.textBaseline = "middle";
+              ctx.fillStyle = "#0f172a";
+              const text = totalVal.toString();
+              const textX = Math.round((width - ctx.measureText(text).width) / 2);
+              const textY = (height / 2) - 8;
+              ctx.fillText(text, textX, textY);
+              ctx.font = "600 0.65rem 'Inter', sans-serif";
+              ctx.fillStyle = "#94a3b8";
+              const label = "TOTAL";
+              const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+              const labelY = (height / 2) + 14;
+              ctx.fillText(label, labelX, labelY);
+              ctx.restore();
+            }
+          }]
+        });
+      }
+    } catch (err) {
+      alert("Error en renderModalCharts: " + err.message + "\nStack: " + err.stack);
+    }
+  }
+  window.renderModalCharts = renderModalCharts;
+
+  // Función para filtrar y mostrar en Tab 1
+  window.filtrarYMostrarEnTab1 = function(tipo, valor) {
+    // 1. Cambiar a la pestaña de "Información del Curso"
+    $('#courseModalTab button').removeClass('active');
+    $('#courseModalTab button#info-tab').addClass('active');
+    $('#courseModalTabContent .tab-pane').removeClass('show active');
+    $('#info-tab-pane').addClass('show active');
+
+    // 2. Aplicar el filtro a la tabla
+    const rows = $('#tabla-participantes-curso tr');
+    let coincidentes = 0;
+
+    rows.each(function() {
+      const $row = $(this);
+      if ($row.find('td').length === 1 && ($row.text().includes('No hay') || $row.text().includes('cargando'))) {
+        return;
+      }
+
+      let mostrar = true;
+      if (tipo === 'genero') {
+        const gen = $row.attr('data-genero');
+        mostrar = (gen === valor);
+      } else if (tipo === 'edad') {
+        const edadVal = parseInt($row.attr('data-edad'));
+        if (!isNaN(edadVal)) {
+          if (valor === '< 18 años') mostrar = (edadVal < 18);
+          else if (valor === '18-29 años') mostrar = (edadVal >= 18 && edadVal <= 29);
+          else if (valor === '30+ años') mostrar = (edadVal >= 30);
+        } else {
+          mostrar = false;
+        }
+      } else if (tipo === 'discapacidad') {
+        const disc = $row.attr('data-discapacidad');
+        if (valor === 'Con Discapacidad') mostrar = (disc === 'si');
+        else mostrar = (disc === 'no');
+      }
+
+      if (mostrar) {
+        $row.show();
+        coincidentes++;
+      } else {
+        $row.hide();
+      }
+    });
+
+    // 3. Mostrar el badge del filtro
+    let textoFiltro = '';
+    if (tipo === 'genero') textoFiltro = `Género: ${valor}`;
+    else if (tipo === 'edad') textoFiltro = `Rango de Edad: ${valor}`;
+    else if (tipo === 'discapacidad') textoFiltro = valor;
+
+    $('#filtro-activo-texto').text(`${textoFiltro} (${coincidentes} encontrados)`);
+    $('#filtro-activo-container').removeClass('d-none');
+    
+    // Hacer scroll suave hacia el contenedor del filtro
+    const badgeEl = document.getElementById('filtro-activo-container');
+    if (badgeEl) {
+      badgeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  window.limpiarFiltroParticipantes = function() {
+    $('#tabla-participantes-curso tr').show();
+    $('#filtro-activo-container').addClass('d-none');
+  };
+
+  // Función para filtrar y mostrar en Tab 2 (la misma viñeta)
+  window.filtrarYMostrarEnTab2 = function(tipo, valor) {
+    const $tablaDestino = $('#tabla-participantes-filtrados-tab2');
+    $tablaDestino.empty();
+
+    const rows = $('#tabla-participantes-curso tr');
+    let coincidentes = 0;
+
+    rows.each(function() {
+      const $row = $(this);
+      if ($row.find('td').length === 1 && ($row.text().includes('No hay') || $row.text().includes('cargando'))) {
+        return;
+      }
+
+      let mostrar = false;
+      const ced = $row.find('td:nth-child(1)').text();
+      const nombre = $row.find('td:nth-child(2)').text();
+      const apellido = $row.find('td:nth-child(3)').text();
+      const edad = $row.find('td:nth-child(4)').text();
+      const sexoText = $row.find('td:nth-child(5)').text();
+      const sexoClass = sexoText.includes('Femenino') ? 'badge-femenino' : 'badge-masculino';
+
+      if (tipo === 'genero') {
+        const gen = $row.attr('data-genero');
+        mostrar = (gen === valor);
+      } else if (tipo === 'edad') {
+        const edadVal = parseInt($row.attr('data-edad'));
+        if (!isNaN(edadVal)) {
+          if (valor === '< 18 años') mostrar = (edadVal < 18);
+          else if (valor === '18-29 años') mostrar = (edadVal >= 18 && edadVal <= 29);
+          else if (valor === '30+ años') mostrar = (edadVal >= 30);
+        }
+      } else if (tipo === 'discapacidad') {
+        const disc = $row.attr('data-discapacidad');
+        if (valor === 'Con Discapacidad') mostrar = (disc === 'si');
+        else mostrar = (disc === 'no');
+      }
+
+      if (mostrar) {
+        $tablaDestino.append(`
+          <tr class="ver-participante-row" data-id="${$row.attr('data-id')}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
+            <td style="padding: 12px; color: #1e293b;">${ced}</td>
+            <td style="padding: 12px; color: #1e293b;">${nombre}</td>
+            <td style="padding: 12px; color: #1e293b;">${apellido}</td>
+            <td style="padding: 12px; color: #1e293b;">${edad}</td>
+            <td style="padding: 12px;">
+              <span class="${sexoClass}">${sexoText}</span>
+            </td>
+          </tr>
+        `);
+        coincidentes++;
+      }
+    });
+
+    // Actualizar título y mostrar contenedor
+    let textoFiltro = '';
+    if (tipo === 'genero') textoFiltro = `Género: ${valor}`;
+    else if (tipo === 'edad') textoFiltro = `Rango de Edad: ${valor}`;
+    else if (tipo === 'discapacidad') textoFiltro = valor;
+
+    $('#filtrados-titulo-tab2').text(`${textoFiltro} (${coincidentes} alumnos)`);
+    $('#filtrados-container-tab2').removeClass('d-none');
+
+    // Scroll suave hacia la tabla
+    const badgeEl = document.getElementById('filtrados-container-tab2');
+    if (badgeEl) {
+      badgeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  window.limpiarFiltroParticipantesTab2 = function() {
+    $('#tabla-participantes-filtrados-tab2').empty();
+    $('#filtrados-container-tab2').addClass('d-none');
+  };
 
   // Función para formatear las fechas
   function formatDate(date) {
@@ -581,8 +1066,66 @@ $(document).on('click', '#btn-matricula-pdf', function (e) {
 
 // ========== SINCRONIZAR CIERRE DE MODALES ANIDADOS ==========
 $('#modal-viewCurso').on('hidden.bs.modal', function () {
+  // Destruir las gráficas de donas locales para evitar conflictos de canvas
+  if (modalGeneroChartInst) { modalGeneroChartInst.destroy(); modalGeneroChartInst = null; }
+  if (modalEdadChartInst) { modalEdadChartInst.destroy(); modalEdadChartInst = null; }
+  if (modalDiscapacidadChartInst) { modalDiscapacidadChartInst.destroy(); modalDiscapacidadChartInst = null; }
+
+  // Limpiar filtros de la viñeta 2
+  if (typeof window.limpiarFiltroParticipantesTab2 === 'function') {
+    window.limpiarFiltroParticipantesTab2();
+  }
+
   // Si el modal de ver participante está abierto, ciérralo también
   if ($('#modal-viewParticipante').hasClass('show')) {
     $('#modal-viewParticipante').modal('hide');
+  }
+});
+
+// ========== CONTROL MANUAL DE PESTAÑAS EN EL MODAL ==========
+$(document).on('click', '#courseModalTab button', function (e) {
+  e.preventDefault();
+  const $btn = $(this);
+  
+  // Quitar active de todos los botones en este grupo
+  $('#courseModalTab button').removeClass('active');
+  $btn.addClass('active');
+
+  // Quitar show y active de todos los paneles
+  $('#courseModalTabContent .tab-pane').removeClass('show active');
+
+  // Activar el panel destino
+  const targetId = $btn.attr('data-bs-target');
+  $(targetId).addClass('show active');
+
+  if (targetId === '#participants-tab-pane' && cachedStats) {
+    setTimeout(() => {
+      window.renderModalCharts(
+        cachedStats.masc,
+        cachedStats.fem,
+        cachedStats.bajo18,
+        cachedStats.de18a29,
+        cachedStats.mas30,
+        cachedStats.conDisc,
+        cachedStats.sinDisc,
+        cachedStats.total,
+        cachedStats.edadPromedio,
+        cachedStats.discapacidadesLista
+      );
+    }, 150);
+  }
+});
+
+// ========== MANEJO BOTÓN LIMPIAR FILTRO PARTICIPANTES ==========
+$(document).on('click', '#btn-limpiar-filtro-part', function() {
+  if (typeof window.limpiarFiltroParticipantes === 'function') {
+    window.limpiarFiltroParticipantes();
+  }
+});
+
+// ========== MANEJO BOTÓN LIMPIAR FILTRO TAB 2 ==========
+$(document).on('click', '#btn-limpiar-filtro-tab2', function() {
+  if (typeof window.limpiarFiltroParticipantesTab2 === 'function') {
+    window.limpiarFiltroParticipantesTab2();
   }
 });

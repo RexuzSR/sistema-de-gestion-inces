@@ -157,12 +157,15 @@ $(document).ready(function () {
                             const data = response.data;
                             $('#cedula-repetida').show();
                             
-                            // Autocompletar campos con info del participante existente
-                            $('#primer_nombre').val(data.primer_nombre).trigger('input');
-                            $('#segundo_nombre').val(data.segundo_nombre || '').trigger('input');
-                            $('#primer_apellido').val(data.primer_apellido).trigger('input');
-                            $('#segundo_apellido').val(data.segundo_apellido || '').trigger('input');
-                            $('#correo').val(data.correo).trigger('input');
+                             // Autocompletar campos con info del participante existente
+                             $('#primer_nombre').val(data.primer_nombre).trigger('input');
+                             $('#segundo_nombre').val(data.segundo_nombre || '').trigger('input');
+                             $('#primer_apellido').val(data.primer_apellido).trigger('input');
+                             $('#segundo_apellido').val(data.segundo_apellido || '').trigger('input');
+                             $('#correo').val(data.correo).trigger('input');
+                             const cedNum = parseInt(data.cedula);
+                             const nacVal = (!isNaN(cedNum) && cedNum >= 80000000) ? 'E' : 'V';
+                             $('#nacionalidad').val(nacVal).trigger('change');
                             
                             // Rellenar teléfono dividido
                             if (data.telefono) {

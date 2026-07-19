@@ -365,6 +365,7 @@ if (!empty($imagenUsuario)) {
     <script src="../../assets/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/toastr/toastr.min.js"></script>
     <script src="../../assets/js/toastr/toastr-config.js"></script>
+    <script src="../../assets/js/chart.js"></script>
     <script src="../../assets/js/home.js"></script>
     <script src="../../assets/js/Curso/tabla-curso.js?v=<?php echo time(); ?>"></script>
     <script src="../../assets/js/Curso/verCurso.js"></script>

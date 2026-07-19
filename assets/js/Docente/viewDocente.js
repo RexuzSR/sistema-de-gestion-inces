@@ -91,7 +91,9 @@ $(document).ready(function() {
         
         // Llenar datos personales
         $('#nombre-completo-view').text(nombreCompleto);
-        $('#cedula-view').text(docente.cedula || 'No especificado');
+        const docCedNum = parseInt(docente.cedula);
+        const docPref = (!isNaN(docCedNum) && docCedNum >= 80000000) ? 'E-' : 'V-';
+        $('#cedula-view').text(docente.cedula ? (docPref + docente.cedula) : 'No especificado');
         $('#telefono-view').text(docente.telefono || 'No especificado');
         $('#correo-view').text(docente.correo || 'No especificado');
         $('#fechaNacimiento-view').text(formatearFecha(docente.fecha_nacimiento));

@@ -27,7 +27,9 @@ try {
             'apellido' => $p['apellido'] ?? ($p['primer_apellido'] ?? ''),
             'nombre_completo' => trim((($p['nombre'] ?? ($p['primer_nombre'] ?? '')) . ' ' . ($p['apellido'] ?? ($p['primer_apellido'] ?? '')))),
             'edad' => isset($p['edad']) ? $p['edad'] : null,
-            'genero' => $p['genero'] ?? null
+            'genero' => $p['genero'] ?? null,
+            'id_discapacidad' => $p['id_discapacidad'] ?? 1,
+            'nombre_discapacidad' => $p['nombre_discapacidad'] ?? 'Ninguna'
         ];
     }
     

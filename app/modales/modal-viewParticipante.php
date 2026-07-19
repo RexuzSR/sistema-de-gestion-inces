@@ -307,11 +307,24 @@
                                             font-size: 0.9rem;
                                         ">-</span>
                                     </li>
-                                    <li class="d-flex justify-content-between align-items-center py-3">
+                                    <li class="d-flex justify-content-between align-items-center py-3 border-bottom" style="border-color: #e2e8f0 !important;">
                                         <span style="color: #64748b; font-size: 0.85rem; font-weight: 500;">
                                             FECHA REGISTRO
                                         </span>
                                         <span id="fechaRegistro-view" class="fw-medium" style="
+                                            color: #0f172a;
+                                            background: #ffffff;
+                                            padding: 4px 12px;
+                                            border-radius: 30px;
+                                            border: 1px solid #e2e8f0;
+                                            font-size: 0.9rem;
+                                        ">-</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between align-items-center py-3">
+                                        <span style="color: #64748b; font-size: 0.85rem; font-weight: 500;">
+                                            DISCAPACIDAD
+                                        </span>
+                                        <span id="discapacidad-view" class="fw-medium" style="
                                             color: #0f172a;
                                             background: #ffffff;
                                             padding: 4px 12px;

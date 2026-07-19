@@ -308,26 +308,28 @@ public function eliminar($id) {
       public function verParticipante($id) {
         try {
             $sql = "SELECT 
-                        id_participante,
-                        CONCAT(primer_nombre, IFNULL(CONCAT(' ', segundo_nombre), '')) AS nombre,
-                        CONCAT(primer_apellido, IFNULL(CONCAT(' ', segundo_apellido), '')) AS apellido,
-                        cedula,
-                        edad,
-                        correo,
-                        (SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = tb_participante.id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1) AS telefono,
-                        DATE_FORMAT(fecha_nacimiento, '%d/%m/%Y') as fecha_nacimiento,
-                        DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
-                        grado_institucion,
-                        genero
-                    FROM tb_participante 
-                    WHERE id_participante = :id";
-    
+                        p.id_participante,
+                        CONCAT(p.primer_nombre, IFNULL(CONCAT(' ', p.segundo_nombre), '')) AS nombre,
+                        CONCAT(p.primer_apellido, IFNULL(CONCAT(' ', p.segundo_apellido), '')) AS apellido,
+                        p.cedula,
+                        p.edad,
+                        p.correo,
+                        (SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = p.id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1) AS telefono,
+                        DATE_FORMAT(p.fecha_nacimiento, '%d/%m/%Y') as fecha_nacimiento,
+                        DATE_FORMAT(p.fecha_registro, '%d/%m/%Y') as fecha_registro,
+                        p.grado_institucion,
+                        p.genero,
+                        COALESCE(d.nombre_discapacidad, 'Ninguna') AS nombre_discapacidad
+                    FROM tb_participante p
+                    LEFT JOIN tb_discapacidad d ON p.id_discapacidad = d.id_discapacidad
+                    WHERE p.id_participante = :id";
+     
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
-    
+     
             $participante = $stmt->fetch(PDO::FETCH_ASSOC);
-    
+     
             if ($participante) {
                 return [
                     'success' => true,
@@ -341,7 +343,8 @@ public function eliminar($id) {
                         'fecha_nacimiento' => $participante['fecha_nacimiento'],
                         'fecha_registro' => $participante['fecha_registro'],
                         'grado_institucion' => $participante['grado_institucion'],
-                        'genero' => $participante['genero']
+                        'genero' => $participante['genero'],
+                        'nombre_discapacidad' => $participante['nombre_discapacidad']
                     ]
                 ];
             } else {

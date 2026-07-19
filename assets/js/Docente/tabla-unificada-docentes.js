@@ -103,7 +103,9 @@ $(document).ready(function () {
 
         docentes.forEach(docente => {
             const id = docente.id_docente || docente.id || 0;
-            const cedula = docente.cedula || '';
+            const cedNum = parseInt(docente.cedula);
+            const pref = (!isNaN(cedNum) && cedNum >= 80000000) ? 'E-' : 'V-';
+            const cedula = docente.cedula ? (pref + docente.cedula) : '';
             const nombre = docente.nombre || docente.primer_nombre || '';
             const apellido = docente.apellido || docente.primer_apellido || '';
             const genero = docente.genero || docente.sexo || '';

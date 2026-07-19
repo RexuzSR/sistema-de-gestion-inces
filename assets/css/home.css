@@ -1355,11 +1355,11 @@ tr.docente-row-link:hover { outline: 2px solid rgba(99,102,241,.3); outline-offs
 #section-docentes     .chart-tabs-wrapper { --chart-tab-accent: #7367f0; }
 #section-metas        .chart-tabs-wrapper { --chart-tab-accent: #ef4444; }
 
-/* ── Layout gráfica + tabla lado a lado en sub-tabs ── */
+/* ── Layout gráfica + lista lado a lado en sub-tabs ── */
 .chart-tab-duo-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 55fr 45fr;   /* gráfica ligeramente más ancha que la lista */
+    gap: 16px;
     align-items: start;
 }
 .chart-tab-duo-layout .chart-tab-canvas-wrap {
@@ -1407,15 +1407,40 @@ tr.docente-row-link:hover { outline: 2px solid rgba(99,102,241,.3); outline-offs
     background: #f1f5f9;
     color: #475569;
 }
+
+/* ── Breakpoint medio: pantallas de 769px–1100px ─────────── */
+@media (max-width: 1100px) and (min-width: 769px) {
+    .chart-tab-duo-layout {
+        grid-template-columns: 1fr;   /* apila gráfica y lista */
+    }
+    .chart-tab-duo-layout .chart-tab-canvas-wrap {
+        height: 230px;
+    }
+    /* La lista ocupa ancho completo y altura limitada */
+    #tbodyPartCursos.part-list-wrap {
+        max-height: 220px !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+    }
+    /* En modo horizontal mostramos las cards en 2 columnas */
+    .part-card-item {
+        width: calc(50% - 4px);
+    }
+}
+
+/* ── Breakpoint móvil: menos de 768px ─────────────────────── */
 @media (max-width: 768px) {
     .chart-tab-duo-layout {
         grid-template-columns: 1fr;
     }
     .chart-tab-duo-layout .chart-tab-canvas-wrap {
-        height: 220px;
+        height: 200px;
     }
     .chart-tab-side-table {
-        max-height: 220px;
+        max-height: 200px;
+    }
+    #tbodyPartCursos.part-list-wrap {
+        max-height: 240px !important;
     }
 }
 
@@ -1591,3 +1616,85 @@ tr.docente-row-link:hover { outline: 2px solid rgba(99,102,241,.3); outline-offs
     white-space:nowrap;
 }
 .ej-card-toggle:hover{background:#fde68a;}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — Panel "Por Curso" (filtros + gráfica + lista)
+═══════════════════════════════════════════════════════════════ */
+
+/* Filter bar: los selects usan ancho mínimo y se envuelven */
+.filter-bar .filter-group {
+    min-width: 120px;
+    flex: 1 1 120px;   /* crecen y se encogen según el espacio */
+}
+
+/* En pantallas anchas la lista tiene altura fija y scroll */
+#tbodyPartCursos.part-list-wrap {
+    max-height: 330px;
+    overflow-y: auto;
+}
+
+/* ── < 1280px: reducir alturas para no ocupar tanto espacio vertical ── */
+@media (max-width: 1280px) {
+    #chart-panel-participantes-cursos .chart-tab-canvas-wrap {
+        height: 280px !important;
+    }
+    #tbodyPartCursos.part-list-wrap {
+        max-height: 280px !important;
+    }
+}
+
+/* ── < 1100px: la gráfica y la lista se apilan ── */
+@media (max-width: 1100px) {
+    #chart-panel-participantes-cursos .chart-tab-duo-layout {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    #chart-panel-participantes-cursos .chart-tab-canvas-wrap {
+        height: 200px !important;
+    }
+    /* Lista en modo horizontal de 2 columnas para aprovechar ancho */
+    #tbodyPartCursos.part-list-wrap {
+        max-height: 280px !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-content: flex-start;
+    }
+    .part-card-item {
+        flex: 1 1 calc(50% - 6px);
+        min-width: 200px;
+    }
+}
+
+/* ── < 768px: todo en columna, lista full-width ── */
+@media (max-width: 768px) {
+    #chart-panel-participantes-cursos .chart-tab-canvas-wrap {
+        height: 180px !important;
+    }
+    #tbodyPartCursos.part-list-wrap {
+        max-height: 260px !important;
+        flex-direction: column !important;
+    }
+    .part-card-item {
+        flex: none;
+        width: 100%;
+    }
+    /* Filter bar: cada grupo ocupa al menos la mitad del ancho */
+    .filter-bar .filter-group {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 100px;
+    }
+    .filter-bar {
+        gap: 6px !important;
+    }
+}
+
+/* ── < 480px: filtros en columna completa ── */
+@media (max-width: 480px) {
+    .filter-bar .filter-group {
+        flex: 1 1 100%;
+    }
+    #chart-panel-participantes-cursos .chart-tab-canvas-wrap {
+        height: 160px !important;
+    }
+}

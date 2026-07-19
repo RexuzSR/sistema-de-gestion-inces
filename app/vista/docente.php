@@ -202,6 +202,7 @@ if (!empty($imagenUsuario)) {
     <script src="../../assets/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/toastr/toastr.min.js"></script>
     <script src="../../assets/js/toastr/toastr-config.js"></script>
+    <script src="../../assets/js/chart.js"></script>
     <script src="../../assets/js/home.js"></script>
     <script src="../../assets/js/Docente/tabla-unificada-docentes.js"></script>
     <script src="../../assets/js/Docente/agregarDocente.js"></script>

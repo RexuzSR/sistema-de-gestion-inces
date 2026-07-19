@@ -154,7 +154,9 @@ $(document).ready(function () {
 
         participantes.forEach(participante => {
             const id = participante.id_participante || participante.id || 0;
-            const cedula = participante.cedula || '';
+            const cedNum = parseInt(participante.cedula);
+            const pref = (!isNaN(cedNum) && cedNum >= 80000000) ? 'E-' : 'V-';
+            const cedula = participante.cedula ? (pref + participante.cedula) : '';
             const nombre = participante.nombre || participante.primer_nombre || '';
             const apellido = participante.apellido || participante.primer_apellido || '';
             const genero = participante.genero || participante.sexo || '';

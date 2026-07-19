@@ -1,3 +1,18 @@
+<!-- Cargar Chart.js dinámicamente si no está presente en la página -->
+<script>
+if (typeof Chart === 'undefined') {
+  const script = document.createElement('script');
+  const path = window.location.pathname;
+  const idx = path.indexOf('/app/vista');
+  if (idx !== -1) {
+    const basePath = path.substring(0, idx);
+    script.src = basePath + '/assets/js/chart.js';
+  } else {
+    script.src = '../../assets/js/chart.js';
+  }
+  document.head.appendChild(script);
+}
+</script>
 <!-- Modal Ver Detalles del Curso -->
 <div class="modal fade" id="modal-viewCurso" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -98,6 +113,27 @@
               </div>
             </div>
           </div>
+
+          <!-- Pestañas de navegación de Bootstrap en el Header -->
+          <ul class="nav nav-pills border-0 gap-2 mb-0" id="courseModalTab" role="tablist" style="margin-left: auto; margin-right: 20px;">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-bold px-4 py-2" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-tab-pane" type="button" role="tab" aria-controls="info-tab-pane" aria-selected="true" style="border-radius: 12px; transition: all 0.3s ease;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle me-2" viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                  <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                </svg>
+                Información del Curso
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-bold px-4 py-2" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants-tab-pane" type="button" role="tab" aria-controls="participants-tab-pane" aria-selected="false" style="border-radius: 12px; transition: all 0.3s ease;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people me-2" viewBox="0 0 16 16">
+                  <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.047 1.09-2.904.243-.294.526-.569.846-.816M5 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4m1.89-3.921a3 3 0 1 1-4.226 4.226 3 3 0 0 1 4.226-4.226"/>
+                </svg>
+                Participantes e Indicadores
+              </button>
+            </li>
+          </ul>
           
           <!-- BOTÓN DE CERRAR PERSONALIZADO -->
           <button type="button" class="btn-close-custom-light" data-bs-dismiss="modal" aria-label="Cerrar">
@@ -182,8 +218,11 @@
           </div>
         </div>
 
-        <!-- Tarjetas de información principal -->
-        <div class="row g-4">
+        <div class="tab-content" id="courseModalTabContent">
+          <!-- PANEL 1: Información del Curso -->
+          <div class="tab-pane show active" id="info-tab-pane" role="tabpanel" aria-labelledby="info-tab" tabindex="0">
+            <!-- Tarjetas de información principal -->
+            <div class="row g-4">
           <!-- Columna Izquierda -->
           <div class="col-md-6">
             <!-- Información Básica -->
@@ -542,6 +581,21 @@
             </div>
           </div>
 
+          <!-- Contenedor para filtros activos -->
+          <div id="filtro-activo-container" class="mb-3 d-none" style="transition: all 0.3s ease;">
+            <div class="d-flex align-items-center gap-2" style="
+              background: #f0fdf4;
+              border: 1px solid #bbf7d0;
+              padding: 8px 16px;
+              border-radius: 12px;
+            ">
+              <span style="font-size: 0.85rem; color: #166534; font-weight: 500;">
+                Filtrado por: <strong id="filtro-activo-texto">Ninguno</strong>
+              </span>
+              <button type="button" class="btn-close" style="font-size: 0.75rem; margin-left: auto;" id="btn-limpiar-filtro-part" title="Quitar filtro"></button>
+            </div>
+          </div>
+
           <div class="table-responsive">
             <table class="table futuristic-table-light" style="width: 100%; border-collapse: collapse;">
               <thead>
@@ -586,6 +640,353 @@
             </button>
           </div>
         </div>
+
+      </div> <!-- Closes PANEL 1: info-tab-pane -->
+
+      <!-- PANEL 2: Participantes e Indicadores - VERSIÓN MEJORADA -->
+      <div class="tab-pane" id="participants-tab-pane" role="tabpanel" aria-labelledby="participants-tab" tabindex="0">
+        
+        <!-- Título de sección con efecto neón -->
+        <div class="d-flex align-items-center gap-3 mb-4 animate-on-show" data-delay="0">
+          <div style="
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #0281fe, #38bdf8);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(2, 129, 254, 0.4);
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12v3a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-3"></path>
+              <path d="M7 8l5-5 5 5"></path>
+              <line x1="12" y1="3" x2="12" y2="12"></line>
+            </svg>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0" style="
+              background: linear-gradient(135deg, #0f172a, #1e293b);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              background-clip: text;
+              font-size: 1.3rem;
+            ">Estadísticas de Participantes</h5>
+            <small style="color: #64748b;">Análisis demográfico del grupo</small>
+          </div>
+          <span style="
+            margin-left: auto;
+            background: linear-gradient(135deg, #0281fe, #38bdf8);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(2, 129, 254, 0.4);
+            letter-spacing: 0.5px;
+          ">INSIGHTS</span>
+        </div>
+
+        <!-- Gráficas Estadísticas de los Participantes - Diseño mejorado -->
+        <div class="row g-4">
+          
+          <!-- Tarjeta 1: Género -->
+          <div class="col-md-4 animate-on-show" data-delay="100">
+            <div style="
+              background: linear-gradient(145deg, #ffffff, #f8fafc);
+              border: 1px solid rgba(2, 129, 254, 0.15);
+              border-radius: 24px;
+              padding: 25px 20px 20px;
+              text-align: center;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              position: relative;
+              overflow: hidden;
+              height: 100%;
+              min-height: 340px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            " onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 20px 40px -12px rgba(2,129,254,0.25), 0 0 0 1px rgba(2,129,254,0.2)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.04)'">
+              
+              <!-- Línea decorativa superior -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 15%;
+                right: 15%;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, #0281fe, #38bdf8, #7dd3fc, transparent);
+                border-radius: 0 0 10px 10px;
+                filter: blur(1px);
+              "></div>
+
+              <!-- Icono de género -->
+              <div style="
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #dbeafe, #eff6ff);
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 12px;
+                border: 1px solid rgba(2, 129, 254, 0.15);
+              ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0281fe" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+              </div>
+
+              <h6 class="fw-bold mb-1" style="color: #0f172a; font-size: 0.95rem;">Distribución por Género</h6>
+              <span id="debug-genero-text" style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 15px; display: block;"></span>
+              
+              <div style="position: relative; width: 160px; height: 160px; margin: 0 auto;">
+                <canvas id="modalCursoGeneroChart"></canvas>
+              </div>
+
+              <!-- Leyenda personalizada -->
+              <div class="d-flex justify-content-center gap-4 mt-3">
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #0281fe; box-shadow: 0 0 10px rgba(2,129,254,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Hombres</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ec4899; box-shadow: 0 0 10px rgba(236,72,153,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Mujeres</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2: Edad -->
+          <div class="col-md-4 animate-on-show" data-delay="200">
+            <div style="
+              background: linear-gradient(145deg, #ffffff, #f8fafc);
+              border: 1px solid rgba(56, 189, 248, 0.15);
+              border-radius: 24px;
+              padding: 25px 20px 20px;
+              text-align: center;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              position: relative;
+              overflow: hidden;
+              height: 100%;
+              min-height: 340px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            " onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 20px 40px -12px rgba(56,189,248,0.25), 0 0 0 1px rgba(56,189,248,0.2)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.04)'">
+              
+              <!-- Línea decorativa superior -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 15%;
+                right: 15%;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, #38bdf8, #7dd3fc, #bae6fd, transparent);
+                border-radius: 0 0 10px 10px;
+                filter: blur(1px);
+              "></div>
+
+              <!-- Icono de edad -->
+              <div style="
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #fce7f3, #fdf2f8);
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 12px;
+                border: 1px solid rgba(236, 72, 153, 0.15);
+              ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+
+              <h6 class="fw-bold mb-1" style="color: #0f172a; font-size: 0.95rem;">Rangos de Edad</h6>
+              <span id="debug-edad-text" style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 15px; display: block;"></span>
+              
+              <div style="position: relative; width: 160px; height: 160px; margin: 0 auto;">
+                <canvas id="modalCursoEdadChart"></canvas>
+              </div>
+
+              <!-- Leyenda personalizada -->
+              <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">&lt;18 años</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #7367f0; box-shadow: 0 0 10px rgba(115,103,240,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">18-29 años</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">30+ años</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 3: Discapacidad -->
+          <div class="col-md-4 animate-on-show" data-delay="300">
+            <div style="
+              background: linear-gradient(145deg, #ffffff, #f8fafc);
+              border: 1px solid rgba(139, 92, 246, 0.15);
+              border-radius: 24px;
+              padding: 25px 20px 20px;
+              text-align: center;
+              transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+              position: relative;
+              overflow: hidden;
+              height: 100%;
+              min-height: 340px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            " onmouseover="this.style.transform='translateY(-6px)'; this.style.boxShadow='0 20px 40px -12px rgba(139,92,246,0.25), 0 0 0 1px rgba(139,92,246,0.2)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0,0,0,0.04)'">
+              
+              <!-- Línea decorativa superior -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 15%;
+                right: 15%;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, #8b5cf6, #a78bfa, #c4b5fd, transparent);
+                border-radius: 0 0 10px 10px;
+                filter: blur(1px);
+              "></div>
+
+              <!-- Icono de discapacidad -->
+              <div style="
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 12px;
+                border: 1px solid rgba(139, 92, 246, 0.15);
+              ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="12" x2="12" y2="16"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+
+              <h6 class="fw-bold mb-1" style="color: #0f172a; font-size: 0.95rem;">Condición de Discapacidad</h6>
+              <span id="debug-disc-text" style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 15px; display: block;"></span>
+              
+              <div style="position: relative; width: 160px; height: 160px; margin: 0 auto;">
+                <canvas id="modalCursoDiscapacidadChart"></canvas>
+              </div>
+
+              <!-- Leyenda personalizada -->
+              <div class="d-flex justify-content-center gap-4 mt-3">
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Sin discapacidad</span>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.4);"></span>
+                  <span style="font-size: 0.75rem; color: #475569;">Con discapacidad</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen rápido de datos -->
+        <div class="row g-3 mt-2 animate-on-show" data-delay="400">
+          <div class="col-12">
+            <div style="
+              background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+              border-radius: 20px;
+              padding: 15px 25px;
+              border: 1px solid #e2e8f0;
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              justify-content: space-around;
+              gap: 10px;
+            ">
+              <div class="text-center">
+                <small style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Total</small>
+                <p class="h5 fw-bold mb-0" style="color: #0f172a;" id="resumen-total">0</p>
+              </div>
+              <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+              <div class="text-center">
+                <small style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Edad Promedio</small>
+                <p class="h5 fw-bold mb-0" style="color: #0f172a;" id="resumen-edad-promedio">-</p>
+              </div>
+              <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+              <div class="text-center">
+                <small style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">% Hombres</small>
+                <p class="h5 fw-bold mb-0" style="color: #0281fe;" id="resumen-porcentaje-hombres">0%</p>
+              </div>
+              <div style="width: 1px; height: 30px; background: #e2e8f0;"></div>
+              <div class="text-center">
+                <small style="color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">% Mujeres</small>
+                <p class="h5 fw-bold mb-0" style="color: #ec4899;" id="resumen-porcentaje-mujeres">0%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Participantes Filtrados en la misma viñeta (Tab 2) -->
+        <div id="filtrados-container-tab2" class="mt-4 d-none" style="transition: all 0.3s ease;">
+          <div class="d-flex align-items-center justify-content-between mb-3" style="
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 20px;
+            border-radius: 16px;
+          ">
+            <span style="font-size: 0.9rem; color: #1e293b; font-weight: 600;">
+              Lista de Alumnos: <span id="filtrados-titulo-tab2" class="text-primary">...</span>
+            </span>
+            <button type="button" class="btn-close" id="btn-limpiar-filtro-tab2" title="Quitar filtro" style="font-size: 0.75rem;"></button>
+          </div>
+          
+          <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 16px; background: white;">
+            <table class="table futuristic-table-light mb-0" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid #0281fe;">
+                  <th style="color: #0281fe; font-weight: 600; padding: 12px; border-radius: 12px 0 0 12px; font-size: 0.85rem;">Cédula</th>
+                  <th style="color: #0281fe; font-weight: 600; padding: 12px; font-size: 0.85rem;">Nombre</th>
+                  <th style="color: #0281fe; font-weight: 600; padding: 12px; font-size: 0.85rem;">Apellido</th>
+                  <th style="color: #0281fe; font-weight: 600; padding: 12px; font-size: 0.85rem;">Edad</th>
+                  <th style="color: #0281fe; font-weight: 600; padding: 12px; border-radius: 0 12px 12px 0; font-size: 0.85rem;">Sexo</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-participantes-filtrados-tab2">
+                <!-- Se rellena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div> <!-- Closes PANEL 2: participants-tab-pane -->
+    </div> <!-- Closes courseModalTabContent -->
       </div>
 
       <!-- FOOTER con acciones -->
@@ -631,6 +1032,23 @@
 </div>
 
 <style>
+/* Estilo personalizado de las pestañas en el modal de curso */
+#courseModalTab .nav-link {
+    color: #64748b;
+    background: transparent;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+}
+#courseModalTab .nav-link:hover {
+    color: #0281fe;
+    background: #f1f5f9;
+}
+#courseModalTab .nav-link.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, #0281fe, #38bdf8) !important;
+    box-shadow: 0 4px 15px rgba(2, 129, 254, 0.4);
+}
 /* Animaciones neón */
 @keyframes neonPulse {
     0%, 100% {
@@ -1113,5 +1531,87 @@
 .status-badge-light:hover {
     transform: scale(1.05);
     box-shadow: 0 0 20px currentColor;
+}
+
+/* Estilos adicionales para las gráficas mejoradas */
+
+/* Animación de entrada para las tarjetas de gráficas */
+#participants-tab-pane .animate-on-show {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: slideUpFade 0.6s forwards;
+}
+
+@keyframes slideUpFade {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efecto de brillo en las tarjetas de gráficas */
+#participants-tab-pane .col-md-4 > div {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#participants-tab-pane .col-md-4 > div::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(2, 129, 254, 0.03), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
+
+#participants-tab-pane .col-md-4 > div:hover::before {
+    opacity: 1;
+}
+
+/* Mejora visual para los canvas de las gráficas */
+#participants-tab-pane canvas {
+    filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.05));
+    transition: all 0.3s ease;
+}
+
+#participants-tab-pane .col-md-4 > div:hover canvas {
+    filter: drop-shadow(0 4px 20px rgba(2, 129, 254, 0.15));
+}
+
+/* Resumen rápido - animación */
+#participants-tab-pane .row.g-3 > div > div {
+    transition: all 0.3s ease;
+}
+
+#participants-tab-pane .row.g-3 > div > div:hover {
+    background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    transform: scale(1.01);
+}
+
+/* Ajustes para móviles */
+@media (max-width: 768px) {
+    #participants-tab-pane .col-md-4 > div {
+        min-height: 280px;
+        padding: 20px 15px;
+    }
+    
+    #participants-tab-pane .col-md-4 > div > div[style*="position: relative; width: 160px;"] {
+        width: 130px !important;
+        height: 130px !important;
+    }
+    
+    #participants-tab-pane .row.g-3 > div > div {
+        padding: 12px 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    #participants-tab-pane .row.g-3 > div > div > div[style*="width: 1px;"] {
+        display: none;
+    }
 }
 </style>
