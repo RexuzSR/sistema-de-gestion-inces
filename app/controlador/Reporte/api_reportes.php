@@ -125,8 +125,9 @@ try {
             break;
 
         case 'cursos_mas_participantes':
-            $limite = intval($_GET['limite'] ?? 10);
-            echo json_encode(getCursosMasParticipantes($conn, $anio, $limite));
+            $limite = intval($_GET['limite'] ?? 20);
+            $criterio = trim($_GET['criterio'] ?? 'total');
+            echo json_encode(getCursosMasParticipantes($conn, $anio, $limite, $criterio));
             break;
 
         case 'curso_mas_requerido':
@@ -355,7 +356,9 @@ function selectDemo(string $alias = 'p'): string {
         SUM(CASE WHEN $alias.id_discapacidad IS NULL OR $alias.id_discapacidad = 1 THEN 1 ELSE 0 END) AS sin_disc,
         SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) BETWEEN 15 AND 17 THEN 1 ELSE 0 END) AS adolescente,
         SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) BETWEEN 18 AND 59 THEN 1 ELSE 0 END) AS adulto,
-        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) >= 60             THEN 1 ELSE 0 END) AS adulto_mayor
+        SUM(CASE WHEN TIMESTAMPDIFF(YEAR, $alias.fecha_nacimiento, CURDATE()) >= 60             THEN 1 ELSE 0 END) AS adulto_mayor,
+        SUM(CASE WHEN $alias.nacionalidad = 'V' OR $alias.nacionalidad IS NULL OR $alias.nacionalidad = '' THEN 1 ELSE 0 END) AS venezolano,
+        SUM(CASE WHEN $alias.nacionalidad = 'E' THEN 1 ELSE 0 END) AS extranjero
     ";
 }
 
@@ -368,6 +371,8 @@ function mapDemo(array $row): array {
         'adolescente' => intval($row['adolescente']  ?? 0),
         'adulto'      => intval($row['adulto']       ?? 0),
         'adultoMayor' => intval($row['adulto_mayor'] ?? 0),
+        'venezolano'  => intval($row['venezolano']   ?? 0),
+        'extranjero'  => intval($row['extranjero']   ?? 0),
     ];
 }
 
@@ -457,9 +462,30 @@ function getParticipantesEstadosSistema(PDO $conn): array {
         }
         $total += intval($row['total']);
     }
+
+    $stmtDemo = $conn->query("
+        SELECT 
+            SUM(CASE WHEN genero = 'Masculino' THEN 1 ELSE 0 END) AS masculino,
+            SUM(CASE WHEN genero = 'Femenino'  THEN 1 ELSE 0 END) AS femenino,
+            SUM(CASE WHEN id_discapacidad IS NOT NULL AND id_discapacidad <> 1 THEN 1 ELSE 0 END) AS con_disc,
+            SUM(CASE WHEN id_discapacidad IS NULL OR id_discapacidad = 1 THEN 1 ELSE 0 END) AS sin_disc,
+            SUM(CASE WHEN nacionalidad = 'E' THEN 1 ELSE 0 END) AS extranjero,
+            SUM(CASE WHEN nacionalidad = 'V' OR nacionalidad IS NULL OR nacionalidad = '' THEN 1 ELSE 0 END) AS venezolano
+        FROM tb_participante
+    ");
+    $demoRow = $stmtDemo->fetch(PDO::FETCH_ASSOC) ?: [];
+
     return [
         'total' => $total,
-        'estados' => $estados
+        'estados' => $estados,
+        'demo' => [
+            'masculino' => intval($demoRow['masculino'] ?? 0),
+            'femenino'  => intval($demoRow['femenino']  ?? 0),
+            'conDisc'   => intval($demoRow['con_disc']   ?? 0),
+            'sinDisc'   => intval($demoRow['sin_disc']   ?? 0),
+            'venezolano'=> intval($demoRow['venezolano'] ?? 0),
+            'extranjero'=> intval($demoRow['extranjero'] ?? 0)
+        ]
     ];
 }
 
@@ -526,23 +552,40 @@ function getCursosTotal(PDO $conn, int $anio): array {
     return mesesAArray($meses);
 }
 
-function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 10): array {
+function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, string $criterio = 'total'): array {
+    $orderClause = "ORDER BY total_participantes DESC";
+    if ($criterio === 'mujeres') {
+        $orderClause = "ORDER BY total_mujeres DESC, total_participantes DESC";
+    } else if ($criterio === 'hombres') {
+        $orderClause = "ORDER BY total_hombres DESC, total_participantes DESC";
+    } else if ($criterio === 'discapacitados') {
+        $orderClause = "ORDER BY total_discapacitados DESC, total_participantes DESC";
+    } else if ($criterio === 'extranjeros') {
+        $orderClause = "ORDER BY total_extranjeros DESC, total_participantes DESC";
+    }
+
     $stmt = $conn->prepare("
         SELECT
             c.id_curso,
             c.nombre_curso,
             COUNT(DISTINCT pc.id_participante) AS total_participantes,
+            SUM(CASE WHEN p.genero = 'Femenino' THEN 1 ELSE 0 END) AS total_mujeres,
+            SUM(CASE WHEN p.genero = 'Masculino' THEN 1 ELSE 0 END) AS total_hombres,
+            SUM(CASE WHEN p.id_discapacidad IS NOT NULL AND p.id_discapacidad <> 1 THEN 1 ELSE 0 END) AS total_discapacitados,
+            SUM(CASE WHEN p.nacionalidad = 'E' THEN 1 ELSE 0 END) AS total_extranjeros,
+            SUM(CASE WHEN p.nacionalidad = 'V' OR p.nacionalidad IS NULL OR p.nacionalidad = '' THEN 1 ELSE 0 END) AS total_venezolanos,
             e.nombre_estatusCurso AS estatus,
             m.nombre_modalidad    AS modalidad,
             c.fecha_inicio,
             c.fecha_fin
         FROM tb_participante_curso pc
         JOIN tb_curso c ON c.id_curso = pc.id_curso
+        JOIN tb_participante p ON p.id_participante = pc.id_participante
         LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso
         LEFT JOIN tb_modalidad    m ON m.id_modalidad    = c.id_modalidad
         WHERE YEAR(pc.fecha_inscripcion) = :anio
         GROUP BY c.id_curso, c.nombre_curso, e.nombre_estatusCurso, m.nombre_modalidad, c.fecha_inicio, c.fecha_fin
-        ORDER BY total_participantes DESC
+        $orderClause
         LIMIT :limite
     ");
     $stmt->bindValue(':anio',   $anio,   PDO::PARAM_INT);

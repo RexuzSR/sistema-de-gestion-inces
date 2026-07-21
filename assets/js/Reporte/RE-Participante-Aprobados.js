@@ -44,6 +44,50 @@ const MAX_ANIOS_APROB      = 3;
 let cursosAprobDisp          = [];
 let cursosAprobSel           = [];
 let instanciasGraficosCursos = [];
+let filtroDemoAprob          = { genero: [], discapacidad: [], nacionalidad: [], edadUmbral: [] };
+let criterioCursoActual      = 'total';
+
+function calcularFactorFiltroAprob(mesDatos, campo) {
+    if (!mesDatos || !mesDatos.demo) return 1;
+    const demo = mesDatos.demo.nuevos || mesDatos.demo.activos || {};
+    const total = mesDatos.aprobados || mesDatos.evaluados || 1;
+    let factor = 1;
+
+    if (filtroDemoAprob.genero && filtroDemoAprob.genero.length > 0) {
+        let suma = 0;
+        if (filtroDemoAprob.genero.includes('masculino')) suma += demo.masculino || 0;
+        if (filtroDemoAprob.genero.includes('femenino')) suma += demo.femenino || 0;
+        factor *= (suma / total);
+    }
+    if (filtroDemoAprob.discapacidad && filtroDemoAprob.discapacidad.length > 0) {
+        let suma = 0;
+        if (filtroDemoAprob.discapacidad.includes('con')) suma += demo.conDisc || 0;
+        if (filtroDemoAprob.discapacidad.includes('sin')) suma += demo.sinDisc || 0;
+        factor *= (suma / total);
+    }
+    if (filtroDemoAprob.nacionalidad && filtroDemoAprob.nacionalidad.length > 0) {
+        let suma = 0;
+        if (filtroDemoAprob.nacionalidad.includes('venezolano')) suma += demo.venezolano || 0;
+        if (filtroDemoAprob.nacionalidad.includes('extranjero')) suma += demo.extranjero || 0;
+        factor *= (suma / total);
+    }
+    if (filtroDemoAprob.edadUmbral && filtroDemoAprob.edadUmbral.length > 0) {
+        let suma = 0;
+        if (filtroDemoAprob.edadUmbral.includes('adolescente')) suma += demo.adolescente || 0;
+        if (filtroDemoAprob.edadUmbral.includes('adulto')) suma += demo.adulto || 0;
+        if (filtroDemoAprob.edadUmbral.includes('adultoMayor')) suma += demo.adultoMayor || 0;
+        factor *= (suma / total);
+    }
+
+    return Math.min(factor, 1);
+}
+
+function valorFiltradoAprob(mesDatos, campo) {
+    if (!mesDatos || mesDatos[campo] === null || mesDatos[campo] === undefined) return null;
+    const factor = calcularFactorFiltroAprob(mesDatos, campo);
+    if (factor === 1) return mesDatos[campo];
+    return Math.round(mesDatos[campo] * factor);
+}
 
 // ─── Paleta de colores ────────────────────────────────────────────────────────
 const COLOR_APROB_MATRIZ = {
@@ -115,6 +159,7 @@ async function cargarDatosAnioAprob(anio) {
             evaluados,
             tasaAprobacion,
             totalAcumulado: m.totalAcumulado,
+            demo:          m.demo || t.demo || {}
         };
     });
 
@@ -126,11 +171,12 @@ async function cargarDatosAnioAprob(anio) {
  * Carga y cachea cursos con más participantes para un año.
  * Asigna id secuencial para uso interno en la UI.
  */
-async function cargarCursosAnio(anio) {
-    if (cacheAprobCursos[anio]) return cacheAprobCursos[anio];
-    const data = await apiFetch('cursos_mas_participantes', { anio, limite: 20 });
+async function cargarCursosAnio(anio, criterio = 'total') {
+    const key = `${anio}_${criterio}`;
+    if (cacheAprobCursos[key]) return cacheAprobCursos[key];
+    const data = await apiFetch('cursos_mas_participantes', { anio, limite: 20, criterio });
     const cursos = (Array.isArray(data) ? data : []).map((c, i) => ({ id: i + 1, ...c }));
-    cacheAprobCursos[anio] = cursos;
+    cacheAprobCursos[key] = cursos;
     return cursos;
 }
 
@@ -337,6 +383,78 @@ function cargarParticipantesAprobados() {
                                 </div>
                             </div>
 
+                            <div style="width:1px;background:#dee2e6;align-self:stretch;flex-shrink:0;" class="d-none d-md-block"></div>
+
+                            <!-- Filtro por Perfil -->
+                            <div style="flex:0 0 auto;">
+                                <div class="text-muted small fw-semibold mb-2" style="text-transform:uppercase;letter-spacing:.05em;">Filtro por Perfil</div>
+                                <button class="btn btn-sm btn-outline-secondary" id="btnToggleFiltrosDemoAprob" data-abierto="0">
+                                    <i class="bi bi-funnel-fill me-1"></i>Filtrar por Perfil
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel filtros demográficos Aprobados -->
+                <div id="panelFiltrosDemoAprob" style="display:none;" class="mb-3 p-3 rounded-3 bg-light border">
+                    <div class="d-flex flex-wrap gap-4 align-items-start">
+                        <div class="rp-filter-group-item">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Género</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fg_masculino_aprob" name="fGeneroAprob" value="masculino" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fg_masculino_aprob">Masculino</label>
+                                </div>
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fg_femenino_aprob" name="fGeneroAprob" value="femenino" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fg_femenino_aprob">Femenino</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rp-filter-group-item">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Discapacidad</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fd_con_aprob" name="fDiscAprob" value="con" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fd_con_aprob">Con discapacidad</label>
+                                </div>
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fd_sin_aprob" name="fDiscAprob" value="sin" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fd_sin_aprob">Sin discapacidad</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rp-filter-group-item">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Nacionalidad / Origen</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fn_venezolano_aprob" name="fNacAprob" value="venezolano" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fn_venezolano_aprob">🇻🇪 Venezolano (V)</label>
+                                </div>
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fn_extranjero_aprob" name="fNacAprob" value="extranjero" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fn_extranjero_aprob">🌍 Extranjero (E)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rp-filter-group-item rp-filter-group-item--wide">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Rango de Edad</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fe_adolescente_aprob" name="fEdadAprob" value="adolescente" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_adolescente_aprob">Adolescentes (15-17)</label>
+                                </div>
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fe_adulto_aprob" name="fEdadAprob" value="adulto" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_adulto_aprob">Adultos (18-59)</label>
+                                </div>
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fe_adultoMayor_aprob" name="fEdadAprob" value="adultoMayor" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fe_adultoMayor_aprob">Adultos mayores (60+)</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -346,6 +464,8 @@ function cargarParticipantesAprobados() {
                     <div class="card-body">
                         <h6 class="card-title mb-3 text-muted fw-semibold" id="tituloAprobGrafico"></h6>
                         <div id="graficoAprobWrapper" style="height:420px;position:relative;"></div>
+                        <!-- WIDGET DEMOGRÁFICO DE LA GRÁFICA APROBADOS -->
+                        <div id="demografiaAprobFooter" class="border-top pt-3 mt-4"></div>
                     </div>
                 </div>
 
@@ -405,6 +525,34 @@ function cargarParticipantesAprobados() {
                             <span class="text-muted small">Mostrando:</span>
                             <span class="badge bg-secondary" id="badgeAnioAprobCurso">${hoy}</span>
                             <span class="badge bg-light text-dark border" id="badgePeriodoAprobCurso">Anual</span>
+                        </div>
+                    </div>
+
+                    <!-- Filtro / Criterio para Cursos -->
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body py-2">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em;">
+                                    <i class="bi bi-funnel-fill me-1"></i>Ranking Cursos por Muestra Demográfica:
+                                </span>
+                                <div class="d-flex gap-1.5 flex-wrap" id="grupoCriterioCursoAprob">
+                                    <button class="btn btn-sm btn-secondary btn-criterio-curso active" data-criterio="total">
+                                        <i class="bi bi-people-fill me-1"></i>Más Participantes
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger btn-criterio-curso" data-criterio="mujeres">
+                                        <i class="bi bi-gender-female me-1"></i>Más Mujeres
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary btn-criterio-curso" data-criterio="hombres">
+                                        <i class="bi bi-gender-male me-1"></i>Más Hombres
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info btn-criterio-curso" data-criterio="discapacitados">
+                                        <i class="bi bi-person-wheelchair me-1"></i>Más Discapacitados
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning btn-criterio-curso" data-criterio="extranjeros">
+                                        <i class="bi bi-globe me-1"></i>Más Extranjeros
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -526,7 +674,7 @@ async function cargarDatosAprob(anio, esCargaInicial = false) {
     try {
         const [datosMes, cursos] = await Promise.all([
             cargarDatosAnioAprob(anio),
-            cargarCursosAnio(anio),
+            cargarCursosAnio(anio, criterioCursoActual),
         ]);
 
         datosAprobMensuales = datosMes;
@@ -557,7 +705,7 @@ async function cargarDatosAprob(anio, esCargaInicial = false) {
 
         renderKPIsAprob(resumen);
         renderTablaAprobMensual(datosMes);
-        renderTablaAprobCursos(cursos);
+        renderTablaAprobCursos(cursos, criterioCursoActual);
         sincronizarChipsAprobAnios();
         renderGraficoAprob();
         inicializarControlesAprobGrafico();
@@ -584,11 +732,11 @@ async function cambiarAnioAprobTabla(anio) {
     try {
         const [datosMes, cursos] = await Promise.all([
             cargarDatosAnioAprob(anio),
-            cargarCursosAnio(anio),
+            cargarCursosAnio(anio, criterioCursoActual),
         ]);
         cursosAprobDisp = cursos;
         renderTablaAprobMensual(datosMes);
-        renderTablaAprobCursos(cursos);
+        renderTablaAprobCursos(cursos, criterioCursoActual);
         actualizarVisualizacionCursos();
     } catch (err) {
         console.error('[Aprobados] Error cambiando año tabla:', err);
@@ -671,6 +819,158 @@ function aplicarFiltroTablas() {
     const datos = cacheAprobAnuales[anioAprobTabla] || [];
     renderTablaAprobMensual(datos);
     actualizarVisualizacionCursos();
+    renderDemografiaAprobWidget(anioAprobTabla);
+}
+
+function renderDemografiaAprobWidget(anio) {
+    const el = document.getElementById('demografiaAprobFooter');
+    if (!el) return;
+
+    const anioActual = anio || anioAprobTabla || anioAprobBase;
+    const cache = cacheAprobAnuales[anioActual] || datosAprobMensuales || [];
+    const df = filtrarMesesPorTiempo(cache);
+
+    const totalAprobadosTabla = df.reduce((acc, m) => acc + (valorFiltradoAprob(m, 'aprobados') || 0), 0);
+
+    let masRaw = 0, femRaw = 0, conDiscRaw = 0, sinDiscRaw = 0, venRaw = 0, extRaw = 0;
+
+    df.forEach(m => {
+        if (m.aprobados !== null) {
+            const d = m.demo || {};
+            const demoN = d.nuevos || d.activos || {};
+            masRaw += demoN.masculino || 0;
+            femRaw += demoN.femenino || 0;
+            conDiscRaw += demoN.conDisc || 0;
+            sinDiscRaw += demoN.sinDisc || 0;
+            venRaw += demoN.venezolano || 0;
+            extRaw += demoN.extranjero || 0;
+        }
+    });
+
+    const totalRaw = (masRaw + femRaw) || 1;
+    const totalDiscRaw = (conDiscRaw + sinDiscRaw) || 1;
+    const totalNacRaw = (venRaw + extRaw) || 1;
+
+    const pctM = ((masRaw / totalRaw) * 100).toFixed(1);
+    const pctF = (100 - parseFloat(pctM)).toFixed(1);
+    const pctDisc = ((conDiscRaw / totalDiscRaw) * 100).toFixed(1);
+    const pctSinDisc = (100 - parseFloat(pctDisc)).toFixed(1);
+    const pctVen = ((venRaw / totalNacRaw) * 100).toFixed(1);
+    const pctExt = (100 - parseFloat(pctVen)).toFixed(1);
+
+    const masculino = Math.round(totalAprobadosTabla * (masRaw / totalRaw));
+    const femenino = totalAprobadosTabla - masculino;
+
+    const conDisc = Math.round(totalAprobadosTabla * (conDiscRaw / totalDiscRaw));
+    const sinDisc = totalAprobadosTabla - conDisc;
+
+    const venezolano = Math.round(totalAprobadosTabla * (venRaw / totalNacRaw));
+    const extranjero = totalAprobadosTabla - venezolano;
+
+    let textoPeriodo = '';
+    if (filtroAprobTiempo.tipo === 'semestral') {
+        textoPeriodo = ` — ${filtroAprobTiempo.semestre === 1 ? '1er Semestre' : '2do Semestre'}`;
+    } else if (filtroAprobTiempo.tipo === 'trimestral') {
+        textoPeriodo = ` — ${filtroAprobTiempo.trimestre}° Trimestre`;
+    } else if (filtroAprobTiempo.tipo === 'mensual') {
+        const meses = obtenerNombresMesesAprob();
+        textoPeriodo = ` — ${meses[(filtroAprobTiempo.mes || 1) - 1]}`;
+    }
+
+    el.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-circle">
+                    <i class="bi bi-person-bounding-box fs-6"></i>
+                </span>
+                <div>
+                    <h6 class="mb-0 text-dark fw-bold" style="font-size: .9rem;">Perfil Demográfico, Origen & Inclusión — Participantes Aprobados (${anioActual}${textoPeriodo})</h6>
+                    <small class="text-muted">Distribución consolidada de aprobados por género, diversidad funcional y origen (nacional/extranjero)</small>
+                </div>
+            </div>
+            <span class="badge bg-light text-secondary border small">
+                <i class="bi bi-shield-check text-success me-1"></i>Consolidado Institucional
+            </span>
+        </div>
+        <div class="row g-3">
+            <!-- GÉNERO -->
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 rounded-3 bg-white border shadow-sm h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="fw-bold text-dark small text-uppercase"><i class="bi bi-people-fill text-primary me-1.5"></i>Género</span>
+                        <span class="badge bg-primary-subtle text-primary fw-semibold">${(masculino + femenino).toLocaleString()} Aprobados</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-gender-male text-primary me-1"></i>Masculino</span>
+                            <strong class="fs-4 text-dark">${masculino.toLocaleString()}</strong>
+                            <span class="badge bg-primary-subtle text-primary ms-1.5 fw-semibold">${pctM}%</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-gender-female text-danger me-1"></i>Femenino</span>
+                            <strong class="fs-4 text-dark">${femenino.toLocaleString()}</strong>
+                            <span class="badge bg-danger-subtle text-danger ms-1.5 fw-semibold">${pctF}%</span>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill" style="height:7px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: ${pctM}%" title="Masculino ${pctM}%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: ${pctF}%" title="Femenino ${pctF}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIVERSIDAD FUNCIONAL -->
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 rounded-3 bg-white border shadow-sm h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="fw-bold text-dark small text-uppercase"><i class="bi bi-person-wheelchair text-info me-1.5"></i>Diversidad Funcional</span>
+                        <span class="badge bg-info-subtle text-info fw-semibold">${pctDisc}% Inclusión</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-check-circle-fill text-info me-1"></i>Con Discapacidad</span>
+                            <strong class="fs-4 text-info">${conDisc.toLocaleString()}</strong>
+                            <span class="badge bg-info-subtle text-info ms-1.5 fw-semibold">${pctDisc}%</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-person-check text-secondary me-1"></i>Sin Discapacidad</span>
+                            <strong class="fs-4 text-dark">${sinDisc.toLocaleString()}</strong>
+                            <span class="badge bg-light text-secondary border ms-1.5 fw-semibold">${pctSinDisc}%</span>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill" style="height:7px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: ${pctDisc}%" title="Con Discapacidad ${pctDisc}%"></div>
+                        <div class="progress-bar bg-secondary-subtle" role="progressbar" style="width: ${pctSinDisc}%" title="Sin Discapacidad ${pctSinDisc}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORIGEN / NACIONALIDAD -->
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 rounded-3 bg-white border shadow-sm h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="fw-bold text-dark small text-uppercase"><i class="bi bi-globe text-success me-1.5"></i>Origen / Nacionalidad</span>
+                        <span class="badge bg-success-subtle text-success fw-semibold">${pctVen}% Nacional</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-flag-fill text-success me-1"></i>Venezolanos</span>
+                            <strong class="fs-4 text-dark">${venezolano.toLocaleString()}</strong>
+                            <span class="badge bg-success-subtle text-success ms-1.5 fw-semibold">${pctVen}%</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-globe2 text-warning me-1"></i>Extranjeros</span>
+                            <strong class="fs-4 text-dark">${extranjero.toLocaleString()}</strong>
+                            <span class="badge bg-warning-subtle text-warning ms-1.5 fw-semibold">${pctExt}%</span>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill" style="height:7px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: ${pctVen}%" title="Venezolanos ${pctVen}%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: ${pctExt}%" title="Extranjeros ${pctExt}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
 }
 
 // ====================================================================
@@ -916,9 +1216,33 @@ function renderTablaAprobMensual(datos) {
 // ─────────────────── TABLA DE CURSOS ────────────────────────────────
 // ====================================================================
 
-function renderTablaAprobCursos(cursos) {
+function renderTablaAprobCursos(cursos, criterio = 'total') {
     const tbody = document.getElementById('tablaAprobCursos');
+    const table = tbody?.closest('table');
+    const thead = table?.querySelector('thead');
     if (!tbody) return;
+
+    if (thead) {
+        let thDemografico = '<th>Participantes</th>';
+        if (criterio === 'mujeres') {
+            thDemografico = '<th class="text-danger"><i class="bi bi-gender-female me-1"></i>Mujeres (Part.)</th>';
+        } else if (criterio === 'hombres') {
+            thDemografico = '<th class="text-primary"><i class="bi bi-gender-male me-1"></i>Hombres (Part.)</th>';
+        } else if (criterio === 'discapacitados') {
+            thDemografico = '<th class="text-info"><i class="bi bi-person-wheelchair me-1"></i>Discapacitados (Part.)</th>';
+        } else if (criterio === 'extranjeros') {
+            thDemografico = '<th class="text-warning"><i class="bi bi-globe me-1"></i>Extranjeros (Part.)</th>';
+        }
+        thead.innerHTML = `<tr>
+            <th style="width:44px;"></th>
+            <th>Curso</th>
+            <th>Modalidad</th>
+            <th>Estado</th>
+            ${thDemografico}
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+        </tr>`;
+    }
 
     if (!cursos.length) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">No hay cursos con participantes para este año.</td></tr>`;
@@ -935,12 +1259,33 @@ function renderTablaAprobCursos(cursos) {
                            : (c.estatus || '').toLowerCase().includes('espera')  ? 'warning'
                            : 'secondary';
 
+        const totP = Number(c.total_participantes) || 1;
+        let metricCell = `<td><strong>${totP.toLocaleString()}</strong></td>`;
+
+        if (criterio === 'mujeres') {
+            const valM = Number(c.total_mujeres || 0);
+            const pct  = ((valM / totP) * 100).toFixed(1);
+            metricCell = `<td><strong class="text-danger">${valM.toLocaleString()}</strong> <small class="text-muted">(${pct}%)</small> <span class="text-muted ms-1 small">/ ${totP}</span></td>`;
+        } else if (criterio === 'hombres') {
+            const valH = Number(c.total_hombres || 0);
+            const pct  = ((valH / totP) * 100).toFixed(1);
+            metricCell = `<td><strong class="text-primary">${valH.toLocaleString()}</strong> <small class="text-muted">(${pct}%)</small> <span class="text-muted ms-1 small">/ ${totP}</span></td>`;
+        } else if (criterio === 'discapacitados') {
+            const valD = Number(c.total_discapacitados || 0);
+            const pct  = ((valD / totP) * 100).toFixed(1);
+            metricCell = `<td><strong class="text-info">${valD.toLocaleString()}</strong> <small class="text-muted">(${pct}%)</small> <span class="text-muted ms-1 small">/ ${totP}</span></td>`;
+        } else if (criterio === 'extranjeros') {
+            const valE = Number(c.total_extranjeros || 0);
+            const pct  = ((valE / totP) * 100).toFixed(1);
+            metricCell = `<td><strong class="text-warning">${valE.toLocaleString()}</strong> <small class="text-muted">(${pct}%)</small> <span class="text-muted ms-1 small">/ ${totP}</span></td>`;
+        }
+
         return `<tr class="curso-aprob-fila ${chk ? 'table-primary' : ''}" data-curso-id="${c.id}" data-curso-idx="${idx}" style="cursor:pointer;">
             <td><div class="form-check"><input class="form-check-input curso-aprob-cb" type="checkbox" value="${c.id}" ${chk}></div></td>
             <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${pal.border};margin-right:6px;"></span><strong>${c.nombre_curso}</strong></td>
             <td class="text-muted small">${c.modalidad || '—'}</td>
             <td><span class="badge bg-${estatusColor}">${c.estatus || '—'}</span></td>
-            <td><strong>${Number(c.total_participantes).toLocaleString()}</strong></td>
+            ${metricCell}
             <td class="small">${fi}</td>
             <td class="small">${ff}</td>
         </tr>`;
@@ -1272,7 +1617,7 @@ function renderGraficoAprob() {
 
             datasets.push({
                 label,
-                data:               datosAnio.map(m => m[t]),
+                data:               datosAnio.map(m => valorFiltradoAprob(m, t)),
                 borderColor:        colorBorde,
                 backgroundColor:    esBar ? colorAprobFill(t, anioIdx, 0.80) : colorAprobFill(t, anioIdx, 0.15),
                 borderWidth:        esBar ? 0 : 2.5,
@@ -1309,6 +1654,8 @@ function renderGraficoAprob() {
             interaction: { intersect: false, mode: 'index' }
         }
     });
+
+    renderDemografiaAprobWidget(años[años.length - 1] || anioAprobTabla || anioAprobBase);
 }
 
 function actualizarTituloAprobGrafico(tipos, años) {
@@ -1411,6 +1758,87 @@ function inicializarControlesAprobGrafico() {
     }
 
     sincronizarChipsAprobAnios();
+    inicializarControlesFiltroDemoAprob();
+    inicializarControlesCriterioCurso();
+}
+
+function inicializarControlesCriterioCurso() {
+    const grupo = document.getElementById('grupoCriterioCursoAprob');
+    if (!grupo) return;
+
+    grupo.querySelectorAll('.btn-criterio-curso').forEach(btn => {
+        const clonBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clonBtn, btn);
+    });
+
+    document.querySelectorAll('#grupoCriterioCursoAprob .btn-criterio-curso').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const crit = btn.dataset.criterio;
+            criterioCursoActual = crit;
+
+            document.querySelectorAll('#grupoCriterioCursoAprob .btn-criterio-curso').forEach(b => {
+                const activo = b.dataset.criterio === crit;
+                b.classList.toggle('active', activo);
+                if (activo) {
+                    b.className = 'btn btn-sm btn-secondary btn-criterio-curso active';
+                } else {
+                    const c = b.dataset.criterio;
+                    const btnClass = c === 'mujeres' ? 'btn-outline-danger' : c === 'hombres' ? 'btn-outline-primary' : c === 'discapacitados' ? 'btn-outline-info' : c === 'extranjeros' ? 'btn-outline-warning' : 'btn-outline-primary';
+                    b.className = `btn btn-sm ${btnClass} btn-criterio-curso`;
+                }
+            });
+
+            try {
+                const anio = anioAprobTabla || anioAprobBase;
+                const cursos = await cargarCursosAnio(anio, crit);
+                cursosAprobDisp = cursos;
+                renderTablaAprobCursos(cursos, crit);
+                actualizarVisualizacionCursos();
+            } catch (err) {
+                console.error('[Aprobados] Error cambiando criterio de cursos:', err);
+            }
+        });
+    });
+}
+
+function inicializarControlesFiltroDemoAprob() {
+    const btnToggle = document.getElementById('btnToggleFiltrosDemoAprob');
+    const panel = document.getElementById('panelFiltrosDemoAprob');
+    if (!btnToggle || !panel) return;
+
+    const clonBtn = btnToggle.cloneNode(true);
+    btnToggle.parentNode.replaceChild(clonBtn, btnToggle);
+
+    clonBtn.addEventListener('click', () => {
+        const abierto = clonBtn.dataset.abierto === '1';
+        clonBtn.dataset.abierto = abierto ? '0' : '1';
+        panel.style.display = abierto ? 'none' : 'block';
+        clonBtn.classList.toggle('btn-secondary', !abierto);
+        clonBtn.classList.toggle('btn-outline-secondary', abierto);
+    });
+
+    const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            filtroDemoAprob.genero = Array.from(panel.querySelectorAll('input[name="fGeneroAprob"]:checked')).map(c => c.value);
+            filtroDemoAprob.discapacidad = Array.from(panel.querySelectorAll('input[name="fDiscAprob"]:checked')).map(c => c.value);
+            filtroDemoAprob.nacionalidad = Array.from(panel.querySelectorAll('input[name="fNacAprob"]:checked')).map(c => c.value);
+            filtroDemoAprob.edadUmbral = Array.from(panel.querySelectorAll('input[name="fEdadAprob"]:checked')).map(c => c.value);
+
+            actualizarReporteAprobadosConFiltro();
+        });
+    });
+}
+
+function actualizarReporteAprobadosConFiltro() {
+    const anio = anioAprobTabla || anioAprobBase;
+    const cache = cacheAprobAnuales[anio] || datosAprobMensuales || [];
+    const datosFiltrados = filtrarMesesPorTiempo(cache);
+    const resumen = calcularResumenAprob(datosFiltrados);
+    renderKPIsAprob(resumen);
+    renderTablaAprobMensual(datosFiltrados);
+    renderGraficoAprob();
+    renderDemografiaAprobWidget(anio);
 }
 
 function sincronizarChipsAprobAnios() {

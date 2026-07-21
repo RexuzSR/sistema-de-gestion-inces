@@ -31,23 +31,43 @@ let filtroDemo = {
 // Seguimiento de peticiones en vuelo para evitar condiciones de carrera
 let peticionesEnCurso = {};
 
-// ── Colores ────────────────────────────────────────────────────────
+// ── Colores y Paleta de Comparación ────────────────────────────────
 const COLOR_BASE = {
-    nuevos: [23, 162, 184],
-    activos: [40, 167, 69],
-    retirados: [220, 53, 69]
+    nuevos: [2, 132, 199],      // #0284c7 (Cyan / Royal Blue)
+    activos: [16, 185, 129],    // #10b981 (Emerald Green)
+    retirados: [239, 68, 68]    // #ef4444 (Crimson Red)
 };
 
-function colorBordeParaAnio(tipo, idxAnio, totalAnios) {
-    const [r, g, b] = COLOR_BASE[tipo];
-    const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.50;
-    const h = v => Math.round(v * f).toString(16).padStart(2, '00');
+const PALETA_ANIOS = [
+    { border: '#0284c7', fill: 'rgba(2, 132, 199, 0.18)', badgeBg: '#0284c7', text: '#ffffff', dash: [] },        // Azul Cian (Año actual)
+    { border: '#10b981', fill: 'rgba(16, 185, 129, 0.15)', badgeBg: '#10b981', text: '#ffffff', dash: [6, 4] },  // Verde Esmeralda (1 año atrás)
+    { border: '#f59e0b', fill: 'rgba(245, 158, 11, 0.15)', badgeBg: '#f59e0b', text: '#ffffff', dash: [3, 3] },   // Naranja Ámbar (2 años atrás)
+    { border: '#8b5cf6', fill: 'rgba(139, 92, 246, 0.15)', badgeBg: '#8b5cf6', text: '#ffffff', dash: [8, 3, 2, 3] }, // Púrpura Violeta (3 años atrás)
+    { border: '#ec4899', fill: 'rgba(236, 72, 153, 0.15)', badgeBg: '#ec4899', text: '#ffffff', dash: [] }      // Rosa Carmesí (4+ años)
+];
+
+function getConfigColorAnio(idxAnio, totalAnios) {
+    if (totalAnios <= 1) return PALETA_ANIOS[0];
+    const posInvertida = (totalAnios - 1) - idxAnio;
+    return PALETA_ANIOS[posInvertida % PALETA_ANIOS.length];
+}
+
+function colorBordeParaAnio(tipo, idxAnio, totalAnios, nTipos = 1) {
+    if (totalAnios > 1 && nTipos === 1) {
+        return getConfigColorAnio(idxAnio, totalAnios).border;
+    }
+    const [r, g, b] = COLOR_BASE[tipo] || [2, 132, 199];
+    const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.45;
+    const h = v => Math.round(v * f).toString(16).padStart(2, '0');
     return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-function colorFillParaAnio(tipo, idxAnio, totalAnios, alpha = 0.18) {
-    const [r, g, b] = COLOR_BASE[tipo];
-    const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.50;
+function colorFillParaAnio(tipo, idxAnio, totalAnios, alpha = 0.18, nTipos = 1) {
+    if (totalAnios > 1 && nTipos === 1) {
+        return getConfigColorAnio(idxAnio, totalAnios).fill;
+    }
+    const [r, g, b] = COLOR_BASE[tipo] || [2, 132, 199];
+    const f = totalAnios <= 1 ? 1 : 1 - (idxAnio / (totalAnios - 1)) * 0.45;
     return `rgba(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)},${alpha})`;
 }
 
@@ -156,7 +176,13 @@ function calcularFactorFiltro(mesDatos, campo) {
         if (filtroDemo.discapacidad.includes('sin')) suma += demo.sinDisc || 0;
         factor *= (suma / total);
     }
-    if (filtroDemo.edadUmbral.length > 0) {
+    if (filtroDemo.nacionalidad && filtroDemo.nacionalidad.length > 0) {
+        let suma = 0;
+        if (filtroDemo.nacionalidad.includes('venezolano')) suma += demo.venezolano || 0;
+        if (filtroDemo.nacionalidad.includes('extranjero')) suma += demo.extranjero || 0;
+        factor *= (suma / total);
+    }
+    if (filtroDemo.edadUmbral && filtroDemo.edadUmbral.length > 0) {
         let suma = 0;
         if (filtroDemo.edadUmbral.includes('adolescente')) suma += demo.adolescente || 0;
         if (filtroDemo.edadUmbral.includes('adulto')) suma += demo.adulto || 0;
@@ -187,28 +213,33 @@ function hayFiltroActivo() {
 function calcularResumenFiltrado(datos) {
     const conDatos = datos.filter(m => m.nuevos !== null);
     if (!conDatos.length) return {
-        totalNuevos: 0, activos: 0, retirados: 0,
-        tasaRetencion: '—', totalAcumulado: 0
+        totalNuevos: 0, activos: datosEstadosSistema.estados['En formacion'] ?? 0, retirados: 0,
+        tasaRetencion: '100.0', totalAcumulado: 0
     };
 
-    let totalNuevos = 0, totalRetirados = 0;
+    let totalNuevos = 0, totalRetirados = 0, ultimoConActivos = 0;
     const ultimo = conDatos[conDatos.length - 1];
-    const activosUltimo = valorFiltrado(ultimo, 'activos') ?? 0;
-    const retUltimo = valorFiltrado(ultimo, 'retirados') ?? 0;
+    const activosUltimoMes = valorFiltrado(ultimo, 'activos') ?? 0;
 
     for (const m of conDatos) {
         const n = valorFiltrado(m, 'nuevos');
         if (n !== null) totalNuevos += n;
         const r = valorFiltrado(m, 'retirados');
         if (r !== null) totalRetirados += r;
+        const a = valorFiltrado(m, 'activos') ?? 0;
+        if (a > 0) ultimoConActivos = a;
     }
 
-    const tasa = activosUltimo > 0
-        ? ((activosUltimo - retUltimo) / activosUltimo * 100).toFixed(1)
-        : '—';
+    const activosEnFormacionSistema = datosEstadosSistema.estados['En formacion'] ?? 0;
+    const activos = activosUltimoMes > 0 ? activosUltimoMes : (activosEnFormacionSistema > 0 ? activosEnFormacionSistema : ultimoConActivos);
+
+    const baseRetencion = totalNuevos > 0 ? totalNuevos : (activos + totalRetirados);
+    const tasa = baseRetencion > 0
+        ? Math.max(0, ((baseRetencion - totalRetirados) / baseRetencion * 100)).toFixed(1)
+        : '100.0';
 
     return {
-        totalNuevos, activos: activosUltimo, retirados: totalRetirados,
+        totalNuevos, activos, retirados: totalRetirados,
         tasaRetencion: tasa, totalAcumulado: totalNuevos
     };
 }
@@ -346,26 +377,69 @@ function renderContenidoTP(añosDisp) {
     const svgPlus = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>`;
 
     contenEl.innerHTML = `
+        <!-- HEADER EJECUTIVO DEL REPORTE -->
+        <div class="card admin-header-card mb-4">
+            <div class="card-body p-3 p-md-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold px-2 py-1" style="font-size:0.75rem;">
+                                <i class="bi bi-shield-check me-1"></i>Panel Gerencial de Administración
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary fw-normal px-2 py-1" style="font-size:0.75rem;">
+                                Año base: ${hoy}
+                            </span>
+                        </div>
+                        <h4 class="fw-bold mb-1 text-dark" style="letter-spacing:-0.02em;">Total de Participantes</h4>
+                        <p class="text-muted small mb-0">Consolidado general de matriculación, avance de formación y retención institucional.</p>
+                    </div>
+                    
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <button type="button" class="btn btn-sm text-white fw-semibold shadow-sm px-3" style="background-color: #0284c7; border: none;" onclick="exportarPDFTotalParticipantes()">
+                            <i class="bi bi-printer-fill me-1"></i> Imprimir PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI CARDS Y PANEL DETALLE -->
         <div id="kpiCards"></div>
+        <div id="executiveInsights" style="display:none;"></div>
         <div id="panelDetalleWrapper" style="display:none;" class="mb-3"></div>
 
-        <!-- Controles gráfico — estructura unificada con RE-Curso-Total -->
-        <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body py-3">
-                <div class="d-flex flex-wrap align-items-start gap-3">
+        <!-- GRÁFICO PRINCIPAL Y CONTROLES ADJUNTOS -->
+        <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+            <!-- Header de Controles de la Gráfica -->
+            <div class="card-header bg-white border-bottom py-3">
+                <!-- Botones de ajuste rápido (presets) -->
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                    <span class="text-muted small fw-semibold me-1"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Comparaciones rápidas:</span>
+                    <button class="btn btn-sm btn-light border admin-preset-btn text-dark" id="btnPresetActual">
+                        📅 Año Actual (${hoy})
+                    </button>
+                    <button class="btn btn-sm btn-light border admin-preset-btn text-dark" id="btnPresetCompararAnt">
+                        📊 Vs. Año Anterior (${hoy - 1})
+                    </button>
+                    <button class="btn btn-sm btn-light border admin-preset-btn text-dark" id="btnPreset3Anios">
+                        📈 Tendencia 3 Años (${hoy - 2} - ${hoy})
+                    </button>
+                </div>
 
+                <!-- Herramientas de Personalización (Métricas, Años, Estilo) -->
+                <div class="d-flex flex-wrap align-items-start gap-3">
                     <!-- Dato a representar -->
                     <div style="flex:1 1 auto;min-width:220px;">
-                        <div class="rp-toolbar-label mb-2">Dato a representar</div>
+                        <div class="rp-toolbar-label mb-2"><i class="bi bi-layers-fill me-1"></i>Métricas a Representar</div>
                         <div class="d-flex flex-wrap gap-2">
                             <button class="btn btn-sm btn-outline-primary btn-tipo active" data-tipo="nuevos">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/><path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5"/></svg>Nuevos
+                                <i class="bi bi-person-plus-fill me-1"></i>Nuevos
                             </button>
                             <button class="btn btn-sm btn-outline-success btn-tipo" data-tipo="activos">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path fill-rule="evenodd" d="M15.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L12.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>Activos
+                                <i class="bi bi-person-check-fill me-1"></i>Activos
                             </button>
                             <button class="btn btn-sm btn-outline-danger btn-tipo" data-tipo="retirados">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path fill-rule="evenodd" d="M11 7.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5"/><path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></svg>Retirados
+                                <i class="bi bi-person-x-fill me-1"></i>Retirados
                             </button>
                             <button class="btn btn-sm btn-outline-secondary" id="btnLimpiarTipos">${svgX} Limpiar</button>
                         </div>
@@ -376,7 +450,7 @@ function renderContenidoTP(añosDisp) {
                     <!-- Años a comparar -->
                     <div style="flex:0 1 auto;min-width:200px;">
                         <div class="rp-toolbar-label mb-2">
-                            Años a comparar
+                            <i class="bi bi-calendar3 me-1"></i>Años a Comparar
                             <span id="tpAnioLimiteAviso" class="badge bg-warning text-dark ms-1" style="display:none;font-size:.65rem;">máx. ${MAX_ANIOS}</span>
                         </div>
                         <div class="d-flex align-items-center flex-wrap gap-2">
@@ -393,35 +467,40 @@ function renderContenidoTP(añosDisp) {
 
                     <!-- Tipo de gráfica -->
                     <div style="flex:0 0 auto;">
-                        <div class="rp-toolbar-label mb-2">Tipo de gráfica</div>
+                        <div class="rp-toolbar-label mb-2"><i class="bi bi-bar-chart-line-fill me-1"></i>Estilo de Gráfico</div>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-secondary btn-chart-type active" id="btnChartLine" data-tipo="line" title="Líneas">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/></svg> Líneas
+                                <i class="bi bi-graph-up me-1"></i> Líneas
                             </button>
                             <button class="btn btn-sm btn-outline-secondary btn-chart-type" id="btnChartBar" data-tipo="bar" title="Torres">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1z"/></svg> Torres
+                                <i class="bi bi-bar-chart-fill me-1"></i> Torres
                             </button>
                         </div>
                     </div>
-
                 </div>
             </div>
-        </div>
 
-        <!-- Gráfico -->
-        <div class="card border-0 shadow-sm mb-4">
+            <!-- Cuerpo del Gráfico -->
             <div class="card-body">
-                <h6 class="card-title mb-3 text-muted fw-semibold" id="tituloGrafico"></h6>
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <h6 class="card-title mb-0 text-dark fw-bold" id="tituloGrafico"></h6>
+                    <span class="badge bg-light text-secondary border small">
+                        <i class="bi bi-info-circle me-1"></i>Pasa el cursor sobre la gráfica para explorar datos
+                    </span>
+                </div>
                 <div id="graficoWrapper" class="rp-chart-wrap rp-chart-wrap--lg"></div>
+                
+                <!-- WIDGET DEMOGRÁFICO DE LA GRÁFICA -->
+                <div id="demografiaChartFooter" class="border-top pt-3 mt-4"></div>
             </div>
         </div>
 
-        <!-- Tabla mensual -->
+        <!-- TABLA MENSUAL -->
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
                     <div class="d-flex align-items-center gap-3 flex-wrap">
-                        <h5 class="card-title mb-0">
+                        <h5 class="card-title mb-0 fw-bold">
                             Registro Mensual — <span id="anioSeleccionado">${hoy}</span>
                         </h5>
                         <select id="selectAnioTabla" class="form-select form-select-sm" style="width:110px;">
@@ -429,22 +508,27 @@ function renderContenidoTP(añosDisp) {
                         </select>
                         <small id="subtituloFiltroDemo" class="text-muted" style="display:none;"></small>
                     </div>
-                    <button class="btn btn-sm btn-outline-secondary" id="btnToggleFiltrosDemo" data-abierto="0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" class="me-1 mb-1"><path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5z"/></svg>Filtrar por perfil
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="exportarPDFTotalParticipantes()">
+                            <i class="bi bi-printer me-1"></i>Imprimir PDF
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="btnToggleFiltrosDemo" data-abierto="0">
+                            <i class="bi bi-funnel-fill me-1"></i>Filtrar por Perfil
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Panel filtros demográficos -->
-                <div id="panelFiltrosDemo" style="display:none;" class="mb-3 p-3 rounded-3 bg-light">
+                <div id="panelFiltrosDemo" style="display:none;" class="mb-3 p-3 rounded-3 bg-light border">
                     <div class="d-flex flex-wrap gap-4 align-items-start">
                         <div class="rp-filter-group-item">
                             <label class="form-label fw-semibold small text-muted text-uppercase d-block">Género</label>
                             <div class="d-flex flex-wrap gap-2">
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fg_masculino" name="fGenero" value="masculino" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fg_masculino">Masculino</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fg_femenino" name="fGenero" value="femenino" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fg_femenino">Femenino</label>
                                 </div>
@@ -453,79 +537,92 @@ function renderContenidoTP(añosDisp) {
                         <div class="rp-filter-group-item">
                             <label class="form-label fw-semibold small text-muted text-uppercase d-block">Discapacidad</label>
                             <div class="d-flex flex-wrap gap-2">
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fd_con" name="fDisc" value="con" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fd_con">Con discapacidad</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fd_sin" name="fDisc" value="sin" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fd_sin">Sin discapacidad</label>
                                 </div>
                             </div>
                         </div>
-                        <div class="rp-filter-group-item rp-filter-group-item--wide">
-                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Rango de edad</label>
+                        <div class="rp-filter-group-item">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Nacionalidad / Origen</label>
                             <div class="d-flex flex-wrap gap-2">
-                                <div class="form-check">
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fn_venezolano" name="fNac" value="venezolano" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fn_venezolano">🇻🇪 Venezolano (V)</label>
+                                </div>
+                                <div class="form-check p-0">
+                                    <input class="btn-check" type="checkbox" id="fn_extranjero" name="fNac" value="extranjero" autocomplete="off">
+                                    <label class="btn btn-sm btn-outline-secondary" for="fn_extranjero">🌍 Extranjero (E)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rp-filter-group-item rp-filter-group-item--wide">
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Rango de Edad</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_adolescente" name="fEdad" value="adolescente" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_adolescente">Adolescentes (15-17)</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_adulto" name="fEdad" value="adulto" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_adulto">Adultos (18-59)</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_adultoMayor" name="fEdad" value="adultoMayor" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_adultoMayor">Adultos mayores (60+)</label>
                                 </div>
                             </div>
                         </div>
                         <div class="rp-filter-group-item rp-filter-group-item--wide">
-                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Estado actual</label>
+                            <label class="form-label fw-semibold small text-muted text-uppercase d-block">Estado Actual en Sistema</label>
                             <div class="d-flex flex-wrap gap-2">
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_en_formacion" name="fEstado" value="En formacion" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_en_formacion">En formación</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_disponible" name="fEstado" value="Disponible" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_disponible">Disponible</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_asignado" name="fEstado" value="Asignado" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_asignado">Asignado</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_inactivo" name="fEstado" value="Inactivo" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_inactivo">Inactivo</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_en_sistema" name="fEstado" value="En sistema" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_en_sistema">En sistema</label>
                                 </div>
-                                <div class="form-check">
+                                <div class="form-check p-0">
                                     <input class="btn-check" type="checkbox" id="fe_diferido" name="fEstado" value="Diferido" autocomplete="off">
                                     <label class="btn btn-sm btn-outline-secondary" for="fe_diferido">Diferido</label>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-2 text-end">
+                    <div class="mt-2 text-end border-top pt-2">
                         <button class="btn btn-sm btn-outline-danger" id="btnLimpiarFiltrosDemo">${svgX} Limpiar filtros</button>
                     </div>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-sm align-middle">
-                        <thead>
+                    <table class="table table-striped table-hover table-sm align-middle">
+                        <thead class="table-light">
                             <tr>
                                 <th>Mes</th>
-                                <th>Nuevos inscritos</th>
-                                <th>Activos (cursando)</th>
+                                <th>Nuevos Inscritos</th>
+                                <th>Activos (Cursando)</th>
                                 <th>Retirados / Baja</th>
-                                <th>Total acumulado</th>
+                                <th>Total Acumulado</th>
                                 <th>
-                                    Var. mensual (nuevos)
+                                    Var. Mensual (Nuevos)
                                     <span tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Diferencia de nuevos inscritos respecto al mes anterior."
                                         class="rp-tooltip-icon">!</span>
@@ -652,7 +749,178 @@ function actualizarSubtituloFiltro() {
     sub.style.display = 'block';
 }
 
-// ── KPI Cards ──────────────────────────────────────────────────────
+// ── KPI Cards & Executive Insights ──────────────────────────────────
+
+function renderExecutiveInsights(datos) {
+    const el = document.getElementById('executiveInsights');
+    if (!el) return;
+
+    const conDatos = (datos || []).filter(m => m.nuevos !== null);
+    if (!conDatos.length) {
+        el.style.display = 'none';
+        return;
+    }
+
+    let mesPico = conDatos[0];
+    let maxNuevos = valorFiltrado(conDatos[0], 'nuevos') ?? 0;
+    let sumaNuevos = 0;
+
+    conDatos.forEach(m => {
+        const n = valorFiltrado(m, 'nuevos') ?? 0;
+        sumaNuevos += n;
+        if (n > maxNuevos) {
+            maxNuevos = n;
+            mesPico = m;
+        }
+    });
+
+    const promedioMensual = (sumaNuevos / conDatos.length).toFixed(1);
+    const totalSistema = datosEstadosSistema.total || 1;
+    const activosEnFormacion = datosEstadosSistema.estados['En formacion'] ?? 0;
+    const pctFormacion = ((activosEnFormacion / totalSistema) * 100).toFixed(1);
+
+    el.innerHTML = `
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="admin-insights-card">
+                    <div class="admin-insight-title"><i class="bi bi-trophy-fill text-warning me-1"></i>Mes Pico de Inscripciones</div>
+                    <div class="admin-insight-val text-primary">${mesPico.mes}</div>
+                    <div class="admin-insight-sub"><strong>${maxNuevos.toLocaleString()}</strong> nuevos inscritos</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="admin-insights-card">
+                    <div class="admin-insight-title"><i class="bi bi-calculator-fill text-info me-1"></i>Promedio Mensual</div>
+                    <div class="admin-insight-val text-info">${promedioMensual}</div>
+                    <div class="admin-insight-sub">participantes / mes</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="admin-insights-card">
+                    <div class="admin-insight-title"><i class="bi bi-mortarboard-fill text-success me-1"></i>En Formación Activa</div>
+                    <div class="admin-insight-val text-success">${activosEnFormacion.toLocaleString()}</div>
+                    <div class="admin-insight-sub">${pctFormacion}% del total registrado</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="admin-insights-card">
+                    <div class="admin-insight-title"><i class="bi bi-calendar-check-fill text-dark me-1"></i>Meses Computados</div>
+                    <div class="admin-insight-val text-dark">${conDatos.length} Meses</div>
+                    <div class="admin-insight-sub">registrados en el período</div>
+                </div>
+            </div>
+        </div>`;
+    el.style.display = 'block';
+}
+
+function renderDemografiaChartWidget() {
+    const el = document.getElementById('demografiaChartFooter');
+    if (!el) return;
+
+    const totalSistema = datosEstadosSistema.total || 1;
+    const demo = datosEstadosSistema.demo || { masculino: 0, femenino: 0, conDisc: 0, sinDisc: 0, venezolano: 0, extranjero: 0 };
+    const pctM = ((demo.masculino / totalSistema) * 100).toFixed(1);
+    const pctF = ((demo.femenino / totalSistema) * 100).toFixed(1);
+    const pctDisc = ((demo.conDisc / totalSistema) * 100).toFixed(1);
+    const pctSinDisc = (100 - parseFloat(pctDisc)).toFixed(1);
+    const pctVen = ((demo.venezolano / totalSistema) * 100).toFixed(1);
+    const pctExt = ((demo.extranjero / totalSistema) * 100).toFixed(1);
+
+    el.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-circle">
+                    <i class="bi bi-person-bounding-box fs-6"></i>
+                </span>
+                <div>
+                    <h6 class="mb-0 text-dark fw-bold" style="font-size: .9rem;">Perfil Demográfico, Origen & Inclusión de la Muestra</h6>
+                    <small class="text-muted">Distribución consolidada por género, diversidad funcional y origen (nacional/extranjero)</small>
+                </div>
+            </div>
+            <span class="badge bg-light text-secondary border small">
+                <i class="bi bi-shield-check text-success me-1"></i>Consolidado Institucional
+            </span>
+        </div>
+        <div class="row g-3">
+            <!-- GÉNERO -->
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 rounded-3 bg-white border shadow-sm h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="fw-bold text-dark small text-uppercase"><i class="bi bi-people-fill text-primary me-1.5"></i>Género</span>
+                        <span class="badge bg-primary-subtle text-primary fw-semibold">${(demo.masculino + demo.femenino).toLocaleString()} Registrados</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-gender-male text-primary me-1"></i>Masculino</span>
+                            <strong class="fs-4 text-dark">${demo.masculino.toLocaleString()}</strong>
+                            <span class="badge bg-primary-subtle text-primary ms-1.5 fw-semibold">${pctM}%</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-gender-female text-danger me-1"></i>Femenino</span>
+                            <strong class="fs-4 text-dark">${demo.femenino.toLocaleString()}</strong>
+                            <span class="badge bg-danger-subtle text-danger ms-1.5 fw-semibold">${pctF}%</span>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill" style="height:7px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: ${pctM}%" title="Masculino ${pctM}%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: ${pctF}%" title="Femenino ${pctF}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIVERSIDAD FUNCIONAL -->
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 rounded-3 bg-white border shadow-sm h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="fw-bold text-dark small text-uppercase"><i class="bi bi-person-wheelchair text-info me-1.5"></i>Diversidad Funcional</span>
+                        <span class="badge bg-info-subtle text-info fw-semibold">${pctDisc}% Inclusión</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-check-circle-fill text-info me-1"></i>Con Discapacidad</span>
+                            <strong class="fs-4 text-info">${demo.conDisc.toLocaleString()}</strong>
+                            <span class="badge bg-info-subtle text-info ms-1.5 fw-semibold">${pctDisc}%</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-person-check text-secondary me-1"></i>Sin Discapacidad</span>
+                            <strong class="fs-4 text-dark">${demo.sinDisc.toLocaleString()}</strong>
+                            <span class="badge bg-light text-secondary border ms-1.5 fw-semibold">${pctSinDisc}%</span>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill" style="height:7px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: ${pctDisc}%" title="Con Discapacidad ${pctDisc}%"></div>
+                        <div class="progress-bar bg-secondary-subtle" role="progressbar" style="width: ${pctSinDisc}%" title="Sin Discapacidad ${pctSinDisc}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORIGEN / NACIONALIDAD -->
+            <div class="col-12 col-md-4">
+                <div class="p-3.5 rounded-3 bg-white border shadow-sm h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="fw-bold text-dark small text-uppercase"><i class="bi bi-globe text-success me-1.5"></i>Origen / Nacionalidad</span>
+                        <span class="badge bg-success-subtle text-success fw-semibold">${pctVen}% Nacional</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-flag-fill text-success me-1"></i>Venezolanos</span>
+                            <strong class="fs-4 text-dark">${demo.venezolano.toLocaleString()}</strong>
+                            <span class="badge bg-success-subtle text-success ms-1.5 fw-semibold">${pctVen}%</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted small d-block mb-1" style="font-size:0.78rem;"><i class="bi bi-globe2 text-warning me-1"></i>Extranjeros</span>
+                            <strong class="fs-4 text-dark">${demo.extranjero.toLocaleString()}</strong>
+                            <span class="badge bg-warning-subtle text-warning ms-1.5 fw-semibold">${pctExt}%</span>
+                        </div>
+                    </div>
+                    <div class="progress rounded-pill" style="height:7px; background-color: #f1f5f9;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: ${pctVen}%" title="Venezolanos ${pctVen}%"></div>
+                        <div class="progress-bar bg-warning" role="progressbar" style="width: ${pctExt}%" title="Extranjeros ${pctExt}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
 
 function renderKPIs(data) {
     const el = document.getElementById('kpiCards');
@@ -661,7 +929,7 @@ function renderKPIs(data) {
     const svgDown = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="me-1"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/></svg>`;
 
     let totalSistemaValor = datosEstadosSistema.total;
-    let totalSistemaSub = 'participantes registrados';
+    let totalSistemaSub = 'registrados en sistema';
     if (estadosFiltrados.length > 0) {
         const sumaFiltrada = estadosFiltrados.reduce((acc, est) => acc + (datosEstadosSistema.estados[est] ?? 0), 0);
         totalSistemaValor = `${sumaFiltrada} de ${datosEstadosSistema.total}`;
@@ -669,32 +937,37 @@ function renderKPIs(data) {
     }
 
     const cards = [
-        { tipo: 'total_sistema', valor: totalSistemaValor, label: 'Total en Sistema', sub: totalSistemaSub, color: 'info' },
-        { tipo: 'nuevos', valor: data.totalNuevos, label: 'Nuevos Participantes', sub: 'inscritos en el año', color: 'primary' },
-        { tipo: 'activos', valor: data.activos, label: 'Activos Actualmente', sub: 'cursando este mes', color: 'success' },
-        { tipo: 'retirados', valor: data.retirados, label: 'Finalizaron / Baja', sub: 'salidas acumuladas en el año', color: 'danger' },
-        { tipo: 'retencion', valor: `${data.tasaRetencion}%`, label: 'Tasa de Retención', sub: 'activos que no dieron baja', color: 'warning' }
+        { tipo: 'total_sistema', valor: totalSistemaValor, label: 'Total en Sistema', sub: totalSistemaSub, color: 'info', icon: 'bi-people-fill' },
+        { tipo: 'nuevos', valor: data.totalNuevos, label: 'Nuevos Inscritos', sub: 'inscritos en el año', color: 'primary', icon: 'bi-person-plus-fill' },
+        { tipo: 'activos', valor: data.activos, label: 'Activos Cursando', sub: 'cursando este mes', color: 'success', icon: 'bi-person-check-fill' },
+        { tipo: 'retirados', valor: data.retirados, label: 'Finalizaron / Baja', sub: 'salidas acumuladas', color: 'danger', icon: 'bi-person-x-fill' },
+        { tipo: 'retencion', valor: `${data.tasaRetencion}%`, label: 'Tasa de Retención', sub: 'activos conservados', color: 'warning', icon: 'bi-graph-up-arrow' }
     ];
 
-    el.innerHTML = `<div class="row mb-1">${cards.map(c => `
-        <div class="col-md">
-            <div class="card border-0 shadow-sm mb-3 kpi-card" role="button" data-tipo="${c.tipo}">
-                <div class="card-body text-center py-3">
-                    <h2 class="fw-bold text-${c.color} mt-2 mb-0" style="font-size: 1.8rem; white-space: nowrap;">
-                        ${typeof c.valor === 'number' ? c.valor.toLocaleString() : c.valor}
-                    </h2>
-                    <p class="rp-kpi-card-label">${c.label}</p>
-                    <p class="rp-kpi-card-sub">${c.sub}</p>
-                    <span class="badge bg-${c.color} bg-opacity-10 text-${c.color} small" id="badgePanel-${c.tipo}">
-                        ${svgDown}Ver detalle
-                    </span>
+    el.innerHTML = `<div class="row g-3 mb-3">${cards.map(c => `
+        <div class="col-12 col-sm-6 col-lg">
+            <div class="admin-kpi-card" role="button" data-tipo="${c.tipo}" data-color="${c.color}">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="admin-kpi-lbl">${c.label}</span>
+                    <div class="admin-kpi-icon admin-kpi-icon--${c.color}">
+                        <i class="bi ${c.icon}"></i>
+                    </div>
                 </div>
+                <div class="admin-kpi-val">
+                    ${typeof c.valor === 'number' ? c.valor.toLocaleString() : c.valor}
+                </div>
+                <div class="admin-kpi-sub">${c.sub}</div>
+                <span class="admin-kpi-badge bg-${c.color} bg-opacity-10 text-${c.color}" id="badgePanel-${c.tipo}">
+                    ${svgDown}Explorar detalle
+                </span>
             </div>
         </div>`).join('')}</div>`;
 
-    el.querySelectorAll('.kpi-card').forEach(card =>
+    el.querySelectorAll('.admin-kpi-card').forEach(card =>
         card.addEventListener('click', () => togglePanelDetalle(card.dataset.tipo))
     );
+
+    renderExecutiveInsights(datosMensuales);
 }
 
 // ── Panel de detalle ───────────────────────────────────────────────
@@ -1083,8 +1356,9 @@ function renderGrafico() {
     tipos.forEach((tipo, tipoIdx) => {
         años.forEach((anio, anioIdx) => {
             const datosAnio = cacheDatosAnuales[obtenerClaveCache(anio)] || [];
-            const colorBorde = colorBordeParaAnio(tipo, anioIdx, nAnios);
-            const colorFill = colorFillParaAnio(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.15));
+            const colorConfig = (nAnios > 1 && nTipos === 1) ? getConfigColorAnio(anioIdx, nAnios) : null;
+            const colorBorde = colorBordeParaAnio(tipo, anioIdx, nAnios, nTipos);
+            const colorFill = colorFillParaAnio(tipo, anioIdx, nAnios, esBar ? 0.75 : (unoTipo && unoAnio ? 0.22 : 0.15), nTipos);
 
             const datosBase = datosAnio.map(m => m[tipo] ?? null);
             const datos = usarDic
@@ -1099,7 +1373,7 @@ function renderGrafico() {
                 if (unoTipo) {
                     fillConf = anioIdx === nAnios - 1
                         ? { target: 'origin', above: colorFill }
-                        : { target: `+${nTipos}`, above: colorFill };
+                        : false;
                 } else if (unoAnio) {
                     const posOrden = tipos.indexOf(tipo);
                     fillConf = posOrden === nTipos - 1
@@ -1108,17 +1382,19 @@ function renderGrafico() {
                 }
             }
 
+            const isLatestYear = (anioIdx === nAnios - 1);
             const ds = {
                 label,
                 data: datos,
                 borderColor: colorBorde,
                 backgroundColor: colorFill,
-                borderWidth: esBar ? 0 : (unoTipo && unoAnio ? 2.5 : 2),
+                borderWidth: esBar ? 0 : (isLatestYear ? 2.8 : 2),
+                borderDash: (!esBar && colorConfig) ? colorConfig.dash : [],
                 fill: esBar ? false : fillConf,
                 tension: esBar ? 0 : 0.4,
                 borderRadius: esBar ? 4 : 0,
                 spanGaps: false,
-                order: tipoIdx * 100 + anioIdx
+                order: tipoIdx * 100 + (nAnios - anioIdx)
             };
 
             if (!esBar) {
@@ -1178,6 +1454,8 @@ function renderGrafico() {
             interaction: { intersect: false, mode: 'index' }
         }
     });
+
+    renderDemografiaChartWidget();
 }
 
 // ── Controles del gráfico ──────────────────────────────────────────
@@ -1210,6 +1488,45 @@ function inicializarControlesGrafico() {
         tiposActivos.clear();
         document.querySelectorAll('.btn-tipo').forEach(b => b.classList.remove('active'));
         renderGrafico();
+    });
+
+    // Preset Buttons
+    replaceListener('btnPresetActual', async () => {
+        const hoy = new Date().getFullYear();
+        aniosActivos = [hoy];
+        if (!añosGlobales.includes(hoy)) añosGlobales.push(hoy);
+        sincronizarChipsAnios();
+        renderGrafico();
+    });
+
+    replaceListener('btnPresetCompararAnt', async () => {
+        const hoy = new Date().getFullYear();
+        const prev = hoy - 1;
+        try {
+            await fetchDatosAnio(prev);
+            aniosActivos = [prev, hoy];
+            if (!añosGlobales.includes(prev)) añosGlobales.push(prev);
+            if (!añosGlobales.includes(hoy)) añosGlobales.push(hoy);
+            sincronizarChipsAnios();
+            renderGrafico();
+        } catch (e) {
+            console.error('Error al cargar año anterior:', e);
+        }
+    });
+
+    replaceListener('btnPreset3Anios', async () => {
+        const hoy = new Date().getFullYear();
+        const a1 = hoy - 2, a2 = hoy - 1, a3 = hoy;
+        try {
+            await fetchDatosAnio(a1);
+            await fetchDatosAnio(a2);
+            aniosActivos = [a1, a2, a3];
+            [a1, a2, a3].forEach(a => { if (!añosGlobales.includes(a)) añosGlobales.push(a); });
+            sincronizarChipsAnios();
+            renderGrafico();
+        } catch (e) {
+            console.error('Error al cargar 3 años:', e);
+        }
     });
 
     // Botones tipo de gráfica
@@ -1288,14 +1605,21 @@ function inicializarControlesGrafico() {
 function sincronizarChipsAnios() {
     const chips = document.getElementById('chipsAnios');
     if (!chips) return;
-    const svgX = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" fill="currentColor" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/></svg>`;
+    const svgX = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/></svg>`;
 
-    chips.innerHTML = aniosActivos.map(a =>
-        `<span class="rp-year-chip">
-            ${a}
-            <button class="btn-rm-anio rp-year-chip-remove" data-anio="${a}" title="Quitar ${a}">${svgX}</button>
-        </span>`
-    ).join('');
+    const años = [...aniosActivos].sort((a, b) => a - b);
+    const totalAnios = años.length;
+
+    chips.innerHTML = aniosActivos.map(a => {
+        const idx = años.indexOf(a);
+        const config = getConfigColorAnio(idx, totalAnios);
+        const style = `background-color: ${config.badgeBg}; color: ${config.text}; box-shadow: 0 2px 5px rgba(0,0,0,0.15); font-weight: 600;`;
+        return `<span class="badge d-inline-flex align-items-center gap-1 px-2.5 py-1.5 rounded-pill me-1 mb-1" style="${style}">
+            <i class="bi bi-circle-fill me-1" style="font-size:0.5rem; opacity:0.95;"></i>
+            <span style="font-size:0.8rem;">${a}</span>
+            <button class="btn-rm-anio border-0 bg-transparent text-white p-0 ms-1 d-inline-flex align-items-center" data-anio="${a}" title="Quitar ${a}" style="opacity:0.85; cursor:pointer;">${svgX}</button>
+        </span>`;
+    }).join('');
 
     chips.querySelectorAll('.btn-rm-anio').forEach(btn =>
         btn.addEventListener('click', () => {
@@ -1339,6 +1663,17 @@ function sincronizarCheckboxesEstados() {
     });
 }
 
+// ── Exportación a PDF ───────────────────────────────────────────────
+
+function exportarPDFTotalParticipantes() {
+    const btnPrint = document.getElementById('btn-print-report');
+    if (btnPrint) {
+        btnPrint.click();
+    } else {
+        window.print();
+    }
+}
+
 // ── Limpieza ───────────────────────────────────────────────────────
 
 function limpiarRecursosTotalParticipantes() {
@@ -1361,5 +1696,6 @@ function limpiarRecursosTotalParticipantes() {
 // ── Exports globales ───────────────────────────────────────────────
 window.cargarTotalParticipantes = cargarTotalParticipantes;
 window.limpiarRecursosTotalParticipantes = limpiarRecursosTotalParticipantes;
+window.exportarPDFTotalParticipantes = exportarPDFTotalParticipantes;
 
 console.log('RE-Participante-Total.js cargado (BD real — sin datos aleatorios)');

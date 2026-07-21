@@ -13,7 +13,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', 1);
     session_name('SISTEMA_CONTROL_INCES');
     session_start();
-}$conexion = new Conexion();
+}
+$conexion = new Conexion();
 $conn = $conexion->getConexion();
 
 $usuarioFull = 'Usuario no identificado';
@@ -70,7 +71,7 @@ if (!empty($estadosFiltrados)) {
 $filtrosHtml = "";
 if (!empty($filtrosActivos)) {
     $filtrosHtml = "<div class='filter-box'>
-        <strong>Filtros Activos:</strong> " . htmlspecialchars(implode(' · ', $filtrosActivos)) . "
+        <strong>Filtros Activos Aplicados:</strong> " . htmlspecialchars(implode(' · ', $filtrosActivos)) . "
     </div>";
 }
 
@@ -94,6 +95,9 @@ if (!empty($estadosFiltrados)) {
 }
 $nuevosVal = $resumen['totalNuevos'] ?? 0;
 $activosVal = $resumen['activos'] ?? 0;
+if ($activosVal == 0 && isset($datosEstadosSistema['estados']['En formacion']) && $datosEstadosSistema['estados']['En formacion'] > 0) {
+    $activosVal = $datosEstadosSistema['estados']['En formacion'];
+}
 $retiradosVal = $resumen['retirados'] ?? 0;
 $retencionVal = $resumen['tasaRetencion'] ?? '0.0';
 
@@ -110,11 +114,11 @@ $tablaEstadosHtml = "";
 foreach ($estadosDisponibles as $key => $label) {
     $val = $datosEstadosSistema['estados'][$key] ?? 0;
     $isFiltered = in_array($key, $estadosFiltrados);
-    $txtFiltered = $isFiltered ? "<span style='color:#198754; font-weight:bold;'>SÍ</span>" : "<span style='color:#64748b;'>NO</span>";
+    $txtFiltered = $isFiltered ? "<span style='color:#16a34a; font-weight:bold;'>SÍ</span>" : "<span style='color:#64748b;'>NO</span>";
     
     $tablaEstadosHtml .= "<tr>
         <td>{$label}</td>
-        <td style='text-align:center;'>".number_format($val, 0, '', '.')."</td>
+        <td style='text-align:center; font-weight:bold;'>".number_format($val, 0, '', '.')."</td>
         <td style='text-align:center;'>{$txtFiltered}</td>
     </tr>";
 }
@@ -135,7 +139,6 @@ if (!empty($panelData) && !empty($panelData['tipo']) && $panelData['tipo'] !== '
     $valoresPanel = $panelData['valores'] ?? [];
     
     if (!empty($aniosPanel) && !empty($mesesPanel)) {
-        $nCol = count($aniosPanel);
         $thAnios = "";
         foreach ($aniosPanel as $a) {
             $thAnios .= "<th style='text-align:center;'>{$a}</th>";
@@ -186,7 +189,7 @@ if (!empty($panelData) && !empty($panelData['tipo']) && $panelData['tipo'] !== '
     }
 }
 
-// Registro mensual y agrupaciones (Fase 2)
+// Registro mensual y agrupaciones
 $seccionMensualHtml = "";
 if (!empty($tablaMensual)) {
     $totalNuevos = 0;
@@ -207,7 +210,7 @@ if (!empty($tablaMensual)) {
         2 => ['label' => 'Semestre II (Jul-Dic)', 'nuevos' => 0, 'activos' => 0, 'retirados' => 0]
     ];
 
-    $anual = ['label' => 'Total Anual', 'nuevos' => 0, 'activos' => 0, 'retirados' => 0];
+    $anual = ['label' => 'Total Anual Consolidado', 'nuevos' => 0, 'activos' => 0, 'retirados' => 0];
     
     $filasMensual = "";
     foreach ($tablaMensual as $idx => $m) {
@@ -312,7 +315,7 @@ if (!empty($tablaMensual)) {
         </tfoot>
     </table>
     
-    <div class='section-title' style='margin-top:15px;'>Resumen de Agrupaciones (Trimestral, Semestral y Anual)</div>
+    <div class='section-title' style='margin-top:15px;'>Resumen de Agrupaciones Estratégicas (Trimestral, Semestral y Anual)</div>
     <table>
         <thead>
             <tr>
@@ -332,10 +335,48 @@ if (!empty($tablaMensual)) {
 $chartHtml = "";
 if (!empty($chartImageBase64) && strpos($chartImageBase64, 'data:image') === 0) {
     $chartHtml = "<div class='page-break'></div>
-    <div class='section-title'>Gráfico: Total de Participantes</div>
+    <div class='section-title'>Gráfico Comparativo de Matriculación</div>
     <div class='chart-box'>
-        <img src='{$chartImageBase64}' alt='Grafico'>
+        <img src='{$chartImageBase64}' alt='Gráfico Comparativo'>
     </div>";
+}
+
+// ── Insights Administrativos para PDF ──
+$mesPicoNombre = '—';
+$mesPicoValor = 0;
+$promedioMensual = '0,0';
+$activosFormacion = $datosEstadosSistema['estados']['En formacion'] ?? 0;
+$totalReg = ($datosEstadosSistema['total'] ?? 0) > 0 ? $datosEstadosSistema['total'] : 1;
+$pctFormacionActiva = number_format(($activosFormacion / $totalReg) * 100, 1, ',', '.');
+
+$demoGlobal = $datosEstadosSistema['demo'] ?? ['masculino' => 0, 'femenino' => 0, 'conDisc' => 0, 'sinDisc' => 0];
+$masculinoVal = $demoGlobal['masculino'] ?? 0;
+$femeninoVal = $demoGlobal['femenino'] ?? 0;
+$conDiscVal = $demoGlobal['conDisc'] ?? 0;
+$sinDiscVal = $demoGlobal['sinDisc'] ?? 0;
+
+$pctMasculino = number_format(($masculinoVal / $totalReg) * 100, 1, ',', '.');
+$pctFemenino = number_format(($femeninoVal / $totalReg) * 100, 1, ',', '.');
+$pctConDisc = number_format(($conDiscVal / $totalReg) * 100, 1, ',', '.');
+$pctSinDisc = number_format(($sinDiscVal / $totalReg) * 100, 1, ',', '.');
+
+if (!empty($tablaMensual)) {
+    $sumaNuevos = 0;
+    $cantMesesConDatos = 0;
+    foreach ($tablaMensual as $m) {
+        if (isset($m['nuevos']) && $m['nuevos'] !== null) {
+            $n = floatval($m['nuevos']);
+            $sumaNuevos += $n;
+            $cantMesesConDatos++;
+            if ($n > $mesPicoValor) {
+                $mesPicoValor = $n;
+                $mesPicoNombre = $m['mes'] ?? '—';
+            }
+        }
+    }
+    if ($cantMesesConDatos > 0) {
+        $promedioMensual = number_format($sumaNuevos / $cantMesesConDatos, 1, ',', '.');
+    }
 }
 
 $pathLogoGobierno = __DIR__ . '/../../../../assets/img/gobierno-logo.png';
@@ -358,6 +399,19 @@ $pdfData = [
     'activosVal' => $activosVal,
     'retiradosVal' => $retiradosVal,
     'retencionVal' => $retencionVal,
+    'mesPicoNombre' => $mesPicoNombre,
+    'mesPicoValor' => $mesPicoValor,
+    'promedioMensual' => $promedioMensual,
+    'activosFormacion' => $activosFormacion,
+    'pctFormacionActiva' => $pctFormacionActiva,
+    'masculinoVal' => $masculinoVal,
+    'femeninoVal' => $femeninoVal,
+    'conDiscVal' => $conDiscVal,
+    'sinDiscVal' => $sinDiscVal,
+    'pctMasculino' => $pctMasculino,
+    'pctFemenino' => $pctFemenino,
+    'pctConDisc' => $pctConDisc,
+    'pctSinDisc' => $pctSinDisc,
     'tablaEstadosHtml' => $tablaEstadosHtml,
     'panelDetalleHtml' => $panelDetalleHtml,
     'seccionMensualHtml' => $seccionMensualHtml,

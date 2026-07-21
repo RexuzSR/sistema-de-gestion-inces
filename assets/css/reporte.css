@@ -1570,3 +1570,173 @@
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   ESTILOS EJECUTIVOS PARA REPORTES ADMINISTRATIVOS (UX/UI MEJORADO)
+   ══════════════════════════════════════════════════════════════════════ */
+
+.admin-header-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0 !important;
+    border-top: 4px solid #0284c7 !important;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
+.admin-preset-btn {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+.admin-preset-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+.admin-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 14px;
+    padding: 1.25rem 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    cursor: pointer;
+}
+
+.admin-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    transition: all 0.25s ease;
+}
+
+.admin-kpi-card[data-color="info"]::before    { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+.admin-kpi-card[data-color="primary"]::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.admin-kpi-card[data-color="success"]::before { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.admin-kpi-card[data-color="danger"]::before  { background: linear-gradient(90deg, #dc2626, #f87171); }
+.admin-kpi-card[data-color="warning"]::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+
+.admin-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07) !important;
+    border-color: #cbd5e1 !important;
+}
+
+.admin-kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.admin-kpi-icon--info    { background: rgba(2, 132, 199, 0.1); color: #0284c7; }
+.admin-kpi-icon--primary { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+.admin-kpi-icon--success { background: rgba(22, 163, 74, 0.1); color: #16a34a; }
+.admin-kpi-icon--danger  { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+.admin-kpi-icon--warning { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+
+.admin-kpi-val {
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+    margin-top: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.admin-kpi-lbl {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.admin-kpi-sub {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-bottom: 0.6rem;
+}
+
+.admin-kpi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+/* Insights ejecutuivos */
+.admin-insights-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    height: 100%;
+}
+.admin-insight-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+.admin-insight-val {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.1rem;
+}
+.admin-insight-sub {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+/* Tablas y toolbars */
+.admin-toolbar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+.rp-year-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+}
+.rp-year-chip-remove {
+    background: transparent;
+    border: none;
+    color: #3b82f6;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+.rp-year-chip-remove:hover {
+    color: #1d4ed8;
+}

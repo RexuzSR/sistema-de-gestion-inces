@@ -34,6 +34,10 @@ session_start();
     ══════════════════════════════════════════════════════════════ -->
     <div class="login-bg-image"></div>
 
+    <?php
+    $loginErrorMsg = $_SESSION['error_login'] ?? '';
+    ?>
+
     <!-- ══════════════════════════════════════════════════════════════
          CAPA 2 — PANEL + CARD
     ══════════════════════════════════════════════════════════════ -->
@@ -43,9 +47,9 @@ session_start();
             <!-- ── VISTA FORMULARIO ─────────────────────────────── -->
             <div class="card-form-view" id="cardFormView">
 
-                <!-- Banner de credenciales inválidas -->
+                <!-- Banner de credenciales inválidas o estado de usuario -->
                 <div class="credentials-error" id="credentialsError">
-                    Credenciales Inválidas. Verifica tu usuario y contraseña.
+                    <?php echo htmlspecialchars($loginErrorMsg ?: 'Credenciales Inválidas. Verifica tu usuario y contraseña.'); ?>
                 </div>
 
                 <!-- MARCA -->
@@ -121,11 +125,17 @@ session_start();
     </div>
 
     <!-- Pasamos el error de sesión PHP a JS de forma segura -->
-    <?php if (isset($_SESSION['error_login'])): ?>
-    <script>window.__loginError = true;</script>
+    <?php if (!empty($loginErrorMsg)): ?>
+    <script>
+        window.__loginError = true;
+        window.__loginErrorMessage = <?php echo json_encode($loginErrorMsg); ?>;
+    </script>
     <?php unset($_SESSION['error_login']); ?>
     <?php else: ?>
-    <script>window.__loginError = false;</script>
+    <script>
+        window.__loginError = false;
+        window.__loginErrorMessage = '';
+    </script>
     <?php endif; ?>
 
     <?php if (isset($_GET['logout']) && $_GET['logout'] == '1'): ?>

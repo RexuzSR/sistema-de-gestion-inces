@@ -71,12 +71,15 @@
 
     /* ── Helpers de estado ─────────────────────────────────────────── */
 
-    function showForm(withError) {
+    function showForm(withError, errorMessage) {
         cardFeedbackView.classList.remove('visible');
         cardFormView.classList.remove('hidden');
         btn.disabled = false;
 
         if (withError) {
+            if (errorMessage) {
+                credentialsError.textContent = errorMessage;
+            }
             credentialsError.classList.add('visible');
         }
     }
@@ -99,17 +102,16 @@
         feedbackSpinner.classList.add('hide');
         feedbackOk.classList.add('show');
         feedbackLabel.textContent = '¡Acceso concedido!';
-        // La redirección la maneja el servidor — no hacemos nada más
     }
 
-    function showErrorFeedback() {
+    function showErrorFeedback(msg) {
         feedbackSpinner.classList.add('hide');
         feedbackError.classList.add('show');
-        feedbackLabel.textContent = 'Credenciales incorrectas';
+        feedbackLabel.textContent = msg || 'Credenciales incorrectas';
 
         // Después de 1.6 s vuelve al formulario con el banner de error
         setTimeout(function () {
-            showForm(true);
+            showForm(true, msg);
         }, 1600);
     }
 
@@ -134,23 +136,21 @@
 
         fetch(form.action, {
             method:      'POST',
+            headers:     { 'X-Requested-With': 'XMLHttpRequest' },
             body:        formData,
-            redirect:    'follow',
             credentials: 'same-origin'
         })
         .then(function (response) {
-            var finalUrl = response.url;
-            var isLogin  = finalUrl.includes('index') || finalUrl.includes('login');
-
-            if (response.ok && !isLogin) {
-                // Credenciales correctas — servidor redirigió al dashboard
+            return response.json();
+        })
+        .then(function (data) {
+            if (data.success) {
                 showSuccess();
                 setTimeout(function () {
-                    window.location.href = finalUrl;
+                    window.location.href = data.redirect || 'Inicio.php';
                 }, 1200);
             } else {
-                // Servidor redirigió de vuelta al login → credenciales malas
-                showErrorFeedback();
+                showErrorFeedback(data.message || 'Credenciales incorrectas');
             }
         })
         .catch(function () {
@@ -176,7 +176,7 @@
        (por si el usuario llega al login con el error ya en sesión,
        por ejemplo tras un submit sin JS)                              */
     if (window.__loginError === true) {
-        showForm(true);
+        showForm(true, window.__loginErrorMessage);
     }
 
     /* ── Botón atrás (bfcache) ──────────────────────────────────────── */

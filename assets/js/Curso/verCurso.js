@@ -842,9 +842,9 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if (tipo === 'edad') {
         const edadVal = parseInt($row.attr('data-edad'));
         if (!isNaN(edadVal)) {
-          if (valor === '< 18 años') mostrar = (edadVal < 18);
-          else if (valor === '18-29 años') mostrar = (edadVal >= 18 && edadVal <= 29);
-          else if (valor === '30+ años') mostrar = (edadVal >= 30);
+          if (valor.includes('<18') || valor.includes('< 18')) mostrar = (edadVal < 18);
+          else if (valor.includes('18-29')) mostrar = (edadVal >= 18 && edadVal <= 29);
+          else if (valor.includes('30+')) mostrar = (edadVal >= 30);
         } else {
           mostrar = false;
         }
@@ -853,8 +853,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (valor === 'Con Discapacidad') mostrar = (disc === 'si');
         else mostrar = (disc === 'no');
       } else if (tipo === 'rendimiento') {
-        const rend = $row.attr('data-rendimiento') || $row.find('td:nth-child(6)').text().trim();
-        mostrar = (rend.toLowerCase() === valor.toLowerCase());
+        const rend = ($row.attr('data-rendimiento') || $row.find('td:nth-child(6)').text().trim()).toLowerCase();
+        const valLower = valor.toLowerCase();
+        if (valLower.startsWith('aprobado')) {
+          mostrar = rend.includes('aprobado');
+        } else if (valLower.startsWith('reprobado')) {
+          mostrar = rend.includes('reprobado');
+        } else if (valLower.startsWith('ausente')) {
+          mostrar = rend.includes('ausente');
+        } else {
+          mostrar = (rend === valLower);
+        }
       }
 
       if (mostrar) {
@@ -915,20 +924,34 @@ document.addEventListener('DOMContentLoaded', function () {
       } else if (tipo === 'edad') {
         const edadVal = parseInt($row.attr('data-edad'));
         if (!isNaN(edadVal)) {
-          if (valor === '< 18 años') mostrar = (edadVal < 18);
-          else if (valor === '18-29 años') mostrar = (edadVal >= 18 && edadVal <= 29);
-          else if (valor === '30+ años') mostrar = (edadVal >= 30);
+          if (valor.includes('<18') || valor.includes('< 18')) mostrar = (edadVal < 18);
+          else if (valor.includes('18-29')) mostrar = (edadVal >= 18 && edadVal <= 29);
+          else if (valor.includes('30+')) mostrar = (edadVal >= 30);
         }
       } else if (tipo === 'discapacidad') {
         const disc = $row.attr('data-discapacidad');
         if (valor === 'Con Discapacidad') mostrar = (disc === 'si');
         else mostrar = (disc === 'no');
       } else if (tipo === 'rendimiento') {
-        const rend = $row.attr('data-rendimiento') || $row.find('td:nth-child(6)').text().trim();
-        mostrar = (rend.toLowerCase() === valor.toLowerCase());
+        const rend = ($row.attr('data-rendimiento') || $row.find('td:nth-child(6)').text().trim()).toLowerCase();
+        const valLower = valor.toLowerCase();
+        if (valLower.startsWith('aprobado')) {
+          mostrar = rend.includes('aprobado');
+        } else if (valLower.startsWith('reprobado')) {
+          mostrar = rend.includes('reprobado');
+        } else if (valLower.startsWith('ausente')) {
+          mostrar = rend.includes('ausente');
+        } else {
+          mostrar = (rend === valLower);
+        }
       }
 
       if (mostrar) {
+        let col6Html = '';
+        if ($row.find('td:nth-child(6)').length > 0) {
+          col6Html = `<td style="padding: 12px;">${$row.find('td:nth-child(6)').html()}</td>`;
+        }
+
         $tablaDestino.append(`
           <tr class="ver-participante-row" data-id="${$row.attr('data-id')}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
             <td style="padding: 12px; color: #1e293b;">${ced}</td>
@@ -938,6 +961,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <td style="padding: 12px;">
               <span class="${sexoClass}">${sexoText}</span>
             </td>
+            ${col6Html}
           </tr>
         `);
         coincidentes++;

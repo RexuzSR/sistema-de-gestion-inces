@@ -14,11 +14,11 @@ class Usuario {
 // Método para iniciar sesión
 public function iniciarSesion($nombre_usuario, $contraseña) {
     try {
-        // CONSULTA CORREGIDA - Usando los nombres correctos de campos de la tabla
+        // Usar BINARY para obligar a que la comparación de nombre_usuario sea estrictamente case-sensitive
         $sql = "SELECT id_usuario, nombre_usuario, password, rol, estado_usuario, 
                        primer_nombre, primer_apellido, imagen 
                 FROM tb_usuario 
-                WHERE nombre_usuario = :nombre_usuario";
+                WHERE BINARY nombre_usuario = :nombre_usuario";
         
         error_log("Consulta SQL: " . $sql);
         error_log("Buscando usuario: " . $nombre_usuario);
@@ -29,22 +29,23 @@ public function iniciarSesion($nombre_usuario, $contraseña) {
         
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($usuario) {
+        // Validar coincidencia exacta de mayúsculas/minúsculas
+        if ($usuario && $usuario['nombre_usuario'] === $nombre_usuario) {
             error_log("Usuario encontrado en BD: " . print_r($usuario, true));
             
-            // Verificar si el usuario está activo
-            if ($usuario['estado_usuario'] !== 'Activo') {
-                error_log("Usuario inactivo: " . $usuario['estado_usuario']);
-                return "Usuario inactivo. Contacte al administrador.";
-            }
-
-            // Verificar la contraseña
+            // 1. Verificar la contraseña primero
             error_log("Contraseña recibida: '$contraseña'");
             error_log("Hash en BD: " . $usuario['password']);
             
             if (password_verify($contraseña, $usuario['password'])) {
                 error_log("Contraseña VERIFICADA correctamente");
                 
+                // 2. Verificar si el usuario está activo sólo si la contraseña es correcta
+                if ($usuario['estado_usuario'] !== 'Activo') {
+                    error_log("Usuario inactivo: " . $usuario['estado_usuario']);
+                    return "Usuario inactivo. Contacte al administrador.";
+                }
+
                 // Iniciar sesión - Usando los nombres correctos de campos
                 $_SESSION['id_usuario'] = $usuario['id_usuario'];
                 $_SESSION['nombre_usuario'] = $usuario['nombre_usuario'];
@@ -72,7 +73,7 @@ public function iniciarSesion($nombre_usuario, $contraseña) {
             }
         } else {
             error_log("Usuario NO encontrado en BD: " . $nombre_usuario);
-            return "Usuario no encontrado";
+            return "Credenciales incorrectas";
         }
     } catch (PDOException $e) {
         error_log("ERROR PDO en iniciarSesion: " . $e->getMessage());
