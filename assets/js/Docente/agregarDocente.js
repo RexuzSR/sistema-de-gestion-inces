@@ -56,10 +56,10 @@ $(document).ready(function () {
     const validaciones = {
         cedula: function () {
             const val = $('#cedula').val().trim();
-            const isValid = /^\d{7,9}$/.test(val);
+            const isValid = /^\d{7,8}$/.test(val);
             mostrarError('cedula', !isValid);
             if (!isValid && val.length > 0) {
-                $('#error-cedula').text(val.length < 7 ? 'Mínimo 7 caracteres' : (val.length > 9 ? 'Máximo 9 caracteres' : 'Cédula inválida'));
+                $('#error-cedula').text(val.length < 7 ? 'Mínimo 7 caracteres' : (val.length > 8 ? 'Máximo 8 caracteres' : 'Cédula inválida (7-8 dígitos)'));
             } else if (!isValid) {
                 $('#error-cedula').text('Campo obligatorio');
             }

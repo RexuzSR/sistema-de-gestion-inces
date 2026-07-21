@@ -2,6 +2,16 @@
 $(document).ready(function () {
     const $form = $('#form-participante');
 
+    // Configurar límites dinámicos de fecha de nacimiento (rango de 15 a 75 años)
+    const todayObj = new Date();
+    const yyyyVal = todayObj.getFullYear();
+    const mmVal = String(todayObj.getMonth() + 1).padStart(2, '0');
+    const ddVal = String(todayObj.getDate()).padStart(2, '0');
+    $('#fecha_nacimiento').attr({
+        'max': `${yyyyVal - 15}-${mmVal}-${ddVal}`,
+        'min': `${yyyyVal - 75}-${mmVal}-${ddVal}`
+    });
+
     // Funciones de validación
     function mostrarError(campoId, show = true) {
         const $campo = $(`#${campoId}`);
@@ -66,11 +76,11 @@ $(document).ready(function () {
     const validaciones = {
         cedula: function () {
             const val = $('#cedula').val().trim();
-            const isValid = /^\d{7,9}$/.test(val);
+            const isValid = /^\d{7,8}$/.test(val);
             mostrarError('cedula', !isValid);
             // Optionally set custom message if invalid
             if (!isValid && val.length > 0) {
-                $('#error-cedula').text(val.length < 7 ? 'Mínimo 7 caracteres' : (val.length > 9 ? 'Máximo 9 caracteres' : 'Cédula inválida'));
+                $('#error-cedula').text(val.length < 7 ? 'Mínimo 7 caracteres' : (val.length > 8 ? 'Máximo 8 caracteres' : 'Cédula inválida (7-8 dígitos)'));
             } else if (!isValid) {
                 $('#error-cedula').text('Campo obligatorio');
             }
@@ -103,13 +113,20 @@ $(document).ready(function () {
             const val = $('#fecha_nacimiento').val();
             if (!val) {
                 mostrarError('fecha_nacimiento');
+                $('#edad_calculada').val('--');
                 return false;
             }
-            const birthDate = new Date(val);
+            const birthDate = new Date(val + 'T00:00:00');
             const today = new Date();
             let age = today.getFullYear() - birthDate.getFullYear();
             const monthDiff = today.getMonth() - birthDate.getMonth();
             if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+
+            if (!isNaN(age) && age >= 0 && age <= 120) {
+                $('#edad_calculada').val(age);
+            } else {
+                $('#edad_calculada').val('--');
+            }
 
             const isValid = age >= 15 && age <= 75;
             mostrarError('fecha_nacimiento', !isValid);
@@ -305,7 +322,7 @@ $(document).ready(function () {
     $('#prefijo_telefono').on('change', validaciones.telefono);
 
     $('#correo').on('input', validaciones.correo);
-    $('#fecha_nacimiento').on('change', validaciones.fecha_nacimiento);
+    $('#fecha_nacimiento').on('change input', validaciones.fecha_nacimiento);
     $('input[name="genero"]').on('change', validaciones.genero);
 
     // Envío del formulario

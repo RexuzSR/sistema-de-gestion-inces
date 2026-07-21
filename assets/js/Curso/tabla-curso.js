@@ -100,6 +100,18 @@ $(document).ready(function () {
             $('#kpi-cupos').text(cuposLibres);
             $('#kpi-cupos-total').text(' / ' + totalCupos);
         }
+
+        // Actualizar etiqueta e info tooltip del KPI Total según el filtro de año
+        const is2026 = $('#anio_filter').val() === '2026';
+        if (is2026) {
+            $('#kpi-total-label').text('Total 2026');
+            const tooltipMsg = 'Mostrando total de cursos del año 2026. Haz clic para alternar a Total Cursos (Todos).';
+            $('#kpi-total-info').attr('data-bs-original-title', tooltipMsg).attr('title', tooltipMsg);
+        } else {
+            $('#kpi-total-label').text('Total Cursos');
+            const tooltipMsg = 'Total de todos los cursos registrados. Haz clic para alternar a Cursos 2026.';
+            $('#kpi-total-info').attr('data-bs-original-title', tooltipMsg).attr('title', tooltipMsg);
+        }
         
         // Resumen Contextual
         let summaryText = `Actualmente existen <strong>${totalCursos}</strong> cursos filtrados: <strong>${enProceso}</strong> en proceso, <strong>${enEspera}</strong> en espera, <strong>${diferidos}</strong> diferidos y <strong>${culminados}</strong> culminados.`;
@@ -355,12 +367,48 @@ $(document).ready(function () {
                                 </svg>
                             </button>
                     
-                            <button class='button participante' title="Asignar Participantes" data-id="${curso.id_curso}" data-bs-toggle='modal' data-bs-target='#modal-participanteCurso'>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#fff" class="bi bi-person-add" viewBox="0 0 16 16">
-                                <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/>
-                                <path d="M8.256 14a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z"/>
-                                </svg>
-                            </button>
+                            <?php
+                            // Evaluar disponibilidad para asignación de participantes
+                            ?>
+                            ${(() => {
+                                const esReiniciado = parseInt(curso.reiniciado, 10) === 1;
+                                let puedeAsignar = true;
+                                let motivoAsignar = "Asignar Participantes";
+
+                                if (cuposDisponibles <= 0) {
+                                    puedeAsignar = false;
+                                    motivoAsignar = `Sin cupos libres (${inscritos}/${maxPart} cupos ocupados)`;
+                                } else if (estatusReal === 'Culminado' || String(curso.id_estatusCurso) === '5') {
+                                    puedeAsignar = false;
+                                    motivoAsignar = 'No se pueden asignar participantes (Curso Culminado)';
+                                } else if (estatusReal === 'Diferido' || String(curso.id_estatusCurso) === '2') {
+                                    puedeAsignar = false;
+                                    motivoAsignar = 'No se pueden asignar participantes (Curso Diferido)';
+                                } else if (estatusReal === 'En pausa' || String(curso.id_estatusCurso) === '4') {
+                                    puedeAsignar = false;
+                                    motivoAsignar = 'No se pueden asignar participantes (Curso en Pausa)';
+                                } else if (estatusReal === 'Inactivo' || String(curso.id_estatusCurso) === '6') {
+                                    puedeAsignar = false;
+                                    motivoAsignar = 'No se pueden asignar participantes (Curso Inactivo)';
+                                } else if (esReiniciado) {
+                                    puedeAsignar = false;
+                                    motivoAsignar = 'No se pueden asignar participantes (Curso histórico reiniciado)';
+                                }
+
+                                return puedeAsignar
+                                    ? `<button class='button participante' title="${motivoAsignar}" data-id="${curso.id_curso}" data-bs-toggle='modal' data-bs-target='#modal-participanteCurso'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#fff" class="bi bi-person-add" viewBox="0 0 16 16">
+                                            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/>
+                                            <path d="M8.256 14a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z"/>
+                                            </svg>
+                                       </button>`
+                                    : `<button class='button participante disabled' title="${motivoAsignar}" disabled style="background: linear-gradient(135deg, #cbd5e1, #94a3b8) !important; box-shadow: none !important; opacity: 0.6; cursor: not-allowed !important; pointer-events: auto !important;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#fff" class="bi bi-person-add" viewBox="0 0 16 16">
+                                            <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/>
+                                            <path d="M8.256 14a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z"/>
+                                            </svg>
+                                       </button>`;
+                            })()}
 
                             <button class='button config' title="Calificación" data-id="${curso.id_curso}" data-bs-toggle='modal' data-bs-target='#cursoModal'>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear" viewBox="0 0 16 16">
@@ -722,6 +770,17 @@ $(document).ready(function () {
             $kpiCard.find('.kpi-info-icon').attr('data-bs-original-title', titleMsg).attr('title', titleMsg);
         }
     }
+
+    // Evento de clic para alternar la tarjeta Total Cursos entre Todos los Cursos y Cursos del 2026
+    $(document).on('click', '.kpi-total', function () {
+        const currentYear = $('#anio_filter').val();
+        $('#estado_filter').val('');
+        if (currentYear === '2026') {
+            $('#anio_filter').val('').trigger('change');
+        } else {
+            $('#anio_filter').val('2026').trigger('change');
+        }
+    });
 
     // Inicializar tabla la primera vez
     initTabla();

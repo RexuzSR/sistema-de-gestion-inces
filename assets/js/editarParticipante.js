@@ -2,6 +2,16 @@
 $(document).ready(function () {
     const $formEdit = $('#form-editar-participante');
 
+    // Configurar límites dinámicos de fecha de nacimiento (rango de 15 a 75 años)
+    const todayObj = new Date();
+    const yyyyVal = todayObj.getFullYear();
+    const mmVal = String(todayObj.getMonth() + 1).padStart(2, '0');
+    const ddVal = String(todayObj.getDate()).padStart(2, '0');
+    $formEdit.find('#fecha_nacimiento-Edit').attr({
+        'max': `${yyyyVal - 15}-${mmVal}-${ddVal}`,
+        'min': `${yyyyVal - 75}-${mmVal}-${ddVal}`
+    });
+
     // Funciones de validación contextualizadas
     function mostrarError(campoId, mensaje) {
         $formEdit.find(`#${campoId}`).addClass('is-invalid').removeClass('is-valid');
@@ -37,10 +47,10 @@ $(document).ready(function () {
             const valor = $formEdit.find('#cedula-Edit').val().trim();
             const idParticipante = $formEdit.find('#idParticipante').val();
 
-            if (!/^\d{7,9}$/.test(valor)) {
+            if (!/^\d{7,8}$/.test(valor)) {
                 const msg = valor.length === 0
                     ? 'Campo obligatorio'
-                    : (valor.length < 7 ? 'Mínimo 7 caracteres' : (valor.length > 9 ? 'Máximo 9 caracteres' : 'Cédula inválida'));
+                    : (valor.length < 7 ? 'Mínimo 7 caracteres' : (valor.length > 8 ? 'Máximo 8 caracteres' : 'Cédula inválida (7-8 dígitos)'));
                 mostrarError('cedula-Edit', msg);
                 return false;
             }
@@ -92,19 +102,27 @@ $(document).ready(function () {
             const fechaInput = $formEdit.find('#fecha_nacimiento-Edit').val();
             if (!fechaInput) {
                 mostrarError('fecha_nacimiento-Edit', 'Campo obligatorio');
+                $formEdit.find('#edad_calculada-Edit').val('--');
                 return false;
             }
 
-            const fecha = new Date(fechaInput);
-            const hoy = new Date();
-            const minEdad = new Date(hoy.getFullYear() - 75, hoy.getMonth(), hoy.getDate());
-            const maxEdad = new Date(hoy.getFullYear() - 15, hoy.getMonth(), hoy.getDate());
+            const birthDate = new Date(fechaInput + 'T00:00:00');
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
 
-            if (fecha > hoy) {
+            if (!isNaN(age) && age >= 0 && age <= 120) {
+                $formEdit.find('#edad_calculada-Edit').val(age);
+            } else {
+                $formEdit.find('#edad_calculada-Edit').val('--');
+            }
+
+            if (birthDate > today) {
                 mostrarError('fecha_nacimiento-Edit', 'Fecha futura no permitida');
                 return false;
             }
-            if (fecha < minEdad || fecha > maxEdad) {
+            if (age < 15 || age > 75) {
                 mostrarError('fecha_nacimiento-Edit', 'Edad debe ser entre 15 y 75 años');
                 return false;
             }
@@ -177,7 +195,7 @@ $(document).ready(function () {
 
     $formEdit.find('#prefijo_telefono-Edit').on('change', validaciones.telefono);
 
-    $formEdit.find('#fecha_nacimiento-Edit').on('change', validaciones.fecha_nacimiento);
+    $formEdit.find('#fecha_nacimiento-Edit').on('change input', validaciones.fecha_nacimiento);
     $formEdit.find('input[name="genero"]').on('change', validaciones.genero);
     $formEdit.find('#correo-Edit').on('input', validaciones.correo);
     $formEdit.find('#grado_institucion-Edit').on('change', validaciones.grado_institucion);

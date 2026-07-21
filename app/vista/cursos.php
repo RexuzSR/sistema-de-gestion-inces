@@ -142,14 +142,14 @@ if (!empty($imagenUsuario)) {
                     <div class="row g-3 mb-4 kpi-row">
                         <!-- Total Cursos -->
                         <div class="col-xl-2 col-md-4 col-sm-6">
-                            <div class="kpi-card kpi-total" style="cursor: pointer;" onclick="$('#estado_filter').val('').trigger('change');">
-                                <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de cursos registrados bajo los filtros seleccionados."></i>
+                            <div class="kpi-card kpi-total" style="cursor: pointer;" id="kpi-card-total">
+                                <i class="bi bi-info-circle kpi-info-icon" id="kpi-total-info" data-bs-toggle="tooltip" data-bs-placement="top" title="Haz clic para alternar entre Total Cursos y Cursos 2026."></i>
                                 <div class="kpi-icon-wrapper">
                                     <i class="bi bi-book-half"></i>
                                 </div>
                                 <div class="kpi-content">
                                     <span class="kpi-value" id="kpi-total">0</span>
-                                    <span class="kpi-label">Total Cursos</span>
+                                    <span class="kpi-label" id="kpi-total-label">Total Cursos</span>
                                 </div>
                             </div>
                         </div>

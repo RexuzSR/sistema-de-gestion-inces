@@ -160,7 +160,7 @@
                                     <label for="cedula" class="form-label" style="color: #475569; font-weight: 500; letter-spacing: 0.3px; margin-bottom: 8px;">
                                         CÉDULA <span style="color: #ef4444;">*</span>
                                     </label>
-                                    <input type="text" class="form-control neon-input" id="cedula" name="cedula" required maxlength="8" placeholder="Ingrese su cédula" style="
+                                    <input type="text" class="form-control neon-input" id="cedula" name="cedula" required maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);" placeholder="Ingrese su cédula" style="
                                         border: 1.5px solid #e2e8f0;
                                         border-radius: 16px;
                                         padding: 12px 18px;
@@ -294,22 +294,26 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="fechaNacimiento" class="form-label" style="color: #475569; font-weight: 500; letter-spacing: 0.3px; margin-bottom: 8px;">
-                                        FECHA DE NACIMIENTO <span style="color: #ef4444;">*</span>
-                                    </label>
-                                    <input type="date" class="form-control neon-input" id="fechaNacimiento" name="fechaNacimiento" required style="
-                                        border: 1.5px solid #e2e8f0;
-                                        border-radius: 16px;
-                                        padding: 11px 18px;
-                                        font-size: 0.95rem;
-                                        transition: all 0.3s ease;
-                                        background: #ffffff;
-                                    " onmouseover="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.1), 0 0 20px rgba(2,129,254,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.2), 0 0 25px rgba(2,129,254,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                                    <div class="invalid-feedback" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Edad debe ser entre 15 y 75 años</div>
-                                </div>
-                            </div>
+                            <?php
+                             $maxFechaNac = date('Y-m-d', strtotime('-15 years'));
+                             $minFechaNac = date('Y-m-d', strtotime('-75 years'));
+                             ?>
+                             <div class="col-md-6">
+                                 <div class="form-group">
+                                     <label for="fechaNacimiento" class="form-label" style="color: #475569; font-weight: 500; letter-spacing: 0.3px; margin-bottom: 8px;">
+                                         FECHA DE NACIMIENTO <span style="color: #ef4444;">*</span>
+                                     </label>
+                                     <input type="date" class="form-control neon-input" id="fechaNacimiento" name="fechaNacimiento" min="<?= $minFechaNac ?>" max="<?= $maxFechaNac ?>" required style="
+                                         border: 1.5px solid #e2e8f0;
+                                         border-radius: 16px;
+                                         padding: 11px 18px;
+                                         font-size: 0.95rem;
+                                         transition: all 0.3s ease;
+                                         background: #ffffff;
+                                     " onmouseover="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.1), 0 0 20px rgba(2,129,254,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#0281fe'; this.style.boxShadow='0 0 0 3px rgba(2,129,254,0.2), 0 0 25px rgba(2,129,254,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                     <div class="invalid-feedback" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Edad debe ser entre 15 y 75 años</div>
+                                 </div>
+                             </div>
                             
                             <div class="col-md-6">
                                 <div class="form-group">

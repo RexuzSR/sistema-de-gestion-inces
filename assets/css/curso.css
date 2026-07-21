@@ -224,6 +224,15 @@ search-bar {
     box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
 }
 
+.button.disabled,
+.button:disabled {
+    background: linear-gradient(135deg, #cbd5e1, #94a3b8) !important;
+    box-shadow: none !important;
+    opacity: 0.65 !important;
+    cursor: not-allowed !important;
+    pointer-events: auto !important;
+}
+
 .button.config {
     background: linear-gradient(135deg, #56555754, #aea7b144);
     box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);

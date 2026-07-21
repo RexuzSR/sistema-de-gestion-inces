@@ -153,7 +153,7 @@
                                 <option value="V" selected>V</option>
                                 <option value="E">E</option>
                             </select>
-                            <input type="number" class="form-control neon-input" id="cedula-Edit" name="cedula" required placeholder="Ingrese su cédula" style="
+                            <input type="number" class="form-control neon-input" id="cedula-Edit" name="cedula" required maxlength="8" oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);" placeholder="Ingrese su cédula" style="
                                 border: 1.5px solid #e2e8f0;
                                 border-radius: 0 12px 12px 0;
                                 padding: 10px 16px;
@@ -265,11 +265,15 @@
                     </div>
 
                     <!-- FECHA DE NACIMIENTO -->
-                    <div class="col-md-6">
+                    <?php
+                    $maxFechaNac = date('Y-m-d', strtotime('-15 years'));
+                    $minFechaNac = date('Y-m-d', strtotime('-75 years'));
+                    ?>
+                    <div class="col-md-4">
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
                             Fecha de Nacimiento <span style="color: #ef4444;">*</span>
                         </label>
-                        <input type="date" class="form-control neon-input" id="fecha_nacimiento-Edit" name="fecha_nacimiento" required style="
+                        <input type="date" class="form-control neon-input" id="fecha_nacimiento-Edit" name="fecha_nacimiento" min="<?= $minFechaNac ?>" max="<?= $maxFechaNac ?>" required style="
                             border: 1.5px solid #e2e8f0;
                             border-radius: 12px;
                             padding: 9px 16px;
@@ -280,8 +284,26 @@
                         <div class="invalid-feedback" id="error-fecha_nacimiento-Edit" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Edad debe ser entre 15 y 75 años</div>
                     </div>
 
+                    <!-- EDAD AUTOMÁTICA -->
+                    <div class="col-md-3">
+                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
+                            Edad
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control neon-input text-center fw-bold" id="edad_calculada-Edit" readonly placeholder="--" style="
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 12px 0 0 12px;
+                                padding: 9px 12px;
+                                font-size: 0.95rem;
+                                background: #f8fafc;
+                                color: #0f172a;
+                            ">
+                            <span class="input-group-text bg-light text-muted" style="border: 1.5px solid #e2e8f0; border-left: none; border-radius: 0 12px 12px 0; font-size: 0.85rem; font-weight: 500;">años</span>
+                        </div>
+                    </div>
+
                     <!-- GÉNERO -->
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
                             Género <span style="color: #ef4444;">*</span>
                         </label>

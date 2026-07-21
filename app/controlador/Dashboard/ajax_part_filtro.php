@@ -66,7 +66,7 @@ $sql = "
         p.primer_apellido,
         p.cedula,
         p.genero,
-        p.nacionalidad,
+        COALESCE(p.nacionalidad, IF(p.cedula >= 80000000, 'E', 'V')) AS nacionalidad,
         COALESCE(d.nombre_discapacidad, 'Ninguna') AS nombre_discapacidad,
         c.id_curso,
         c.nombre_curso,

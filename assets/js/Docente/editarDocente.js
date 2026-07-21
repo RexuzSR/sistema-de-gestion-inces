@@ -50,8 +50,8 @@ const validacionesEditDocente = {
             return false;
         }
 
-        if (!/^\d{7,9}$/.test(valor)) {
-            const msg = valor.length < 7 ? 'Mínimo 7 caracteres' : (valor.length > 9 ? 'Máximo 9 caracteres' : 'Cédula inválida');
+        if (!/^\d{7,8}$/.test(valor)) {
+            const msg = valor.length < 7 ? 'Mínimo 7 caracteres' : (valor.length > 8 ? 'Máximo 8 caracteres' : 'Cédula inválida (7-8 dígitos)');
             mostrarError('cedula-Edit', msg);
             return false;
         }

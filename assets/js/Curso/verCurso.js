@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
  
             $tablaParticipantes.append(`
-                <tr class="ver-participante-row" data-id="${p.id_participante}" data-genero="${sexoText}" data-edad="${edad}" data-discapacidad="${discId > 1 ? 'si' : 'no'}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
+                <tr class="ver-participante-row" data-id="${p.id_participante}" data-genero="${sexoText}" data-edad="${edad}" data-discapacidad="${discId > 1 ? 'si' : 'no'}" data-rendimiento="${p.estatus_participante || ''}" title="Haga clic para ver detalles del participante" style="cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor=''">
                   <td style="padding: 12px; color: #1e293b;">${ced}</td>
                   <td style="padding: 12px; color: #1e293b;">${nombre}</td>
                   <td style="padding: 12px; color: #1e293b;">${apellido}</td>
@@ -549,7 +549,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 callbacks: {
                   label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalGen * 100)}%)`
                 }
-              }
+              },
+              valoresDonut: { display: false }
             }
           },
           plugins: [{
@@ -558,18 +559,18 @@ document.addEventListener('DOMContentLoaded', function () {
               const { width, height, ctx } = chart;
               ctx.save();
               const totalVal = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
-              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.font = "bold 1.35rem 'Inter', sans-serif";
               ctx.textBaseline = "middle";
               ctx.fillStyle = "#0f172a";
               const text = totalVal.toString();
               const textX = Math.round((width - ctx.measureText(text).width) / 2);
-              const textY = (height / 2) - 8;
+              const textY = (height / 2) - 10;
               ctx.fillText(text, textX, textY);
               ctx.font = "600 0.65rem 'Inter', sans-serif";
               ctx.fillStyle = "#94a3b8";
               const label = "ALUMNOS";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
-              const labelY = (height / 2) + 14;
+              const labelY = (height / 2) + 12;
               ctx.fillText(label, labelX, labelY);
               ctx.restore();
             }
@@ -619,7 +620,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 callbacks: {
                   label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalEdad * 100)}%)`
                 }
-              }
+              },
+              valoresDonut: { display: false }
             }
           },
           plugins: [{
@@ -628,18 +630,18 @@ document.addEventListener('DOMContentLoaded', function () {
               const { width, height, ctx } = chart;
               ctx.save();
               const totalVal = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
-              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.font = "bold 1.35rem 'Inter', sans-serif";
               ctx.textBaseline = "middle";
               ctx.fillStyle = "#0f172a";
               const text = totalVal.toString();
               const textX = Math.round((width - ctx.measureText(text).width) / 2);
-              const textY = (height / 2) - 8;
+              const textY = (height / 2) - 10;
               ctx.fillText(text, textX, textY);
               ctx.font = "600 0.65rem 'Inter', sans-serif";
               ctx.fillStyle = "#94a3b8";
               const label = "EDADES";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
-              const labelY = (height / 2) + 14;
+              const labelY = (height / 2) + 12;
               ctx.fillText(label, labelX, labelY);
               ctx.restore();
             }
@@ -700,7 +702,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     return ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalDisc * 100)}%)`;
                   }
                 }
-              }
+              },
+              valoresDonut: { display: false }
             }
           },
           plugins: [{
@@ -709,18 +712,18 @@ document.addEventListener('DOMContentLoaded', function () {
               const { width, height, ctx } = chart;
               ctx.save();
               const totalVal = chart.data.datasets[0].data.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
-              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.font = "bold 1.35rem 'Inter', sans-serif";
               ctx.textBaseline = "middle";
               ctx.fillStyle = "#0f172a";
               const text = totalVal.toString();
               const textX = Math.round((width - ctx.measureText(text).width) / 2);
-              const textY = (height / 2) - 8;
+              const textY = (height / 2) - 10;
               ctx.fillText(text, textX, textY);
               ctx.font = "600 0.65rem 'Inter', sans-serif";
               ctx.fillStyle = "#94a3b8";
               const label = "TOTAL";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
-              const labelY = (height / 2) + 14;
+              const labelY = (height / 2) + 12;
               ctx.fillText(label, labelX, labelY);
               ctx.restore();
             }
@@ -776,7 +779,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 callbacks: {
                   label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed / totalRend * 100)}%)`
                 }
-              }
+              },
+              valoresDonut: { display: false }
             }
           },
           plugins: [{
@@ -784,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function () {
             beforeDraw: function(chart) {
               const { width, height, ctx } = chart;
               ctx.save();
-              ctx.font = "bold 1.6rem 'Inter', sans-serif";
+              ctx.font = "bold 1.35rem 'Inter', sans-serif";
               ctx.textBaseline = "middle";
               ctx.fillStyle = "#0f172a";
               
@@ -793,14 +797,14 @@ document.addEventListener('DOMContentLoaded', function () {
               const text = pct + "%";
               
               const textX = Math.round((width - ctx.measureText(text).width) / 2);
-              const textY = (height / 2) - 8;
+              const textY = (height / 2) - 10;
               ctx.fillText(text, textX, textY);
               
               ctx.font = "600 0.65rem 'Inter', sans-serif";
               ctx.fillStyle = "#94a3b8";
               const label = "APROBADOS";
               const labelX = Math.round((width - ctx.measureText(label).width) / 2);
-              const labelY = (height / 2) + 14;
+              const labelY = (height / 2) + 12;
               ctx.fillText(label, labelX, labelY);
               ctx.restore();
             }
@@ -848,6 +852,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const disc = $row.attr('data-discapacidad');
         if (valor === 'Con Discapacidad') mostrar = (disc === 'si');
         else mostrar = (disc === 'no');
+      } else if (tipo === 'rendimiento') {
+        const rend = $row.attr('data-rendimiento') || $row.find('td:nth-child(6)').text().trim();
+        mostrar = (rend.toLowerCase() === valor.toLowerCase());
       }
 
       if (mostrar) {
@@ -863,6 +870,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tipo === 'genero') textoFiltro = `Género: ${valor}`;
     else if (tipo === 'edad') textoFiltro = `Rango de Edad: ${valor}`;
     else if (tipo === 'discapacidad') textoFiltro = valor;
+    else if (tipo === 'rendimiento') textoFiltro = `Rendimiento: ${valor}`;
 
     $('#filtro-activo-texto').text(`${textoFiltro} (${coincidentes} encontrados)`);
     $('#filtro-activo-container').removeClass('d-none');
@@ -915,6 +923,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const disc = $row.attr('data-discapacidad');
         if (valor === 'Con Discapacidad') mostrar = (disc === 'si');
         else mostrar = (disc === 'no');
+      } else if (tipo === 'rendimiento') {
+        const rend = $row.attr('data-rendimiento') || $row.find('td:nth-child(6)').text().trim();
+        mostrar = (rend.toLowerCase() === valor.toLowerCase());
       }
 
       if (mostrar) {
@@ -938,6 +949,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tipo === 'genero') textoFiltro = `Género: ${valor}`;
     else if (tipo === 'edad') textoFiltro = `Rango de Edad: ${valor}`;
     else if (tipo === 'discapacidad') textoFiltro = valor;
+    else if (tipo === 'rendimiento') textoFiltro = `Rendimiento: ${valor}`;
 
     $('#filtrados-titulo-tab2').text(`${textoFiltro} (${coincidentes} alumnos)`);
     $('#filtrados-container-tab2').removeClass('d-none');

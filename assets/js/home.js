@@ -925,9 +925,12 @@ const pluginValoresDonut = {
     id: 'valoresDonut',
     afterDraw(chart) {
         if (chart.config.type !== 'doughnut') return;
+        if (chart.options?.plugins?.valoresDonut?.display === false || chart.options?.plugins?.valoresDonut === false) return;
         const { ctx, data } = chart;
         const meta = chart.getDatasetMeta(0);
         if (!meta || !meta.data) return;
+
+        const total = data.datasets[0].data.reduce((a, b) => a + (parseFloat(b) || 0), 0);
 
         meta.data.forEach((arc, i) => {
             const value = data.datasets[0].data[i];
@@ -935,8 +938,13 @@ const pluginValoresDonut = {
 
             const startAngle = arc.startAngle;
             const endAngle = arc.endAngle;
-            const midAngle = (startAngle + endAngle) / 2;
+            const arcLength = Math.abs(endAngle - startAngle);
+            const pct = total > 0 ? (value / total) * 100 : 0;
 
+            // Evitar encimamiento de números omitiendo segmentos pequeños (< 6% del total o arco < 0.38 rad)
+            if (arcLength < 0.38 || pct < 6) return;
+
+            const midAngle = (startAngle + endAngle) / 2;
             const innerR = arc.innerRadius;
             const outerR = arc.outerRadius;
             const midR = innerR + (outerR - innerR) * 0.58;
@@ -944,15 +952,12 @@ const pluginValoresDonut = {
             const x = arc.x + midR * Math.cos(midAngle);
             const y = arc.y + midR * Math.sin(midAngle);
 
-            const arcLength = Math.abs(endAngle - startAngle);
-            if (arcLength < 0.28) return;
-
             ctx.save();
-            ctx.font = 'bold 13px Roboto, sans-serif';
+            ctx.font = 'bold 12px Roboto, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.shadowColor = 'rgba(0,0,0,0.35)';
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
             ctx.shadowBlur = 3;
             ctx.fillText(value, x, y);
             ctx.restore();
