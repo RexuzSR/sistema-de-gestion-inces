@@ -34,6 +34,6 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // Redirigir al login
-header('Location: ../../../app/vista/index.php');
+header('Location: ../../../app/vista/index.php?logout=1');
 exit();
 ?>

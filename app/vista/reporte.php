@@ -175,7 +175,7 @@ $conn = null;
 
     function cerrarSesion() {
         fetch(LOGOUT_URL, { method: 'POST', credentials: 'same-origin' })
-            .finally(() => { window.location.href = LOGIN_URL; });
+            .finally(() => { window.location.replace(LOGIN_URL); });
     }
 
     // Cualquier actividad del usuario reinicia el contador

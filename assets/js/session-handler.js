@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (!data.valid) {
-                    window.location.href = 'index.php?session_expired=1';
+                    window.location.replace('index.php?session_expired=1');
                 }
             })
             .catch(() => {

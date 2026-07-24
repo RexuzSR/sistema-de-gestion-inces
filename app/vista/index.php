@@ -36,6 +36,11 @@ session_start();
 
     <?php
     $loginErrorMsg = $_SESSION['error_login'] ?? '';
+    if (isset($_GET['sesion']) && $_GET['sesion'] === 'expirada') {
+        $loginErrorMsg = 'Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente.';
+    } elseif (isset($_GET['session_expired']) && $_GET['session_expired'] == '1') {
+        $loginErrorMsg = 'Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente.';
+    }
     ?>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -145,5 +150,13 @@ session_start();
     <?php endif; ?>
 
     <script src="../../assets/js/login.js"></script>
+    <script>
+        if (window.history && window.history.pushState) {
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = function () {
+                window.history.pushState(null, null, window.location.href);
+            };
+        }
+    </script>
 </body>
 </html>
