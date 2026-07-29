@@ -118,6 +118,7 @@ $(document).ready(function () {
 
     // Validación de cédula para docentes
     $('#cedula').on('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
         const cedula = $(this).val().trim();
         clearTimeout(timeoutCedula);
         

@@ -153,17 +153,14 @@ $(document).ready(function () {
         },
 
         discapacidad: () => {
-            const valor = $formEdit.find('#id_discapacidad-Edit').val();
-            const isValid = valor !== "" && valor !== null;
-            return isValid
-                ? (mostrarValido('id_discapacidad-Edit'), true)
-                : (mostrarError('id_discapacidad-Edit', 'Seleccione una discapacidad'), false);
+            const isValid = $formEdit.find('.disc-checkbox-edit:checked').length > 0;
+            return isValid;
         }
     };
 
     // Eventos de validación
     $formEdit.find('#cedula-Edit').on('input', function () {
-        this.value = this.value.replace(/[^0-9]/g, '');
+        this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
         if (this.value.length > 9) this.value = this.value.slice(0, 9);
         validaciones.cedula();
     });
@@ -199,7 +196,19 @@ $(document).ready(function () {
     $formEdit.find('input[name="genero"]').on('change', validaciones.genero);
     $formEdit.find('#correo-Edit').on('input', validaciones.correo);
     $formEdit.find('#grado_institucion-Edit').on('change', validaciones.grado_institucion);
-    $formEdit.find('#id_discapacidad-Edit').on('change', validaciones.discapacidad);
+    // Interacción de selección múltiple de discapacidades en edición
+    $formEdit.find('.disc-checkbox-edit').on('change', function () {
+        const isNinguna = $(this).val() === '1';
+        if (isNinguna && $(this).is(':checked')) {
+            $formEdit.find('.disc-checkbox-edit').not(this).prop('checked', false);
+        } else if ($(this).is(':checked')) {
+            $formEdit.find('#disc-1-Edit').prop('checked', false);
+        }
+        if ($formEdit.find('.disc-checkbox-edit:checked').length === 0) {
+            $formEdit.find('#disc-1-Edit').prop('checked', true);
+        }
+        validaciones.discapacidad();
+    });
 
     // Cargar datos en el modal
     $(document).on('click', '.button.edit', function (e) {
@@ -260,7 +269,17 @@ $(document).ready(function () {
                     $('#correo-Edit').val(participante.correo);
                     $('#fecha_nacimiento-Edit').val(participante.fecha_nacimiento);
                     $('#grado_institucion-Edit').val(participante.grado_institucion);
-                    $('#id_discapacidad-Edit').val(participante.id_discapacidad || '');
+                    // Cargar discapacidades múltiples
+                    $('.disc-checkbox-edit').prop('checked', false);
+                    if (participante.discapacidades && participante.discapacidades.length > 0) {
+                        participante.discapacidades.forEach(id_disc => {
+                            $(`#disc-${id_disc}-Edit`).prop('checked', true);
+                        });
+                    } else {
+                        // Fallback a id_discapacidad si no hay datos en la tabla intermedia
+                        const fallbackId = participante.id_discapacidad || '1';
+                        $(`#disc-${fallbackId}-Edit`).prop('checked', true);
+                    }
 
                     // Seleccionar el género correcto
                     if (participante.genero === 'Masculino') {

@@ -253,6 +253,13 @@ class Curso {
         try {
             // Validar unicidad del preimpreso si se proporciona (el preimpreso es de formato libre de forma temporal)
             if (!empty($data['preimpreso'])) {
+                if (mb_strlen($data['preimpreso'], 'UTF-8') > 12) {
+                    return [
+                        "success" => false,
+                        "message" => "El código preimpreso no puede tener más de 12 caracteres.",
+                        "error" => "preimpreso_largo"
+                    ];
+                }
                 $colision = $this->validarUnicidadPreimpreso($data['preimpreso']);
                 if ($colision !== null) {
                     return [
@@ -687,6 +694,13 @@ class Curso {
         // Validar unicidad del preimpreso (el preimpreso es de formato libre de forma temporal)
         $nuevoPreimpreso = $data['preimpreso-Edit'] ?? $data['preimpreso'] ?? null;
         if (!empty($nuevoPreimpreso)) {
+            if (mb_strlen($nuevoPreimpreso, 'UTF-8') > 12) {
+                return [
+                    'success' => false,
+                    'message' => 'El código preimpreso no puede tener más de 12 caracteres.',
+                    'error' => 'preimpreso_largo'
+                ];
+            }
             $colision = $this->validarUnicidadPreimpreso($nuevoPreimpreso, $data['id_curso']);
             if ($colision !== null) {
                 return [
@@ -1508,6 +1522,13 @@ class Curso {
         if ($estadoActual === 5) {
             if (empty($preimpreso)) {
                 return ['success' => false, 'message' => 'El código preimpreso es obligatorio.', 'error' => 'preimpreso_vacio'];
+            }
+            if (mb_strlen($preimpreso, 'UTF-8') > 12) {
+                return [
+                    'success' => false,
+                    'message' => 'El código preimpreso no puede tener más de 12 caracteres.',
+                    'error' => 'preimpreso_largo'
+                ];
             }
             $colision = $this->validarUnicidadPreimpreso($preimpreso);
             if ($colision !== null) {

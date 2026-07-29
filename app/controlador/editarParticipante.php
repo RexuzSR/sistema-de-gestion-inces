@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $requiredFields = [
             'id_participante', 'primer_nombre', 'primer_apellido', 'cedula',
             'genero', 'correo', 'fecha_nacimiento',
-            'grado_institucion', 'id_discapacidad'
+            'grado_institucion'
         ];
         
         $missingFields = [];
@@ -43,6 +43,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Grado de instrucción no válido");
         }
 
+        // Procesar discapacidades múltiples y calcular id_discapacidad para retrocompatibilidad
+        $discapacidades = isset($_POST['discapacidades']) && is_array($_POST['discapacidades']) ? array_map('intval', $_POST['discapacidades']) : [1];
+        $id_discapacidad = 1;
+        foreach ($discapacidades as $id_d) {
+            if ($id_d > 1) {
+                $id_discapacidad = $id_d;
+                break;
+            }
+        }
+
         // Preparar datos según la estructura de la tabla tb_participante
         $data = [
             'id_participante' => $_POST['id_participante'],
@@ -50,12 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'segundo_nombre' => $_POST['segundo_nombre'] ?? null, // Campo opcional
             'primer_apellido' => $_POST['primer_apellido'],
             'segundo_apellido' => $_POST['segundo_apellido'] ?? null, // Campo opcional
-            'cedula' => $_POST['cedula'],
+            'cedula' => ltrim(trim($_POST['cedula']), '0'),
             'correo' => $_POST['correo'],
             'fecha_nacimiento' => $_POST['fecha_nacimiento'],
             'grado_institucion' => $_POST['grado_institucion'],
             'genero' => $_POST['genero'],
-            'id_discapacidad' => $_POST['id_discapacidad'],
+            'id_discapacidad' => $id_discapacidad,
+            'discapacidades' => $discapacidades,
             'telefono' => $_POST['telefono'] ?? null // Para tabla tb_telefono
         ];
 

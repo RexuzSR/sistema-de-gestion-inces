@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Preparar datos con validación
     $data = [
         'id_docente' => intval($_POST['id_docente']),
-        'cedula' => trim($_POST['cedula']),
+        'cedula' => ltrim(trim($_POST['cedula']), '0'),
         'telefono' => !empty($_POST['telefono']) ? trim($_POST['telefono']) : null,
         'primer_nombre' => trim($_POST['primer_nombre']),
         'segundo_nombre' => isset($_POST['segundo_nombre']) ? trim($_POST['segundo_nombre']) : null,

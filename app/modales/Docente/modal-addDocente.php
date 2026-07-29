@@ -160,7 +160,7 @@
                                     <label for="cedula" class="form-label" style="color: #475569; font-weight: 500; letter-spacing: 0.3px; margin-bottom: 8px;">
                                         CÉDULA <span style="color: #ef4444;">*</span>
                                     </label>
-                                    <input type="text" class="form-control neon-input" id="cedula" name="cedula" required maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);" placeholder="Ingrese su cédula" style="
+                                    <input type="text" class="form-control neon-input" id="cedula" name="cedula" required maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '').slice(0, 8);" placeholder="Ingrese su cédula" style="
                                         border: 1.5px solid #e2e8f0;
                                         border-radius: 16px;
                                         padding: 12px 18px;

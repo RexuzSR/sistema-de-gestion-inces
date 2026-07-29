@@ -127,9 +127,9 @@ $(document).ready(function() {
         });
     });
     
-    // Validar que la cédula solo tenga números
+    // Validar que la cédula solo tenga números y no empiece con 0
     $('#cedula').on('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
+        this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
     });
     
     // Calcular edad automáticamente cuando cambia la fecha de nacimiento

@@ -100,7 +100,7 @@
             <div class="row g-3">
               <div class="col-12 col-md-6">
                 <label for="preimpreso_Reinicio" class="form-label fw-semibold" style="color: #1e293b;">Código Preimpreso <span class="text-danger">*</span></label>
-                <input type="text" class="form-control border-2" id="preimpreso_Reinicio" placeholder="Ej. 111-2026" maxlength="50" required style="border-color: #cbd5e1; border-radius: 8px;">
+                <input type="text" class="form-control border-2" id="preimpreso_Reinicio" placeholder="Ej. 111-2026" maxlength="12" required style="border-color: #cbd5e1; border-radius: 8px;">
                 <small class="text-muted d-block mt-1" id="preimpreso-anterior-help">Preimpreso anterior: -</small>
                 <div class="text-danger small mt-1" id="error-preimpreso_Reinicio" style="display:none;"></div>
               </div>

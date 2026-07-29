@@ -175,13 +175,24 @@ let anioCmp = new Date().getFullYear();
         .cmp-duracion-restante.pendiente  { background: #fef3c7; color: #92400e; }
         .cmp-duracion-restante.sin-fecha  { background: #f1f5f9; color: #64748b; }
 
-        /* ── Métricas grandes del detalle ── */
         .cmp-metric-card {
             background: #f1f5f9; border-radius: 10px;
             padding: .75rem 1rem; text-align: center;
         }
         .cmp-metric-value { font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
         .cmp-metric-label { font-size: .85rem; color: #475569; margin-top: .2rem; }
+
+        .btn-view-info-curso {
+            background: #0a369d; color: white;
+            border-radius: 10px; padding: .75rem 1rem;
+            font-weight: 600; font-size: .9rem; border: none;
+            width: 100%; transition: all 0.2s ease;
+            display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+        }
+        .btn-view-info-curso:hover {
+            background: #0281fe; color: white; transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(2, 129, 254, 0.2);
+        }
     `;
     document.head.appendChild(s);
 })();
@@ -785,6 +796,9 @@ function renderCmp(datos) {
                         <div class="cmp-metric-value text-info" style="font-size:1.2rem;">${d.modalidad || 'N/D'}</div>
                         <div class="cmp-metric-label">Modalidad de Impartición</div>
                     </div>
+                    <button class="btn-view-info-curso view-curso-card mt-2" data-id="${d.id_curso}" data-bs-toggle="modal" data-bs-target="#modal-viewCurso">
+                        <i class="bi bi-info-circle me-1"></i> Ver info del curso
+                    </button>
                 </div>
             </div>`;
 

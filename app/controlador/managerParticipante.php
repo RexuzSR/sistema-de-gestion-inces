@@ -69,6 +69,20 @@ public function registrar($data) {
 
         $id_participante = $this->conn->lastInsertId();
 
+        // Registrar múltiples discapacidades
+        if (isset($data['discapacidades']) && is_array($data['discapacidades'])) {
+            $sqlDisc = "INSERT INTO tb_participante_discapacidad (id_participante, id_discapacidad) VALUES (:id_participante, :id_discapacidad)";
+            $stmtDisc = $this->conn->prepare($sqlDisc);
+            foreach ($data['discapacidades'] as $id_disc) {
+                if ((int)$id_disc > 1) {
+                    $stmtDisc->execute([
+                        ':id_participante' => $id_participante,
+                        ':id_discapacidad' => (int)$id_disc
+                    ]);
+                }
+            }
+        }
+
         try {
             if (isset($data['telefono']) && !empty($data['telefono'])) {
                 $sqlInsertTel = "INSERT INTO tb_telefono (numero_de_telefono, tipo_de_telefono, id_participante) 
@@ -260,6 +274,24 @@ public function eliminar($id) {
                 throw new Exception("Error al actualizar el participante en la base de datos");
             }
 
+            // Actualizar discapacidades múltiples
+            if (isset($data['discapacidades']) && is_array($data['discapacidades'])) {
+                $sqlDelDisc = "DELETE FROM tb_participante_discapacidad WHERE id_participante = :id_participante";
+                $stmtDelDisc = $this->conn->prepare($sqlDelDisc);
+                $stmtDelDisc->execute([':id_participante' => $data['id_participante']]);
+
+                $sqlInsertDisc = "INSERT INTO tb_participante_discapacidad (id_participante, id_discapacidad) VALUES (:id_participante, :id_discapacidad)";
+                $stmtInsertDisc = $this->conn->prepare($sqlInsertDisc);
+                foreach ($data['discapacidades'] as $id_disc) {
+                    if ((int)$id_disc > 1) {
+                        $stmtInsertDisc->execute([
+                            ':id_participante' => $data['id_participante'],
+                            ':id_discapacidad' => (int)$id_disc
+                        ]);
+                    }
+                }
+            }
+
             // Actualizar o insertar teléfono (tipo 'Móvil')
             if (isset($data['telefono']) && !empty($data['telefono'])) {
                 $sqlCheckTel = "SELECT id_telefono FROM tb_telefono WHERE id_participante = :id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1";
@@ -408,7 +440,19 @@ public function eliminar($id) {
                 
             } catch (PDOException $e) {
                 error_log("Error en obtenerPorId: " . $e->getMessage());
-                throw new Exception("Error al obtener el participante");
+                return null;
+            }
+        }
+
+        public function obtenerDiscapacidades($id_participante) {
+            try {
+                $sql = "SELECT id_discapacidad FROM tb_participante_discapacidad WHERE id_participante = :id_participante";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([':id_participante' => $id_participante]);
+                return $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (PDOException $e) {
+                error_log("Error en obtenerDiscapacidades: " . $e->getMessage());
+                return [];
             }
         }
 

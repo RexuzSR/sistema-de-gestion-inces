@@ -137,72 +137,6 @@
                         </div>
                     </div>
 
-                    <!-- CÉDULA -->
-                    <div class="col-md-6">
-                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
-                            Cédula <span style="color: #ef4444;">*</span>
-                        </label>
-                        <div class="input-group">
-                            <select class="form-select neon-input" id="nacionalidad" name="nacionalidad" style="
-                                max-width: 80px;
-                                border: 1.5px solid #e2e8f0;
-                                border-radius: 12px 0 0 12px;
-                                padding: 10px 12px;
-                                font-size: 0.95rem;
-                                transition: all 0.3s ease;
-                                background: #ffffff;
-                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                                <option value="V" selected>V</option>
-                                <option value="E">E</option>
-                            </select>
-                            <input type="number" class="form-control neon-input" id="cedula" name="cedula" required maxlength="8" oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);" placeholder="Ej: 12345678" style="
-                                border: 1.5px solid #e2e8f0;
-                                border-radius: 0 12px 12px 0;
-                                padding: 10px 16px;
-                                font-size: 0.95rem;
-                                transition: all 0.3s ease;
-                                background: #ffffff;
-                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                        </div>
-                        <div class="invalid-feedback" id="error-cedula" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Cédula inválida (7-8 dígitos)</div>
-                        <div class="text-danger mt-1 fw-medium" id="cedula-repetida" style="display: none; font-size: 0.8rem; color: #dc2626 !important;">CÉDULA YA REGISTRADA</div>
-                    </div>
-
-                    <!-- TELÉFONO -->
-                    <div class="col-md-6">
-                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
-                            Teléfono <span style="color: #ef4444;">*</span>
-                        </label>
-                        <div class="input-group">
-                            <select class="form-select neon-input" id="prefijo_telefono" name="prefijo_telefono" style="
-                                max-width: 100px;
-                                border: 1.5px solid #e2e8f0;
-                                border-radius: 12px 0 0 12px;
-                                padding: 10px 12px;
-                                background: #ffffff;
-                                border-right: none;
-                                transition: all 0.3s ease;
-                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                                <option value="0412">0412</option>
-                                <option value="0414">0414</option>
-                                <option value="0416">0416</option>
-                                <option value="0424">0424</option>
-                                <option value="0426">0426</option>
-                                <option value="0293">0293</option>
-                            </select>
-                            <input type="tel" class="form-control neon-input" id="telefono_numero" name="telefono_numero" required placeholder="1234567" maxlength="7" style="
-                                border: 1.5px solid #e2e8f0;
-                                border-radius: 0 12px 12px 0;
-                                padding: 10px 16px;
-                                font-size: 0.95rem;
-                                border-left: none;
-                                transition: all 0.3s ease;
-                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                            <input type="hidden" id="telefono" name="telefono">
-                        </div>
-                        <div class="invalid-feedback" id="error-telefono" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Debe ingresar los 7 dígitos del número.</div>
-                    </div>
-
                     <!-- PRIMER NOMBRE -->
                     <div class="col-md-6">
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
@@ -267,46 +201,39 @@
                         <div class="invalid-feedback" id="error-segundo_apellido" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Solo letras válidas</div>
                     </div>
 
-                    <!-- FECHA DE NACIMIENTO -->
-                    <?php
-                    $maxFechaNac = date('Y-m-d', strtotime('-15 years'));
-                    $minFechaNac = date('Y-m-d', strtotime('-75 years'));
-                    ?>
-                    <div class="col-md-4">
+                    <!-- CÉDULA -->
+                    <div class="col-md-6">
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
-                            Fecha de Nacimiento <span style="color: #ef4444;">*</span>
-                        </label>
-                        <input type="date" class="form-control neon-input" id="fecha_nacimiento" name="fecha_nacimiento" min="<?= $minFechaNac ?>" max="<?= $maxFechaNac ?>" required style="
-                            border: 1.5px solid #e2e8f0;
-                            border-radius: 12px;
-                            padding: 9px 16px;
-                            font-size: 0.95rem;
-                            transition: all 0.3s ease;
-                            background: #ffffff;
-                        " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                        <div class="invalid-feedback" id="error-fecha_nacimiento" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Edad debe ser entre 15 y 75 años</div>
-                    </div>
-
-                    <!-- EDAD AUTOMÁTICA -->
-                    <div class="col-md-3">
-                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
-                            Edad
+                            Cédula <span style="color: #ef4444;">*</span>
                         </label>
                         <div class="input-group">
-                            <input type="text" class="form-control neon-input text-center fw-bold" id="edad_calculada" readonly placeholder="--" style="
+                            <select class="form-select neon-input" id="nacionalidad" name="nacionalidad" style="
+                                max-width: 80px;
                                 border: 1.5px solid #e2e8f0;
                                 border-radius: 12px 0 0 12px;
-                                padding: 9px 12px;
+                                padding: 10px 12px;
                                 font-size: 0.95rem;
-                                background: #f8fafc;
-                                color: #0f172a;
-                            ">
-                            <span class="input-group-text bg-light text-muted" style="border: 1.5px solid #e2e8f0; border-left: none; border-radius: 0 12px 12px 0; font-size: 0.85rem; font-weight: 500;">años</span>
+                                transition: all 0.3s ease;
+                                background: #ffffff;
+                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                <option value="V" selected>V</option>
+                                <option value="E">E</option>
+                            </select>
+                            <input type="number" class="form-control neon-input" id="cedula" name="cedula" required maxlength="8" oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);" placeholder="Ej: 12345678" style="
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 0 12px 12px 0;
+                                padding: 10px 16px;
+                                font-size: 0.95rem;
+                                transition: all 0.3s ease;
+                                background: #ffffff;
+                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
                         </div>
+                        <div class="invalid-feedback" id="error-cedula" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Cédula inválida (7-8 dígitos)</div>
+                        <div class="text-danger mt-1 fw-medium" id="cedula-repetida" style="display: none; font-size: 0.8rem; color: #dc2626 !important;">CÉDULA YA REGISTRADA</div>
                     </div>
 
                     <!-- GÉNERO -->
-                    <div class="col-md-5">
+                    <div class="col-md-6">
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
                             Género <span style="color: #ef4444;">*</span>
                         </label>
@@ -315,6 +242,8 @@
                             border-radius: 12px;
                             border: 1.5px solid #e2e8f0;
                             transition: all 0.3s ease;
+                            height: 48px;
+                            align-items: center;
                         " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
                             <div class="form-check">
                                 <input class="form-check-input neon-radio" type="radio" name="genero" id="genero_masculino" value="Masculino" required style="
@@ -340,31 +269,46 @@
                         <div class="invalid-feedback" id="error-genero" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Seleccione un género</div>
                     </div>
 
-                    <!-- DISCAPACIDAD -->
-                    <div class="col-md-6">
+                    <!-- FECHA DE NACIMIENTO -->
+                    <?php
+                    $maxFechaNac = date('Y-m-d', strtotime('-15 years'));
+                    $minFechaNac = date('Y-m-d', strtotime('-75 years'));
+                    ?>
+                    <div class="col-md-8">
                         <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
-                            Discapacidad <span style="color: #ef4444;">*</span>
+                            Fecha de Nacimiento <span style="color: #ef4444;">*</span>
                         </label>
-                        <select class="form-select neon-input" id="id_discapacidad" name="id_discapacidad" required style="
+                        <input type="date" class="form-control neon-input" id="fecha_nacimiento" name="fecha_nacimiento" min="<?= $minFechaNac ?>" max="<?= $maxFechaNac ?>" required style="
                             border: 1.5px solid #e2e8f0;
                             border-radius: 12px;
-                            padding: 10px 16px;
+                            padding: 9px 16px;
                             font-size: 0.95rem;
-                            background: #ffffff;
                             transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 3px rgba(139,92,246,0.1), 0 0 20px rgba(139,92,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 3px rgba(139,92,246,0.2), 0 0 25px rgba(139,92,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                            <option value="" disabled selected>Seleccione una opción</option>
-                            <option value="1">Ninguna</option>
-                            <option value="2">Visual</option>
-                            <option value="3">Auditiva</option>
-                            <option value="4">Motora</option>
-                            <option value="5">Cognitiva</option>
-                        </select>
-                        <div class="invalid-feedback" id="error-id_discapacidad" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;"></div>
+                            background: #ffffff;
+                        " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                        <div class="invalid-feedback" id="error-fecha_nacimiento" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Edad debe ser entre 15 y 75 años</div>
+                    </div>
+
+                    <!-- EDAD AUTOMÁTICA -->
+                    <div class="col-md-4">
+                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
+                            Edad
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control neon-input text-center fw-bold" id="edad_calculada" readonly placeholder="--" style="
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 12px 0 0 12px;
+                                padding: 9px 12px;
+                                font-size: 0.95rem;
+                                background: #f8fafc;
+                                color: #0f172a;
+                            ">
+                            <span class="input-group-text bg-light text-muted" style="border: 1.5px solid #e2e8f0; border-left: none; border-radius: 0 12px 12px 0; font-size: 0.85rem; font-weight: 500;">años</span>
+                        </div>
                     </div>
 
                     <!-- SECCIÓN DATOS INSCRIPCIÓN -->
-                    <div class="col-12 mt-3">
+                    <div class="col-12 mt-4">
                         <div class="d-flex align-items-center gap-2 mb-3">
                             <div style="
                                 width: 32px;
@@ -382,7 +326,7 @@
                                     <line x1="12" y1="17" x2="12" y2="21"></line>
                                 </svg>
                             </div>
-                            <h6 class="fw-semibold mb-0" style="color: #1e293b; font-size: 1.1rem;">Datos de Inscripción</h6>
+                            <h6 class="fw-semibold mb-0" style="color: #1e293b; font-size: 1.1rem;">Contacto e Inscripción</h6>
                             <span style="
                                 background: linear-gradient(135deg, #64748b, #475569);
                                 color: white;
@@ -393,6 +337,41 @@
                                 box-shadow: 0 0 15px rgba(100, 116, 139, 0.5);
                             ">Contacto</span>
                         </div>
+                    </div>
+
+                    <!-- TELÉFONO -->
+                    <div class="col-md-6">
+                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
+                            Teléfono <span style="color: #ef4444;">*</span>
+                        </label>
+                        <div class="input-group">
+                            <select class="form-select neon-input" id="prefijo_telefono" name="prefijo_telefono" style="
+                                max-width: 100px;
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 12px 0 0 12px;
+                                padding: 10px 12px;
+                                background: #ffffff;
+                                border-right: none;
+                                transition: all 0.3s ease;
+                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                <option value="0412">0412</option>
+                                <option value="0414">0414</option>
+                                <option value="0416">0416</option>
+                                <option value="0424">0424</option>
+                                <option value="0426">0426</option>
+                                <option value="0293">0293</option>
+                            </select>
+                            <input type="tel" class="form-control neon-input" id="telefono_numero" name="telefono_numero" required placeholder="1234567" maxlength="7" style="
+                                border: 1.5px solid #e2e8f0;
+                                border-radius: 0 12px 12px 0;
+                                padding: 10px 16px;
+                                font-size: 0.95rem;
+                                border-left: none;
+                                transition: all 0.3s ease;
+                            " onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.1), 0 0 20px rgba(59,130,246,0.4)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'" onfocus="this.style.borderColor='#3b82f6'; this.style.boxShadow='0 0 0 3px rgba(59,130,246,0.2), 0 0 25px rgba(59,130,246,0.5)'" onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                            <input type="hidden" id="telefono" name="telefono">
+                        </div>
+                        <div class="invalid-feedback" id="error-telefono" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Debe ingresar los 7 dígitos del número.</div>
                     </div>
 
                     <!-- CORREO ELECTRÓNICO -->
@@ -429,7 +408,37 @@
                             <option value="Bachillerato">Bachiller</option>
                             <option value="Universitario">Universitario</option>
                         </select>
-                        <div class="invalid-feedback" id="error-grado_institucion" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;"></div>
+                        <div class="invalid-feedback" id="error-grado_institucion" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Seleccione una opción válida</div>
+                    </div>
+
+                    <!-- DISCAPACIDAD -->
+                    <div class="col-md-6">
+                        <label class="form-label" style="color: #475569; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px;">
+                            Discapacidad <span style="color: #ef4444;">*</span>
+                        </label>
+                        <div class="d-flex flex-wrap gap-2 border p-2 rounded-3" style="background-color: #ffffff; border: 1.5px solid #e2e8f0 !important; min-height: 48px; align-items: center;">
+                            <div class="form-check form-switch me-2" style="padding-left: 2.5em; margin-bottom: 0; display: flex; align-items: center;">
+                                <input class="form-check-input disc-checkbox" type="checkbox" id="disc-1" value="1" name="discapacidades[]" checked style="cursor: pointer; margin-top: 0; margin-left: -2em;">
+                                <label class="form-check-label fw-medium text-secondary small" for="disc-1" style="cursor: pointer; user-select: none; margin-left: 0.5rem;">Ninguna</label>
+                            </div>
+                            <div class="form-check form-switch me-2" style="padding-left: 2.5em; margin-bottom: 0; display: flex; align-items: center;">
+                                <input class="form-check-input disc-checkbox" type="checkbox" id="disc-2" value="2" name="discapacidades[]" style="cursor: pointer; margin-top: 0; margin-left: -2em;">
+                                <label class="form-check-label fw-medium text-secondary small" for="disc-2" style="cursor: pointer; user-select: none; margin-left: 0.5rem;">Visual</label>
+                            </div>
+                            <div class="form-check form-switch me-2" style="padding-left: 2.5em; margin-bottom: 0; display: flex; align-items: center;">
+                                <input class="form-check-input disc-checkbox" type="checkbox" id="disc-3" value="3" name="discapacidades[]" style="cursor: pointer; margin-top: 0; margin-left: -2em;">
+                                <label class="form-check-label fw-medium text-secondary small" for="disc-3" style="cursor: pointer; user-select: none; margin-left: 0.5rem;">Auditiva</label>
+                            </div>
+                            <div class="form-check form-switch me-2" style="padding-left: 2.5em; margin-bottom: 0; display: flex; align-items: center;">
+                                <input class="form-check-input disc-checkbox" type="checkbox" id="disc-4" value="4" name="discapacidades[]" style="cursor: pointer; margin-top: 0; margin-left: -2em;">
+                                <label class="form-check-label fw-medium text-secondary small" for="disc-4" style="cursor: pointer; user-select: none; margin-left: 0.5rem;">Motora</label>
+                            </div>
+                            <div class="form-check form-switch me-2" style="padding-left: 2.5em; margin-bottom: 0; display: flex; align-items: center;">
+                                <input class="form-check-input disc-checkbox" type="checkbox" id="disc-5" value="5" name="discapacidades[]" style="cursor: pointer; margin-top: 0; margin-left: -2em;">
+                                <label class="form-check-label fw-medium text-secondary small" for="disc-5" style="cursor: pointer; user-select: none; margin-left: 0.5rem;">Cognitiva</label>
+                            </div>
+                        </div>
+                        <div class="invalid-feedback" id="error-id_discapacidad" style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">Seleccione una opción válida</div>
                     </div>
 
                     <!-- Campo oculto para curso -->

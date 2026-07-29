@@ -141,6 +141,7 @@ $(document).ready(function () {
         // 5. Renderizar
         actualizarTabla(datosPagina);
         renderizarPaginacion(totalPages, currentPage);
+        resaltarParticipanteNuevo();
     }
 
     function actualizarTabla(participantes) {
@@ -312,6 +313,31 @@ $(document).ready(function () {
 
         paginationHTML += '</div>';
         container.html(paginationHTML);
+    }
+
+    // Función especial para resaltar participante nuevo
+    function resaltarParticipanteNuevo() {
+        const partNuevoId = sessionStorage.getItem('participanteRecienCreado');
+
+        if (partNuevoId) {
+            setTimeout(() => {
+                const filas = document.querySelectorAll('#tabla-participantes tbody tr');
+                let encontrado = false;
+
+                filas.forEach(fila => {
+                    const idCelda = fila.querySelector('td:first-child');
+                    if (idCelda && idCelda.textContent.trim() === String(partNuevoId)) {
+                        fila.classList.add('participante-nuevo');
+                        fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        encontrado = true;
+                    }
+                });
+
+                if (encontrado) {
+                    sessionStorage.removeItem('participanteRecienCreado');
+                }
+            }, 500);
+        }
     }
 
     // --- EVENT LISTENERS (Delegación de eventos para evitar crear y destruir constantemente) ---

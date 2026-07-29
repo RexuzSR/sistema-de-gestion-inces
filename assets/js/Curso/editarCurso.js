@@ -155,8 +155,8 @@ $(document).ready(function () {
             showError('preimpreso-Edit', 'El código preimpreso es requerido');
             return false;
         }
-        if (v.length > 50) {
-            showError('preimpreso-Edit', 'Máximo 50 caracteres');
+        if (v.length > 12) {
+            showError('preimpreso-Edit', 'Máximo 12 caracteres');
             return false;
         }
         showSuccess('preimpreso-Edit');

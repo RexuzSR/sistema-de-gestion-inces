@@ -18,6 +18,7 @@ try {
     $participante = $participanteModel->obtenerPorId($id);
 
     if ($participante) {
+        $discapacidades = $participanteModel->obtenerDiscapacidades($id);
         // Estructura que espera el JavaScript (con 'success' y 'data')
         echo json_encode([
             'success' => true,
@@ -34,7 +35,8 @@ try {
                 'fecha_nacimiento' => $participante->fecha_nacimiento, // Formato Y-m-d
                 'grado_institucion' => $participante->grado_institucion,
                 'genero' => $participante->genero,
-                'id_discapacidad' => $participante->id_discapacidad
+                'id_discapacidad' => $participante->id_discapacidad,
+                'discapacidades' => $discapacidades
             ]
         ]);
     } else {

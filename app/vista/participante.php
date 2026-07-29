@@ -91,6 +91,25 @@ if (!empty($imagenUsuario)) {
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <title>Control</title>
+    <style>
+        /* Animación para cuando se cree un participante */
+        @keyframes participanteNuevoPulso {
+            0%   { background-color: transparent; }
+            20%  { background-color: rgba(12, 98, 228, 0.3); }
+            50%  { background-color: rgba(12, 98, 228, 0.15); }
+            80%  { background-color: rgba(12, 98, 228, 0.3); }
+            100% { background-color: transparent; }
+        }
+        
+        tr.participante-nuevo td {
+            animation: participanteNuevoPulso 1.5s ease-in-out 3;
+            position: relative;
+        }
+
+        tr.participante-nuevo td:first-child {
+            border-left: 5px solid #0c62e4 !important;
+        }
+    </style>
 </head>
 <body>
 

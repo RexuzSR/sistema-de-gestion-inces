@@ -295,7 +295,7 @@ $(document).ready(function () {
 
     // Eventos en tiempo real
     $('#cedula').on('input', function () {
-        this.value = this.value.replace(/[^0-9]/g, '');
+        this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
         // Limitar a máximo 9 caracteres en tiempo real
         if (this.value.length > 9) {
             this.value = this.value.slice(0, 9);
@@ -324,6 +324,20 @@ $(document).ready(function () {
     $('#correo').on('input', validaciones.correo);
     $('#fecha_nacimiento').on('change input', validaciones.fecha_nacimiento);
     $('input[name="genero"]').on('change', validaciones.genero);
+
+    // Interacción de selección múltiple de discapacidades
+    $(document).on('change', '.disc-checkbox', function () {
+        const isNinguna = $(this).val() === '1';
+        if (isNinguna && $(this).is(':checked')) {
+            $('.disc-checkbox').not(this).prop('checked', false);
+        } else if ($(this).is(':checked')) {
+            $('#disc-1').prop('checked', false);
+        }
+        // Si no queda ninguna seleccionada, marcar "Ninguna"
+        if ($('.disc-checkbox:checked').length === 0) {
+            $('#disc-1').prop('checked', true);
+        }
+    });
 
     // Envío del formulario
     $form.on('submit', function (e) {
@@ -364,7 +378,15 @@ $(document).ready(function () {
                     $('.is-invalid, .is-valid').removeClass('is-invalid is-valid');
                     $('.invalid-feedback').hide();
 
-                    if (typeof aplicarFiltros === 'function') aplicarFiltros();
+                    if (response.id) {
+                        sessionStorage.setItem('participanteRecienCreado', response.id);
+                    }
+
+                    if (typeof window.recargarTablaParticipantes === 'function') {
+                        window.recargarTablaParticipantes();
+                    } else if (typeof aplicarFiltros === 'function') {
+                        aplicarFiltros();
+                    }
                     if (typeof actualizarContadores === 'function') actualizarContadores();
 
                     // LÓGICA DE RETORNO: Si venimos del modal de asignación de curso

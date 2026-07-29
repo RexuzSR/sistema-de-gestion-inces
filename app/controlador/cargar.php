@@ -34,18 +34,29 @@ function limpiarDato($dato) {
     return isset($dato) ? trim($dato) : '';
 }
 
+// Procesar discapacidades múltiples y calcular id_discapacidad para retrocompatibilidad
+$discapacidades = isset($_POST['discapacidades']) && is_array($_POST['discapacidades']) ? array_map('intval', $_POST['discapacidades']) : [1];
+$id_discapacidad = 1;
+foreach ($discapacidades as $id_d) {
+    if ($id_d > 1) {
+        $id_discapacidad = $id_d;
+        break;
+    }
+}
+
 // Obtener datos del formulario usando la función limpiarDato
 $data = [
     'primer_nombre' => limpiarDato($_POST['primer_nombre'] ?? ''),
     'segundo_nombre' => limpiarDato($_POST['segundo_nombre'] ?? ''),
     'primer_apellido' => limpiarDato($_POST['primer_apellido'] ?? ''),
     'segundo_apellido' => limpiarDato($_POST['segundo_apellido'] ?? ''),
-    'cedula' => limpiarDato($_POST['cedula'] ?? ''),
+    'cedula' => ltrim(limpiarDato($_POST['cedula'] ?? ''), '0'),
     'fecha_nacimiento' => limpiarDato($_POST['fecha_nacimiento'] ?? ''),
     'telefono' => limpiarDato($_POST['telefono'] ?? ''),
     'correo' => limpiarDato($_POST['correo'] ?? ''),
     'genero' => limpiarDato($_POST['genero'] ?? ''),
-    'id_discapacidad' => isset($_POST['id_discapacidad']) && $_POST['id_discapacidad'] !== '' ? (int)$_POST['id_discapacidad'] : null,
+    'id_discapacidad' => $id_discapacidad,
+    'discapacidades' => $discapacidades,
     'grado_institucion' => limpiarDato($_POST['grado_institucion'] ?? ''),
     'id_curso' => isset($_POST['id_curso']) && $_POST['id_curso'] !== '' ? (int)$_POST['id_curso'] : null
 ];
@@ -53,7 +64,7 @@ $data = [
 // Validaciones básicas
 $camposRequeridos = [
     'primer_nombre' => 'Primer nombre',
-    'primer_apellido' => 'Primer apellido', 
+    'primer_apellido' => 'Primer apellido',
     'cedula' => 'Cédula',
     'fecha_nacimiento' => 'Fecha de nacimiento',
     'telefono' => 'Teléfono',

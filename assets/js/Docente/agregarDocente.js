@@ -119,7 +119,7 @@ $(document).ready(function () {
 
     // Eventos en tiempo real
     $('#cedula').on('input', function () {
-        this.value = this.value.replace(/[^0-9]/g, '');
+        this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
         if (this.value.length > 9) {
             this.value = this.value.slice(0, 9);
         }

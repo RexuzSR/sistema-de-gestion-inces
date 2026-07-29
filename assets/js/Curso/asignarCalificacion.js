@@ -559,6 +559,11 @@ $(document).ready(function () {
                 $('#error-preimpreso_Reinicio').text('El código preimpreso es requerido').show();
                 toastr.warning('Complete el código preimpreso');
                 return;
+            } else if (preimpresoVal.length > 12) {
+                $('#preimpreso_Reinicio').addClass('is-invalid');
+                $('#error-preimpreso_Reinicio').text('El código preimpreso no puede tener más de 12 caracteres').show();
+                toastr.warning('El código preimpreso no puede tener más de 12 caracteres');
+                return;
             } else {
                 $('#preimpreso_Reinicio').removeClass('is-invalid');
                 $('#error-preimpreso_Reinicio').hide();

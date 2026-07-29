@@ -35,7 +35,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold small text-secondary mb-1">CÉDULA <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control bg-light border-0 rounded-3 py-2" id="cedula-Edit" name="cedula" required maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);" placeholder="Ej: 12345678" style="background-color: #f8fafc;">
+                                <input type="text" class="form-control bg-light border-0 rounded-3 py-2" id="cedula-Edit" name="cedula" required maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '').slice(0, 8);" placeholder="Ej: 12345678" style="background-color: #f8fafc;">
                                 <div class="invalid-feedback small" id="error-cedula-Edit"></div>
                             </div>
                             <div class="col-md-6">

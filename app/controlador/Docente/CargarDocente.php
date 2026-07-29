@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'segundo_nombre' => $_POST['segundo_nombre'] ?? null,
             'primer_apellido' => $_POST['primer_apellido'] ?? '',
             'segundo_apellido' => $_POST['segundo_apellido'] ?? null,
-            'cedula' => $_POST['cedula'] ?? '',
+            'cedula' => ltrim(trim($_POST['cedula'] ?? ''), '0'),
             'telefono' => $_POST['telefono'] ?? '',
             'correo' => $_POST['correo'] ?? '',
             'fechaNacimiento' => $_POST['fechaNacimiento'] ?? '',

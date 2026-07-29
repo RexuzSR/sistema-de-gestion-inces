@@ -374,7 +374,7 @@ $('#primer_nombre-Edit, #segundo_nombre-Edit, #primer_apellido-Edit, #segundo_ap
 
 // Evento en tiempo real para la cédula en edición
 $('#cedula-Edit').on('input', function () {
-    this.value = this.value.replace(/[^0-9]/g, '');
+    this.value = this.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
     if (this.value.length > 9) this.value = this.value.slice(0, 9);
     validacionesEditDocente.cedula();
 });

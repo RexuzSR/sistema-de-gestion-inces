@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $resultado = $usuario->iniciarSesion($nombre_usuario, $contraseña);
 
     // Manejar el resultado
+    
     if ($resultado === true) {
         // Registrar inicio de sesión en el historial
         require_once '../../modelo/HistorialUtil.php';

@@ -97,7 +97,7 @@
                                         <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-wrapper">
-                                        <input class="form-control form-control-sm input-shadow" type="text" id="preimpreso-Edit" name="preimpreso-Edit" placeholder="Ej. 110-2026" maxlength="50" required autocomplete="off">
+                                        <input class="form-control form-control-sm input-shadow" type="text" id="preimpreso-Edit" name="preimpreso-Edit" placeholder="Ej. 110-2026" maxlength="12" required autocomplete="off">
                                         <div class="focus-line"></div>
                                     </div>
                                     <div class="error-feedback small text-danger mt-1" id="error-preimpreso-Edit"></div>
