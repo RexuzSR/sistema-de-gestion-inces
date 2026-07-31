@@ -273,7 +273,7 @@ function switchPeriodo(tipo) {
         const intervalo = setInterval(() => { segundos--; const el = document.getElementById('cuenta-regresiva'); if (el) el.innerHTML = `<strong>${segundos}</strong>`; if (segundos <= 0) clearInterval(intervalo); }, 1000);
         document.getElementById('btn-seguir-conectado').addEventListener('click', () => { clearInterval(intervalo); resetTimer(); });
     }
-    function cerrarSesion() { fetch(LOGOUT_URL, { method:'POST', credentials:'same-origin' }).finally(() => { window.location.replace(LOGIN_URL); }); }
+    function cerrarSesion() { fetch(LOGOUT_URL + '?inactividad=1', { method:'POST', credentials:'same-origin' }).finally(() => { window.location.replace(LOGIN_URL); }); }
     ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(ev => document.addEventListener(ev, resetTimer, { passive:true }));
     resetTimer();
 })();

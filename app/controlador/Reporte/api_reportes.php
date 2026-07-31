@@ -46,27 +46,37 @@ try {
     switch ($accion) {
         
         case 'exportar_trayectoria_pdf':
+            require_once __DIR__ . '/../../modelo/HistorialUtil.php';
+            HistorialUtil::registrarReporte('Trayectoria de Participantes', $_SESSION['id_usuario']);
             // Deshabilitar cualquier output json
             header_remove('Content-Type');
             require_once __DIR__ . '/../fpdf/Reporte/ReporteTrayectoriaParticipantes.php';
             exit;
 
         case 'exportar_pdf_carga_horaria':
+            require_once __DIR__ . '/../../modelo/HistorialUtil.php';
+            HistorialUtil::registrarReporte('Carga Horaria de Docentes', $_SESSION['id_usuario']);
             header_remove('Content-Type');
             require_once __DIR__ . '/pdf_carga_horaria_docentes.php';
             exit;
 
         case 'exportar_pdf_historial_docente':
+            require_once __DIR__ . '/../../modelo/HistorialUtil.php';
+            HistorialUtil::registrarReporte('Historial de Docente', $_SESSION['id_usuario']);
             header_remove('Content-Type');
             require_once __DIR__ . '/pdf_historial_docente.php';
             exit;
 
         case 'exportar_pdf_historico_metas':
+            require_once __DIR__ . '/../../modelo/HistorialUtil.php';
+            HistorialUtil::registrarReporte('Histórico de Metas', $_SESSION['id_usuario']);
             header_remove('Content-Type');
             require_once __DIR__ . '/pdf_historico_metas.php';
             exit;
 
         case 'exportar_pdf_detalle_meta':
+            require_once __DIR__ . '/../../modelo/HistorialUtil.php';
+            HistorialUtil::registrarReporte('Detalle de Meta', $_SESSION['id_usuario']);
             header_remove('Content-Type');
             require_once __DIR__ . '/pdf_detalle_participantes_meta.php';
             exit;
@@ -127,7 +137,8 @@ try {
         case 'cursos_mas_participantes':
             $limite = intval($_GET['limite'] ?? 20);
             $criterio = trim($_GET['criterio'] ?? 'total');
-            echo json_encode(getCursosMasParticipantes($conn, $anio, $limite, $criterio));
+            $estatus = trim($_GET['estatus'] ?? '');
+            echo json_encode(getCursosMasParticipantes($conn, $anio, $limite, $criterio, $estatus));
             break;
 
         case 'curso_mas_requerido':
@@ -552,7 +563,7 @@ function getCursosTotal(PDO $conn, int $anio): array {
     return mesesAArray($meses);
 }
 
-function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, string $criterio = 'total'): array {
+function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, string $criterio = 'total', string $estatus = ''): array {
     $orderClause = "ORDER BY total_participantes DESC";
     if ($criterio === 'mujeres') {
         $orderClause = "ORDER BY total_mujeres DESC, total_participantes DESC";
@@ -562,6 +573,11 @@ function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, strin
         $orderClause = "ORDER BY total_discapacitados DESC, total_participantes DESC";
     } else if ($criterio === 'extranjeros') {
         $orderClause = "ORDER BY total_extranjeros DESC, total_participantes DESC";
+    }
+
+    $whereEstatus = "";
+    if ($estatus !== '') {
+        $whereEstatus = "AND LOWER(e.nombre_estatusCurso) LIKE :estatus";
     }
 
     $stmt = $conn->prepare("
@@ -584,12 +600,16 @@ function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, strin
         LEFT JOIN tb_estatuscurso e ON e.id_estatusCurso = c.id_estatusCurso
         LEFT JOIN tb_modalidad    m ON m.id_modalidad    = c.id_modalidad
         WHERE YEAR(pc.fecha_inscripcion) = :anio
+          $whereEstatus
         GROUP BY c.id_curso, c.nombre_curso, e.nombre_estatusCurso, m.nombre_modalidad, c.fecha_inicio, c.fecha_fin
         $orderClause
         LIMIT :limite
     ");
     $stmt->bindValue(':anio',   $anio,   PDO::PARAM_INT);
     $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    if ($estatus !== '') {
+        $stmt->bindValue(':estatus', '%' . strtolower($estatus) . '%', PDO::PARAM_STR);
+    }
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

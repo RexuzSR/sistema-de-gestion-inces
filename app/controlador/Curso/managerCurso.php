@@ -1324,7 +1324,7 @@ class Curso {
     public function finalizarCurso($id_curso) {
         try {
             // 5 = Culminado
-            $sql = "UPDATE tb_curso SET id_estatusCurso = 5 WHERE id_curso = :id_curso";
+            $sql = "UPDATE tb_curso SET id_estatusCurso = 5, horas_completadas = horas_totales WHERE id_curso = :id_curso";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id_curso', $id_curso, PDO::PARAM_INT);
             return $stmt->execute();

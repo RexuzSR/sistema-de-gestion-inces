@@ -136,6 +136,21 @@ if (!$participante) {
     die("Participante no encontrado");
 }
 
+session_name('SISTEMA_CONTROL_INCES');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (isset($_SESSION['id_usuario'])) {
+    require_once '../../modelo/HistorialUtil.php';
+    HistorialUtil::registrar(
+        'PDF',
+        "Se generó el historial de participante para: " . $participante['nombre'] . " " . $participante['apellido'] . " (C.I. " . $participante['cedula'] . ")",
+        'tb_participante',
+        $id_participante,
+        $_SESSION['id_usuario']
+    );
+}
+
 // Cursos
 $stmtCursos = $conn->prepare("
     SELECT 

@@ -22,6 +22,7 @@ function getTrayectoriaCursos(PDO $conn): array {
     $stmt = $conn->query("
         SELECT 
             c.id_curso,
+            c.preimpreso,
             c.nombre_curso,
             m.nombre_modalidad,
             c.turno,
@@ -46,6 +47,7 @@ function getDetalleCursoTrayectoria(PDO $conn, int $idCurso): array {
     $stmt = $conn->prepare("
         SELECT 
             c.id_curso,
+            c.preimpreso,
             c.nombre_curso,
             c.turno,
             c.fecha_inicio,

@@ -493,7 +493,7 @@ if (!empty($imagenUsuario)) {
     }
 
     function cerrarSesion() {
-        fetch(LOGOUT_URL, { method: 'POST', credentials: 'same-origin' })
+        fetch(LOGOUT_URL + '?inactividad=1', { method: 'POST', credentials: 'same-origin' })
             .finally(() => { window.location.replace(LOGIN_URL); });
     }
 

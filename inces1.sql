@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 27-07-2026 a las 19:12:02
+-- Tiempo de generación: 29-07-2026 a las 17:08:29
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -304,7 +304,8 @@ INSERT INTO `tb_docente` (`id_docente`, `primer_nombre`, `segundo_nombre`, `prim
 (37, 'Luis', 'Manuel', 'Garcia', 'Sanchez', 15000036, 'docente36@example.com', '1967-02-05', 59, 'Disponible', 'Masculino', 'Fijo'),
 (38, 'Ana', NULL, 'Gonzalez', NULL, 15000037, 'docente37@example.com', '1986-11-17', 40, 'Disponible', 'Femenino', 'Contratado'),
 (39, 'Juan', NULL, 'Garcia', 'Jimenez', 15000038, 'docente38@example.com', '1975-10-22', 51, 'Disponible', 'Masculino', 'PDL'),
-(40, 'Rosa', 'Laura', 'Morales', NULL, 15000039, 'docente39@example.com', '1989-01-08', 37, 'Disponible', 'Femenino', 'Voluntario');
+(40, 'Rosa', 'Laura', 'Morales', NULL, 15000039, 'docente39@example.com', '1989-01-08', 37, 'Disponible', 'Femenino', 'Voluntario'),
+(41, 'alexander', 'del valle', 'Rivas', 'gimez', 12312342, 'samueljosealexander@gmail.com', '2011-07-29', 15, 'Disponible', 'Masculino', 'Voluntario');
 
 -- --------------------------------------------------------
 
@@ -533,7 +534,29 @@ INSERT INTO `tb_historial` (`id_historial`, `tipo_actividad`, `descripcion`, `ta
 (57, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-21 19:33:55'),
 (58, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-21 22:42:50'),
 (59, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-21 22:42:59'),
-(60, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-27 04:43:09');
+(60, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-27 04:43:09'),
+(61, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 01:09:13'),
+(62, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 01:58:50'),
+(63, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-29 01:59:09'),
+(64, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 01:59:22'),
+(65, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-29 01:59:36'),
+(66, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 01:59:42'),
+(67, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 02:02:38'),
+(68, 'Editar', 'Se editó el usuario: ADMIN', 'tb_usuario', 11, 16, '2026-07-29 02:03:17'),
+(69, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-29 02:03:20'),
+(70, 'Login', 'Usuario ADMIN inició sesión', 'tb_usuario', 11, 11, '2026-07-29 02:03:29'),
+(71, 'Logout', 'Usuario ADMIN cerró sesión', 'tb_usuario', 11, 11, '2026-07-29 02:03:36'),
+(72, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 02:03:45'),
+(73, 'Crear', 'Se creó el participante: Juan Perez', 'tb_participante', 701, 16, '2026-07-29 02:04:40'),
+(74, 'Crear', 'Se creó el docente: alexander Rivas', 'tb_docente', 41, 16, '2026-07-29 02:06:23'),
+(75, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 02:08:39'),
+(76, 'Crear', 'Se creó el participante: Testhighlight Highlight', 'tb_participante', 702, 16, '2026-07-29 02:12:23'),
+(77, 'Crear', 'Se creó el participante: Testhighlight Highlight', 'tb_participante', 703, 16, '2026-07-29 02:14:57'),
+(78, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-29 02:32:33'),
+(79, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 02:32:56'),
+(80, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-29 02:52:05'),
+(81, 'Login', 'Usuario samu inició sesión', 'tb_usuario', 16, 16, '2026-07-29 02:52:12'),
+(82, 'Logout', 'Usuario samu cerró sesión', 'tb_usuario', 16, 16, '2026-07-29 04:10:43');
 
 -- --------------------------------------------------------
 
@@ -1798,7 +1821,10 @@ INSERT INTO `tb_participante` (`id_participante`, `primer_nombre`, `segundo_nomb
 (697, 'Andres', 'Rafael', 'Perez', 'Sanchez', 20000696, 'V', 18, 'participante696@example.com', '2008-12-05', '2026-09-08', 'Asignado', 'Primaria', 'Masculino', 1),
 (698, 'Ana', NULL, 'Martinez', NULL, 20000697, 'V', 25, 'participante697@example.com', '2001-06-19', '2026-09-08', 'Asignado', 'Bachillerato', 'Femenino', 1),
 (699, 'Jose', NULL, 'Gonzalez', 'Jimenez', 20000698, 'V', 21, 'participante698@example.com', '2005-02-07', '2026-09-08', 'Asignado', 'Universidad', 'Masculino', 1),
-(700, 'Patricia', 'Ana', 'Ramirez', NULL, 20000699, 'V', 23, 'participante699@example.com', '2003-08-21', '2026-09-08', 'Asignado', 'Primaria', 'Femenino', 1);
+(700, 'Patricia', 'Ana', 'Ramirez', NULL, 20000699, 'V', 23, 'participante699@example.com', '2003-08-21', '2026-09-08', 'Asignado', 'Primaria', 'Femenino', 1),
+(701, 'Juan', 'Carlos', 'Perez', 'Gonzales', 30635900, 'V', 15, 'samueljosealexander@gmail.com', '2011-07-28', '2026-07-28', 'En sistema', 'Primaria', 'Masculino', 2),
+(702, 'Testhighlight', '', 'Highlight', '', 99887766, 'V', 31, 'highlight@test.com', '1995-05-15', '2026-07-28', 'En sistema', '', 'Masculino', 1),
+(703, 'Testhighlight', '', 'Highlight', '', 99887767, 'V', 31, 'highlight2@test.com', '1995-05-15', '2026-07-28', 'En sistema', '', 'Masculino', 1);
 
 -- --------------------------------------------------------
 
@@ -4801,6 +4827,95 @@ INSERT INTO `tb_participante_curso` (`id_participante_curso`, `id_participante`,
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `tb_participante_discapacidad`
+--
+
+CREATE TABLE `tb_participante_discapacidad` (
+  `id_participante` int(11) NOT NULL,
+  `id_discapacidad` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `tb_participante_discapacidad`
+--
+
+INSERT INTO `tb_participante_discapacidad` (`id_participante`, `id_discapacidad`) VALUES
+(1, 3),
+(11, 2),
+(21, 2),
+(31, 2),
+(41, 4),
+(51, 4),
+(61, 2),
+(71, 4),
+(81, 2),
+(91, 2),
+(101, 4),
+(111, 3),
+(121, 2),
+(131, 2),
+(141, 3),
+(151, 4),
+(161, 4),
+(171, 3),
+(181, 4),
+(191, 2),
+(201, 4),
+(211, 4),
+(221, 2),
+(231, 3),
+(241, 3),
+(251, 4),
+(261, 2),
+(271, 2),
+(281, 3),
+(291, 3),
+(301, 3),
+(311, 3),
+(321, 3),
+(331, 4),
+(341, 4),
+(351, 4),
+(361, 2),
+(371, 3),
+(381, 4),
+(391, 3),
+(401, 2),
+(411, 4),
+(421, 4),
+(431, 4),
+(441, 2),
+(451, 4),
+(461, 4),
+(471, 3),
+(481, 3),
+(491, 2),
+(501, 3),
+(511, 3),
+(521, 2),
+(531, 2),
+(541, 2),
+(551, 4),
+(561, 2),
+(571, 4),
+(581, 4),
+(591, 2),
+(601, 4),
+(611, 4),
+(621, 3),
+(631, 2),
+(641, 2),
+(651, 2),
+(661, 2),
+(671, 3),
+(681, 2),
+(691, 2),
+(701, 2),
+(701, 3);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `tb_ppl`
 --
 
@@ -6947,7 +7062,11 @@ INSERT INTO `tb_telefono` (`id_telefono`, `numero_de_telefono`, `tipo_de_telefon
 (737, 58425754751, 'Móvil', NULL, 697, NULL),
 (738, 58418497966, 'Móvil', NULL, 698, NULL),
 (739, 58425156201, 'Móvil', NULL, 699, NULL),
-(740, 58421250668, 'Móvil', NULL, 700, NULL);
+(740, 58421250668, 'Móvil', NULL, 700, NULL),
+(741, 4125465464, 'Móvil', NULL, 701, NULL),
+(742, 4121234568, 'Móvil', 41, NULL, NULL),
+(743, 4127654321, 'Móvil', NULL, 702, NULL),
+(744, 4127654321, 'Móvil', NULL, 703, NULL);
 
 -- --------------------------------------------------------
 
@@ -6974,11 +7093,11 @@ CREATE TABLE `tb_usuario` (
 --
 
 INSERT INTO `tb_usuario` (`id_usuario`, `primer_nombre`, `segundo_nombre`, `primer_apellido`, `segundo_apellido`, `nombre_usuario`, `correo`, `password`, `rol`, `imagen`, `estado_usuario`) VALUES
-(11, 'Daniel', NULL, 'Bringtown', NULL, 'ADMIN', 'dbringtown1@gmail.com', '\\/SRM/qRuyCJqQ.MzxZptjMnRaqgeEd63e2nCkRif/BVOm', 'Administrador', 'assets/img/avatar/avatar_680da3ed12fa2.jpg', 'Activo'),
+(11, 'Daniel', '', 'Bringtown', '', 'ADMIN', 'dbringtown1@gmail.com', '$2y$10$5BwAL/1SiEharQHMkpVteOtPXBG11UWOYcaUr5q68ypDriMHPchY6', 'Administrador', 'assets/img/avatar/avatar_680da3ed12fa2.jpg', 'Activo'),
 (13, 'Jorge', 'Josmauro', 'SDDD', 'Silva', 'Gianmarino', 'dbringtown2@gmail.com', '$2y$10$1OPhWnf4z2aHIJpXO5QOAeZ6RfN0lMx/VhsWFFNL04IaUWPY5uf0W', 'Apoyo', 'assets/img/avatar/default-user.png', 'Inactivo'),
 (14, 'Jose', NULL, 'Benitez', NULL, 'Jbenitez', 'dbringtown12@gmail.com', '$2y$10$1HNTuArHRCrmq9yMywGFAu8M7R65NL0PA8FnjoY8UuC.YtMKzXFHe', 'Administrador', 'assets/img/avatar/default-user.png', 'Activo'),
 (15, 'Mary', NULL, 'Serrada', NULL, 'INCES2025', 'dbringtown13@gmail.com', '$2y$10$z21kNN/cWNRTBgjugD6ij.4669Z5h5PWkhEYJMMvAwOe/KerCJ2MO', 'Apoyo', 'assets/img/avatar/default-user.png', 'Activo'),
-(16, 'samuel ', '', 'rivas', '', 'samu', 'example@gmail.com', '$2y$10$CniBbUjywGebCBl7q4XLMO612UxtLOd8kaHwF7wLYvaUnjF.x164S', 'Administrador', 'assets/img/avatar/1766934581_Gojo Satoru.jpeg', 'Activo'),
+(16, 'samuel ', '', 'rivas', '', 'samu', 'example@gmail.com', '$2y$10$yby7HVmrjPH1bh.dTCrbgOwqng2VH.QzPyDYQZoieulQVLhgMvcmm', 'Administrador', 'assets/img/avatar/1766934581_Gojo Satoru.jpeg', 'Activo'),
 (20, 'samuel ', 'jose', 'rivas', 'rengel', 'usuario', 'examplee@gmail.com', '$2y$10$TCZMLfqr/RTDf1QvVjxgI.Bf5yWPHY0qSvfMjhbrOTyKFRfgeiFOS', 'Apoyo', 'assets/img/avatar/default-user.png', 'Activo'),
 (21, 'gian', 'gian', 'gian', 'gian', 'gian', 'samueljosealexander@gmail.com', '$2y$10$69F.XfYAXi9ryn7ID9UT6.7RcmxsqA/j2TSshTjehvstjoW9sti9i', 'Administrador', 'assets/img/avatar/default-user.png', 'Inactivo');
 
@@ -7091,6 +7210,13 @@ ALTER TABLE `tb_participante_curso`
   ADD KEY `id_curso` (`id_curso`);
 
 --
+-- Indices de la tabla `tb_participante_discapacidad`
+--
+ALTER TABLE `tb_participante_discapacidad`
+  ADD PRIMARY KEY (`id_participante`,`id_discapacidad`),
+  ADD KEY `id_discapacidad` (`id_discapacidad`);
+
+--
 -- Indices de la tabla `tb_ppl`
 --
 ALTER TABLE `tb_ppl`
@@ -7166,7 +7292,7 @@ ALTER TABLE `tb_discapacidad`
 -- AUTO_INCREMENT de la tabla `tb_docente`
 --
 ALTER TABLE `tb_docente`
-  MODIFY `id_docente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_docente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_docente_curso`
@@ -7184,7 +7310,7 @@ ALTER TABLE `tb_estatuscurso`
 -- AUTO_INCREMENT de la tabla `tb_historial`
 --
 ALTER TABLE `tb_historial`
-  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id_historial` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_metas`
@@ -7214,7 +7340,7 @@ ALTER TABLE `tb_objetivos`
 -- AUTO_INCREMENT de la tabla `tb_participante`
 --
 ALTER TABLE `tb_participante`
-  MODIFY `id_participante` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=701;
+  MODIFY `id_participante` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=704;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_participante_curso`
@@ -7250,7 +7376,7 @@ ALTER TABLE `tb_subtipo`
 -- AUTO_INCREMENT de la tabla `tb_telefono`
 --
 ALTER TABLE `tb_telefono`
-  MODIFY `id_telefono` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=741;
+  MODIFY `id_telefono` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=745;
 
 --
 -- AUTO_INCREMENT de la tabla `tb_usuario`
@@ -7284,6 +7410,13 @@ ALTER TABLE `tb_metas`
 --
 ALTER TABLE `tb_participante`
   ADD CONSTRAINT `fk_participante_discapacidad` FOREIGN KEY (`id_discapacidad`) REFERENCES `tb_discapacidad` (`id_discapacidad`);
+
+--
+-- Filtros para la tabla `tb_participante_discapacidad`
+--
+ALTER TABLE `tb_participante_discapacidad`
+  ADD CONSTRAINT `tb_participante_discapacidad_ibfk_1` FOREIGN KEY (`id_participante`) REFERENCES `tb_participante` (`id_participante`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tb_participante_discapacidad_ibfk_2` FOREIGN KEY (`id_discapacidad`) REFERENCES `tb_discapacidad` (`id_discapacidad`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -299,4 +299,17 @@ class HistorialUtil {
             $usuario_id
         );
     }
+
+    /**
+     * Registra la generación de un reporte o constancia en PDF
+     */
+    public static function registrarReporte($reporteName, $usuario_id, $tabla = null, $id_registro = null) {
+        return self::registrar(
+            'Reporte',
+            "Se generó el reporte PDF de: $reporteName",
+            $tabla,
+            $id_registro,
+            $usuario_id
+        );
+    }
 }

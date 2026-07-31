@@ -106,11 +106,11 @@ function getDicAnteriorCursos(tipo, anio) {
 
 // ── Fetch de cursos más participantes (con caché) ─────────────────────
 
-async function fetchCursosMasParticipantes(anio, limite = 30) {
-    const key = `${anio}_${limite}`;
+async function fetchCursosMasParticipantes(anio, limite = 30, estatus = '') {
+    const key = `${anio}_${limite}_${estatus}`;
     if (cacheCursosMasParticipantes[key]) return cacheCursosMasParticipantes[key];
 
-    const res = await fetch(`${API_URL_TC}?accion=cursos_mas_participantes&anio=${anio}&limite=${limite}`);
+    const res = await fetch(`${API_URL_TC}?accion=cursos_mas_participantes&anio=${anio}&limite=${limite}&estatus=${encodeURIComponent(estatus)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -618,7 +618,14 @@ async function renderPanelDetalleCursos(tipo) {
     const anio = anioTablaCursos || new Date().getFullYear();
 
     try {
-        const cursos = await fetchCursosMasParticipantes(anio, 30);
+        let estatusFiltro = '';
+        if (tipo === 'activos') {
+            estatusFiltro = 'proceso';
+        } else if (tipo === 'culminados') {
+            estatusFiltro = 'culminad';
+        }
+
+        const cursos = await fetchCursosMasParticipantes(anio, 30, estatusFiltro);
         const cfg = CFG_PANEL_CURSOS[tipo];
 
         // Filtrar según tipo

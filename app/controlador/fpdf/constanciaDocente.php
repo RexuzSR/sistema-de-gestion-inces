@@ -94,6 +94,20 @@ $stmt->execute();
 $docente = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($docente) {
+    session_name('SISTEMA_CONTROL_INCES');
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (isset($_SESSION['id_usuario'])) {
+        require_once '../../modelo/HistorialUtil.php';
+        HistorialUtil::registrar(
+            'PDF',
+            "Se generó la constancia de docente para: " . $docente['primer_nombre'] . " " . $docente['primer_apellido'] . " (C.I. " . $docente['cedula'] . ")",
+            'tb_docente',
+            $id_docente,
+            $_SESSION['id_usuario']
+        );
+    }
     // Construir nombre completo
     $nombreCompleto = trim(
         $docente['primer_nombre'] . ' ' . 

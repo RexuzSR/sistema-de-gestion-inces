@@ -198,6 +198,16 @@ function obtenerDatosFiltradosYOrdenados() {
 function calcularProgresoCurso(curso) {
     const cAsig = parseFloat(curso.horas_totales || 0);
     const cComp = parseFloat(curso.horas_completadas || 0);
+    
+    if (curso.estatus_curso === 'Culminado') {
+        return {
+            porcentaje: 100,
+            horasAsignadas: cAsig,
+            horasCompletadas: cAsig,
+            estimado: false
+        };
+    }
+
     let porcentaje = cAsig > 0 ? Math.min(100, Math.round((cComp / cAsig) * 100)) : 0;
     let estimado = false;
 
@@ -957,7 +967,34 @@ function renderFilaCarga(item, idx, categoria) {
     const comp   = parseFloat(item.horas_completadas || 0);
     const pct    = asig > 0 ? Math.round((comp / asig) * 100) : 0;
     const clsPct = pct >= 75 ? 'success' : pct >= 40 ? 'warning' : 'danger';
-    const nivel  = pct >= 75 ? 'Avanzado' : pct >= 40 ? 'Moderado' : 'Bajo';
+    
+    // Nivel de Carga Horaria (Semáforo de Carga)
+    let nivel = 'Bajo';
+    let clsNivel = 'secondary';
+    
+    if (parseInt(item.sobrecarga_diaria || 0) > 0) {
+        nivel = 'Alerta Diaria';
+        clsNivel = 'danger';
+    } else if (periodoCarga === 'week' && asig >= 40) {
+        nivel = 'Sobrecarga';
+        clsNivel = 'danger';
+    } else if (periodoCarga === 'month' && asig >= 160) {
+        nivel = 'Sobrecarga';
+        clsNivel = 'danger';
+    } else if (periodoCarga === 'year' && asig >= 120) {
+        nivel = 'Sobrecarga';
+        clsNivel = 'danger';
+    } else if (asig >= 40) {
+        nivel = 'Normal';
+        clsNivel = 'success';
+    } else if (asig > 0) {
+        nivel = 'Bajo';
+        clsNivel = 'secondary';
+    } else {
+        nivel = 'Sin Asignar';
+        clsNivel = 'light text-dark border';
+    }
+
     const clsPos = idx===0?'bg-warning text-dark':idx===1?'bg-secondary':idx===2?'bg-danger':'bg-light text-dark border';
     const ini    = `${(item.primer_nombre||'')[0]||''}${(item.primer_apellido||'')[0]||''}`.toUpperCase();
 
@@ -989,7 +1026,7 @@ function renderFilaCarga(item, idx, categoria) {
             </div>
         </td>
         <td class="text-center text-dark"><span class="badge bg-info text-dark">${parseInt(item.cursos_activos||0)}</span></td>
-        <td><span class="badge bg-${clsPct}">${nivel}</span></td>
+        <td><span class="badge bg-${clsNivel}">${nivel}</span></td>
     </tr>`;
 }
 

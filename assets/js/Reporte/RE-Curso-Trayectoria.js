@@ -447,7 +447,8 @@ function curTrayRenderTabla() {
         const q = curTrayBusqueda.toLowerCase();
         datos = datos.filter(c =>
             String(c.id_curso).toLowerCase().includes(q) ||
-            (c.nombre_curso ?? '').toLowerCase().includes(q)
+            (c.nombre_curso ?? '').toLowerCase().includes(q) ||
+            (c.preimpreso ?? '').toLowerCase().includes(q)
         );
     }
 
@@ -462,7 +463,7 @@ function curTrayRenderTabla() {
         : pagina.map(c => `
             <tr class="curTray-fila ${curTrayCursoAct === c.id_curso ? 'table-active' : ''}" 
                 data-id="${c.id_curso}" style="cursor:pointer;">
-                <td class="fw-bold">${c.id_curso}</td>
+                <td class="fw-bold">${c.preimpreso ?? '—'}</td>
                 <td>${c.nombre_curso}</td>
                 <td>${c.nombre_modalidad ?? '—'}</td>
                 <td class="text-center">${c.turno ?? '—'}</td>
@@ -476,7 +477,7 @@ function curTrayRenderTabla() {
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
+                        <th>Preimpreso</th>
                         <th>Nombre del Curso</th>
                         <th>Modalidad</th>
                         <th class="text-center">Turno</th>
@@ -791,7 +792,7 @@ function curTrayRenderChart(d) {
                 <div>
                     <h5 class="mb-1 fw-bold text-dark">${curTrayEscape(d.nombre_curso)}</h5>
                     <div class="text-muted small">
-                        <span class="me-3"><i class="bi bi-hash"></i>ID ${d.id_curso}</span>
+                        <span class="me-3"><i class="bi bi-hash"></i>Preimpreso ${d.preimpreso ?? '—'}</span>
                         <span class="me-3"><i class="bi bi-mortarboard me-1"></i>${curTrayEscape(d.nombre_modalidad ?? '—')}</span>
                         <span><i class="bi bi-person-workspace me-1"></i>${curTrayEscape(d.docente ?? 'Sin docente')}</span>
                     </div>

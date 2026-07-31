@@ -79,6 +79,20 @@ $stmt->execute();
 $participante = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($participante) {
+    session_name('SISTEMA_CONTROL_INCES');
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (isset($_SESSION['id_usuario'])) {
+        require_once '../../modelo/HistorialUtil.php';
+        HistorialUtil::registrar(
+            'PDF',
+            "Se generó la constancia de participante para: " . $participante['nombre'] . " " . $participante['apellido'] . " (C.I. " . $participante['cedula'] . ")",
+            'tb_participante',
+            $id_participante,
+            $_SESSION['id_usuario']
+        );
+    }
     $nombre = $participante['nombre'];
     $apellido = $participante['apellido'];
     $cedula = $participante['cedula'];

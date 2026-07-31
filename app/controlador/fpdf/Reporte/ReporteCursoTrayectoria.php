@@ -41,6 +41,7 @@ $kpis = $stmtKpi->fetch(PDO::FETCH_ASSOC);
 // 4. Armar consulta de cursos aplicando filtros
 $sql = "SELECT 
             c.id_curso,
+            c.preimpreso,
             c.nombre_curso,
             m.nombre_modalidad,
             c.turno,
@@ -189,58 +190,60 @@ function buildCursoStats($fecha_inicio, $fecha_fin, $participantes, $max_partici
 }
 
 $cursosDetalles = [];
-foreach ($cursosList as $c) {
-    $idCurso = intval($c['id_curso']);
-    
-    $stmtDocente = $conn->prepare("
-        SELECT CONCAT(d.primer_nombre, ' ', d.primer_apellido) as docente
-        FROM tb_docente_curso dc 
-        JOIN tb_docente d ON d.id_docente = dc.id_docente 
-        WHERE dc.id_curso = :id_curso LIMIT 1
-    ");
-    $stmtDocente->execute([':id_curso' => $idCurso]);
-    $docData = $stmtDocente->fetch(PDO::FETCH_ASSOC);
-    $docente = $docData ? $docData['docente'] : 'Sin docente';
-    
-    $stmtParts = $conn->prepare("
-        SELECT 
-            p.cedula,
-            p.primer_nombre,
-            p.primer_apellido,
-            pc.fecha_inscripcion,
-            pc.estatus_participante
-        FROM tb_participante_curso pc
-        JOIN tb_participante p ON p.id_participante = pc.id_participante
-        WHERE pc.id_curso = :id_curso
-        ORDER BY p.primer_apellido ASC, p.primer_nombre ASC
-    ");
-    $stmtParts->execute([':id_curso' => $idCurso]);
-    $participantes = $stmtParts->fetchAll(PDO::FETCH_ASSOC);
-    
-    $stats = buildCursoStats($c['fecha_inicio'], $c['fecha_fin'], $participantes, $c['max_participantes']);
-    
-    $aprobados = 0;
-    $reprobados = 0;
-    $enFormacion = 0;
-    foreach ($participantes as $p) {
-        $estPart = $p['estatus_participante'];
-        if ($estPart === 'Aprobado') {
-            $aprobados++;
-        } elseif (in_array($estPart, ['Reprobado', 'Ausente'])) {
-            $reprobados++;
-        } else {
-            $enFormacion++;
+if (count($cursosList) <= 15) {
+    foreach ($cursosList as $c) {
+        $idCurso = intval($c['id_curso']);
+        
+        $stmtDocente = $conn->prepare("
+            SELECT CONCAT(d.primer_nombre, ' ', d.primer_apellido) as docente
+            FROM tb_docente_curso dc 
+            JOIN tb_docente d ON d.id_docente = dc.id_docente 
+            WHERE dc.id_curso = :id_curso LIMIT 1
+        ");
+        $stmtDocente->execute([':id_curso' => $idCurso]);
+        $docData = $stmtDocente->fetch(PDO::FETCH_ASSOC);
+        $docente = $docData ? $docData['docente'] : 'Sin docente';
+        
+        $stmtParts = $conn->prepare("
+            SELECT 
+                p.cedula,
+                p.primer_nombre,
+                p.primer_apellido,
+                pc.fecha_inscripcion,
+                pc.estatus_participante
+            FROM tb_participante_curso pc
+            JOIN tb_participante p ON p.id_participante = pc.id_participante
+            WHERE pc.id_curso = :id_curso
+            ORDER BY p.primer_apellido ASC, p.primer_nombre ASC
+        ");
+        $stmtParts->execute([':id_curso' => $idCurso]);
+        $participantes = $stmtParts->fetchAll(PDO::FETCH_ASSOC);
+        
+        $stats = buildCursoStats($c['fecha_inicio'], $c['fecha_fin'], $participantes, $c['max_participantes']);
+        
+        $aprobados = 0;
+        $reprobados = 0;
+        $enFormacion = 0;
+        foreach ($participantes as $p) {
+            $estPart = $p['estatus_participante'];
+            if ($estPart === 'Aprobado') {
+                $aprobados++;
+            } elseif (in_array($estPart, ['Reprobado', 'Ausente'])) {
+                $reprobados++;
+            } else {
+                $enFormacion++;
+            }
         }
+        
+        $cursosDetalles[$idCurso] = [
+            'docente' => $docente,
+            'participantes' => $participantes,
+            'stats' => $stats,
+            'aprobados' => $aprobados,
+            'reprobados' => $reprobados,
+            'enFormacion' => $enFormacion
+        ];
     }
-    
-    $cursosDetalles[$idCurso] = [
-        'docente' => $docente,
-        'participantes' => $participantes,
-        'stats' => $stats,
-        'aprobados' => $aprobados,
-        'reprobados' => $reprobados,
-        'enFormacion' => $enFormacion
-    ];
 }
 
 date_default_timezone_set('America/Caracas');
@@ -249,6 +252,10 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', 1);
     session_name('SISTEMA_CONTROL_INCES');
     session_start();
+}
+if (isset($_SESSION['id_usuario'])) {
+    require_once __DIR__ . '/../../../modelo/HistorialUtil.php';
+    HistorialUtil::registrarReporte('Trayectoria de Cursos', $_SESSION['id_usuario']);
 }
 $usuarioFull = 'Usuario no identificado';
 if (isset($_SESSION['id_usuario'])) {

@@ -194,9 +194,9 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 8%;">ID</th>
-                <th style="width: 32%; text-align:left;">Nombre del Curso</th>
-                <th style="width: 15%;">Modalidad</th>
+                <th style="width: 15%;">Preimpreso</th>
+                <th style="width: 27%; text-align:left;">Nombre del Curso</th>
+                <th style="width: 13%;">Modalidad</th>
                 <th style="width: 10%;">Turno</th>
                 <th style="width: 15%;">Inicio</th>
                 <th style="width: 10%;">Cupos</th>
@@ -208,7 +208,7 @@
                 $fechaInicio = ($c['fecha_inicio'] && $c['fecha_inicio'] !== '0000-00-00') ? date('d/m/Y', strtotime($c['fecha_inicio'])) : '—';
             ?>
                 <tr>
-                    <td class="text-center"><?php echo $c['id_curso']; ?></td>
+                    <td class="text-center"><?php echo htmlspecialchars($c['preimpreso'] ?? '—'); ?></td>
                     <td><?php echo htmlspecialchars($c['nombre_curso']); ?></td>
                     <td class="text-center"><?php echo htmlspecialchars($c['nombre_modalidad'] ?? '—'); ?></td>
                     <td class="text-center"><?php echo htmlspecialchars($c['turno'] ?? '—'); ?></td>
@@ -224,136 +224,151 @@
     </table>
 
     <!-- DETALLES POR CURSO -->
-    <?php foreach ($cursosList as $c): 
-        $idCurso = $c['id_curso'];
-        if (!isset($cursosDetalles[$idCurso])) continue;
-        $detalles = $cursosDetalles[$idCurso];
-        $stats = $detalles['stats'];
-    ?>
-    <div class="page-break"></div>
-
-    <div class="curso-header">
-        <h2><?php echo htmlspecialchars($c['nombre_curso']); ?></h2>
-        <p>
-            <strong>ID:</strong> <?php echo $idCurso; ?> &nbsp;|&nbsp;
-            <strong>Modalidad:</strong> <?php echo htmlspecialchars($c['nombre_modalidad'] ?? '—'); ?> &nbsp;|&nbsp;
-            <strong>Docente:</strong> <?php echo htmlspecialchars($detalles['docente']); ?> &nbsp;|&nbsp;
-            <strong>Estatus:</strong> <?php echo htmlspecialchars($c['estatus'] ?? '—'); ?>
-        </p>
-    </div>
-
-    <!-- KPIs del Curso -->
-    <div class="kpi-row">
-        <table>
-            <tr>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #6c757d;">
-                        <h3><?php echo $stats['duracionDias']; ?></h3>
-                        <p>Días Trayectoria</p>
-                    </div>
-                </td>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #0891b2;">
-                        <h3><?php echo $stats['inscritosTotales']; ?></h3>
-                        <p>Inscritos Totales</p>
-                    </div>
-                </td>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #0d6efd;">
-                        <h3><?php echo $stats['cupoPct']; ?>%</h3>
-                        <p>Cupo Usado</p>
-                    </div>
-                </td>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #dc3545;">
-                        <h3 style="font-size: 13px; margin-top:4px;"><?php echo $stats['peakMonth'] ?: '—'; ?></h3>
-                        <p>Pico Mensual</p>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Gráfico de CSS (Inscripciones por mes) -->
-    <div class="section-title">Inscripciones por Mes</div>
-    <div class="chart-box">
-        <?php 
-            $maxData = !empty($stats['dataPoints']) ? max($stats['dataPoints']) : 1;
-            if ($maxData <= 0) $maxData = 1;
+    <?php 
+    $maxDetalles = 15;
+    if (count($cursosList) <= $maxDetalles):
+        foreach ($cursosList as $c): 
+            $idCurso = $c['id_curso'];
+            if (!isset($cursosDetalles[$idCurso])) continue;
+            $detalles = $cursosDetalles[$idCurso];
+            $stats = $detalles['stats'];
         ?>
-        <div class="css-bar-chart">
-            <?php foreach($stats['dataPoints'] as $i => $val): 
-                $hPct = ($val / $maxData) * 100;
-                $labelParts = explode(' ', $stats['labels'][$i]);
-                $lbl = (isset($labelParts[0]) ? substr($labelParts[0], 0, 3) : '') . (isset($labelParts[1]) ? ' '.substr($labelParts[1], 2, 2) : '');
-            ?>
-            <div class="css-bar-col">
-                <div class="css-bar-val"><?php echo $val > 0 ? $val : ''; ?></div>
-                <div class="css-bar-inner" style="height: <?php echo $val > 0 ? $hPct : 1; ?>%;"></div>
-                <div class="css-bar-label"><?php echo htmlspecialchars($lbl); ?></div>
-            </div>
-            <?php endforeach; ?>
+        <div class="page-break"></div>
+
+        <div class="curso-header">
+            <h2><?php echo htmlspecialchars($c['nombre_curso']); ?></h2>
+            <p>
+                <strong>Preimpreso:</strong> <?php echo htmlspecialchars($c['preimpreso'] ?? '—'); ?> &nbsp;|&nbsp;
+                <strong>Modalidad:</strong> <?php echo htmlspecialchars($c['nombre_modalidad'] ?? '—'); ?> &nbsp;|&nbsp;
+                <strong>Docente:</strong> <?php echo htmlspecialchars($detalles['docente']); ?> &nbsp;|&nbsp;
+                <strong>Estatus:</strong> <?php echo htmlspecialchars($c['estatus'] ?? '—'); ?>
+            </p>
         </div>
-    </div>
 
-    <!-- KPIs Participantes -->
-    <div class="section-title">Resumen de Participantes</div>
-    <div class="kpi-row">
-        <table>
-            <tr>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #198754;">
-                        <h3><?php echo $detalles['aprobados']; ?></h3>
-                        <p>Aprobados</p>
-                    </div>
-                </td>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #dc3545;">
-                        <h3><?php echo $detalles['reprobados']; ?></h3>
-                        <p>Reprobados / Ausentes</p>
-                    </div>
-                </td>
-                <td>
-                    <div class="kpi-card" style="border-top: 3px solid #ffc107;">
-                        <h3><?php echo $detalles['enFormacion']; ?></h3>
-                        <p>En formación / Asignados</p>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Tabla Participantes -->
-    <div class="section-title">Detalle de Participantes Inscritos</div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th style="width: 20%;">Cédula</th>
-                <th style="width: 40%; text-align:left;">Nombre Completo</th>
-                <th style="width: 20%;">Fecha Inscripción</th>
-                <th style="width: 20%;">Estatus</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if(empty($detalles['participantes'])): ?>
-                <tr><td colspan="4" class="text-center py-3">No hay participantes registrados en este curso.</td></tr>
-            <?php else: ?>
-                <?php foreach($detalles['participantes'] as $p): 
-                    $fullname = trim(($p['primer_nombre'] ?? '') . ' ' . ($p['primer_apellido'] ?? ''));
-                    $fechaInscr = ($p['fecha_inscripcion'] && $p['fecha_inscripcion'] !== '0000-00-00') ? date('d/m/Y', strtotime($p['fecha_inscripcion'])) : '—';
-                ?>
+        <!-- KPIs del Curso -->
+        <div class="kpi-row">
+            <table>
                 <tr>
-                    <td class="text-center"><?php echo htmlspecialchars($p['cedula'] ?? '—'); ?></td>
-                    <td><?php echo htmlspecialchars($fullname); ?></td>
-                    <td class="text-center"><?php echo $fechaInscr; ?></td>
-                    <td class="text-center"><?php echo htmlspecialchars($p['estatus_participante'] ?? '—'); ?></td>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #6c757d;">
+                            <h3><?php echo $stats['duracionDias']; ?></h3>
+                            <p>Días Trayectoria</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #0891b2;">
+                            <h3><?php echo $stats['inscritosTotales']; ?></h3>
+                            <p>Inscritos Totales</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #0d6efd;">
+                            <h3><?php echo $stats['cupoPct']; ?>%</h3>
+                            <p>Cupo Usado</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #dc3545;">
+                            <h3 style="font-size: 13px; margin-top:4px;"><?php echo $stats['peakMonth'] ?: '—'; ?></h3>
+                            <p>Pico Mensual</p>
+                        </div>
+                    </td>
                 </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
+            </table>
+        </div>
 
-    <?php endforeach; ?>
+        <!-- Gráfico de CSS (Inscripciones por mes) -->
+        <div class="section-title">Inscripciones por Mes</div>
+        <div class="chart-box">
+            <?php 
+                $maxData = !empty($stats['dataPoints']) ? max($stats['dataPoints']) : 1;
+                if ($maxData <= 0) $maxData = 1;
+            ?>
+            <div class="css-bar-chart">
+                <?php foreach($stats['dataPoints'] as $i => $val): 
+                    $hPct = ($val / $maxData) * 100;
+                    $labelParts = explode(' ', $stats['labels'][$i]);
+                    $lbl = (isset($labelParts[0]) ? substr($labelParts[0], 0, 3) : '') . (isset($labelParts[1]) ? ' '.substr($labelParts[1], 2, 2) : '');
+                ?>
+                <div class="css-bar-col">
+                    <div class="css-bar-val"><?php echo $val > 0 ? $val : ''; ?></div>
+                    <div class="css-bar-inner" style="height: <?php echo $val > 0 ? $hPct : 1; ?>%;"></div>
+                    <div class="css-bar-label"><?php echo htmlspecialchars($lbl); ?></div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- KPIs Participantes -->
+        <div class="section-title">Resumen de Participantes</div>
+        <div class="kpi-row">
+            <table>
+                <tr>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #198754;">
+                            <h3><?php echo $detalles['aprobados']; ?></h3>
+                            <p>Aprobados</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #dc3545;">
+                            <h3><?php echo $detalles['reprobados']; ?></h3>
+                            <p>Reprobados / Ausentes</p>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="kpi-card" style="border-top: 3px solid #ffc107;">
+                            <h3><?php echo $detalles['enFormacion']; ?></h3>
+                            <p>En formación / Asignados</p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Tabla Participantes -->
+        <div class="section-title">Detalle de Participantes Inscritos</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">Cédula</th>
+                    <th style="width: 40%; text-align:left;">Nombre Completo</th>
+                    <th style="width: 20%;">Fecha Inscripción</th>
+                    <th style="width: 20%;">Estatus</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if(empty($detalles['participantes'])): ?>
+                    <tr><td colspan="4" class="text-center py-3">No hay participantes registrados en este curso.</td></tr>
+                <?php else: ?>
+                    <?php foreach($detalles['participantes'] as $p): 
+                        $fullname = trim(($p['primer_nombre'] ?? '') . ' ' . ($p['primer_apellido'] ?? ''));
+                        $fechaInscr = ($p['fecha_inscripcion'] && $p['fecha_inscripcion'] !== '0000-00-00') ? date('d/m/Y', strtotime($p['fecha_inscripcion'])) : '—';
+                    ?>
+                    <tr>
+                        <td class="text-center"><?php echo htmlspecialchars($p['cedula'] ?? '—'); ?></td>
+                        <td><?php echo htmlspecialchars($fullname); ?></td>
+                        <td class="text-center"><?php echo $fechaInscr; ?></td>
+                        <td class="text-center"><?php echo htmlspecialchars($p['estatus_participante'] ?? '—'); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div class="page-break"></div>
+        <div style="padding: 20px; border: 1px dashed #dc3545; background-color: #fff8f8; border-radius: 6px; margin-top: 30px; text-align: center;">
+            <h3 style="color: #dc3545; margin-top: 0; font-size: 13px; text-transform: uppercase;">Detalles Individuales Limitados</h3>
+            <p style="font-size: 11px; line-height: 1.6; color: #555;">
+                Los reportes detallados individuales (gráficos de inscripciones mensuales y listado de participantes) no se incluyen en este documento porque se seleccionaron <strong><?php echo count($cursosList); ?> cursos</strong>.
+            </p>
+            <p style="font-size: 11px; line-height: 1.6; color: #555; margin-bottom: 0;">
+                Para visualizar los detalles individuales y gráficos en el PDF, por favor aplique filtros de búsqueda en el panel (por año, modalidad, estatus o período) para reducir el listado a un máximo de <strong><?php echo $maxDetalles; ?> cursos</strong>.
+            </p>
+        </div>
+    <?php endif; ?>
 
 </body>
 </html>

@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Registrar inicio de sesión en el historial
         require_once '../../modelo/HistorialUtil.php';
         HistorialUtil::registrarLogin($_SESSION['id_usuario'], $_SESSION['nombre_usuario']);
+        $_SESSION['ultimo_acceso'] = time();
 
         if ($isAjax) {
             header('Content-Type: application/json');

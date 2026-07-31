@@ -203,13 +203,13 @@
         <thead>
             <?php if ($conAprobado == '1'): ?>
             <tr>
-                <th style="width:5%;">#</th>
-                <th style="width:12%;">Cédula</th>
-                <th style="width:18%;">Nombre</th>
-                <th style="width:18%;">Apellido</th>
-                <th style="width:12%;">Teléfono</th>
+                <th style="width:3%;">#</th>
+                <th style="width:10%;">Cédula</th>
+                <th style="width:14%;">Nombre</th>
+                <th style="width:14%;">Apellido</th>
+                <th style="width:11%;">Teléfono</th>
                 <th style="width:18%;">Correo</th>
-                <th style="width:17%;">Cursos Aprob.</th>
+                <th style="width:30%;">Cursos Aprob.</th>
             </tr>
             <?php else: ?>
             <tr>
@@ -232,7 +232,15 @@
             foreach ($filtrados as $p): 
                 $countP++;
                 if ($conAprobado == '1') {
-                    $cursosStr = !empty($p['cursos_aprobados']) ? $p['cursos_aprobados'] : '—';
+                    $cursosArray = !empty($p['cursos_aprobados']) ? explode(', ', $p['cursos_aprobados']) : [];
+                    if (!empty($cursosArray)) {
+                        $escapedCursos = array_map('htmlspecialchars', $cursosArray);
+                        $cursosHtml = '<div style="font-size: 7.5px; line-height: 1.15; color: #333; text-align: left;">';
+                        $cursosHtml .= implode(' &bull; ', $escapedCursos);
+                        $cursosHtml .= '</div>';
+                    } else {
+                        $cursosHtml = '—';
+                    }
             ?>
                 <tr>
                     <td class="text-center"><?php echo $countP; ?></td>
@@ -241,7 +249,7 @@
                     <td><?php echo htmlspecialchars($p['primer_apellido']); ?></td>
                     <td><?php echo htmlspecialchars($p['telefono']); ?></td>
                     <td><?php echo htmlspecialchars($p['correo']); ?></td>
-                    <td><?php echo htmlspecialchars($cursosStr); ?></td>
+                    <td><?php echo $cursosHtml; ?></td>
                 </tr>
             <?php 
                 } else {
