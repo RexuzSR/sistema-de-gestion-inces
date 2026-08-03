@@ -40,6 +40,8 @@
     function normalizarYCalcularScores(datos) {
         const cursos = datos.map(d => ({
             curso:         d.nombre_curso || '—',
+            preimpreso:    d.preimpreso || '—',
+            fecha_inicio:  d.fecha_inicio || '',
             inscripciones: parseInt(d.total_inscripciones) || 0,
             participantes: parseInt(d.participantes_unicos) || 0,
             estatus:       d.estatus || '—',
@@ -110,6 +112,7 @@
             : datosCompletosTabla.filter(c => c.area === area);
         if (term) datos = datos.filter(c =>
             c.curso.toLowerCase().includes(term)  ||
+            c.preimpreso.toLowerCase().includes(term) ||
             c.area.toLowerCase().includes(term)   ||
             c.estatus.toLowerCase().includes(term)
         );
@@ -134,6 +137,14 @@
         return [...datos].sort((a, b) => {
             if (columna === 'curso') {
                 const r = a.curso.toLowerCase().localeCompare(b.curso.toLowerCase());
+                return direccion === 'asc' ? r : -r;
+            }
+            if (columna === 'preimpreso') {
+                const r = a.preimpreso.toLowerCase().localeCompare(b.preimpreso.toLowerCase());
+                return direccion === 'asc' ? r : -r;
+            }
+            if (columna === 'fecha_inicio') {
+                const r = (a.fecha_inicio || '').localeCompare(b.fecha_inicio || '');
                 return direccion === 'asc' ? r : -r;
             }
             const campo = { inscripciones: 'inscripciones', participantes: 'participantes', score: 'score' }[columna] || 'score';
@@ -280,6 +291,16 @@
                                             <th>
                                                 <a href="#" class="sortable-header-rq" data-columna="curso">
                                                     Curso <i class="bi bi-arrow-down-up"></i>
+                                                </a>
+                                            </th>
+                                            <th class="text-center" width="120">
+                                                <a href="#" class="sortable-header-rq" data-columna="preimpreso">
+                                                    Preimpreso <i class="bi bi-arrow-down-up"></i>
+                                                </a>
+                                            </th>
+                                            <th class="text-center" width="120">
+                                                <a href="#" class="sortable-header-rq" data-columna="fecha_inicio">
+                                                    Mes Reinicio <i class="bi bi-arrow-down-up"></i>
                                                 </a>
                                             </th>
                                             <th class="text-center" width="130">
@@ -748,10 +769,22 @@
         if (spanFin)   spanFin.textContent   = fin;
         if (spanTotal) spanTotal.textContent = datosOrdenados.length;
 
+        function rqObtenerNombreMes(fechaStr) {
+            if (!fechaStr) return '—';
+            const partes = fechaStr.split('-');
+            if (partes.length < 2) return '—';
+            const mesNum = parseInt(partes[1], 10);
+            const meses = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+            return meses[mesNum - 1] || '—';
+        }
+
         if (!datosOrdenados.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
+                    <td colspan="10" class="text-center text-muted py-5">
                         <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                         No se encontraron cursos con los filtros aplicados.
                     </td>
@@ -773,12 +806,18 @@
                 item.score > 50 ? ['bg-warning text-dark', 'Considerar']      :
                                   ['bg-secondary',         'Mantener'];
 
+            const mesNombre = rqObtenerNombreMes(item.fecha_inicio);
+            const anioCurso = item.fecha_inicio ? item.fecha_inicio.split('-')[0] : '';
+            const mesAnioStr = mesNombre !== '—' ? `${mesNombre} ${anioCurso}` : '—';
+
             return `
             <tr ${gi < 3 ? 'class="table-warning"' : ''}>
                 <td class="text-center">
                     <span class="badge ${badgeColor}">${gi + 1}</span>
                 </td>
                 <td><strong>${item.curso}</strong></td>
+                <td class="text-center">${item.preimpreso || '—'}</td>
+                <td class="text-center">${mesAnioStr}</td>
                 <td class="text-center rp-cell-num">${item.inscripciones.toLocaleString()}</td>
                 <td class="text-center rp-cell-num">${item.participantes.toLocaleString()}</td>
                 <td class="text-center">

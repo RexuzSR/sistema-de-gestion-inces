@@ -6,7 +6,7 @@ const cardsContainer = document.getElementById('cardsContainer');
 
 // Helper function to POST data and open the resulting PDF in a new tab inline (bypassing Chrome's POST-to-blank viewer bug)
 window.postAndOpenPdf = function(url, data) {
-    if (typeof mostrarLoading === 'function') mostrarLoading();
+    if (typeof mostrarLoading === 'function') mostrarLoading(true);
     
     const newWindow = window.open('about:blank', '_blank');
     if (newWindow) {
@@ -108,9 +108,38 @@ function aplicarRippleCard(element, event, colorHex) {
     setTimeout(() => ripple.remove(), 800);
 }
 
-function mostrarLoading() {
-    const o = document.getElementById('loadingOverlay');
-    if (o) { o.classList.add('active'); o.style.display = 'flex'; }
+function mostrarReporteSkeleton() {
+    const reportContainer = document.getElementById('reportContainer');
+    if (!reportContainer) return;
+    if (reportContainer.querySelector('.rp-skeleton-wrapper')) return;
+    reportContainer.innerHTML = `
+        <div class="rp-skeleton-wrapper">
+            <div class="rp-skeleton-header">
+                <div class="rp-skeleton-title rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-subtitle rp-skeleton-pulse"></div>
+            </div>
+            <div class="rp-skeleton-kpis">
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+            </div>
+            <div class="rp-skeleton-grid">
+                <div class="rp-skeleton-main rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-side rp-skeleton-pulse"></div>
+            </div>
+        </div>
+    `;
+    reportContainer.style.display = 'block';
+}
+
+function mostrarLoading(isPdf = false) {
+    if (isPdf) {
+        const o = document.getElementById('loadingOverlay');
+        if (o) { o.classList.add('active'); o.style.display = 'flex'; }
+    } else {
+        mostrarReporteSkeleton();
+    }
 }
 
 function ocultarLoading() {
@@ -262,6 +291,60 @@ function init() {
             }, 50);
         }
     } catch (e) { console.error('Error init:', e); mostrarErrorInicial('Error al inicializar'); }
+
+    // MutationObserver para traducir spinners de base de datos a skeleton loaders
+    try {
+        const checkAndReplaceSpinner = (container) => {
+            if (!container) return;
+            const spinners = container.querySelectorAll('.spinner-border, .spinner-border-sm');
+            spinners.forEach((spinner) => {
+                const loaderParent = spinner.closest('.text-center, .d-flex, [id^="loading"], [id*="Loading"]');
+                if (loaderParent && !loaderParent.classList.contains('rp-has-skeleton')) {
+                    loaderParent.classList.add('rp-has-skeleton');
+                    loaderParent.innerHTML = `
+                        <div class="rp-skeleton-wrapper" style="border:none; box-shadow:none; padding:0; background:transparent;">
+                            <div class="rp-skeleton-kpis">
+                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                            </div>
+                            <div class="rp-skeleton-grid mt-4">
+                                <div class="rp-skeleton-main rp-skeleton-pulse"></div>
+                                <div class="rp-skeleton-side rp-skeleton-pulse"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            checkAndReplaceSpinner(node);
+                            // También buscar hacia adentro
+                            if (node.querySelectorAll) {
+                                const spinners = node.querySelectorAll('.spinner-border, .spinner-border-sm');
+                                if (spinners.length) checkAndReplaceSpinner(node);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        const targetNode = document.getElementById('reportContainer');
+        if (targetNode) {
+            observer.observe(targetNode, { childList: true, subtree: true });
+            // Escaneo inicial por si acaso
+            checkAndReplaceSpinner(targetNode);
+        }
+    } catch (err) {
+        console.error('Error inicializando MutationObserver de cargadores:', err);
+    }
 }
 
 function mostrarErrorInicial(msg) {
@@ -630,7 +713,6 @@ function seleccionarReporte(reporteId, categoriaId) {
                 reportContainer.style.display = 'block';
                 reportContainer.classList.remove('fade-out');
                 reportContainer.classList.add('fade-in');
-                reportContainer.innerHTML = '';
                 tabsContainer.style.display = 'block';
                 cargarReporte(reporteId, categoriaId);
                 ocultarLoading();
@@ -655,7 +737,6 @@ function cambiarReporte(reporteId, categoriaId) {
         });
         setTimeout(() => {
             currentReportId = reporteId;
-            reportContainer.innerHTML = '';
             cargarReporte(reporteId, categoriaId);
             ocultarLoading();
             reportContainer.classList.remove('fade-out');
@@ -754,9 +835,17 @@ function _ejecutarCargaReporte(reporte, categoria) {
     contentDiv.className = 'fade-in';
     // Placeholder de carga para evitar pantalla en blanco mientras el reporte inicializa
     contentDiv.innerHTML = `
-        <div class="d-flex flex-column align-items-center justify-content-center p-4" style="min-height:220px;">
-            <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;"></div>
-            <div class="mt-3 text-muted small">Cargando contenido del reporte...</div>
+        <div class="rp-skeleton-wrapper" style="border:none; box-shadow:none; padding:0; background:transparent;">
+            <div class="rp-skeleton-kpis">
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
+            </div>
+            <div class="rp-skeleton-grid mt-4">
+                <div class="rp-skeleton-main rp-skeleton-pulse"></div>
+                <div class="rp-skeleton-side rp-skeleton-pulse"></div>
+            </div>
         </div>`;
 
     contentDiv.style.marginTop = '20px';

@@ -84,6 +84,8 @@ if (!empty($imagenUsuario)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../../assets/css/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../../assets/css/toastr.min.css">
     <link rel="stylesheet" href="../../assets/css/home.css">
     <link rel="stylesheet" href="../../assets/css/crud.css">
@@ -125,10 +127,92 @@ if (!empty($imagenUsuario)) {
             <!-- Main -->
             <div class="contenedor">
                     
-            <div class="box d-flex justify-content-center flex-column shadow-lg px-3 mt-4">
+            <div class="box d-flex justify-content-center flex-column shadow-lg px-3 mt-4 pt-1" style="width: 98% !important;">
               
+              <!-- Tarjetas KPI -->
+              <div class="row g-3 mb-4 kpi-row">
+                  <!-- Total Participantes -->
+                  <div class="col-xl-2 col-md-4 col-sm-6">
+                      <div class="kpi-card kpi-total" style="cursor: pointer;" id="kpi-card-total" onclick="$('#estado-filter').val('').trigger('change');">
+                          <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Total de participantes registrados en el sistema. Haz clic para ver todos."></i>
+                          <div class="kpi-icon-wrapper">
+                              <i class="bi bi-people-fill"></i>
+                          </div>
+                          <div class="kpi-content">
+                              <span class="kpi-value" id="kpi-total">0</span>
+                              <span class="kpi-label">Total Participantes</span>
+                          </div>
+                      </div>
+                  </div>
+                  <!-- En Formación -->
+                  <div class="col-xl-2 col-md-4 col-sm-6">
+                      <div class="kpi-card kpi-formacion" style="cursor: pointer;" onclick="$('#estado-filter').val('En formación').trigger('change');">
+                          <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Participantes inscritos y cursando actualmente."></i>
+                          <div class="kpi-icon-wrapper">
+                              <i class="bi bi-play-circle-fill"></i>
+                          </div>
+                          <div class="kpi-content">
+                              <span class="kpi-value" id="kpi-formacion">0</span>
+                              <span class="kpi-label">En Formación</span>
+                          </div>
+                      </div>
+                  </div>
+                  <!-- En Sistema -->
+                  <div class="col-xl-2 col-md-4 col-sm-6">
+                      <div class="kpi-card kpi-sistema" style="cursor: pointer;" onclick="$('#estado-filter').val('En sistema').trigger('change');">
+                          <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Participantes registrados en el sistema listos para ser asignados."></i>
+                          <div class="kpi-icon-wrapper">
+                              <i class="bi bi-hdd-fill"></i>
+                          </div>
+                          <div class="kpi-content">
+                              <span class="kpi-value" id="kpi-sistema">0</span>
+                              <span class="kpi-label">En Sistema</span>
+                          </div>
+                      </div>
+                  </div>
+                  <!-- Asignados -->
+                  <div class="col-xl-2 col-md-4 col-sm-6">
+                      <div class="kpi-card kpi-asignados" style="cursor: pointer;" onclick="$('#estado-filter').val('Asignado').trigger('change');">
+                          <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Participantes que han sido asignados a un curso."></i>
+                          <div class="kpi-icon-wrapper">
+                              <i class="bi bi-journal-check"></i>
+                          </div>
+                          <div class="kpi-content">
+                              <span class="kpi-value" id="kpi-asignados">0</span>
+                              <span class="kpi-label">Asignados</span>
+                          </div>
+                      </div>
+                  </div>
+                  <!-- Disponibles -->
+                  <div class="col-xl-2 col-md-4 col-sm-6">
+                      <div class="kpi-card kpi-disponibles" style="cursor: pointer;" onclick="$('#estado-filter').val('Disponible').trigger('change');">
+                          <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Participantes disponibles o inactivos."></i>
+                          <div class="kpi-icon-wrapper">
+                              <i class="bi bi-person-check-fill"></i>
+                          </div>
+                          <div class="kpi-content">
+                              <span class="kpi-value" id="kpi-disponibles">0</span>
+                              <span class="kpi-label">Disponibles</span>
+                          </div>
+                      </div>
+                  </div>
+                  <!-- Diferidos -->
+                  <div class="col-xl-2 col-md-4 col-sm-6">
+                      <div class="kpi-card kpi-culminados" style="cursor: pointer;" id="kpi-card-diferidos" onclick="$('#estado-filter').val('Diferido').trigger('change');">
+                          <i class="bi bi-info-circle kpi-info-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Participantes cuya formación se ha diferido."></i>
+                          <div class="kpi-icon-wrapper">
+                              <i class="bi bi-exclamation-circle-fill"></i>
+                          </div>
+                          <div class="kpi-content">
+                              <span class="kpi-value" id="kpi-diferidos">0</span>
+                              <span class="kpi-label">Diferidos</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
               <!-- Barra de búsqueda -->
-              <div class="d-flex justify-content-between align-items-center mt-4">
+              <div class="d-flex justify-content-between align-items-center mt-2">
                 <div class="input-group search-bar" style="max-width: 515px; min-width: 295px;">
                     <input 
                         type="text" 

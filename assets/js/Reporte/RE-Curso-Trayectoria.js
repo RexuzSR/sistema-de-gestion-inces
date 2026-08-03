@@ -247,26 +247,27 @@ function curTrayPoblarSelects(datos) {
     const setEsts  = new Set();
 
     datos.forEach(c => {
-        if (c.fecha_inicio) {
-            const a = c.fecha_inicio.split('-')[0];
+        if (c.fecha_minima) {
+            const a = c.fecha_minima.split('-')[0];
             if (a) setAnios.add(a);
         }
         if (c.nombre_modalidad) setMods.add(c.nombre_modalidad);
         if (c.estatus) setEsts.add(c.estatus);
     });
 
-    const poblar = (id, items) => {
+    const poblar = (id, items, defOpt) => {
         const sel = document.getElementById(id);
         if (!sel) return;
+        sel.innerHTML = defOpt;
         [...items].sort().forEach(it => {
             const opt = document.createElement('option');
             opt.value = it; opt.textContent = it; sel.appendChild(opt);
         });
     };
 
-    poblar('curTrayFiltroAnio',      setAnios);
-    poblar('curTrayFiltroModalidad', setMods);
-    poblar('curTrayFiltroEstatus',   setEsts);
+    poblar('curTrayFiltroAnio',      setAnios, '<option value="">Todos los años</option>');
+    poblar('curTrayFiltroModalidad', setMods,  '<option value="">Todas</option>');
+    poblar('curTrayFiltroEstatus',   setEsts,  '<option value="">Todos</option>');
 }
 
 function curTrayRenderKPI(data) {
@@ -419,15 +420,15 @@ function curTrayRenderTabla() {
 
     let datos = [...curTrayDatosTabla];
 
-    if (curTrayFiltros.anio)      datos = datos.filter(c => c.fecha_inicio?.startsWith(curTrayFiltros.anio));
+    if (curTrayFiltros.anio)      datos = datos.filter(c => c.fecha_minima?.startsWith(curTrayFiltros.anio) || c.fecha_maxima?.startsWith(curTrayFiltros.anio));
     if (curTrayFiltros.modalidad) datos = datos.filter(c => c.nombre_modalidad === curTrayFiltros.modalidad);
     if (curTrayFiltros.estatus)   datos = datos.filter(c => c.estatus === curTrayFiltros.estatus);
 
     if (curTrayFiltros.tipoPeriodo && curTrayFiltros.subPeriodo) {
         const sub = parseInt(curTrayFiltros.subPeriodo);
         datos = datos.filter(c => {
-            if (!c.fecha_inicio || c.fecha_inicio === '0000-00-00') return false;
-            const mes = parseInt(c.fecha_inicio.split('-')[1]);
+            if (!c.fecha_minima || c.fecha_minima === '0000-00-00') return false;
+            const mes = parseInt(c.fecha_minima.split('-')[1]);
             if (curTrayFiltros.tipoPeriodo === 'mensual') {
                 return mes === sub;
             } else if (curTrayFiltros.tipoPeriodo === 'trimestral') {
@@ -446,9 +447,8 @@ function curTrayRenderTabla() {
     if (curTrayBusqueda.trim()) {
         const q = curTrayBusqueda.toLowerCase();
         datos = datos.filter(c =>
-            String(c.id_curso).toLowerCase().includes(q) ||
             (c.nombre_curso ?? '').toLowerCase().includes(q) ||
-            (c.preimpreso ?? '').toLowerCase().includes(q)
+            (c.preimpresos ?? '').toLowerCase().includes(q)
         );
     }
 
@@ -461,14 +461,17 @@ function curTrayRenderTabla() {
     const filas = pagina.length === 0
         ? `<tr><td colspan="7" class="text-center py-5 text-muted">No se encontraron cursos</td></tr>`
         : pagina.map(c => `
-            <tr class="curTray-fila ${curTrayCursoAct === c.id_curso ? 'table-active' : ''}" 
-                data-id="${c.id_curso}" style="cursor:pointer;">
-                <td class="fw-bold">${c.preimpreso ?? '—'}</td>
-                <td>${c.nombre_curso}</td>
-                <td>${c.nombre_modalidad ?? '—'}</td>
-                <td class="text-center">${c.turno ?? '—'}</td>
-                <td class="text-center">${curTrayFecha(c.fecha_inicio)}</td>
-                <td class="text-center">${c.num_inscritos}/${c.max_participantes}</td>
+            <tr class="curTray-fila ${curTrayCursoAct === c.nombre_curso ? 'table-active' : ''}" 
+                data-nombre="${curTrayEscape(c.nombre_curso)}" style="cursor:pointer;">
+                <td class="fw-bold">
+                    ${curTrayEscape(c.nombre_curso)}
+                    ${c.preimpresos ? `<div class="text-muted small" style="font-weight:normal; font-size:0.75rem;"><i class="bi bi-tag-fill me-1"></i>Preimpresos: ${curTrayEscape(c.preimpresos)}</div>` : ''}
+                </td>
+                <td class="text-center"><span class="badge bg-secondary rounded-pill" style="font-size:0.85rem; padding: 0.35em 0.65em;">${c.total_reinicios}</span></td>
+                <td class="text-center" style="font-size:0.88rem;">${curTrayFecha(c.fecha_minima)} a ${curTrayFecha(c.fecha_maxima)}</td>
+                <td>${curTrayEscape(c.nombre_modalidad ?? '—')}</td>
+                <td>${curTrayEscape(c.nombre_ambito ?? '—')}</td>
+                <td class="text-center fw-semibold">${c.total_inscritos} <span class="text-muted" style="font-size:0.75rem; font-weight:normal;">(prom: ${c.promedio_inscritos})</span></td>
                 <td class="text-center">${curTrayBadgeEstatus(c.estatus)}</td>
             </tr>`).join('');
 
@@ -477,20 +480,20 @@ function curTrayRenderTabla() {
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Preimpreso</th>
                         <th>Nombre del Curso</th>
+                        <th class="text-center">Reinicios</th>
+                        <th class="text-center">Período Histórico</th>
                         <th>Modalidad</th>
-                        <th class="text-center">Turno</th>
-                        <th class="text-center">Inicio</th>
-                        <th class="text-center">Cupos</th>
-                        <th class="text-center">Estatus</th>
+                        <th>Ámbito</th>
+                        <th class="text-center">Total Inscritos</th>
+                        <th class="text-center">Estatus General</th>
                     </tr>
                 </thead>
                 <tbody>${filas}</tbody>
             </table>
         </div>
         <div class="d-flex justify-content-between align-items-center mt-3 px-2">
-            <small class="text-muted">Mostrando ${pagina.length} de ${total} cursos</small>
+            <small class="text-muted">Mostrando ${pagina.length} de ${total} cursos únicos</small>
             <nav id="curTrayPaginacion"></nav>
         </div>`;
 
@@ -498,13 +501,13 @@ function curTrayRenderTabla() {
 
     wrapper.querySelectorAll('.curTray-fila').forEach(tr => {
         tr.addEventListener('click', () => {
-            const id = tr.dataset.id;
-            if (curTrayCursoAct === id) {
+            const nombre = tr.dataset.nombre;
+            if (curTrayCursoAct === nombre) {
                 curTrayCursoAct = null;
                 document.getElementById('curTrayDetallePanel').style.display = 'none';
             } else {
-                curTrayCursoAct = id;
-                curTrayAbrirDetalle(id);
+                curTrayCursoAct = nombre;
+                curTrayAbrirDetalle(nombre);
             }
             curTrayRenderTabla();
         });
@@ -534,135 +537,7 @@ function curTrayRenderPaginacion(totalPags) {
 }
 
 let curTrayChartInstance = null;
-let curTrayMesesState = null;
-let curTraySelectedMonthKey = null;
 let curTrayCursoDetalle = null;
-
-const CUR_TRAY_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
-function curTrayParseDate(f) {
-    if (!f || f === '0000-00-00') return null;
-    const [y, m, d] = f.split('-').map(Number);
-    if (!y || !m) return null;
-    return new Date(y, m - 1, d || 1);
-}
-
-function curTrayDiffDays(a, b) {
-    if (!a || !b) return 0;
-    return Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
-}
-
-function curTrayBuildMesesData(d) {
-    const parts = d.participantes || [];
-    let start = curTrayParseDate(d.fecha_inicio);
-    let end = curTrayParseDate(d.fecha_fin);
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-
-    parts.forEach(p => {
-        const fi = curTrayParseDate(p.fecha_inscripcion);
-        if (!fi) return;
-        if (!start || fi < start) start = fi;
-        if (!end || fi > end) end = fi;
-    });
-
-    if (!start) start = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    if (!end) end = new Date(start);
-
-    const mesesMap = {};
-    parts.forEach(p => {
-        if (!p.fecha_inscripcion || p.fecha_inscripcion === '0000-00-00') return;
-        const [y, m] = p.fecha_inscripcion.split('-');
-        const key = `${y}-${m.padStart(2, '0')}`;
-        if (!mesesMap[key]) mesesMap[key] = { count: 0, participantes: [], label: '' };
-        mesesMap[key].count++;
-        mesesMap[key].participantes.push(p);
-    });
-
-    const labels = [];
-    const monthKeys = [];
-    const dataPoints = [];
-    const pointColors = [];
-    let curY = start.getFullYear();
-    let curM = start.getMonth() + 1;
-    const endY = end.getFullYear();
-    const endM = end.getMonth() + 1;
-    let guard = 0;
-
-    while (curY < endY || (curY === endY && curM <= endM)) {
-        if (++guard > 120) break;
-        const key = `${curY}-${String(curM).padStart(2, '0')}`;
-        const nombreMes = `${CUR_TRAY_MESES[curM - 1]} ${curY}`;
-        labels.push(nombreMes);
-        monthKeys.push(key);
-        if (!mesesMap[key]) mesesMap[key] = { label: nombreMes, count: 0, participantes: [] };
-        else mesesMap[key].label = nombreMes;
-        dataPoints.push(mesesMap[key].count);
-        pointColors.push(mesesMap[key].count > 0 ? '#0891b2' : '#cbd5e1');
-        curM++;
-        if (curM > 12) { curM = 1; curY++; }
-    }
-
-    const totalInscritos = parts.length;
-    const mesesConDatos = Object.values(mesesMap).filter(m => m.count > 0);
-    let peakKey = null;
-    let peakCount = 0;
-    Object.entries(mesesMap).forEach(([k, v]) => {
-        if (v.count > peakCount) { peakCount = v.count; peakKey = k; }
-    });
-
-    const duracionDias = curTrayDiffDays(start, end);
-    const transcurridos = curTrayDiffDays(start, hoy);
-    const pctTiempo = duracionDias > 0 ? Math.min(100, Math.round((transcurridos / duracionDias) * 100)) : 0;
-    const cupoPct = d.max_participantes > 0
-        ? Math.round((totalInscritos / d.max_participantes) * 100) : 0;
-
-    let pctHoy = null;
-    if (start && end && hoy >= start && hoy <= end && duracionDias > 0) {
-        pctHoy = Math.round((transcurridos / duracionDias) * 100);
-    }
-
-    return {
-        labels, monthKeys, dataPoints, pointColors, mesesMap,
-        start, end, hoy, totalInscritos, mesesConDatos: mesesConDatos.length,
-        peakKey, peakCount, duracionDias, pctTiempo, cupoPct, pctHoy,
-    };
-}
-
-function curTrayNarrativaTexto(d, stats) {
-    const est = (d.estatus || '').toLowerCase();
-    const periodo = `${curTrayFecha(d.fecha_inicio)} — ${curTrayFecha(d.fecha_fin)}`;
-    let fase = '';
-
-    if (est.includes('espera')) {
-        fase = 'El curso está <strong>en espera</strong> de iniciar. Aún no ha comenzado el periodo lectivo programado.';
-    } else if (est.includes('proceso')) {
-        fase = `El curso está <strong>en proceso</strong>. Lleva aproximadamente <strong>${stats.pctTiempo}%</strong> del periodo transcurrido (${periodo}).`;
-    } else if (est.includes('culminado')) {
-        fase = `El curso <strong>culminó</strong> su periodo (${periodo}). Puedes revisar mes a mes cómo se fueron inscribiendo los participantes.`;
-    } else if (est.includes('diferido')) {
-        fase = 'Este curso fue <strong>diferido</strong>. Revisa las inscripciones por mes para entender su actividad histórica.';
-    } else if (est.includes('pausa')) {
-        fase = 'El curso está <strong>en pausa</strong>. Las inscripciones registradas reflejan la actividad hasta este punto.';
-    } else {
-        fase = `Periodo del curso: <strong>${periodo}</strong>.`;
-    }
-
-    if (stats.totalInscritos === 0) {
-        return `${fase} Hasta ahora <strong>no hay participantes inscritos</strong> registrados en el sistema para este curso.`;
-    }
-
-    const pico = stats.peakKey && stats.mesesMap[stats.peakKey]
-        ? stats.mesesMap[stats.peakKey].label : null;
-
-    let insc = `Hay <strong>${stats.totalInscritos}</strong> participante(s) inscrito(s)`;
-    if (stats.mesesConDatos === 1) insc += ' concentrados en un solo mes';
-    else if (stats.mesesConDatos > 1) insc += ` distribuidos en <strong>${stats.mesesConDatos} meses</strong>`;
-    if (pico && stats.peakCount > 0) insc += `; el mayor pico fue en <strong>${pico}</strong> (${stats.peakCount} inscripción${stats.peakCount !== 1 ? 'es' : ''})`;
-    insc += '.';
-
-    return `${fase} ${insc} Selecciona un mes abajo o haz clic en la gráfica para ver quiénes se inscribieron.`;
-}
 
 function curTrayEscape(s) {
     if (s == null) return '';
@@ -673,14 +548,14 @@ function curTrayEscape(s) {
         .replace(/"/g, '&quot;');
 }
 
-async function curTrayAbrirDetalle(id) {
+async function curTrayAbrirDetalle(nombre) {
     const panel = document.getElementById('curTrayDetallePanel');
     panel.style.display = 'block';
     panel.innerHTML = `<div class="text-center py-4"><div class="spinner-border text-success"></div></div>`;
     setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
 
     try {
-        const res = await fetch(`${API_CUR_TRAY_URL}?accion=detalle_curso_trayectoria&id_curso=${id}`);
+        const res = await fetch(`${API_CUR_TRAY_URL}?accion=detalle_curso_trayectoria&nombre_curso=${encodeURIComponent(nombre)}`);
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         curTrayRenderChart(data);
@@ -689,159 +564,395 @@ async function curTrayAbrirDetalle(id) {
     }
 }
 
-function curTraySelectMonth(key) {
-    if (!curTrayMesesState || !curTrayCursoDetalle) return;
-    curTraySelectedMonthKey = key;
-
-    document.querySelectorAll('.ct-month-chip').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.monthKey === key);
-    });
-
-    if (curTrayChartInstance && curTrayMesesState) {
-        const colors = curTrayMesesState.dataPoints.map((v, i) =>
-            curTrayMesesState.monthKeys[i] === key ? '#0e7490' : (v > 0 ? '#0891b2' : '#e2e8f0'));
-        curTrayChartInstance.data.datasets[0].backgroundColor = colors;
-        curTrayChartInstance.data.datasets[0].borderColor = colors.map(c => (c === '#e2e8f0' ? '#cbd5e1' : c));
-        curTrayChartInstance.update('none');
-    }
-
-    const monthData = key ? curTrayMesesState.mesesMap[key] : null;
-    curTrayRenderDetalle(curTrayCursoDetalle, monthData);
+function curTrayObtenerNombreMes(fechaStr) {
+    if (!fechaStr) return '';
+    const partes = fechaStr.split('-');
+    if (partes.length < 2) return '';
+    const mesNum = parseInt(partes[1], 10);
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return meses[mesNum - 1] || '';
 }
 
-function curTrayRenderLifecycleHtml(d, stats) {
-    const { start, end, hoy, pctTiempo, peakKey, mesesMap } = stats;
-    if (!start || !end) return '';
+function curTrayGetChartData(d, metric) {
+    const labels = d.ejecuciones.map((ej, index) => {
+        const mes = curTrayObtenerNombreMes(ej.fecha_inicio);
+        const labelMes = mes ? ` (${mes})` : '';
+        const p = ej.preimpreso ? `Preimpreso: ${ej.preimpreso}` : `ID: ${ej.id_curso}`;
+        return [`Reinicio #${index + 1}${labelMes}`, `${curTrayFecha(ej.fecha_inicio)}`, p];
+    });
 
-    const totalMs = end - start || 1;
-    const pctFill = Math.min(100, pctTiempo);
-    let pctToday = null;
-    if (hoy >= start && hoy <= end) {
-        pctToday = Math.round(((hoy - start) / totalMs) * 100);
+    let datasets = [];
+
+    if (metric === 'estatus') {
+        datasets = [
+            {
+                label: 'Aprobados',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => p.estatus_participante === 'Aprobado').length),
+                backgroundColor: '#28c76f',
+                maxBarThickness: 45,
+            },
+            {
+                label: 'Reprobados/Ausentes',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => ['Reprobado', 'Ausente'].includes(p.estatus_participante)).length),
+                backgroundColor: '#ea5455',
+                maxBarThickness: 45,
+            },
+            {
+                label: 'En formación/Asignados',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => ['En formación', 'Asignado'].includes(p.estatus_participante)).length),
+                backgroundColor: '#00cfe8',
+                maxBarThickness: 45,
+            }
+        ];
+    } else if (metric === 'genero') {
+        datasets = [
+            {
+                label: 'Femenino',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => p.genero === 'Femenino').length),
+                backgroundColor: '#ec4899',
+                maxBarThickness: 45,
+            },
+            {
+                label: 'Masculino',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => p.genero === 'Masculino').length),
+                backgroundColor: '#3b82f6',
+                maxBarThickness: 45,
+            }
+        ];
+    } else if (metric === 'discapacidad') {
+        datasets = [
+            {
+                label: 'Sin Discapacidad',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => !p.id_discapacidad || parseInt(p.id_discapacidad) === 1).length),
+                backgroundColor: '#6366f1',
+                maxBarThickness: 45,
+            },
+            {
+                label: 'Con Discapacidad',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => p.id_discapacidad && parseInt(p.id_discapacidad) > 1).length),
+                backgroundColor: '#f59e0b',
+                maxBarThickness: 45,
+            }
+        ];
+    } else if (metric === 'nacionalidad') {
+        datasets = [
+            {
+                label: 'Venezolanos (V)',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => p.nacionalidad === 'V').length),
+                backgroundColor: '#10b981',
+                maxBarThickness: 45,
+            },
+            {
+                label: 'Extranjeros (E)',
+                data: d.ejecuciones.map(ej => ej.participantes.filter(p => p.nacionalidad && p.nacionalidad !== 'V').length),
+                backgroundColor: '#8b5cf6',
+                maxBarThickness: 45,
+            }
+        ];
     }
 
-    const pos = (date) => {
-        if (!date || date < start) return 0;
-        if (date > end) return 100;
-        return Math.round(((date - start) / totalMs) * 100);
-    };
+    return { labels, datasets };
+}
 
-    const posStart = 0;
-    const posEnd = 100;
-    const posPeak = peakKey && mesesMap[peakKey]?.count > 0
-        ? (() => {
-            const [y, m] = peakKey.split('-').map(Number);
-            const peakDate = new Date(y, m - 1, 15);
-            return pos(peakDate);
-        })() : null;
-
-    const peakLabel = peakKey && mesesMap[peakKey]
-        ? `Pico: ${mesesMap[peakKey].label}` : '';
-
-    return `
-        <div class="ct-lifecycle">
-            <div class="ct-lifecycle-title"><i class="bi bi-signpost-split me-1"></i> Línea de tiempo del curso</div>
-            <div class="ct-lifecycle-track">
-                <div class="ct-lifecycle-fill" style="width:${pctFill}%;"></div>
-                ${pctToday != null ? `<div class="ct-lifecycle-today" style="left:${pctToday}%;"></div>` : ''}
-                <div class="ct-lifecycle-node" style="left:${posStart}%;">
-                    <span class="ct-lifecycle-dot start"></span>
-                    <span class="ct-lifecycle-label">Inicio<br>${curTrayFecha(d.fecha_inicio)}</span>
-                </div>
-                ${posPeak != null ? `
-                <div class="ct-lifecycle-node" style="left:${posPeak}%;">
-                    <span class="ct-lifecycle-dot peak"></span>
-                    <span class="ct-lifecycle-label">${curTrayEscape(peakLabel)}</span>
-                </div>` : ''}
-                <div class="ct-lifecycle-node" style="left:${posEnd}%;">
-                    <span class="ct-lifecycle-dot end"></span>
-                    <span class="ct-lifecycle-label">Fin<br>${curTrayFecha(d.fecha_fin)}</span>
-                </div>
-            </div>
-        </div>`;
+function curTrayUpdateChart(metric) {
+    if (!curTrayChartInstance || !curTrayCursoDetalle) return;
+    const chartData = curTrayGetChartData(curTrayCursoDetalle, metric);
+    curTrayChartInstance.data.labels = chartData.labels;
+    curTrayChartInstance.data.datasets = [
+        {
+            type: 'line',
+            label: 'Tendencia Inscritos',
+            data: curTrayCursoDetalle.ejecuciones.map(ej => ej.participantes.length),
+            borderColor: '#6366f1',
+            borderWidth: 3,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#6366f1',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            fill: false,
+            tension: 0.35,
+            order: 0
+        },
+        ...chartData.datasets.map(ds => {
+            ds.stack = 'stack1';
+            ds.type = 'bar';
+            ds.borderRadius = 6;
+            ds.order = 1;
+            ds.grouped = false;
+            return ds;
+        })
+    ];
+    curTrayChartInstance.update();
 }
 
 function curTrayRenderChart(d) {
     const panel = document.getElementById('curTrayDetallePanel');
     curTrayCursoDetalle = d;
-    curTraySelectedMonthKey = null;
 
-    const stats = curTrayBuildMesesData(d);
-    curTrayMesesState = stats;
+    const totalReinicios = d.ejecuciones.length;
+    const totalInscritos = d.ejecuciones.reduce((acc, ej) => acc + (ej.participantes ? ej.participantes.length : 0), 0);
+    const totalAprobados = d.ejecuciones.reduce((acc, ej) => acc + (ej.participantes ? ej.participantes.filter(p => p.estatus_participante === 'Aprobado').length : 0), 0);
+    const totalReprobados = d.ejecuciones.reduce((acc, ej) => acc + (ej.participantes ? ej.participantes.filter(p => ['Reprobado', 'Ausente'].includes(p.estatus_participante)).length : 0), 0);
+    const totalEnFormacion = d.ejecuciones.reduce((acc, ej) => acc + (ej.participantes ? ej.participantes.filter(p => ['En formación', 'Asignado'].includes(p.estatus_participante)).length : 0), 0);
+    const tasaAprobacion = totalInscritos > 0 ? Math.round((totalAprobados / totalInscritos) * 100) : 0;
+    const promedioInscritos = totalReinicios > 0 ? Math.round(totalInscritos / totalReinicios) : 0;
 
-    const fueDiferido = d.estatus === 'Diferido' || (d.nombre_curso || '').includes('(Diferido)');
-    const warningDiferido = fueDiferido
-        ? `<div class="alert alert-warning mx-3 mt-2 mb-0 py-2 small"><i class="bi bi-exclamation-triangle-fill me-2"></i>Curso con estatus <strong>Diferido</strong>.</div>`
-        : '';
+    // Calcular promedios demográficos
+    let totalFem = 0, totalMasc = 0;
+    let totalConDisc = 0, totalSinDisc = 0;
+    let totalVen = 0, totalExt = 0;
+    let totalPartDemographics = 0;
 
-    const chipsHtml = stats.monthKeys.map(key => {
-        const m = stats.mesesMap[key];
-        const active = key === curTraySelectedMonthKey ? ' active' : '';
-        const has = m.count > 0 ? ' has-data' : '';
-        return `<button type="button" class="ct-month-chip${active}${has}" data-month-key="${key}">
-            ${curTrayEscape(m.label)}<span class="chip-count">${m.count}</span>
-        </button>`;
-    }).join('');
+    d.ejecuciones.forEach(ej => {
+        if (ej.participantes) {
+            ej.participantes.forEach(p => {
+                totalPartDemographics++;
+                // Género
+                if (p.genero === 'Femenino') totalFem++;
+                else if (p.genero === 'Masculino') totalMasc++;
+                
+                // Discapacidad
+                if (p.id_discapacidad && parseInt(p.id_discapacidad) > 1) totalConDisc++;
+                else totalSinDisc++;
 
-    const narrativa = curTrayNarrativaTexto(d, stats);
+                // Nacionalidad
+                if (p.nacionalidad === 'V') totalVen++;
+                else if (p.nacionalidad && p.nacionalidad !== 'V') totalExt++;
+            });
+        }
+    });
 
-    panel.innerHTML = `
-    <div class="ct-journey-card mb-4">
-        <div class="ct-journey-header">
-            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+    const pctFem = totalPartDemographics > 0 ? Math.round((totalFem / totalPartDemographics) * 100) : 0;
+    const pctMasc = totalPartDemographics > 0 ? Math.round((totalMasc / totalPartDemographics) * 100) : 0;
+    const pctConDisc = totalPartDemographics > 0 ? Math.round((totalConDisc / totalPartDemographics) * 100) : 0;
+    const pctSinDisc = totalPartDemographics > 0 ? Math.round((totalSinDisc / totalPartDemographics) * 100) : 0;
+    const pctVen = totalPartDemographics > 0 ? Math.round((totalVen / totalPartDemographics) * 100) : 0;
+    const pctExt = totalPartDemographics > 0 ? Math.round((totalExt / totalPartDemographics) * 100) : 0;
+
+    // Calcular Alza o Baja (Crecimiento entre el último y penúltimo reinicio)
+    let trendHtml = '';
+    if (totalReinicios >= 2) {
+        const lastRun = d.ejecuciones[totalReinicios - 1].participantes.length;
+        const prevRun = d.ejecuciones[totalReinicios - 2].participantes.length;
+        if (prevRun > 0) {
+            const trendPct = Math.round(((lastRun - prevRun) / prevRun) * 100);
+            if (trendPct > 0) {
+                trendHtml = `<span class="badge bg-success bg-opacity-10 text-success small ms-2" style="font-size:0.75rem;"><i class="bi bi-arrow-up-right me-1"></i>+${trendPct}% (Alza)</span>`;
+            } else if (trendPct < 0) {
+                trendHtml = `<span class="badge bg-danger bg-opacity-10 text-danger small ms-2" style="font-size:0.75rem;"><i class="bi bi-arrow-down-left me-1"></i>${trendPct}% (Baja)</span>`;
+            } else {
+                trendHtml = `<span class="badge bg-secondary bg-opacity-10 text-secondary small ms-2" style="font-size:0.75rem;"><i class="bi bi-dash me-1"></i>0% (Sin cambios)</span>`;
+            }
+        } else {
+            trendHtml = `<span class="badge bg-secondary bg-opacity-10 text-secondary small ms-2">—</span>`;
+        }
+    } else {
+        trendHtml = `<span class="badge bg-secondary bg-opacity-10 text-secondary small ms-2" style="font-size: 0.65rem;">Datos insuficientes</span>`;
+    }
+
+    // Calcular Ponderaje de Proyección del próximo reinicio
+    let proyectado = 0;
+    let confianza = 0;
+    if (totalReinicios === 0) {
+        proyectado = 0;
+        confianza = 0;
+    } else if (totalReinicios === 1) {
+        proyectado = d.ejecuciones[0].participantes.length;
+        confianza = 50;
+    } else {
+        let sumaPesos = 0;
+        let sumaPonderada = 0;
+        d.ejecuciones.forEach((ej, idx) => {
+            const peso = idx + 1;
+            sumaPesos += peso;
+            sumaPonderada += ej.participantes.length * peso;
+        });
+        const promedioPonderado = sumaPonderada / sumaPesos;
+        const last = d.ejecuciones[totalReinicios - 1].participantes.length;
+        const prev = d.ejecuciones[totalReinicios - 2].participantes.length;
+        const factorCrecimiento = prev > 0 ? last / prev : 1;
+        const factorSuavizado = Math.max(0.8, Math.min(1.2, factorCrecimiento));
+        proyectado = Math.round(promedioPonderado * factorSuavizado);
+        confianza = Math.min(95, 50 + (totalReinicios * 10));
+    }
+
+    const chartData = curTrayGetChartData(d, 'estatus');
+
+    const listHtml = d.ejecuciones.map((ej, index) => {
+        const runAprobados = ej.participantes.filter(p => p.estatus_participante === 'Aprobado').length;
+        const runReprobados = ej.participantes.filter(p => ['Reprobado', 'Ausente'].includes(p.estatus_participante)).length;
+        const runEnFormacion = ej.participantes.filter(p => ['En formación', 'Asignado'].includes(p.estatus_participante)).length;
+        const runTotal = ej.participantes.length;
+
+        return `
+        <div class="card border border-light shadow-sm mb-3" style="border-radius: 12px; background: #fff; overflow:hidden;">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-3" style="border-bottom: 1px solid #f1f5f9;">
                 <div>
-                    <h5 class="mb-1 fw-bold text-dark">${curTrayEscape(d.nombre_curso)}</h5>
-                    <div class="text-muted small">
-                        <span class="me-3"><i class="bi bi-hash"></i>Preimpreso ${d.preimpreso ?? '—'}</span>
-                        <span class="me-3"><i class="bi bi-mortarboard me-1"></i>${curTrayEscape(d.nombre_modalidad ?? '—')}</span>
-                        <span><i class="bi bi-person-workspace me-1"></i>${curTrayEscape(d.docente ?? 'Sin docente')}</span>
+                    <span class="badge bg-primary text-white me-2" style="font-size:0.78rem;">Reinicio #${index + 1} (${curTrayObtenerNombreMes(ej.fecha_inicio)})</span>
+                    <strong class="text-dark" style="font-size:0.95rem;">${curTrayFecha(ej.fecha_inicio)} — ${curTrayFecha(ej.fecha_fin)}</strong>
+                    <span class="badge bg-light text-dark border ms-2" style="font-size:0.78rem;"><i class="bi bi-tag-fill me-1"></i>Preimpreso: <strong>${curTrayEscape(ej.preimpreso ?? '—')}</strong></span>
+                    <span class="text-muted ms-3" style="font-size:0.85rem;"><i class="bi bi-person-workspace me-1"></i>Docente: <strong>${curTrayEscape(ej.docente ?? 'Sin docente')}</strong></span>
+                </div>
+                <div>
+                    ${curTrayBadgeEstatus(ej.estatus)}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-8">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <div class="text-muted small" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em;">Inscritos</div>
+                                <div class="fw-bold fs-6 text-dark">${runTotal}</div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-success small" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em;">Aprobados</div>
+                                <div class="fw-bold fs-6 text-success">${runAprobados}</div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-danger small" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em;">Reprobados</div>
+                                <div class="fw-bold fs-6 text-danger">${runReprobados}</div>
+                            </div>
+                            <div class="col-3">
+                                <div class="text-info small" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.03em;">En formación</div>
+                                <div class="fw-bold fs-6 text-info">${runEnFormacion}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end d-flex flex-wrap justify-content-end">
+                        <button class="btn btn-sm btn-outline-primary button view-curso" 
+                                data-id="${ej.id_curso}" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modal-viewCurso"
+                                style="font-size:0.78rem; border-radius:8px; padding:0.4em 1.2em;">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Ver Curso y Gráficas
+                        </button>
                     </div>
                 </div>
-                ${curTrayBadgeEstatus(d.estatus)}
             </div>
-            ${warningDiferido}
-        </div>
+        </div>`;
+    }).join('');
 
-        <div class="ct-journey-kpis">
-            <div class="ct-journey-kpi">
-                <div class="val">${stats.duracionDias}</div>
-                <div class="lbl">Días de trayectoria</div>
-            </div>
-            <div class="ct-journey-kpi">
-                <div class="val">${stats.totalInscritos}</div>
-                <div class="lbl">Inscritos totales</div>
-            </div>
-            <div class="ct-journey-kpi">
-                <div class="val">${stats.cupoPct}%</div>
-                <div class="lbl">Cupo usado (${stats.totalInscritos}/${d.max_participantes ?? '—'})</div>
-            </div>
-            <div class="ct-journey-kpi">
-                <div class="val">${stats.peakCount || '—'}</div>
-                <div class="lbl">Pico mensual</div>
+    panel.innerHTML = `
+    <div class="ct-journey-card mb-4 shadow border-0" style="border-radius:16px; overflow:hidden; background:#fff;">
+        <div class="ct-journey-header p-4" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-bottom:1px solid #e2e8f0;">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                    <h5 class="mb-1 fw-bold text-dark" style="font-size:1.45rem;"><i class="bi bi-journal-text me-2 text-primary"></i>${curTrayEscape(d.nombre_curso)}</h5>
+                    <div class="text-muted small">
+                        <span><i class="bi bi-mortarboard-fill text-secondary me-1"></i>Trayectoria e Inteligencia del Historial de Reinicios</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="ct-narrative-box">${narrativa}</div>
-
-        ${curTrayRenderLifecycleHtml(d, stats)}
-
-        <div class="px-3 pb-2">
-            <div class="ct-lifecycle-title mb-2"><i class="bi bi-calendar3 me-1"></i> Inscripciones por mes — selecciona para ver participantes</div>
-            <div class="ct-month-chips" id="curTrayMonthChips">${chipsHtml || '<span class="text-muted small">Sin meses en el periodo</span>'}</div>
+        <!-- Fila 1 KPIs y Tendencias -->
+        <div class="ct-journey-kpis px-4 py-3" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.25rem; background:#fff;">
+            <div class="ct-journey-kpi p-3 border rounded-3 bg-light bg-opacity-40">
+                <div class="val fw-bold fs-3 text-primary">${totalReinicios}</div>
+                <div class="lbl text-muted small" style="text-transform:uppercase; letter-spacing:0.05em; font-size:0.72rem;">Reinicios totales</div>
+            </div>
+            <div class="ct-journey-kpi p-3 border rounded-3 bg-light bg-opacity-40">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="val fw-bold fs-3 text-dark">${totalInscritos}</div>
+                    ${trendHtml}
+                </div>
+                <div class="lbl text-muted small" style="text-transform:uppercase; letter-spacing:0.05em; font-size:0.72rem; margin-top:2px;">Inscritos históricos</div>
+            </div>
+            <div class="ct-journey-kpi p-3 border rounded-3 bg-light bg-opacity-40">
+                <div class="val fw-bold fs-3 text-success">${tasaAprobacion}%</div>
+                <div class="lbl text-muted small" style="text-transform:uppercase; letter-spacing:0.05em; font-size:0.72rem;">Tasa de Aprobación</div>
+            </div>
+            <div class="ct-journey-kpi p-3 border rounded-3 bg-light bg-opacity-40">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="val fw-bold fs-3 text-indigo">~${proyectado}</div>
+                    <span class="badge bg-indigo bg-opacity-10 text-indigo small" style="font-size:0.68rem; padding: 0.35em 0.65em;">Confianza: ${confianza}%</span>
+                </div>
+                <div class="lbl text-muted small" style="text-transform:uppercase; letter-spacing:0.05em; font-size:0.72rem; margin-top:2px;">Proyección Próximo Reinicio</div>
+            </div>
         </div>
 
-        <div class="ct-chart-wrap">
-            <canvas id="curTrayCanvas"></canvas>
+        <!-- Fila 2 Promedios Demográficos -->
+        <div class="ct-journey-demographics px-4 py-3 border-top border-bottom" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem; background:#fafafa;">
+            <!-- Promedio Género -->
+            <div class="p-3 border rounded-3 bg-white shadow-sm">
+                <div class="fw-bold mb-2 text-dark" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;">
+                    <i class="bi bi-gender-ambiguous text-pink me-2"></i>Promedio de Género
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-1" style="font-size:0.78rem;">
+                    <span>Femenino: <strong>${pctFem}%</strong></span>
+                    <span>Masculino: <strong>${pctMasc}%</strong></span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 4px; overflow:hidden;">
+                    <div class="progress-bar" role="progressbar" style="width: ${pctFem}%; background-color: #ec4899;" aria-valuenow="${pctFem}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: ${pctMasc}%; background-color: #3b82f6;" aria-valuenow="${pctMasc}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            <!-- Promedio Discapacidad -->
+            <div class="p-3 border rounded-3 bg-white shadow-sm">
+                <div class="fw-bold mb-2 text-dark" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;">
+                    <i class="bi bi-heart-pulse-fill text-warning me-2"></i>Promedio de Discapacidad
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-1" style="font-size:0.78rem;">
+                    <span>Con Discapacidad: <strong>${pctConDisc}%</strong></span>
+                    <span>Sin Discapacidad: <strong>${pctSinDisc}%</strong></span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 4px; overflow:hidden;">
+                    <div class="progress-bar" role="progressbar" style="width: ${pctConDisc}%; background-color: #f59e0b;" aria-valuenow="${pctConDisc}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: ${pctSinDisc}%; background-color: #6366f1;" aria-valuenow="${pctSinDisc}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            <!-- Promedio Nacionalidad -->
+            <div class="p-3 border rounded-3 bg-white shadow-sm">
+                <div class="fw-bold mb-2 text-dark" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em;">
+                    <i class="bi bi-globe2 text-success me-2"></i>Promedio de Nacionalidad
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-1" style="font-size:0.78rem;">
+                    <span>Venezolanos: <strong>${pctVen}%</strong></span>
+                    <span>Extranjeros: <strong>${pctExt}%</strong></span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 4px; overflow:hidden;">
+                    <div class="progress-bar" role="progressbar" style="width: ${pctVen}%; background-color: #10b981;" aria-valuenow="${pctVen}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" role="progressbar" style="width: ${pctExt}%; background-color: #8b5cf6;" aria-valuenow="${pctExt}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
         </div>
-        <p class="text-center text-muted small pb-3 mb-0 px-3">
-            <i class="bi bi-hand-index-thumb me-1"></i>Clic en un mes o en la barra para ver quiénes se inscribieron.
-        </p>
 
-        <div id="curTrayDetalleMesPanel" style="display:none;"></div>
+        <div class="px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="fw-bold text-dark" style="font-size:0.95rem;">
+                    <i class="bi bi-bar-chart-fill text-primary me-2"></i>Evolución de Ejecuciones y Tendencia de Alumnos
+                </div>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Filtro de Gráfico">
+                    <button type="button" class="btn btn-outline-primary active curTrayChartToggle" data-metric="estatus">Estatus Alumnos</button>
+                    <button type="button" class="btn btn-outline-primary curTrayChartToggle" data-metric="genero">Género</button>
+                    <button type="button" class="btn btn-outline-primary curTrayChartToggle" data-metric="discapacidad">Discapacidad</button>
+                    <button type="button" class="btn btn-outline-primary curTrayChartToggle" data-metric="nacionalidad">Nacionalidad</button>
+                </div>
+            </div>
+            <div class="ct-chart-wrap" style="height:280px;position:relative;">
+                <canvas id="curTrayCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="px-4 pb-4">
+            <div class="fw-bold mb-3 text-dark" style="font-size:0.95rem;">
+                <i class="bi bi-clock-history text-primary me-2"></i>Línea Temporal de Ejecuciones del Curso
+            </div>
+            <div class="ct-history-list">${listHtml}</div>
+        </div>
     </div>`;
 
-    document.getElementById('curTrayMonthChips')?.querySelectorAll('.ct-month-chip').forEach(btn => {
-        btn.addEventListener('click', () => curTraySelectMonth(btn.dataset.monthKey));
+    panel.querySelectorAll('.curTrayChartToggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            panel.querySelectorAll('.curTrayChartToggle').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            curTrayUpdateChart(btn.dataset.metric);
+        });
     });
 
     const canvas = document.getElementById('curTrayCanvas');
@@ -850,153 +961,78 @@ function curTrayRenderChart(d) {
     const ctx = canvas.getContext('2d');
     if (curTrayChartInstance) curTrayChartInstance.destroy();
 
-    const maxY = Math.max(3, ...stats.dataPoints, 1);
-    const barColors = stats.dataPoints.map((v, i) =>
-        stats.monthKeys[i] === curTraySelectedMonthKey ? '#0e7490' : (v > 0 ? '#0891b2' : '#e2e8f0')
-    );
-
     curTrayChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: stats.labels.length ? stats.labels : ['Sin periodo'],
-            datasets: [{
-                label: 'Inscripciones',
-                data: stats.dataPoints.length ? stats.dataPoints : [0],
-                backgroundColor: barColors,
-                borderColor: barColors.map(c => c === '#e2e8f0' ? '#cbd5e1' : c),
-                borderWidth: 1,
-                borderRadius: 6,
-                maxBarThickness: 48,
-            }],
+            labels: chartData.labels,
+            datasets: [
+                {
+                    type: 'line',
+                    label: 'Tendencia Inscritos',
+                    data: d.ejecuciones.map(ej => ej.participantes.length),
+                    borderColor: '#6366f1',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    fill: false,
+                    tension: 0.35,
+                    order: 0
+                },
+                ...chartData.datasets.map(ds => {
+                    ds.stack = 'stack1';
+                    ds.type = 'bar';
+                    ds.borderRadius = 6;
+                    ds.order = 1;
+                    ds.grouped = false;
+                    return ds;
+                })
+            ],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             onClick: (_e, elements) => {
-                if (elements.length > 0 && stats.monthKeys.length) {
-                    curTraySelectMonth(stats.monthKeys[elements[0].index]);
+                if (elements.length > 0) {
+                    const idx = elements[0].index;
+                    const ej = d.ejecuciones[idx];
+                    if (ej) {
+                        const viewBtn = panel.querySelector(`.view-curso[data-id="${ej.id_curso}"]`);
+                        if (viewBtn) {
+                            viewBtn.click();
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
+                    stacked: false,
                     beginAtZero: true,
-                    suggestedMax: maxY,
-                    ticks: { stepSize: 1, precision: 0 },
+                    ticks: { stepSize: 5, precision: 0 },
                     title: {
                         display: true,
-                        text: 'Nuevas inscripciones en el mes',
+                        text: 'Cantidad de Alumnos',
                         color: '#64748b',
                         font: { weight: '600', size: 11 },
                     },
                     grid: { color: '#f1f5f9' },
                 },
                 x: {
+                    stacked: false,
                     grid: { display: false },
-                    ticks: { maxRotation: 45, minRotation: 0, font: { size: 10 } },
+                    ticks: { font: { size: 10 } },
                 },
             },
             plugins: {
-                legend: { display: false },
+                legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
                 tooltip: {
-                    callbacks: {
-                        label: (ctx) => ` ${ctx.raw} inscripción${ctx.raw !== 1 ? 'es' : ''} — clic para ver lista`,
-                    },
+                    mode: 'index',
+                    intersect: false,
                 },
             },
         },
-    });
-
-    if (stats.peakKey && stats.mesesMap[stats.peakKey]?.count > 0) {
-        curTraySelectMonth(stats.peakKey);
-    } else {
-        const firstWithData = stats.monthKeys.find(k => stats.mesesMap[k]?.count > 0);
-        if (firstWithData) curTraySelectMonth(firstWithData);
-    }
-}
-
-function curTrayRenderDetalle(d, monthData = null) {
-    const panel = document.getElementById('curTrayDetalleMesPanel');
-    if (!panel) return;
-
-    const parts = monthData ? monthData.participantes : (d.participantes || []);
-    const titleText = monthData
-        ? `Inscritos en ${monthData.label}`
-        : 'Todos los participantes del curso';
-
-    if (!monthData && parts.length === 0) {
-        panel.style.display = 'none';
-        return;
-    }
-
-    panel.style.display = 'block';
-
-    const aprobados = parts.filter(p => p.estatus_participante === 'Aprobado').length;
-    const reprobados = parts.filter(p => ['Reprobado', 'Ausente'].includes(p.estatus_participante)).length;
-    const enFormacion = parts.filter(p => ['En formación', 'Asignado'].includes(p.estatus_participante)).length;
-
-    panel.innerHTML = `
-    <div class="ct-participants-panel p-4">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-            <h6 class="fw-bold mb-0 text-dark">
-                <i class="bi bi-people-fill text-primary me-2"></i>${curTrayEscape(titleText)}
-                <span class="badge bg-primary ms-2">${parts.length}</span>
-            </h6>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="curTrayVerTodosBtn">
-                Ver todos los inscritos
-            </button>
-        </div>
-
-        <div class="row g-2 mb-3">
-            <div class="col-4">
-                <div class="ct-journey-kpi py-2">
-                    <div class="val text-success" style="font-size:1.1rem;">${aprobados}</div>
-                    <div class="lbl">Aprobados</div>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="ct-journey-kpi py-2">
-                    <div class="val text-danger" style="font-size:1.1rem;">${reprobados}</div>
-                    <div class="lbl">Reprob./Ausente</div>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="ct-journey-kpi py-2">
-                    <div class="val text-primary" style="font-size:1.1rem;">${enFormacion}</div>
-                    <div class="lbl">En formación</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-responsive rounded-3 border bg-white">
-            <table class="table table-sm table-hover align-middle mb-0" style="font-size:0.85rem;">
-                <thead class="table-light">
-                    <tr>
-                        <th>Cédula</th>
-                        <th>Nombre</th>
-                        <th class="text-center">Inscripción</th>
-                        <th class="text-center">Estatus</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${parts.length === 0
-                        ? '<tr><td colspan="4" class="text-center py-4 text-muted">Nadie se inscribió en este mes</td></tr>'
-                        : parts.map(p => `
-                        <tr>
-                            <td class="fw-semibold">${p.cedula ?? '—'}</td>
-                            <td>${curTrayEscape(`${p.primer_nombre || ''} ${p.primer_apellido || ''}`.trim())}</td>
-                            <td class="text-center">${curTrayFecha(p.fecha_inscripcion)}</td>
-                            <td class="text-center">${curTrayBadgeParticipante(p.estatus_participante)}</td>
-                        </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>
-    </div>`;
-
-    document.getElementById('curTrayVerTodosBtn')?.addEventListener('click', () => {
-        curTraySelectedMonthKey = null;
-        document.querySelectorAll('.ct-month-chip').forEach(b => b.classList.remove('active'));
-        if (curTrayChartInstance) curTrayChartInstance.setActiveElements([]);
-        curTrayRenderDetalle(d, null);
     });
 
     setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);

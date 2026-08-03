@@ -296,11 +296,19 @@ try {
 
         case 'detalle_curso_trayectoria':
             $idCurso = intval($_GET['id_curso'] ?? 0);
-            if ($idCurso <= 0) {
-                echo json_encode(['error' => 'ID de curso no válido']);
+            $nombreCurso = trim($_GET['nombre_curso'] ?? '');
+            
+            if ($nombreCurso === '' && $idCurso > 0) {
+                $stmt = $conn->prepare("SELECT nombre_curso FROM tb_curso WHERE id_curso = :id_curso LIMIT 1");
+                $stmt->execute([':id_curso' => $idCurso]);
+                $nombreCurso = $stmt->fetchColumn();
+            }
+            
+            if (!$nombreCurso) {
+                echo json_encode(['error' => 'Curso no especificado o no encontrado']);
                 break;
             }
-            echo json_encode(getDetalleCursoTrayectoria($conn, $idCurso));
+            echo json_encode(getDetalleCursoTrayectoria($conn, $nombreCurso));
             break;
 
         default:
@@ -584,6 +592,7 @@ function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, strin
         SELECT
             c.id_curso,
             c.nombre_curso,
+            c.preimpreso,
             COUNT(DISTINCT pc.id_participante) AS total_participantes,
             SUM(CASE WHEN p.genero = 'Femenino' THEN 1 ELSE 0 END) AS total_mujeres,
             SUM(CASE WHEN p.genero = 'Masculino' THEN 1 ELSE 0 END) AS total_hombres,
@@ -601,7 +610,7 @@ function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, strin
         LEFT JOIN tb_modalidad    m ON m.id_modalidad    = c.id_modalidad
         WHERE YEAR(pc.fecha_inscripcion) = :anio
           $whereEstatus
-        GROUP BY c.id_curso, c.nombre_curso, e.nombre_estatusCurso, m.nombre_modalidad, c.fecha_inicio, c.fecha_fin
+        GROUP BY c.id_curso, c.nombre_curso, c.preimpreso, e.nombre_estatusCurso, m.nombre_modalidad, c.fecha_inicio, c.fecha_fin
         $orderClause
         LIMIT :limite
     ");
@@ -617,6 +626,8 @@ function getCursosMasParticipantes(PDO $conn, int $anio, int $limite = 20, strin
 function getCursoMasRequerido(PDO $conn, int $anio): array {
     $stmt = $conn->prepare("
         SELECT c.nombre_curso,
+               c.preimpreso,
+               c.fecha_inicio,
                COUNT(pc.id_participante_curso)  AS total_inscripciones,
                COUNT(DISTINCT pc.id_participante) AS participantes_unicos,
                e.nombre_estatusCurso AS estatus,
@@ -626,7 +637,7 @@ function getCursoMasRequerido(PDO $conn, int $anio): array {
         LEFT JOIN tb_estatuscurso   e ON e.id_estatusCurso   = c.id_estatusCurso
         LEFT JOIN tb_areaformativa  a ON a.id_areaFormativa  = c.id_areaFormativa
         WHERE YEAR(pc.fecha_inscripcion) = :anio
-        GROUP BY c.id_curso ORDER BY total_inscripciones DESC LIMIT 10
+        GROUP BY c.id_curso, c.preimpreso, c.fecha_inicio ORDER BY total_inscripciones DESC LIMIT 10
     ");
     $stmt->execute([':anio' => $anio]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -5,6 +5,7 @@ $(document).ready(function () {
     let currentFilters = { genero: '', edad: '', estado: '' };
     let currentSort = { field: 'id_participante', direction: 'desc' };
     let currentSearchTerm = '';
+    let isInitialLoad = true;
 
     // Almacenamiento local de los datos
     let allParticipantes = []; // Todos los datos originales
@@ -18,6 +19,72 @@ $(document).ready(function () {
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .trim();
+    }
+
+    function animateCounter(selector, endVal, decimalPlaces = 0) {
+        const el = $(selector)[0];
+        if (!el) return;
+        const startVal = parseFloat(el.textContent) || 0;
+        if (startVal === endVal) {
+            el.innerHTML = endVal.toFixed(decimalPlaces);
+            return;
+        }
+        let startTimestamp = null;
+        const duration = 600;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const currentVal = progress * (endVal - startVal) + startVal;
+            el.innerHTML = currentVal.toFixed(decimalPlaces);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                el.innerHTML = endVal.toFixed(decimalPlaces);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    function actualizarKPIs(participantes) {
+        let total = participantes.length;
+        let formacion = 0;
+        let sistema = 0;
+        let asignado = 0;
+        let disponible = 0;
+        let diferido = 0;
+
+        participantes.forEach(p => {
+            const st = normalizeString(p.estado || p.estado_participante || 'en sistema');
+            if (st === 'en formacion') formacion++;
+            else if (st === 'en sistema') sistema++;
+            else if (st === 'asignado') asignado++;
+            else if (st === 'disponible' || st === 'inactivo') disponible++;
+            else if (st === 'diferido') diferido++;
+            else sistema++;
+        });
+
+        if (isInitialLoad) {
+            animateCounter('#kpi-total', total);
+            animateCounter('#kpi-formacion', formacion);
+            animateCounter('#kpi-sistema', sistema);
+            animateCounter('#kpi-asignados', asignado);
+            animateCounter('#kpi-disponibles', disponible);
+            animateCounter('#kpi-diferidos', diferido);
+            isInitialLoad = false;
+        } else {
+            $('#kpi-total').text(total);
+            $('#kpi-formacion').text(formacion);
+            $('#kpi-sistema').text(sistema);
+            $('#kpi-asignados').text(asignado);
+            $('#kpi-disponibles').text(disponible);
+            $('#kpi-diferidos').text(diferido);
+        }
+
+        // Re-inicializar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     }
 
     // Función inicial para cargar TODOS los registros del servidor
@@ -72,7 +139,10 @@ $(document).ready(function () {
             // Normalizar estado para comparar sin acentos ni mayúsculas
             const estado = normalizeString(p.estado || p.estado_participante || 'En sistema');
             const filtroEstado = normalizeString(currentFilters.estado || '');
-            const matchEstado = filtroEstado === '' || estado === filtroEstado;
+            let matchEstado = filtroEstado === '' || estado === filtroEstado;
+            if (filtroEstado === 'disponible') {
+                matchEstado = filtroEstado === '' || estado === 'disponible' || estado === 'inactivo';
+            }
 
             return matchGenero && matchEdad && matchEstado;
         });
@@ -139,6 +209,7 @@ $(document).ready(function () {
         }
 
         // 5. Renderizar
+        actualizarKPIs(filteredParticipantes);
         actualizarTabla(datosPagina);
         renderizarPaginacion(totalPages, currentPage);
         resaltarParticipanteNuevo();

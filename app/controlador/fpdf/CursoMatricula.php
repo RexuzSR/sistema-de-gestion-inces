@@ -187,12 +187,12 @@ $pctMas30 = $totalPart > 0 ? round(($mas30 / $totalPart) * 100, 1) : 0;
 
 $edadPromedio = $totalPart > 0 ? round($sumaEdades / $totalPart, 1) : 0;
 
-// Convertir Logo INCES a Base64
-$logoPath = __DIR__ . '/../../../assets/img/inces-logo.png';
-$logoSrc = '';
-if (file_exists($logoPath)) {
-    $logoSrc = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-}
+// Convertir Logos a Base64
+$pathLogoGobierno = __DIR__ . '/../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../assets/img/inces-logo.png';
+
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces = file_exists($pathLogoInces) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces)) : '';
 
 // Formatear Fechas
 $fInicioStr = !empty($curso['fecha_inicio']) ? date('d/m/Y', strtotime($curso['fecha_inicio'])) : 'Por definir';
@@ -209,31 +209,38 @@ $html = '
 <title>Matrícula de Curso #' . $id_curso . '</title>
 <style>
     @page {
-        margin: 110px 35px 55px 35px;
+        margin: 115px 40px 60px 40px;
     }
     body {
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-        color: #1e293b;
-        font-size: 10px;
-        line-height: 1.35;
+        font-family: "Helvetica", Arial, sans-serif;
+        color: #334155;
+        font-size: 9.5px;
+        line-height: 1.45;
     }
-    header {
-        position: fixed;
-        top: -95px;
-        left: 0px;
-        right: 0px;
-        height: 80px;
-        border-bottom: 2px solid #0284c7;
-        padding-bottom: 6px;
+    header { 
+        position: fixed; 
+        top: -90px; 
+        left: 0px; 
+        right: 0px; 
+        height: 75px; 
+        border-bottom: 3px solid #0284c7; 
+        padding-bottom: 8px;
     }
+    .header-table { width: 100%; border-collapse: collapse; }
+    .header-table td { vertical-align: middle; }
+    .logo { max-height: 50px; }
+    .header-title { text-align: center; }
+    .header-title h1 { margin: 0; font-size: 15px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold; }
+    .header-title p { margin: 2px 0 0 0; font-size: 10px; color: #0284c7; font-weight: bold; text-transform: uppercase; }
+    .header-doc-code { font-size: 8px; color: #64748b; margin-top: 3px; }
     footer {
         position: fixed;
-        bottom: -40px;
+        bottom: -45px;
         left: 0px;
         right: 0px;
         height: 30px;
         border-top: 1px solid #cbd5e1;
-        font-size: 8.5px;
+        font-size: 8px;
         color: #64748b;
         padding-top: 5px;
     }
@@ -245,149 +252,137 @@ $html = '
     .pagenum:before {
         content: counter(page);
     }
-    
-    .header-logo {
-        height: 48px;
-        float: left;
-    }
-    .header-title-box {
-        float: right;
-        text-align: right;
-    }
-    .header-title-box h1 {
-        margin: 0;
-        font-size: 13px;
-        color: #0f172a;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: bold;
-    }
-    .header-title-box h2 {
-        margin: 2px 0 0 0;
-        font-size: 10px;
-        color: #0284c7;
-        font-weight: bold;
-    }
-    .header-title-box p {
-        margin: 1px 0 0 0;
-        font-size: 8.5px;
-        color: #64748b;
-    }
-
     .clear { clear: both; }
 
     .section-title {
-        font-size: 11px;
+        font-size: 10.5px;
         font-weight: bold;
-        color: #0f172a;
-        border-left: 4px solid #0284c7;
-        padding-left: 6px;
-        margin: 14px 0 8px 0;
+        color: #1e3a8a;
+        border-bottom: 2px solid #cbd5e1;
+        padding-bottom: 3px;
+        margin: 18px 0 10px 0;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     /* Ficha Técnica */
     .info-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 12px;
+        margin-bottom: 15px;
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 6px;
+        border-radius: 8px;
+        overflow: hidden;
     }
     .info-table td {
-        padding: 5px 8px;
+        padding: 6px 10px;
         border-bottom: 1px solid #edf2f7;
-        font-size: 9.5px;
+        font-size: 9px;
     }
     .info-label {
         font-weight: bold;
         color: #475569;
-        width: 16%;
+        width: 18%;
         background-color: #f1f5f9;
+        border-right: 1px solid #e2e8f0;
     }
     .info-val {
         color: #0f172a;
-        width: 34%;
+        width: 32%;
+        border-right: 1px solid #e2e8f0;
+    }
+    .info-val:last-child {
+        border-right: none;
     }
 
     /* KPI Cards */
     .kpi-container {
         width: 100%;
-        margin-bottom: 14px;
+        margin-bottom: 15px;
     }
     .kpi-card-table {
         width: 100%;
         border-collapse: separate;
-        border-spacing: 5px 0;
+        border-spacing: 6px 0;
     }
     .kpi-card {
         background: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        padding: 6px 4px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 8px 5px;
         text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.01);
     }
     .kpi-title {
-        font-size: 8px;
+        font-size: 7.5px;
         color: #64748b;
         text-transform: uppercase;
         font-weight: bold;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
     }
     .kpi-num {
-        font-size: 13px;
+        font-size: 15px;
         font-weight: bold;
-        color: #0284c7;
+        color: #1e3a8a;
     }
     .kpi-sub {
-        font-size: 8px;
+        font-size: 7.5px;
         color: #475569;
-        margin-top: 1px;
+        margin-top: 2px;
     }
 
     /* Tablas Estadísticas */
     .stat-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        overflow: hidden;
     }
     .stat-table th {
-        background-color: #0f172a;
+        background-color: #1e293b;
         color: #ffffff;
-        font-size: 9px;
+        font-size: 8.5px;
         font-weight: bold;
-        padding: 5px 7px;
+        padding: 6px 8px;
         text-align: left;
+        text-transform: uppercase;
+        border-bottom: 1px solid #0f172a;
     }
     .stat-table td {
-        padding: 4px 7px;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 9.5px;
+        padding: 5px 8px;
+        border-bottom: 1px solid #cbd5e1;
+        font-size: 9px;
     }
     .stat-table tr:nth-child(even) {
         background-color: #f8fafc;
+    }
+    .stat-table tr:last-child td {
+        border-bottom: none;
     }
 
     /* Tabla de Alumnos */
     .part-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 6px;
+        margin-top: 8px;
+        border: 1px solid #cbd5e1;
     }
     .part-table th {
-        background-color: #1e293b;
+        background-color: #0f172a;
         color: #ffffff;
-        font-size: 9px;
+        font-size: 8.5px;
         font-weight: bold;
-        padding: 5px 6px;
+        padding: 6px 7px;
         text-align: center;
         border: 1px solid #0f172a;
+        text-transform: uppercase;
     }
     .part-table td {
-        padding: 4px 6px;
+        padding: 5px 7px;
         border: 1px solid #cbd5e1;
-        font-size: 9px;
+        font-size: 8.5px;
         vertical-align: middle;
     }
     .part-table tr:nth-child(even) {
@@ -397,11 +392,12 @@ $html = '
     /* Badges */
     .badge {
         display: inline-block;
-        padding: 2px 6px;
-        font-size: 8.5px;
+        padding: 2.5px 7px;
+        font-size: 8px;
         font-weight: bold;
-        border-radius: 4px;
+        border-radius: 999px;
         text-align: center;
+        text-transform: uppercase;
     }
     .badge-aprobado { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
     .badge-reprobado { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
@@ -410,6 +406,22 @@ $html = '
 
     .badge-disc { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
     .badge-no-disc { background-color: #f1f5f9; color: #64748b; }
+
+    /* Barra de Progreso Interna */
+    .progress-bar-container {
+        display: inline-block;
+        width: 45px;
+        height: 6px;
+        background-color: #e2e8f0;
+        border-radius: 3px;
+        vertical-align: middle;
+        overflow: hidden;
+        margin-right: 5px;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+    }
 
     /* Firmas */
     .signatures-box {
@@ -427,15 +439,15 @@ $html = '
         vertical-align: bottom;
     }
     .sig-line {
-        border-top: 1px dashed #64748b;
+        border-top: 1px dashed #475569;
         margin-top: 45px;
-        padding-top: 4px;
+        padding-top: 5px;
         font-weight: bold;
-        font-size: 9.5px;
+        font-size: 9px;
         color: #1e293b;
     }
     .sig-sub {
-        font-size: 8.5px;
+        font-size: 8px;
         color: #64748b;
     }
 </style>
@@ -443,20 +455,23 @@ $html = '
 <body>
 
 <header>
-    ' . (!empty($logoSrc) ? '<img src="' . $logoSrc . '" class="header-logo" alt="INCES Logo">' : '') . '
-    <div class="header-title-box">
-        <h1>República Bolivariana de Venezuela</h1>
-        <p>Ministerio del Poder Popular para el Proceso Social de Trabajo</p>
-        <h2>INSTITUTO NACIONAL DE CAPACITACIÓN Y EDUCACIÓN SOCIALISTA</h2>
-        <p><strong>INFORME EJECUTIVO DE MATRÍCULA Y EVALUACIÓN DE CURSO</strong></p>
-    </div>
-    <div class="clear"></div>
+    <table class="header-table">
+        <tr>
+            <td style="width: 20%;">' . (!empty($logoGobierno) ? '<img src="' . $logoGobierno . '" class="logo" alt="Gobierno">' : '') . '</td>
+            <td style="width: 60%;" class="header-title">
+                <h1>Informe Gerencial de Administración</h1>
+                <p>Matrícula y Evaluación Académica</p>
+                <div class="header-doc-code">DOCUMENTO OFICIAL DE GESTIÓN ADMINISTRATIVA · INCES INDUSTRIAL</div>
+            </td>
+            <td style="width: 20%; text-align: right;">' . (!empty($logoInces) ? '<img src="' . $logoInces . '" class="logo" alt="INCES">' : '') . '</td>
+        </tr>
+    </table>
 </header>
 
 <footer>
     <div class="footer-content">
         <div class="footer-left">
-            INCES · Reporte Oficial de Curso #' . $id_curso . ' · Generado por: <strong>' . htmlspecialchars($usuarioFull) . '</strong>
+            INCES · Reporte de Matrícula - Curso #' . $id_curso . ' · Emisor: <strong>' . htmlspecialchars($usuarioFull) . '</strong>
         </div>
         <div class="footer-right">
             Página <span class="pagenum"></span>
@@ -466,7 +481,7 @@ $html = '
 </footer>
 
 <!-- 1. FICHA TÉCNICA DEL CURSO -->
-<div class="section-title">1. Ficha Técnica y Especificaciones del Curso</div>
+<div class="section-title">1. Ficha Técnica del Curso</div>
 <table class="info-table">
     <tr>
         <td class="info-label">Curso:</td>
@@ -483,7 +498,7 @@ $html = '
     <tr>
         <td class="info-label">Turno / Duración:</td>
         <td class="info-val">' . htmlspecialchars($curso['turno']) . ' (' . intval($curso['horas_totales']) . ' Horas)</td>
-        <td class="info-label">Ocupación / Cupos:</td>
+        <td class="info-label">Cupos ocupados:</td>
         <td class="info-val"><strong>' . $totalPart . ' / ' . $maxPart . '</strong> (' . $pctOcupacion . '% Ocupado)</td>
     </tr>
     <tr>
@@ -510,19 +525,19 @@ $html = '
                 <div class="kpi-card">
                     <div class="kpi-title">Tasa Aprobación</div>
                     <div class="kpi-num" style="color: #059669;">' . $pctAprobados . '%</div>
-                    <div class="kpi-sub">' . $aprobados . ' de ' . $evaluados . ' evaluados</div>
+                    <div class="kpi-sub">' . $aprobados . ' de ' . $evaluados . ' eval.</div>
                 </div>
             </td>
             <td style="width: 20%;">
                 <div class="kpi-card">
-                    <div class="kpi-title">Paridad de Género</div>
-                    <div class="kpi-num" style="color: #0284c7;">' . $pctFem . '% F</div>
-                    <div class="kpi-sub">' . $femenino . ' F / ' . $masculino . ' M</div>
+                    <div class="kpi-title">Femenino (F)</div>
+                    <div class="kpi-num" style="color: #ec4899;">' . $pctFem . '%</div>
+                    <div class="kpi-sub">' . $femenino . ' de ' . $totalPart . ' alumnos</div>
                 </div>
             </td>
             <td style="width: 20%;">
                 <div class="kpi-card">
-                    <div class="kpi-title">Tasa de Inclusión</div>
+                    <div class="kpi-title">Tasa Inclusión</div>
                     <div class="kpi-num" style="color: #d97706;">' . $pctDisc . '%</div>
                     <div class="kpi-sub">' . $conDisc . ' con Discapacidad</div>
                 </div>
@@ -530,8 +545,8 @@ $html = '
             <td style="width: 20%;">
                 <div class="kpi-card">
                     <div class="kpi-title">Edad Promedio</div>
-                    <div class="kpi-num" style="color: #4f46e5;">' . $edadPromedio . '</div>
-                    <div class="kpi-sub">Años de promedio</div>
+                    <div class="kpi-num" style="color: #6366f1;">' . $edadPromedio . '</div>
+                    <div class="kpi-sub">Años de edad prom.</div>
                 </div>
             </td>
         </tr>
@@ -543,7 +558,7 @@ $html = '
 <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
     <tr>
         <!-- Columna 1: Rendimiento -->
-        <td style="width: 32%; vertical-align: top; padding-right: 6px;">
+        <td style="width: 32%; vertical-align: top; padding-right: 8px;">
             <table class="stat-table">
                 <thead>
                     <tr>
@@ -554,24 +569,24 @@ $html = '
                     <tr>
                         <td><strong>Aprobados</strong></td>
                         <td style="text-align: center;">' . $aprobados . '</td>
-                        <td style="text-align: right; color: #059669; font-weight: bold;">' . $pctAprobados . '%</td>
+                        <td style="text-align: right; color: #059669; font-weight: bold;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctAprobados . '%; background-color:#10b981;"></div></div>' . $pctAprobados . '%</td>
                     </tr>
                     <tr>
                         <td><strong>Reprobados</strong></td>
                         <td style="text-align: center;">' . $reprobados . '</td>
-                        <td style="text-align: right; color: #dc2626;">' . $pctReprobados . '%</td>
+                        <td style="text-align: right; color: #dc2626;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctReprobados . '%; background-color:#ef4444;"></div></div>' . $pctReprobados . '%</td>
                     </tr>
                     <tr>
                         <td><strong>Ausentes</strong></td>
                         <td style="text-align: center;">' . $ausentes . '</td>
-                        <td style="text-align: right; color: #64748b;">' . $pctAusentes . '%</td>
+                        <td style="text-align: right; color: #64748b;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctAusentes . '%; background-color:#94a3b8;"></div></div>' . $pctAusentes . '%</td>
                     </tr>
                     <tr>
                         <td><strong>En Formación</strong></td>
                         <td style="text-align: center;">' . $enFormacion . '</td>
-                        <td style="text-align: right;">' . $pctFormacion . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctFormacion . '%; background-color:#3b82f6;"></div></div>' . $pctFormacion . '%</td>
                     </tr>
-                    <tr style="background-color: #e2e8f0; font-weight: bold;">
+                    <tr style="background-color: #cbd5e1; font-weight: bold;">
                         <td>Total Matrícula</td>
                         <td style="text-align: center;">' . $totalPart . '</td>
                         <td style="text-align: right;">100%</td>
@@ -581,7 +596,7 @@ $html = '
         </td>
 
         <!-- Columna 2: Género y Edad -->
-        <td style="width: 34%; vertical-align: top; padding-right: 6px;">
+        <td style="width: 34%; vertical-align: top; padding-right: 8px;">
             <table class="stat-table">
                 <thead>
                     <tr>
@@ -592,27 +607,27 @@ $html = '
                     <tr>
                         <td><strong>Femenino (Mujeres)</strong></td>
                         <td style="text-align: center;">' . $femenino . '</td>
-                        <td style="text-align: right;">' . $pctFem . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctFem . '%; background-color:#ec4899;"></div></div>' . $pctFem . '%</td>
                     </tr>
                     <tr>
                         <td><strong>Masculino (Hombres)</strong></td>
                         <td style="text-align: center;">' . $masculino . '</td>
-                        <td style="text-align: right;">' . $pctMas . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctMas . '%; background-color:#3b82f6;"></div></div>' . $pctMas . '%</td>
                     </tr>
                     <tr>
                         <td><strong>Adolescentes (&lt;18)</strong></td>
                         <td style="text-align: center;">' . $bajo18 . '</td>
-                        <td style="text-align: right;">' . $pctBajo18 . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctBajo18 . '%; background-color:#10b981;"></div></div>' . $pctBajo18 . '%</td>
                     </tr>
                     <tr>
                         <td><strong>Jóvenes (18 - 29)</strong></td>
                         <td style="text-align: center;">' . $de18a29 . '</td>
-                        <td style="text-align: right;">' . $pctDe18a29 . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctDe18a29 . '%; background-color:#f59e0b;"></div></div>' . $pctDe18a29 . '%</td>
                     </tr>
                     <tr>
                         <td><strong>Adultos (30+)</strong></td>
                         <td style="text-align: center;">' . $mas30 . '</td>
-                        <td style="text-align: right;">' . $pctMas30 . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctMas30 . '%; background-color:#6366f1;"></div></div>' . $pctMas30 . '%</td>
                     </tr>
                 </tbody>
             </table>
@@ -630,12 +645,12 @@ $html = '
                     <tr>
                         <td><strong>Sin Discapacidad</strong></td>
                         <td style="text-align: center;">' . $sinDisc . '</td>
-                        <td style="text-align: right;">' . $pctSinDisc . '%</td>
+                        <td style="text-align: right;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctSinDisc . '%; background-color:#64748b;"></div></div>' . $pctSinDisc . '%</td>
                     </tr>
                     <tr style="background-color: #fef3c7;">
                         <td><strong style="color: #92400e;">Con Discapacidad</strong></td>
                         <td style="text-align: center; font-weight: bold; color: #92400e;">' . $conDisc . '</td>
-                        <td style="text-align: right; font-weight: bold; color: #92400e;">' . $pctDisc . '%</td>
+                        <td style="text-align: right; font-weight: bold; color: #92400e;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pctDisc . '%; background-color:#d97706;"></div></div>' . $pctDisc . '%</td>
                     </tr>';
 
 if (!empty($discDesglose)) {
@@ -645,13 +660,13 @@ if (!empty($discDesglose)) {
                     <tr>
                         <td style="padding-left: 12px; font-size: 8.5px; color: #475569;">· ' . htmlspecialchars($nDisc) . '</td>
                         <td style="text-align: center; font-size: 8.5px;">' . $cDisc . '</td>
-                        <td style="text-align: right; font-size: 8.5px;">' . $pDisc . '%</td>
+                        <td style="text-align: right; font-size: 8.5px;"><div class="progress-bar-container"><div class="progress-bar-fill" style="width:' . $pDisc . '%; background-color:#f59e0b;"></div></div>' . $pDisc . '%</td>
                     </tr>';
     }
 } else {
     $html .= '
                     <tr>
-                        <td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic; font-size: 8.5px;">Sin casos de discapacidad registrados</td>
+                        <td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic; font-size: 8.5px; padding: 10px 0;">Sin casos de discapacidad registrados</td>
                     </tr>';
 }
 

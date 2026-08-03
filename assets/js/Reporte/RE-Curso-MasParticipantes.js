@@ -488,6 +488,8 @@ function renderCmp(datos) {
                                     <tr style="font-size:.93rem;">
                                         <th style="width:60px;">Pos.</th>
                                         <th><a href="#" class="cmpSortLink" data-col="nombre_curso">Curso <i class="bi bi-arrow-down-up ms-1"></i></a></th>
+                                        <th><a href="#" class="cmpSortLink" data-col="preimpreso">Preimpreso <i class="bi bi-arrow-down-up ms-1"></i></a></th>
+                                        <th><a href="#" class="cmpSortLink" data-col="fecha_inicio">Mes Reinicio <i class="bi bi-arrow-down-up ms-1"></i></a></th>
                                         <th><a href="#" class="cmpSortLink" data-col="total_participantes">Participantes <i class="bi bi-arrow-down ms-1"></i></a></th>
                                         <th><a href="#" class="cmpSortLink" data-col="estatus">Estatus <i class="bi bi-arrow-down-up ms-1"></i></a></th>
                                         <th><a href="#" class="cmpSortLink" data-col="modalidad">Modalidad <i class="bi bi-arrow-down-up ms-1"></i></a></th>
@@ -859,6 +861,8 @@ function renderCmp(datos) {
             const dir = cmpOrdenDir === 'asc' ? 1 : -1;
             switch (cmpOrdenCol) {
                 case 'nombre_curso': return dir * (a.nombre_curso || '').localeCompare(b.nombre_curso || '');
+                case 'preimpreso': return dir * (a.preimpreso || '').localeCompare(b.preimpreso || '');
+                case 'fecha_inicio': return dir * (a.fecha_inicio || '').localeCompare(b.fecha_inicio || '');
                 case 'total_participantes': return dir * ((parseInt(a.total_participantes) || 0) - (parseInt(b.total_participantes) || 0));
                 case 'estatus': return dir * (a.estatus || '').localeCompare(b.estatus || '');
                 case 'modalidad': return dir * (a.modalidad || '').localeCompare(b.modalidad || '');
@@ -873,8 +877,20 @@ function renderCmp(datos) {
         const tbody = document.getElementById('cmpTbody');
         if (!tbody) return;
 
+        function cmpObtenerNombreMes(fechaStr) {
+            if (!fechaStr) return '—';
+            const partes = fechaStr.split('-');
+            if (partes.length < 2) return '—';
+            const mesNum = parseInt(partes[1], 10);
+            const meses = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+            return meses[mesNum - 1] || '—';
+        }
+
         tbody.innerHTML = ordenados.slice(inicio, fin).length === 0
-            ? `<tr><td colspan="7" class="text-center py-5 text-muted">
+            ? `<tr><td colspan="9" class="text-center py-5 text-muted">
                    <i class="bi bi-inbox" style="font-size:2.2rem;opacity:.35;"></i>
                    <p class="mt-2 mb-0" style="font-size:.95rem;">No se encontraron cursos.</p>
                </td></tr>`
@@ -884,6 +900,9 @@ function renderCmp(datos) {
                 const pct = maxPart > 0 ? Math.min(Math.round((part / maxPart) * 100), 100) : 0;
                 const clsPos = num === 1 ? 'bg-warning text-dark' : num === 2 ? 'bg-secondary' : num === 3 ? 'bg-danger' : 'bg-light text-dark border';
                 const idC = parseInt(item.id_curso) || 0;
+                const mesNombre = cmpObtenerNombreMes(item.fecha_inicio);
+                const anioCurso = item.fecha_inicio ? item.fecha_inicio.split('-')[0] : '';
+                const mesAnioStr = mesNombre !== '—' ? `${mesNombre} ${anioCurso}` : '—';
                 return `
                 <tr style="cursor:pointer;font-size:.93rem;" onclick="cmpClickFila(${idC})">
                     <td>
@@ -893,6 +912,8 @@ function renderCmp(datos) {
                         </div>
                     </td>
                     <td><strong title="${item.nombre_curso}">${item.nombre_curso}</strong></td>
+                    <td><span class="text-muted fw-semibold">${item.preimpreso || '—'}</span></td>
+                    <td><span class="text-muted fw-semibold">${mesAnioStr}</span></td>
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge bg-primary rounded-pill">${part.toLocaleString()}</span>
@@ -957,7 +978,7 @@ function renderCmp(datos) {
             if (fEst && c.estatus !== fEst) return false;
             if (fMod && c.modalidad !== fMod) return false;
             if (fCla && c.clasificacion !== fCla) return false;
-            if (fBus && !(c.nombre_curso || '').toLowerCase().includes(fBus)) return false;
+            if (fBus && !((c.nombre_curso || '').toLowerCase().includes(fBus) || (c.preimpreso || '').toLowerCase().includes(fBus))) return false;
             return true;
         });
         cmpPagActual = 1; renderTabla();
