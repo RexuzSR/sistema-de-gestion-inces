@@ -1514,6 +1514,204 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                     `;
                 }
 
+
+                // ============================================================
+                // DIAGNÓSTICO INTELIGENTE: Por qué está en ese estado
+                // ============================================================
+                const esConteoInd = (ind.formula && ind.formula.toLowerCase().includes('conteo')) || (ind.indicador && ind.indicador.toLowerCase().includes('cantidad'));
+                const valorNum = typeof ind.valor_actual === 'number' ? ind.valor_actual : (Array.isArray(ind.valor_actual) ? ind.valor_actual.length : NaN);
+                
+                // Extraer la meta numérica del texto de la meta
+                let metaNum = NaN;
+                const metaStr = ind.meta || '';
+                const metaMatch = metaStr.match(/([\d.]+)/);
+                if (metaMatch) metaNum = parseFloat(metaMatch[1]);
+                
+                // Calcular brecha
+                let brecha = NaN;
+                let brechaStr = '';
+                const esInverso = ind.umbrales && ind.umbrales.verde && ind.umbrales.verde.max !== undefined;
+                
+                if (!isNaN(valorNum) && !isNaN(metaNum)) {
+                    if (esInverso) {
+                        brecha = valorNum - metaNum;
+                        brechaStr = brecha > 0 ? `${brecha.toFixed(1)} pp por encima del límite aceptable` : `${Math.abs(brecha).toFixed(1)} pp por debajo del límite`;
+                    } else {
+                        brecha = metaNum - valorNum;
+                        brechaStr = brecha > 0 ? `Faltan ${brecha.toFixed(1)} ${esConteoInd ? 'unidades' : 'pp'} para alcanzar la meta` : `Supera la meta por ${Math.abs(brecha).toFixed(1)} ${esConteoInd ? 'unidades' : 'pp'}`;
+                    }
+                }
+
+                // Generar diagnóstico por indicador/estado
+                let diagnosticoHtml = '';
+                const pctCumpl = parseFloat(ind.cumplimiento) || 0;
+
+                const diagnosticosVerde = {
+                    default: `El indicador opera <strong>dentro del rango óptimo</strong>. Los procesos asociados funcionan correctamente y los resultados superan o alcanzan la meta establecida de <strong>${ind.meta}</strong>.`,
+                    utilizacion: `La capacidad instalada de formación está siendo aprovechada eficientemente. Los cupos disponibles tienen una ocupación real que supera el umbral de ${ind.meta}.`,
+                    disponibles: `El volumen de participantes sin asignación se mantiene controlado. La mayoría del personal está activo en programas de formación o asignado a una.`,
+                    metas: `Los ámbitos de formación están cumpliendo sus objetivos planificados. El seguimiento periódico y la ejecución coordinada han resultado en un desempeño superior al umbral.`,
+                    cancelada: `La tasa de cancelación de formaciones es mínima, lo que indica una planificación efectiva y un buen acompañamiento a los grupos en ejecución.`,
+                    solicitada: `Los 5 cursos del período concentran una demanda significativa y diversificada, cada uno representando al menos el 5% del total de inscripciones.`,
+                    asignacion: `El índice de asignación refleja que la mayoría de los participantes registrados están activamente vinculados a una formación o en proceso de serlo.`,
+                    ambito: `Las inscripciones del período están concentradas principalmente en los 3 ámbitos prioritarios, superando el umbral del ${ind.meta}.`,
+                    promedio: `Los grupos de formación tienen una ocupación cercana a su capacidad máxima, maximizando el uso de los recursos logísticos y humanos.`,
+                    programas: `Los programas planificados para el trimestre han sido ejecutados en su mayoría, reflejando una gestión operativa alineada con la planificación institucional.`,
+                    formaciones: `El volumen de formaciones activas en el período supera la meta mínima de ${ind.meta}, garantizando cobertura continua en los diferentes ámbitos.`,
+                    plan: `El plan anual de capacitación de participantes ha sido superado, lo que representa un logro estratégico en materia de cobertura educativa.`,
+                    docentes: `El porcentaje de docentes certificados en nuevas metodologías supera el umbral establecido, fortaleciendo la calidad pedagógica de las formaciones.`,
+                };
+                
+                const diagnosticosRojo = {
+                    default: `El indicador está <strong>por debajo del umbral mínimo aceptable</strong>. Se requiere intervención inmediata para revertir la tendencia y alcanzar la meta de <strong>${ind.meta}</strong>.`,
+                    utilizacion: `La capacidad instalada de formación está siendo subutilizada. Hay cupos disponibles que no están siendo ocupados, lo que reduce la eficiencia operativa del centro.`,
+                    disponibles: `Existe un alto porcentaje de participantes sin asignación activa. Esto puede indicar falta de formaciones disponibles, cuellos de botella en inscripción, o desactualización del registro de estados.`,
+                    metas: `Los ámbitos de formación no están alcanzando las metas planificadas. Puede indicar incumplimiento en ejecución de cursos, baja inscripción o cancelaciones frecuentes.`,
+                    cancelada: `La tasa de cancelación supera el umbral aceptable. Esto afecta la planificación, la confianza de los participantes y el uso de recursos ya asignados a los programas cancelados.`,
+                    solicitada: `Menos de 5 cursos concentran demanda significativa en el período. La oferta puede estar desalineada con las preferencias reales de los participantes o la variedad de cursos es insuficiente.`,
+                    asignacion: `Un porcentaje considerable de participantes no está vinculado activamente a ninguna formación. Se recomienda revisar el proceso de asignación y la disponibilidad de oferta formativa.`,
+                    ambito: `Las inscripciones no están concentradas en los ámbitos prioritarios. La demanda puede estar dispersa o los cursos de alta prioridad estratégica no tienen suficiente oferta en el período.`,
+                    promedio: `Los grupos de formación tienen una baja ocupación respecto a su capacidad máxima. Esto incrementa el costo por participante y reduce la eficiencia logística.`,
+                    programas: `Una parte significativa de los programas planificados no fue ejecutada. Esto afecta el cumplimiento del plan trimestral y puede generar rezagos acumulados en los ámbitos prioritarios.`,
+                    formaciones: `El número de formaciones activas en el período es insuficiente para cubrir la demanda. Se necesita al menos ${ind.meta} formaciones para cumplir el estándar mínimo.`,
+                    plan: `El plan anual de participantes no está siendo cumplido. Se está formando a menos personas de lo proyectado, lo que impacta en los indicadores de cobertura institucional.`,
+                    docentes: `El porcentaje de docentes con certificación en nuevas metodologías es bajo. Esto puede afectar la calidad y modernización de los programas de formación.`,
+                };
+                
+                const diagnosticosAmarillo = {
+                    default: `El indicador está <strong>en zona de precaución</strong>. El desempeño es aceptable pero aún no alcanza el nivel óptimo de <strong>${ind.meta}</strong>. Se recomienda monitoreo continuo y ajustes preventivos.`,
+                };
+
+                // Clasificar el tipo de indicador para el texto específico
+                const nomLow = (ind.indicador || '').toLowerCase();
+                let tipoInd = 'default';
+                if (nomLow.includes('utiliz') || nomLow.includes('cupo')) tipoInd = 'utilizacion';
+                else if (nomLow.includes('disponible')) tipoInd = 'disponibles';
+                else if (nomLow.includes('meta') && nomLow.includes('mbit')) tipoInd = 'metas';
+                else if (nomLow.includes('cancel')) tipoInd = 'cancelada';
+                else if (nomLow.includes('solicit') && nomLow.includes('form')) tipoInd = 'solicitada';
+                else if (nomLow.includes('asignaci')) tipoInd = 'asignacion';
+                else if (nomLow.includes('mbit') && nomLow.includes('solicit')) tipoInd = 'ambito';
+                else if (nomLow.includes('promedio') || nomLow.includes('participante') && nomLow.includes('form')) tipoInd = 'promedio';
+                else if (nomLow.includes('program') || nomLow.includes('ejecutad')) tipoInd = 'programas';
+                else if (nomLow.includes('cantidad') && nomLow.includes('form')) tipoInd = 'formaciones';
+                else if (nomLow.includes('plan') || nomLow.includes('anual')) tipoInd = 'plan';
+                else if (nomLow.includes('docente')) tipoInd = 'docentes';
+
+                // Seleccionar texto base según estado
+                let textoDiag = '';
+                let iconoDiag = '';
+                let colorDiag = '';
+                let bgDiag = '';
+                let bordeDiag = '';
+
+                if (status === 'verde') {
+                    textoDiag = diagnosticosVerde[tipoInd] || diagnosticosVerde.default;
+                    iconoDiag = '✅';
+                    colorDiag = '#065f46';
+                    bgDiag = '#d1fae5';
+                    bordeDiag = '#6ee7b7';
+                } else if (status === 'amarillo') {
+                    textoDiag = diagnosticosAmarillo[tipoInd] || diagnosticosAmarillo.default;
+                    iconoDiag = '⚠️';
+                    colorDiag = '#78350f';
+                    bgDiag = '#fef3c7';
+                    bordeDiag = '#fcd34d';
+                } else {
+                    textoDiag = diagnosticosRojo[tipoInd] || diagnosticosRojo.default;
+                    iconoDiag = '🔴';
+                    colorDiag = '#7f1d1d';
+                    bgDiag = '#fee2e2';
+                    bordeDiag = '#fca5a5';
+                }
+
+                // Acciones recomendadas por estado
+                let accionHtml = '';
+                if (status === 'rojo') {
+                    const accionesRojo = {
+                        default: 'Desviación grave. Se requiere plan de acción inmediato.',
+                        utilizacion: 'Revisar la promoción de cursos activos. Notificar a participantes disponibles sobre cupos libres.',
+                        disponibles: 'Asignar de inmediato a los participantes disponibles a formaciones activas o planificadas.',
+                        metas: 'Revisar el cumplimiento por ámbito. Priorizar ámbitos con mayor brecha e incrementar la frecuencia de seguimiento.',
+                        cancelada: 'Analizar causas de cancelación. Implementar plan de contingencia para reagendar los programas afectados.',
+                        solicitada: 'Revisar la oferta de cursos del período. Diversificar o reforzar los cursos con mayor demanda histórica.',
+                        asignacion: 'Activar proceso de asignación de participantes. Verificar disponibilidad de cupos y comunicar a coordinadores.',
+                        ambito: 'Revisar distribución de inscripciones por ámbito. Fortalecer la oferta en los ámbitos estratégicos prioritarios.',
+                        promedio: 'Aumentar la difusión de cursos con baja ocupación. Evaluar si los horarios o modalidades son adecuados.',
+                        programas: 'Identificar los programas no ejecutados y reasignarlos al siguiente trimestre con prioridad alta.',
+                        formaciones: 'Planificar y aperturar nuevas formaciones. La cantidad mínima requerida es ' + ind.meta + '.',
+                        plan: 'Acelerar inscripciones y apertura de nuevas formaciones para recuperar el rezago frente al objetivo anual.',
+                        docentes: 'Planificar jornadas de certificación y alianzas con instituciones para actualización pedagógica.',
+                    };
+                    const accion = accionesRojo[tipoInd] || accionesRojo.default;
+                    accionHtml = `<div style="margin-top:8px; padding: 8px 12px; background:#fff7f7; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 0.78rem; color: #7f1d1d;">
+                        <strong>Acción recomendada:</strong> ${accion}
+                    </div>`;
+                } else if (status === 'amarillo') {
+                    const accionesAmarillo = {
+                        default: 'Monitorear semanalmente. Aplicar ajustes menores para alcanzar el nivel óptimo antes del próximo corte.',
+                        utilizacion: 'Incrementar inscripciones en cursos con cupos disponibles mediante difusión activa.',
+                        disponibles: 'Iniciar proceso de asignación para los participantes disponibles. Objetivo: bajar por debajo del 20%.',
+                        metas: 'Reforzar el seguimiento a los ámbitos con cumplimiento entre 80% y 89%. Pequeños ajustes pueden alcanzar el umbral verde.',
+                        cancelada: 'Implementar alertas tempranas para cursos con riesgo de cancelación. Revisar las causas principales.',
+                        solicitada: 'Fortalecer la oferta de los cursos más demandados del período anterior para mantener la tendencia.',
+                        asignacion: 'Agilizar la vinculación de los participantes pendientes. Revisar si hay cuellos de botella en el proceso.',
+                        ambito: 'Analizar si los ámbitos con menor demanda están siendo suficientemente promovidos.',
+                        promedio: 'Activar estrategias de difusión en los cursos con ocupación entre 70% y 89%.',
+                        programas: 'Verificar el avance de los programas en ejecución. Aplicar correctivos para completar al menos el 85%.',
+                        formaciones: 'Aperturar 2-3 formaciones adicionales para superar la meta del período.',
+                        plan: 'Reforzar el ritmo de inscripciones para cerrar el trimestre cerca del objetivo anual.',
+                        docentes: 'Identificar docentes sin certificación y programar su inclusión en el próximo ciclo de actualización.',
+                    };
+                    const accion = accionesAmarillo[tipoInd] || accionesAmarillo.default;
+                    accionHtml = `<div style="margin-top:8px; padding: 8px 12px; background:#fffbeb; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 0.78rem; color: #78350f;">
+                        <strong>Acción recomendada:</strong> ${accion}
+                    </div>`;
+                } else {
+                    const accionesVerde = {
+                        default: 'Mantener las prácticas actuales. Documentar y replicar el proceso como buena práctica institucional.',
+                        utilizacion: 'Excelente aprovechamiento de cupos. Considerar ampliar la oferta si existe demanda insatisfecha.',
+                        disponibles: 'El flujo de asignación es efectivo. Mantener el ritmo de incorporación a nuevas formaciones.',
+                        metas: 'Los ámbitos están cumpliendo su plan. Replicar la metodología de seguimiento en períodos futuros.',
+                        cancelada: 'La baja tasa de cancelación refleja una planificación robusta. Documentar las prácticas preventivas.',
+                        solicitada: 'Los 5 cursos top tienen demanda significativa. Considerar abrir grupos adicionales de los más solicitados.',
+                        asignacion: 'Alto nivel de asignación efectiva. El proceso de vinculación participante-formación opera con fluidez.',
+                        ambito: 'La concentración en ámbitos prioritarios es óptima. Mantener el foco y la oferta en estos ámbitos.',
+                        promedio: 'Los grupos operan cerca de su capacidad máxima. Esto maximiza el retorno de inversión por grupo.',
+                        programas: 'Excelente ejecución del plan trimestral. Iniciar la planificación del próximo período con anticipación.',
+                        formaciones: 'La cantidad de formaciones activas supera la meta. Mantener el ritmo de apertura mensual.',
+                        plan: 'El plan anual está siendo superado. Considerar actualizar las metas para mayor ambición institucional.',
+                        docentes: 'La planta docente mantiene certificación actualizada. Planificar certificaciones de nuevas metodologías emergentes.',
+                    };
+                    const accion = accionesVerde[tipoInd] || accionesVerde.default;
+                    accionHtml = `<div style="margin-top:8px; padding: 8px 12px; background:#f0fdf4; border-left: 3px solid #22c55e; border-radius: 4px; font-size: 0.78rem; color: #065f46;">
+                        <strong>Buena práctica:</strong> ${accion}
+                    </div>`;
+                }
+
+                // Bloque de brecha si aplica
+                let brechaHtml = '';
+                if (brechaStr && !isArray) {
+                    const brechaColor = brecha > 0 && !esInverso ? '#dc2626' : (brecha <= 0 && !esInverso ? '#16a34a' : (brecha > 0 ? '#dc2626' : '#16a34a'));
+                    brechaHtml = `<div style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:0.77rem; color:${brechaColor}; font-weight:600;">
+                        <span>${brecha > 0 && !esInverso ? '📉' : (brecha <= 0 && !esInverso ? '📈' : (brecha > 0 ? '📈' : '📉'))}</span>
+                        <span>${brechaStr}</span>
+                    </div>`;
+                }
+
+                diagnosticoHtml = `
+                    <div style="margin-bottom: 14px; padding: 12px; background: ${bgDiag}; border: 1px solid ${bordeDiag}; border-radius: 8px;">
+                        <div style="font-size: 0.68rem; text-transform: uppercase; color: ${colorDiag}; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 6px;">
+                            ${iconoDiag} Diagnóstico — Por qué está ${status === 'verde' ? 'Óptimo' : status === 'amarillo' ? 'en Atención' : 'Crítico'}
+                        </div>
+                        <div style="font-size: 0.80rem; color: ${colorDiag}; line-height: 1.55;">
+                            ${textoDiag}
+                        </div>
+                        ${brechaHtml}
+                        ${accionHtml}
+                    </div>
+                `;
+
                 rightPane.innerHTML = `
                     <div class="kpi-detail-right-card" style="border-top: 4px solid ${colors.border};">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1530,6 +1728,8 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                         </div>
 
                         ${detailBodyHtml}
+
+                        ${diagnosticoHtml}
 
                         <div style="margin-bottom: 14px;">
                             <div class="kpi-details-label">Objetivo y Meta</div>
@@ -1561,6 +1761,7 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                         </div>
                     </div>
                 `;
+
 
                 // 4. Renderizar gráfico
                 renderRightPaneChart(index, ind.perspectiva, ind.tipo_grafico);
