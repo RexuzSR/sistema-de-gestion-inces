@@ -133,6 +133,13 @@ if (!empty($imagenUsuario)) {
                                 <option value="Asignado">Asignado</option>
                                 <option value="Inactivo">Inactivo</option>
                             </select>
+
+                            <label class="label" for="nacionalidad">Nacionalidad:</label>
+                            <select class="form-select form-select-sm" name="nacionalidad" id="nacionalidad-filter">
+                                <option value="">Todas</option>
+                                <option value="V">Venezolanos</option>
+                                <option value="E">Extranjeros</option>
+                            </select>
                         </form>
 
                         <!-- Botón para agregar Docentes-->

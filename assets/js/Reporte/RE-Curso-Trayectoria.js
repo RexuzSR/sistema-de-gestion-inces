@@ -235,6 +235,29 @@ async function cargarTrayectoriaCursos() {
         curTrayRenderKPI(kpiData);
         curTrayRenderTabla();
 
+        // Autoselección si viene redirigido con ?id=... o ?preimpreso=...
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetId = urlParams.get('id') || urlParams.get('preimpreso');
+        if (targetId) {
+            const targetClean = String(targetId).trim().toLowerCase();
+            const cEncontrado = curTrayDatosTabla.find(c => {
+                const idMatch = String(c.id_curso) === targetClean;
+                const idsMatch = (c.todos_id_curso || '').split(',').includes(targetClean);
+                const nameMatch = (c.nombre_curso || '').trim().toLowerCase() === targetClean;
+                const preMatch = (c.preimpresos || '').toLowerCase().includes(targetClean);
+                return idMatch || idsMatch || nameMatch || preMatch;
+            });
+            if (cEncontrado) {
+                curTrayBusqueda = cEncontrado.nombre_curso;
+                const sInput = document.getElementById('curTraySearchInput');
+                if (sInput) sInput.value = curTrayBusqueda;
+                curTrayCursoAct = cEncontrado.nombre_curso;
+                curTrayPaginaActual = 1;
+                curTrayRenderTabla();
+                curTrayAbrirDetalle(cEncontrado.nombre_curso);
+            }
+        }
+
     } catch (err) {
         curTrayMostrarError(document.getElementById('curTrayKpiCards'),     String(err));
         curTrayMostrarError(document.getElementById('curTrayTablaWrapper'), String(err));
@@ -445,11 +468,22 @@ function curTrayRenderTabla() {
     }
 
     if (curTrayBusqueda.trim()) {
-        const q = curTrayBusqueda.toLowerCase();
-        datos = datos.filter(c =>
-            (c.nombre_curso ?? '').toLowerCase().includes(q) ||
-            (c.preimpresos ?? '').toLowerCase().includes(q)
-        );
+        const queryClean = curTrayBusqueda.trim().toLowerCase();
+        const terms = queryClean.split(/\s+/).filter(Boolean);
+
+        datos = datos.filter(c => {
+            const idCurso       = String(c.id_curso ?? '').toLowerCase();
+            const todosIdCurso  = String(c.todos_id_curso ?? '').toLowerCase();
+            const nombreCurso   = (c.nombre_curso ?? '').toLowerCase();
+            const preimpresos   = (c.preimpresos   ?? '').toLowerCase();
+            const modalidad     = (c.nombre_modalidad ?? '').toLowerCase();
+            const ambito        = (c.nombre_ambito    ?? '').toLowerCase();
+            const estatus       = (c.estatus          ?? '').toLowerCase();
+
+            const searchBlob = `${idCurso} ${todosIdCurso} ${nombreCurso} ${preimpresos} ${modalidad} ${ambito} ${estatus}`;
+
+            return terms.every(term => searchBlob.includes(term));
+        });
     }
 
     const total = datos.length;
@@ -462,7 +496,10 @@ function curTrayRenderTabla() {
         ? `<tr><td colspan="7" class="text-center py-5 text-muted">No se encontraron cursos</td></tr>`
         : pagina.map(c => `
             <tr class="curTray-fila ${curTrayCursoAct === c.nombre_curso ? 'table-active' : ''}" 
-                data-nombre="${curTrayEscape(c.nombre_curso)}" style="cursor:pointer;">
+                data-id="${c.id_curso}"
+                data-ids="${c.todos_id_curso ?? c.id_curso}"
+                data-nombre="${curTrayEscape(c.nombre_curso)}"
+                data-preimpresos="${curTrayEscape(c.preimpresos)}" style="cursor:pointer;">
                 <td class="fw-bold">
                     ${curTrayEscape(c.nombre_curso)}
                     ${c.preimpresos ? `<div class="text-muted small" style="font-weight:normal; font-size:0.75rem;"><i class="bi bi-tag-fill me-1"></i>Preimpresos: ${curTrayEscape(c.preimpresos)}</div>` : ''}

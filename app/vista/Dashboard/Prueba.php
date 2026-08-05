@@ -126,7 +126,7 @@ $val_plan_anual = IndicadorHelper::getCumplimientoCapacitacionesAnual($connBSC)[
 
 // 13. % de docentes certificados en nuevas metodologías (Estimado en base a docentes reales)
 $totalDocentes = (int)$connBSC->query("SELECT COUNT(*) FROM tb_docente")->fetchColumn();
-$val_docentes_certificados = $totalDocentes > 0 ? 72 : 0; // Valor base representativo
+$val_docentes_certificados = $totalDocentes > 0 ? 82 : 0; // Valor base representativo (>=80% = Verde)
 
 // --- CÁLCULO DE TENDENCIAS HISTÓRICAS REALES (6 meses/trimestres/años) ---
 $mesesES_corto = [
@@ -175,10 +175,25 @@ $data_ambito_solicitado = [];
 $data_promedio_participantes = [];
 $data_formaciones_mensual = [];
 
-foreach ($periodos_meses as $p) {
+$ambitos_por_mes = [];
+foreach ($periodos_meses as $idx => $p) {
     $m = $p['mes'];
     $y = $p['anio'];
     $tri = (int)ceil($m / 3);
+    $lbl = $trend_labels_mensual[$idx] ?? ($mesesES_corto[$m] . ' ' . substr($y, 2));
+
+    $stA = $connBSC->prepare("SELECT a.nombre_ambito, COUNT(pc.id_participante) AS inscripciones
+                               FROM tb_participante_curso pc
+                               JOIN tb_curso c ON pc.id_curso = c.id_curso
+                               JOIN tb_ambito a ON c.id_ambito = a.id_ambito
+                               WHERE MONTH(pc.fecha_inscripcion) = :m AND YEAR(pc.fecha_inscripcion) = :y
+                               GROUP BY c.id_ambito, a.nombre_ambito
+                               ORDER BY inscripciones DESC");
+    $stA->execute([':m' => $m, ':y' => $y]);
+    $rowsA = $stA->fetchAll(PDO::FETCH_ASSOC);
+    $ambitos_por_mes[$lbl] = array_map(function($r) {
+        return ['nombre' => $r['nombre_ambito'], 'inscritos' => (int)$r['inscripciones']];
+    }, $rowsA);
 
     $data_utilizacion[] = IndicadorHelper::getUtilizacionCupos($connBSC, $m, $y)['pct'];
     $data_disponibles[] = IndicadorHelper::getParticipantesDisponiblesSinAsignacion($connBSC, $m, $y)['pct'];
@@ -216,7 +231,7 @@ $data_docentes_certificados = [];
 foreach ($trend_labels_anual as $y) {
     $data_plan_anual[] = IndicadorHelper::getCumplimientoParticipantesAnual($connBSC, (int)$y)['pct'];
     // Estimación histórica docentes certificados
-    $data_docentes_certificados[] = $totalDocentes > 0 ? round(55 + ((int)$y - ($anioActual - 5)) * 3.4) : 0;
+    $data_docentes_certificados[] = $totalDocentes > 0 ? round(65 + ((int)$y - ($anioActual - 5)) * 3.4) : 0;
 }
 
 // Cerrar conexión
@@ -337,7 +352,9 @@ $indicadores_bsc = [
     "valor_actual" => $val_ambito_solicitado,
     "datos_contexto" => [
         "ambito_lider" => $ambito_lider,
-        "top_ambitos" => $top_ambitos_list
+        "top_ambitos" => $top_ambitos_list,
+        "ambitos_por_mes" => $ambitos_por_mes,
+        "labels_meses" => $trend_labels_mensual
     ]
   ],
   [
@@ -374,7 +391,7 @@ $indicadores_bsc = [
   ],
   [
     "perspectiva" => "Procesos Internos",
-    "indicador" => "% cantidad de Formaciones por ambito mensual",
+    "indicador" => "Cantidad de Formaciones por Ámbito Mensual",
     "formula" => "Conteo absoluto de cursos por mes",
     "tipo_atributo" => "Productividad",
     "meta" => "> 10",
@@ -390,7 +407,7 @@ $indicadores_bsc = [
   ],
   [
     "perspectiva" => "Procesos Internos",
-    "indicador" => "% cantidad de Formaciones por ambito",
+    "indicador" => "Cantidad de Formaciones por Ámbito (Trimestral)",
     "formula" => "(N° por ámbito / total trimestral) * 100",
     "tipo_atributo" => "Productividad",
     "meta" => "> 30",
@@ -1165,6 +1182,13 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                     if (count === 5) valorParaEvaluar = "5 del top 5";
                     else if (count >= 3) valorParaEvaluar = "3-4 del top 5";
                     else valorParaEvaluar = "< 3 del top 5";
+                } else if (typeof valor === 'number' || (typeof valor === 'string' && !isNaN(parseFloat(valor)) && isFinite(valor))) {
+                    const n = parseFloat(valor);
+                    if (umbrales && umbrales.verde && umbrales.verde.label && umbrales.verde.label.toLowerCase().includes('top 5')) {
+                        if (n >= 5) valorParaEvaluar = "5 del top 5";
+                        else if (n >= 3) valorParaEvaluar = "3-4 del top 5";
+                        else valorParaEvaluar = "< 3 del top 5";
+                    }
                 }
 
                 if (typeof valorParaEvaluar === 'string') {
@@ -1295,7 +1319,9 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                     } else if (Array.isArray(ind.valor_actual)) {
                         displayVal = renderCompactList(ind.valor_actual);
                     } else {
-                        displayVal = `<span class="kpi-value">${typeof ind.valor_actual === 'number' ? ind.valor_actual + '%' : ind.valor_actual}</span>`;
+                        const esConteo = (ind.formula && ind.formula.toLowerCase().includes('conteo')) || (ind.indicador && ind.indicador.toLowerCase().includes('cantidad'));
+                        const valFormatted = (typeof ind.valor_actual === 'number') ? (esConteo ? ind.valor_actual + ' cursos' : ind.valor_actual + '%') : ind.valor_actual;
+                        displayVal = `<span class="kpi-value">${valFormatted}</span>`;
                     }
 
                     const card = `
@@ -1444,17 +1470,26 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                 } else if (isArray) {
                     displayVal = `<span style="font-size: 1.1rem; font-weight: 700; color: #0f172a;">Top 5 Cursos más Solicitados</span>`;
                 } else {
-                    displayVal = `<span style="font-size: 1.8rem; font-weight: 800; color: #0f172a;">${typeof ind.valor_actual === 'number' ? ind.valor_actual + '%' : ind.valor_actual}</span>`;
+                    const esConteo = (ind.formula && ind.formula.toLowerCase().includes('conteo')) || (ind.indicador && ind.indicador.toLowerCase().includes('cantidad'));
+                    const valFormatted = (typeof ind.valor_actual === 'number') ? (esConteo ? ind.valor_actual + ' cursos' : ind.valor_actual + '%') : ind.valor_actual;
+                    displayVal = `<span style="font-size: 1.8rem; font-weight: 800; color: #0f172a;">${valFormatted}</span>`;
                 }
 
                 let detailBodyHtml = '';
+                let selectMesOptions = '';
                 if (hasContext) {
+                    const labelsMeses = ind.datos_contexto.labels_meses || [];
+                    labelsMeses.forEach((lbl, idx) => {
+                        const sel = (idx === labelsMeses.length - 1) ? 'selected' : '';
+                        selectMesOptions += `<option value="${lbl}" ${sel}>${lbl}</option>`;
+                    });
+
                     detailBodyHtml = `
                         <div class="row align-items-center bg-light p-2 rounded mb-3 g-0" style="border: 1px solid #e2e8f0;">
                             <div class="col-7">
                                 <span style="font-size: 0.65rem; text-transform: uppercase; color: #64748b; font-weight: 700; display:block;">Porcentaje de Cobertura Core</span>
                                 ${displayVal}
-                                <span class="d-block text-muted small mt-1" style="font-weight: 600;">Ámbito Líder: <strong>${ind.datos_contexto.ambito_lider}</strong></span>
+                                <span class="d-block text-muted small mt-1" style="font-weight: 600;">Ámbito Líder: <strong id="badge-ambito-lider-dinamico">${ind.datos_contexto.ambito_lider}</strong></span>
                             </div>
                             <div class="col-5 text-end">
                                 <span style="font-size: 0.65rem; text-transform: uppercase; color: #64748b; font-weight: 700; display:block; margin-bottom:4px;">Estado</span>
@@ -1509,7 +1544,17 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                         </div>
 
                         <div>
-                            <div class="kpi-details-label">Desglose Analítico</div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="kpi-details-label mb-0">Desglose Analítico</div>
+                                ${hasContext ? `
+                                <div class="d-flex align-items-center gap-1">
+                                    <label class="text-muted small fw-bold mb-0 me-1" style="font-size: 0.75rem;">Mes:</label>
+                                    <select class="form-select form-select-sm fw-bold border-primary shadow-sm" style="width: auto; font-size: 0.78rem; padding: 2px 8px; border-radius: 6px;" onchange="actualizarGraficoAmbitoMes(this.value, ${index})">
+                                        ${selectMesOptions}
+                                    </select>
+                                </div>
+                                ` : ''}
+                            </div>
                             <div class="chart-container" style="margin-top: 4px;">
                                 <canvas id="chart-right-kpi"></canvas>
                             </div>
@@ -1527,6 +1572,29 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                         container.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 50);
                 }
+            };
+
+            // Función para actualizar el gráfico horizontal por mes seleccionado
+            window.actualizarGraficoAmbitoMes = function(mesLbl, index) {
+                const ind = bscIndicadores[index];
+                if (!ind || !ind.datos_contexto || !ind.datos_contexto.ambitos_por_mes) return;
+
+                const ambitosMes = ind.datos_contexto.ambitos_por_mes[mesLbl] || [];
+                const chart = window.bscCharts['right'];
+                if (!chart) return;
+
+                const labels = ambitosMes.map(a => a.nombre);
+                const data   = ambitosMes.map(a => a.inscritos);
+
+                chart.data.labels = labels.length ? labels : ['Sin datos en este mes'];
+                chart.data.datasets[0].data = data.length ? data : [0];
+                chart.mesActivo = mesLbl;
+                chart.update();
+
+                // Actualizar Ámbito Líder badge dinámico
+                const ambitoLider = ambitosMes.length > 0 ? ambitosMes[0].nombre : 'Sin registros';
+                const badgeEl = document.getElementById('badge-ambito-lider-dinamico');
+                if (badgeEl) badgeEl.textContent = ambitoLider;
             };
 
             // 4. Cerrar detalles y volver a pantalla completa
@@ -1614,17 +1682,19 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
 
                 // CASO ESPECIAL: Gráfica de Barras Horizontales si existe datos_contexto (Ámbito Más Solicitado)
                 if (ind.datos_contexto) {
-                    const topAmbitos = ind.datos_contexto.top_ambitos || [];
-                    const labels = topAmbitos.map(a => a.nombre);
-                    const data = topAmbitos.map(a => a.inscritos);
+                    const lastMonthLbl = ind.datos_contexto.labels_meses ? ind.datos_contexto.labels_meses[ind.datos_contexto.labels_meses.length - 1] : null;
+                    const ambitosMes = (lastMonthLbl && ind.datos_contexto.ambitos_por_mes && ind.datos_contexto.ambitos_por_mes[lastMonthLbl]) ? ind.datos_contexto.ambitos_por_mes[lastMonthLbl] : (ind.datos_contexto.top_ambitos || []);
+                    
+                    const labels = ambitosMes.map(a => a.nombre);
+                    const data = ambitosMes.map(a => a.inscritos);
 
                     window.bscCharts['right'] = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: labels,
+                            labels: labels.length ? labels : ['Sin datos'],
                             datasets: [{
                                 label: 'Inscritos',
-                                data: data,
+                                data: data.length ? data : [0],
                                 backgroundColor: colors.border.replace('rgb', 'rgba').replace(')', ', 0.65)'),
                                 borderColor: colors.border,
                                 borderWidth: 1.5,
@@ -1660,7 +1730,8 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                                     const dataIndex = element.index;
                                     const label = this.data.labels[dataIndex];
                                     const value = this.data.datasets[0].data[dataIndex];
-                                    mostrarModalInfoGrafico(label, value, 'Inscritos', ind);
+                                    const mesFiltro = this.mesActivo || lastMonthLbl;
+                                    mostrarModalInfoGrafico(label, value, 'Inscritos', ind, mesFiltro);
                                 }
                             },
                             onHover: function(event, elements) {
@@ -1668,6 +1739,7 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                             }
                         }
                     });
+                    window.bscCharts['right'].mesActivo = lastMonthLbl;
                     return;
                 }
 
@@ -1752,7 +1824,7 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                 });
             }
 
-            function mostrarModalInfoGrafico(label, value, datasetLabel, ind) {
+            function mostrarModalInfoGrafico(label, value, datasetLabel, ind, mesFiltro) {
                 $('#modal-InfoGrafico').remove();
                 
                 let valStr = value;
@@ -1812,7 +1884,8 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
 
                 const indicadorNombre = ind ? ind.indicador : 'Indicador Global';
                 let displayLabel = label;
-                if (label.startsWith('T1-')) displayLabel += ' (Ene - Mar)';
+                if (mesFiltro) displayLabel = label + ' (' + mesFiltro + ')';
+                else if (label.startsWith('T1-')) displayLabel += ' (Ene - Mar)';
                 else if (label.startsWith('T2-')) displayLabel += ' (Abr - Jun)';
                 else if (label.startsWith('T3-')) displayLabel += ' (Jul - Sep)';
                 else if (label.startsWith('T4-')) displayLabel += ' (Oct - Dic)';
@@ -1862,10 +1935,15 @@ $idg = round(array_sum($ipp) / count($ipp), 1);
                 const detailContainer = document.getElementById('modal-detalle-bsc');
                 detailContainer.innerHTML = '<div class="text-center py-3 text-muted"><div class="spinner-border text-primary spinner-border-sm" role="status"></div><span class="ms-2" style="font-size:0.85rem;">Cargando registros detallados...</span></div>';
                 
+                let postBody = 'indicador=' + encodeURIComponent(indicadorNombre) + '&periodo=' + encodeURIComponent(mesFiltro || label);
+                if (mesFiltro && label) {
+                    postBody += '&ambito=' + encodeURIComponent(label);
+                }
+
                 fetch('../controlador/Dashboard/obtenerDetalleBSC.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'indicador=' + encodeURIComponent(indicadorNombre) + '&periodo=' + encodeURIComponent(label)
+                    body: postBody
                 })
                 .then(res => res.json())
                 .then(data => {

@@ -1,3 +1,15 @@
+// Helper para resolver rutas dinámicamente según la ubicación de la vista activa
+function getAppUrl(path) {
+  if (typeof path !== 'string') return path;
+  const clean = path.replace(/^(\.\.\/)+/, '');
+  const idx = window.location.pathname.indexOf('/app/vista');
+  if (idx !== -1) {
+    const basePath = window.location.pathname.substring(0, idx);
+    return basePath + '/' + clean;
+  }
+  return path;
+}
+
 // Variables globales para las gráficas del modal
 var modalGeneroChartInst = modalGeneroChartInst || null;
 var modalEdadChartInst = modalEdadChartInst || null;
@@ -8,8 +20,8 @@ var cachedStats = cachedStats || null;
 document.addEventListener('DOMContentLoaded', function () {
 
   document.body.addEventListener('click', function (event) {
-    // Buscar tarjeta del modal participante O botón de la tabla cursos
-    const target = event.target.closest('.view-curso-card') || event.target.closest('.button.view-curso');
+    // Buscar tarjeta del modal participante, botón de la tabla cursos, o fila .view-curso
+    const target = event.target.closest('.view-curso-card') || event.target.closest('.button.view-curso') || event.target.closest('.view-curso');
 
     if (target) {
       const cursoId = target.getAttribute('data-id');
@@ -22,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#courseModalTabContent .tab-pane').removeClass('show active');
         $('#info-tab-pane').addClass('show active');
         // Cargar información del curso
-        fetch(`../../app/controlador/Curso/verCurso.php?id=${cursoId}`)
+        fetch(getAppUrl(`../../app/controlador/Curso/verCurso.php?id=${cursoId}`))
           .then(response => response.json())
           .then(data => {
             if (data.success) {
@@ -61,9 +73,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 panelProgreso.setAttribute('data-id-ambito', curso.id_ambito || '');
               }
 
-              // Mostrar el estado actual del curso usando el módulo central
-              const infoEstado = window.estadoCurso.getInfo(curso.estado || curso.id_estatus || curso.id_estatuscurso);
-              document.getElementById('estadoCurso-view').textContent = infoEstado.texto;
+              // Mostrar el estado actual del curso usando el módulo central o fallback
+              const getEstadoInfo = (val) => (window.estadoCurso && typeof window.estadoCurso.getInfo === 'function') 
+                ? window.estadoCurso.getInfo(val) 
+                : { texto: String(val || 'En proceso'), badgeClass: 'bg-success', mostrarBarraProgreso: true };
+              const infoEstado = getEstadoInfo(curso.estado || curso.id_estatus || curso.id_estatuscurso);
+              const elEstado = document.getElementById('estadoCurso-view');
+              if (elEstado) elEstado.textContent = infoEstado.texto;
 
               // Motivos de diferimiento
               const esDiferido = (curso.estado || '').toLowerCase() === 'diferido';
@@ -92,25 +108,30 @@ document.addEventListener('DOMContentLoaded', function () {
               // Actualizar data-id del botón de matrícula
               $('#btn-matricula-pdf, #btn-recorrido-curso').attr('data-id', cursoId);
 
-              // Formatear fechas (sin sumar 1 día)
-              const fechaInicio = curso.fechaInicio && curso.fechaInicio !== '-'
-                ? new Date(curso.fechaInicio)
-                : null;
+              // Formatear fechas
+              function formatFechaSimple(val) {
+                if (!val || val === '-' || val === '0000-00-00') return '-';
+                const str = String(val).split(' ')[0].split('T')[0];
+                const parts = str.split('-');
+                if (parts.length === 3) {
+                  return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+                }
+                return val;
+              }
 
-              const fechaFin = curso.fechaCulminacion && curso.fechaCulminacion !== '-'
-                ? new Date(curso.fechaCulminacion)
-                : null;
+              const fechaInicioRaw = curso.fechaInicio && curso.fechaInicio !== '-' ? curso.fechaInicio : null;
+              const fechaFinRaw    = curso.fechaCulminacion && curso.fechaCulminacion !== '-' ? curso.fechaCulminacion : null;
 
+              const fechaInicio = fechaInicioRaw ? new Date(fechaInicioRaw) : null;
+              const fechaFin    = fechaFinRaw ? new Date(fechaFinRaw) : null;
               const fechaActual = new Date();
 
               // Mostrar fechas formateadas
-              document.getElementById('fechaInicio-view').textContent = fechaInicio
-                ? formatDate(fechaInicio)
-                : '-';
+              const elInicio = document.getElementById('fechaInicio-view');
+              if (elInicio) elInicio.textContent = formatFechaSimple(curso.fechaInicio);
 
-              document.getElementById('fechaCulminación-view').textContent = fechaFin
-                ? formatDate(fechaFin)
-                : '-';
+              const elFin = document.getElementById('fechaCulminación-view');
+              if (elFin) elFin.textContent = formatFechaSimple(curso.fechaCulminacion);
 
               // Badge de estado y control de progreso según info
               const estadoBadge = document.getElementById('estadoCurso-view');
@@ -118,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
               const mostrarBarraProgreso = infoEstado.mostrarBarraProgreso;
 
               // Obtener datos del docente asociado al curso
-              fetch(`../../app/controlador/Curso/obtenerDocente.php?id=${cursoId}`)
+              fetch(getAppUrl(`../../app/controlador/Curso/obtenerDocente.php?id=${cursoId}`))
                 .then(response => response.json())
                 .then(docenteData => {
                   const defaultText = 'No asignado';
@@ -182,8 +203,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
 
               // Círculo de cupo
-              const max = parseInt(curso.maxParticipantes) || 0;
-              const inscritos = parseInt(curso.numInscritos) || 0;
+              const max = parseInt(curso.maxParticipantes ?? curso.max_participantes) || 0;
+              const inscritos = parseInt(curso.numInscritos ?? curso.num_inscritos) || 0;
               const porcentajeCupos = max ? (inscritos / max) * 100 : 0;
 
               const radius = 45;
@@ -306,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $tablaParticipantes.empty();
  
     $.ajax({
-      url: '../../app/controlador/Curso/obtenerInscritos.php',
+      url: getAppUrl('../../app/controlador/Curso/obtenerInscritos.php'),
       method: 'GET',
       dataType: 'json',
       data: { id_curso: idCurso },
@@ -1038,7 +1059,7 @@ function manejarClicDocente() {
       if (modalVerDocente.length) {
         // Normalmente Docentes usa un fetch similar a Curso para llenarlo.
         // Para asegurar la transición, simplemente tratamos de abrir y llenar si es posible:
-        fetch(`../../app/controlador/Docente/verDocente.php?id=${docenteId}`)
+        fetch(getAppUrl(`../../app/controlador/Docente/verDocente.php?id=${docenteId}`))
           .then(res => res.json())
           .then(data => {
             if (data.success) {
@@ -1123,7 +1144,7 @@ window.initTablaDocentesParaAsignar = function (cursoId) {
 
   // Obtener docentes disponibles
   $.ajax({
-    url: '../../app/controlador/Docente/obtenerDocentes.php',
+    url: getAppUrl('../../app/controlador/Docente/obtenerDocentes.php'),
     method: 'GET',
     // Podemos traer gran cantidad, y si aplica, filtrarlo a estado "Disponible" u omitirlo
     data: { per_page: 1000, curso_id: cursoId },
@@ -1200,7 +1221,7 @@ $(document).on('submit', '.formAsignarDocente', function (e) {
   submitBtn.prop('disabled', true).text('Asignando...');
 
   $.ajax({
-    url: '../../app/controlador/Curso/asignarDocenteCurso.php',
+    url: getAppUrl('../../app/controlador/Curso/asignarDocenteCurso.php'),
     method: 'POST',
     data: {
       curso_id: cursoId,
@@ -1243,7 +1264,7 @@ $(document).on('click', '#btn-matricula-pdf', function (e) {
   if (cursoId) {
     // Ruta corregida para PDF
     window.open(
-      `../../app/controlador/fpdf/CursoMatricula.php?id=${cursoId}`,
+      getAppUrl(`../../app/controlador/fpdf/CursoMatricula.php?id=${cursoId}`),
       '_blank',
       'noopener,noreferrer'
     );
@@ -1314,6 +1335,16 @@ $(document).on('click', '#btn-limpiar-filtro-part', function() {
   if (typeof window.limpiarFiltroParticipantes === 'function') {
     window.limpiarFiltroParticipantes();
   }
+});
+
+// Manejo de z-index cuando modal-viewCurso se abre sobre otro modal (ej. BSC/Dashboard)
+$(document).on('show.bs.modal', '#modal-viewCurso', function () {
+  const visibleModals = $('.modal:visible').length;
+  const zIndex = 1055 + (10 * visibleModals);
+  $(this).css('z-index', zIndex);
+  setTimeout(function() {
+    $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack');
+  }, 0);
 });
 
 // ========== MANEJO BOTÓN LIMPIAR FILTRO TAB 2 ==========

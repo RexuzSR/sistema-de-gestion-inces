@@ -383,28 +383,7 @@
                 <div class="footer-glow-light"></div>
                 
                 <!-- Botón Constancia (PDF) -->
-                <a id="btn-constanciaDocente-pdf" target="_blank" style="text-decoration: none;">
-                    <button class="btn futuristic-button-outline-light" style="
-                        background: transparent;
-                        border: 1.5px solid #ef4444;
-                        color: #ef4444;
-                        padding: 12px 28px;
-                        border-radius: 14px;
-                        font-weight: 600;
-                        transition: all 0.3s ease;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 10px;
-                        font-size: 0.95rem;
-                        letter-spacing: 0.5px;
-                    " onmouseover="this.style.background='#ef4444'; this.style.color='white'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 0 20px rgba(239,68,68,0.5)'" onmouseout="this.style.background='transparent'; this.style.color='#ef4444'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        GENERAR CONSTANCIA
-                    </button>
+                <a id="btn-constanciaDocente-pdf" target="_blank" class="d-none" style="display: none !important;">
                 </a>
                 
                 <!-- Botón Cerrar -->

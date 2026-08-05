@@ -22,6 +22,7 @@ $estatus = isset($_POST['estatus']) ? $_POST['estatus'] : '';
 $busqueda = isset($_POST['busqueda']) ? $_POST['busqueda'] : '';
 $tipoPeriodo = isset($_POST['tipoPeriodo']) ? $_POST['tipoPeriodo'] : '';
 $subPeriodo = isset($_POST['subPeriodo']) ? $_POST['subPeriodo'] : '';
+$cursoSeleccionado = isset($_POST['cursoSeleccionado']) ? trim($_POST['cursoSeleccionado']) : '';
 
 // 2. Conectar a la base de datos
 $conexion = new Conexion();
@@ -59,6 +60,10 @@ $sql = "SELECT
         WHERE 1=1";
 
 $params = [];
+if (!empty($cursoSeleccionado)) {
+    $sql .= " AND (TRIM(LOWER(c.nombre_curso)) = LOWER(:cursoSel) OR CAST(c.id_curso AS CHAR) = :cursoSel OR LOWER(c.preimpreso) = LOWER(:cursoSel))";
+    $params[':cursoSel'] = $cursoSeleccionado;
+}
 if (!empty($anio)) {
     $sql .= " AND YEAR(c.fecha_inicio) = :anio";
     $params[':anio'] = intval($anio);

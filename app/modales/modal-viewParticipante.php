@@ -583,26 +583,7 @@
                         </svg>
                         HISTORIAL PDF
                     </a>
-                    <a id="btn-constancia-participante" target="_blank" class="btn" data-id="" style="
-                        background: transparent;
-                        border: 2px solid #dc2626;
-                        color: #dc2626;
-                        padding: 8px 20px;
-                        border-radius: 12px;
-                        font-weight: 500;
-                        font-size: 0.85rem;
-                        transition: all 0.3s ease;
-                        text-decoration: none;
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 8px;
-                        box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
-                    " onmouseover="this.style.background='#dc2626'; this.style.color='white'; this.style.boxShadow='0 0 25px rgba(220, 38, 38, 0.6)'" onmouseout="this.style.background='transparent'; this.style.color='#dc2626'; this.style.boxShadow='0 0 15px rgba(220, 38, 38, 0.3)'">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
+                    <a id="btn-constancia-participante" target="_blank" class="btn d-none" data-id="" style="display: none !important;">
                         CONSTANCIA
                     </a>
                 </div>

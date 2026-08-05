@@ -23,6 +23,7 @@ $(document).ready(function () {
         if (filters.sexo) params.append('sexo', filters.sexo);
         if (filters.edad) params.append('edad', filters.edad);
         if (filters.estado) params.append('estado', filters.estado);
+        if (filters.nacionalidad) params.append('nacionalidad', filters.nacionalidad);
 
         // Agregar término de búsqueda
         if (searchTerm && searchTerm.trim() !== '') {
@@ -264,7 +265,8 @@ $(document).ready(function () {
         const filters = {
             sexo: $('#sexo-filter').val(),
             edad: $('#edad-filter').val(),
-            estado: $('#estado-filter').val()
+            estado: $('#estado-filter').val(),
+            nacionalidad: $('#nacionalidad-filter').val()
         };
         cargarRegistros(currentPage, recordsPerPage, filters, currentSort, currentSearchTerm);
     }
@@ -316,7 +318,7 @@ $(document).ready(function () {
     });
 
     // Eventos para filtros
-    $('#sexo-filter, #edad-filter, #estado-filter').on('change', function () {
+    $('#sexo-filter, #edad-filter, #estado-filter, #nacionalidad-filter').on('change', function () {
         aplicarFiltros();
     });
 

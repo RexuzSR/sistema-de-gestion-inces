@@ -15,7 +15,8 @@ try {
         'search' => $_GET['search'] ?? '',
         'sexo' => $_GET['genero'] ?? '', // Nota: tabla-participantes.js envía 'genero', manager espera 'sexo' o ajustamos
         'edad' => $_GET['edad'] ?? '',
-        'estado' => $_GET['estado'] ?? ''
+        'estado' => $_GET['estado'] ?? '',
+        'nacionalidad' => $_GET['nacionalidad'] ?? ''
     ];
 
     // Mapeo simple si el JS envía 'genero' pero la clase espera 'sexo'

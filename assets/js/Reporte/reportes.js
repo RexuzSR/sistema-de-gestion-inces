@@ -250,101 +250,9 @@ function init() {
         if (catId && repId) {
             setTimeout(() => {
                 seleccionarReporte(parseInt(repId, 10), parseInt(catId, 10));
-
-                if (entityId) {
-                    let inputSet = false;
-                    const checkInterval = setInterval(() => {
-                        if (!inputSet) {
-                            let searchInput = null;
-                            if (catId == '1' && repId == '12') {
-                                searchInput = document.getElementById('traySearchInput');
-                            } else if (catId == '2' && repId == '13') {
-                                searchInput = document.getElementById('curTraySearchInput');
-                            }
-
-                            if (searchInput) {
-                                searchInput.value = entityId;
-                                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                inputSet = true;
-                            }
-                        }
-
-                        let row = null;
-                        if (catId == '1' && repId == '12') {
-                            row = document.querySelector(`tr[data-cedula="${entityId}"]`);
-                        } else if (catId == '2' && repId == '13') {
-                            row = document.querySelector(`tr[data-id="${entityId}"]`);
-                        }
-
-                        if (row) {
-                            clearInterval(checkInterval);
-                            if (!row.classList.contains('table-active')) {
-                                row.click();
-                            }
-                            setTimeout(() => row.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-                        }
-                    }, 300);
-
-                    // Dejar de intentar después de 10 segundos
-                    setTimeout(() => clearInterval(checkInterval), 10000);
-                }
             }, 50);
         }
     } catch (e) { console.error('Error init:', e); mostrarErrorInicial('Error al inicializar'); }
-
-    // MutationObserver para traducir spinners de base de datos a skeleton loaders
-    try {
-        const checkAndReplaceSpinner = (container) => {
-            if (!container) return;
-            const spinners = container.querySelectorAll('.spinner-border, .spinner-border-sm');
-            spinners.forEach((spinner) => {
-                const loaderParent = spinner.closest('.text-center, .d-flex, [id^="loading"], [id*="Loading"]');
-                if (loaderParent && !loaderParent.classList.contains('rp-has-skeleton')) {
-                    loaderParent.classList.add('rp-has-skeleton');
-                    loaderParent.innerHTML = `
-                        <div class="rp-skeleton-wrapper" style="border:none; box-shadow:none; padding:0; background:transparent;">
-                            <div class="rp-skeleton-kpis">
-                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
-                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
-                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
-                                <div class="rp-skeleton-kpi rp-skeleton-pulse"></div>
-                            </div>
-                            <div class="rp-skeleton-grid mt-4">
-                                <div class="rp-skeleton-main rp-skeleton-pulse"></div>
-                                <div class="rp-skeleton-side rp-skeleton-pulse"></div>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-        };
-
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.addedNodes.length) {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            checkAndReplaceSpinner(node);
-                            // También buscar hacia adentro
-                            if (node.querySelectorAll) {
-                                const spinners = node.querySelectorAll('.spinner-border, .spinner-border-sm');
-                                if (spinners.length) checkAndReplaceSpinner(node);
-                            }
-                        }
-                    });
-                }
-            });
-        });
-
-        const targetNode = document.getElementById('reportContainer');
-        if (targetNode) {
-            observer.observe(targetNode, { childList: true, subtree: true });
-            // Escaneo inicial por si acaso
-            checkAndReplaceSpinner(targetNode);
-        }
-    } catch (err) {
-        console.error('Error inicializando MutationObserver de cargadores:', err);
-    }
 }
 
 function mostrarErrorInicial(msg) {
@@ -1088,6 +996,7 @@ function _ejecutarCargaReporte(reporte, categoria) {
                 // Generar PDF backend para "Trayectoria de Cursos"
                 const filtros = window.curTrayFiltros || { anio: '', modalidad: '', estatus: '', tipoPeriodo: '', subPeriodo: '' };
                 const busqueda = window.curTrayBusqueda || '';
+                const cursoSeleccionado = window.curTrayCursoAct || '';
                 
                 postAndOpenPdf('../controlador/fpdf/Reporte/ReporteCursoTrayectoria.php', {
                     anio: filtros.anio || '',
@@ -1095,7 +1004,8 @@ function _ejecutarCargaReporte(reporte, categoria) {
                     estatus: filtros.estatus || '',
                     busqueda: busqueda || '',
                     tipoPeriodo: filtros.tipoPeriodo || '',
-                    subPeriodo: filtros.subPeriodo || ''
+                    subPeriodo: filtros.subPeriodo || '',
+                    cursoSeleccionado: cursoSeleccionado || ''
                 });
             } else if (reporte.id === 10) {
                 // Generar PDF backend para "Total de Docentes"

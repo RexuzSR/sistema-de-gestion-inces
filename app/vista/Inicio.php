@@ -279,5 +279,9 @@ function switchPeriodo(tipo) {
 })();
 </script>
 
+<?php include '../modales/Curso/modal-viewCurso.php'; ?>
+<script src="../../assets/js/Curso/estadoCurso.js"></script>
+<script src="../../assets/js/Curso/verCurso.js"></script>
+
 </body>
 </html>

@@ -33,7 +33,8 @@ $(document).on('click', '[data-bs-target="#modal-viewParticipante"], .ver-partic
 
                 $('#modal-viewParticipante')
                     .find('#btn-historial-participante, #btn-constancia-participante, #btn-recorrido-participante')
-                    .attr('data-id', idParticipante);
+                    .attr('data-id', idParticipante)
+                    .attr('data-cedula', participante.cedula);
 
                 // Mostrar modal
                 $('#modal-viewParticipante').modal('show');

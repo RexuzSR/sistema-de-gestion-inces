@@ -297,11 +297,17 @@ try {
         case 'detalle_curso_trayectoria':
             $idCurso = intval($_GET['id_curso'] ?? 0);
             $nombreCurso = trim($_GET['nombre_curso'] ?? '');
+            $preimpreso = trim($_GET['preimpreso'] ?? '');
             
+            if ($nombreCurso === '' && $preimpreso !== '') {
+                $stmt = $conn->prepare("SELECT nombre_curso FROM tb_curso WHERE preimpreso = :preimpreso LIMIT 1");
+                $stmt->execute([':preimpreso' => $preimpreso]);
+                $nombreCurso = $stmt->fetchColumn() ?: '';
+            }
             if ($nombreCurso === '' && $idCurso > 0) {
                 $stmt = $conn->prepare("SELECT nombre_curso FROM tb_curso WHERE id_curso = :id_curso LIMIT 1");
                 $stmt->execute([':id_curso' => $idCurso]);
-                $nombreCurso = $stmt->fetchColumn();
+                $nombreCurso = $stmt->fetchColumn() ?: '';
             }
             
             if (!$nombreCurso) {
@@ -1300,7 +1306,7 @@ function getTrayectoriaResumen(PDO $conn): array {
  
 function getTrayectoriaParticipantes(PDO $conn): array {
     $stmt = $conn->query("
-        SELECT p.cedula, p.primer_nombre, p.primer_apellido, p.genero, p.edad, p.correo,
+        SELECT p.id_participante, p.cedula, p.primer_nombre, p.segundo_nombre, p.primer_apellido, p.segundo_apellido, p.genero, p.edad, p.correo,
                p.fecha_registro, p.estado, p.grado_institucion,
                (SELECT t.numero_de_telefono FROM tb_telefono t WHERE t.id_participante = p.id_participante AND t.tipo_de_telefono = 'Móvil' ORDER BY t.id_telefono ASC LIMIT 1) AS telefono,
                CASE WHEN EXISTS (SELECT 1 FROM tb_participante_curso pc WHERE pc.id_participante = p.id_participante) THEN 1 ELSE 0 END AS has_curso,

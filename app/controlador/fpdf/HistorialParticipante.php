@@ -1,180 +1,171 @@
 <?php
-require('./fpdf.php');
-require('../../modelo/conexion.php');
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 
-class PDF extends FPDF
-{
-    private $participanteData;
-    private $cursosData;
+require_once __DIR__ . '/../dompdf/vendor/autoload.php';
+require_once __DIR__ . '/../../modelo/conexion.php';
 
-    function Header()
-    {
-        $this->Image('../../../assets/img/inces-logo.png', 10, 8, 40);
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-        $this->SetFont('Arial', '', 7);
-        $this->SetXY(12, 26);
-        $this->Cell(100, 5, utf8_decode('Instituto Nacional de Capacitación y'), 0, 1, 'L');
-        $this->SetXY(20, 30);
-        $this->Cell(100, 5, utf8_decode('Educación Socialista'), 0, 1, 'L');
-
-        $this->SetFont('Arial', '', 10);
-        $this->SetXY(11, 36);
-        $this->Cell(100, 5, utf8_decode('CFSB/N°570021211/0020'), 0, 1, 'L');
-
-        $this->SetFont('Arial', '', 10);
-        $this->SetXY(140, 34);
-        $meses = [
-            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
-            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
-            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
-        ];
-        $fecha = 'Cumaná, ' . date('d') . ' de ' . $meses[date('n')] . ' de ' . date('Y');
-        $this->Cell(0, 10, utf8_decode($fecha), 0, 0, 'R');
-
-        $this->SetDrawColor(128, 0, 32);
-        $this->SetLineWidth(1.5);
-        $this->Line(10, 24, 54, 24);
-
-        $this->Ln(30);
-    }
-
-    function Footer()
-    {
-        $this->SetY(-35);
-        $this->Image('../../../assets/img/gobierno-logo.png', 55, $this->GetY(), 100);
-
-        $this->SetY(-10);
-        $this->SetFillColor(128, 0, 32);
-        $this->Rect(0, $this->GetY(), 210, 10, 'F');
-
-        $this->SetFont('Arial', '', 7);
-        $this->SetTextColor(255, 255, 255);
-        $this->SetXY(10, $this->GetY() + 2);
-        $this->Cell(190, 5, utf8_decode('Av. Principal Bolivariano INCES INDUSTRIAL, Parroquia Altagracia, Estado Sucre    Teléfonos: 0293-4514290 / 4516753'), 0, 1, 'C');
-    }
-
-    function setParticipanteData($data)
-    {
-        $this->participanteData = $data;
-    }
-
-    function setCursosData($data)
-    {
-        $this->cursosData = $data;
-    }
-
-    function generarContenido()
-    {
-        $this->SetFont('Arial', 'B', 14);
-        $this->Cell(0, 10, utf8_decode('HISTORIAL ACADÉMICO DEL PARTICIPANTE'), 0, 1, 'C');
-        $this->Ln(5);
-
-        $this->SetFont('Arial', '', 12);
-        $this->Cell(50, 10, utf8_decode('Nombre completo:'));
-        $this->Cell(0, 10, utf8_decode($this->participanteData['nombre'] . ' ' . $this->participanteData['apellido']));
-        $this->Ln(8);
-
-        $this->Cell(50, 10, utf8_decode('Cédula:'));
-        $this->Cell(0, 10, utf8_decode($this->participanteData['cedula']));
-        $this->Ln(8);
-
-        $this->Cell(50, 10, utf8_decode('Estado actual:'));
-        $this->Cell(0, 10, utf8_decode($this->participanteData['estado']));
-        $this->Ln(12);
-
-        if (!empty($this->cursosData)) {
-            // Encabezado de la tabla
-            $this->SetFont('Arial', 'B', 11);
-            $this->SetFillColor(220, 220, 220);
-            $this->SetTextColor(0);
-            $this->Cell(70, 10, utf8_decode('Curso'), 1, 0, 'C', true);
-            $this->Cell(35, 10, utf8_decode('Fecha Inicio'), 1, 0, 'C', true);
-            $this->Cell(35, 10, utf8_decode('Fecha Fin'), 1, 0, 'C', true);
-            $this->Cell(50, 10, utf8_decode('Estado'), 1, 1, 'C', true);
-
-            $this->SetFont('Arial', '', 11);
-            foreach ($this->cursosData as $curso) {
-                $this->Cell(70, 10, utf8_decode($curso['nombre_curso']), 1);
-                $this->Cell(35, 10, $curso['fecha_inicio'], 1);
-                $this->Cell(35, 10, $curso['fecha_fin'], 1);
-                $this->Cell(50, 10, utf8_decode($curso['estatus_participante']), 1);
-                $this->Ln();
-            }
-        } else {
-            $this->SetFont('Arial', 'I', 12);
-            $this->Cell(0, 10, utf8_decode('No se encontraron cursos certificados.'), 0, 1, 'C');
-        }
-    }
-
-    function generarFirma()
-    {
-        $this->AddPage();
-        $this->Ln(60);
-        $this->SetFont('Arial', '', 12);
-        $this->Cell(0, 7, '___________________________', 0, 1, 'C');
-        $this->Cell(0, 7, utf8_decode('Abraham Rodríguez'), 0, 1, 'C');
-        $this->Cell(0, 7, utf8_decode('Jefe de Centro INCES Bolivariano'), 0, 1, 'C');
-    }
+// Validar ID o Cédula
+$idParam = trim($_GET['id'] ?? '');
+if (empty($idParam)) {
+    die("ID o Cédula de participante inválido");
 }
 
-// Validar ID
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    die("ID de participante inválido");
+date_default_timezone_set('America/Caracas');
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    session_name('SISTEMA_CONTROL_INCES');
+    session_start();
 }
-$id_participante = intval($_GET['id']);
 
-// Conexión
 $conexion = new Conexion();
 $conn = $conexion->getConexion();
 
-// Participante
-$stmtParticipante = $conn->prepare("SELECT id_participante, CONCAT(primer_nombre, IFNULL(CONCAT(' ', segundo_nombre), '')) AS nombre, CONCAT(primer_apellido, IFNULL(CONCAT(' ', segundo_apellido), '')) AS apellido, cedula, estado FROM tb_participante WHERE id_participante = :id");
-$stmtParticipante->bindParam(':id', $id_participante, PDO::PARAM_INT);
+// Obtener datos del Participante
+$stmtParticipante = $conn->prepare("
+    SELECT p.id_participante, p.cedula, p.primer_nombre, p.segundo_nombre,
+           p.primer_apellido, p.segundo_apellido, p.genero, p.edad,
+           p.fecha_nacimiento, p.correo, p.estado,
+           p.grado_institucion, p.fecha_registro,
+           d.nombre_discapacidad,
+           (SELECT GROUP_CONCAT(t.numero_de_telefono SEPARATOR ', ') FROM tb_telefono t WHERE t.id_participante = p.id_participante) AS telefono
+    FROM tb_participante p
+    LEFT JOIN tb_discapacidad d ON d.id_discapacidad = p.id_discapacidad
+    WHERE p.id_participante = :id OR p.cedula = :id
+    LIMIT 1
+");
+$stmtParticipante->bindValue(':id', $idParam);
 $stmtParticipante->execute();
 $participante = $stmtParticipante->fetch(PDO::FETCH_ASSOC);
+
 if (!$participante) {
     die("Participante no encontrado");
 }
 
-session_name('SISTEMA_CONTROL_INCES');
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+$id_participante = $participante['id_participante'];
+
+// Registrar en bitácora de historial
 if (isset($_SESSION['id_usuario'])) {
-    require_once '../../modelo/HistorialUtil.php';
+    require_once __DIR__ . '/../../modelo/HistorialUtil.php';
     HistorialUtil::registrar(
         'PDF',
-        "Se generó el historial de participante para: " . $participante['nombre'] . " " . $participante['apellido'] . " (C.I. " . $participante['cedula'] . ")",
+        "Se generó el historial de participante para: " . $participante['primer_nombre'] . " " . $participante['primer_apellido'] . " (C.I. " . $participante['cedula'] . ")",
         'tb_participante',
         $id_participante,
         $_SESSION['id_usuario']
     );
 }
 
-// Cursos
+// Obtener Usuario emisor del PDF
+$usuarioFull = 'Usuario no identificado';
+if (isset($_SESSION['id_usuario'])) {
+    $sqlUsuario = "SELECT TRIM(CONCAT(
+                        COALESCE(primer_nombre, ''), ' ',
+                        COALESCE(segundo_nombre, ''), ' ',
+                        COALESCE(primer_apellido, ''), ' ',
+                        COALESCE(segundo_apellido, '')
+                    )) AS nombre_completo
+                   FROM tb_usuario WHERE id_usuario = :id_usuario";
+    try {
+        $stmtUsuario = $conn->prepare($sqlUsuario);
+        $stmtUsuario->bindParam(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+        $stmtUsuario->execute();
+        $resultUsuario = $stmtUsuario->fetch(PDO::FETCH_ASSOC);
+        if ($resultUsuario && !empty(trim($resultUsuario['nombre_completo']))) {
+            $usuarioFull = trim($resultUsuario['nombre_completo']);
+        }
+    } catch (Exception $e) {}
+}
+
+// Obtener Cursos del Participante
 $stmtCursos = $conn->prepare("
     SELECT 
+        c.id_curso,
         c.nombre_curso,
-        DATE_FORMAT(c.fecha_inicio, '%d/%m/%Y') as fecha_inicio,
-        DATE_FORMAT(c.fecha_fin, '%d/%m/%Y') as fecha_fin,
-        pc.estatus_participante
+        c.preimpreso,
+        c.horas_totales,
+        m.nombre_modalidad AS modalidad,
+        ec.nombre_estatusCurso AS estatus_curso,
+        a.nombre_ambito,
+        DATE_FORMAT(c.fecha_inicio, '%d/%m/%Y') AS fecha_inicio,
+        DATE_FORMAT(c.fecha_fin, '%d/%m/%Y') AS fecha_fin,
+        pc.estatus_participante,
+        pc.fecha_inscripcion
     FROM tb_participante_curso pc
     INNER JOIN tb_curso c ON pc.id_curso = c.id_curso
+    LEFT JOIN tb_modalidad m ON c.id_modalidad = m.id_modalidad
+    LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
+    LEFT JOIN tb_ambito a ON c.id_ambito = a.id_ambito
     WHERE pc.id_participante = :id
-    AND pc.estatus_participante NOT IN ('En formación', 'Pendiente')
-    ORDER BY c.fecha_inicio DESC
+    ORDER BY c.fecha_inicio DESC, c.id_curso DESC
 ");
 $stmtCursos->bindParam(':id', $id_participante, PDO::PARAM_INT);
 $stmtCursos->execute();
 $cursos = $stmtCursos->fetchAll(PDO::FETCH_ASSOC);
 
-// Generar PDF
-$pdf = new PDF();
-$pdf->AddPage();
-$pdf->setParticipanteData($participante);
-$pdf->setCursosData($cursos);
-$pdf->generarContenido();
+// KPIs Estadísticos
+$totalCursos = count($cursos);
+$aprobados = 0;
+$enCurso = 0;
+$totalHoras = 0;
 
-// Salida
-$pdf->Output('I', 'Historial_' . $participante['cedula'] . '.pdf');
-?>
+foreach ($cursos as $c) {
+    $st = $c['estatus_participante'] ?? '';
+    if ($st === 'Aprobado' || $st === 'Culminado') {
+        $aprobados++;
+        $totalHoras += floatval($c['horas_totales'] ?? 0);
+    } elseif ($st === 'En formación' || $st === 'En proceso') {
+        $enCurso++;
+    }
+}
+
+$kpis = [
+    'total_cursos' => $totalCursos,
+    'aprobados'    => $aprobados,
+    'en_curso'     => $enCurso,
+    'total_horas'  => $totalHoras
+];
+
+// Logos en Base64
+$pathLogoGobierno = __DIR__ . '/../../../assets/img/gobierno-logo.png';
+$pathLogoInces    = __DIR__ . '/../../../assets/img/inces-logo.png';
+
+$logoGobierno = file_exists($pathLogoGobierno) ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoGobierno)) : '';
+$logoInces    = file_exists($pathLogoInces)    ? 'data:image/png;base64,' . base64_encode(file_get_contents($pathLogoInces))    : '';
+
+$fechaGeneracion = date('d/m/Y h:i A');
+
+// Cargar plantilla HTML y extraer variables
+$pdfData = [
+    'participante'    => $participante,
+    'cursos'          => $cursos,
+    'kpis'            => $kpis,
+    'usuarioFull'     => $usuarioFull,
+    'fechaGeneracion' => $fechaGeneracion,
+    'logoGobierno'    => $logoGobierno,
+    'logoInces'       => $logoInces
+];
+
+ob_start();
+extract($pdfData);
+include __DIR__ . '/../../vista/reportes/pdf_templates/historial_participante.php';
+$html = ob_get_clean();
+
+$nombreArchivo = 'INCES_Historial_Participante_' . ($participante['cedula'] ?? $id_participante) . '_' . date('Y-m-d') . '.pdf';
+$html = preg_replace('/<title>.*?<\/title>/is', '<title>' . htmlspecialchars(str_replace('.pdf', '', $nombreArchivo)) . '</title>', $html);
+
+$options = new Options();
+$options->set('isHtml5ParserEnabled', true);
+$options->set('isRemoteEnabled', true);
+$options->set('isPhpEnabled', true);
+
+$dompdf = new Dompdf($options);
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
+
+if (ob_get_length()) ob_end_clean();
+$dompdf->stream($nombreArchivo, ['Attachment' => false]);

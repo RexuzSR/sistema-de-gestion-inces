@@ -144,7 +144,13 @@ $(document).ready(function () {
                 matchEstado = filtroEstado === '' || estado === 'disponible' || estado === 'inactivo';
             }
 
-            return matchGenero && matchEdad && matchEstado;
+            let matchNac = true;
+            if (currentFilters.nacionalidad && currentFilters.nacionalidad !== '') {
+                const nac = (p.nacionalidad || ((parseInt(p.cedula) >= 80000000) ? 'E' : 'V')).toUpperCase();
+                matchNac = nac === currentFilters.nacionalidad.toUpperCase();
+            }
+
+            return matchGenero && matchEdad && matchEstado && matchNac;
         });
 
         // 2. Aplicar Búsqueda
@@ -435,11 +441,12 @@ $(document).ready(function () {
     });
 
     // Eventos para filtros
-    $('#sexo-filter, #edad-filter, #estado-filter').on('change', function () {
+    $('#sexo-filter, #edad-filter, #estado-filter, #nacionalidad-filter').on('change', function () {
         currentPage = 1;
         currentFilters.genero = $('#sexo-filter').val();
         currentFilters.edad = $('#edad-filter').val();
         currentFilters.estado = $('#estado-filter').val();
+        currentFilters.nacionalidad = $('#nacionalidad-filter').val();
         procesarTabla();
     });
 
@@ -451,10 +458,11 @@ $(document).ready(function () {
         $('#sexo-filter').val('');
         $('#edad-filter').val('');
         $('#estado-filter').val('');
+        $('#nacionalidad-filter').val('');
         $('#searchInput').val('');
 
         // Resetear variables internas
-        currentFilters = { genero: '', edad: '', estado: '' };
+        currentFilters = { genero: '', edad: '', estado: '', nacionalidad: '' };
         currentSearchTerm = '';
         currentPage = 1;
         recordsPerPage = parseInt($('#registros').val()) || 0; // Se mantiene el valor del selector actual

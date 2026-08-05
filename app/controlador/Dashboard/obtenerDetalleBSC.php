@@ -15,10 +15,11 @@ if (empty($indicador) || empty($periodo)) {
     exit;
 }
 
-// Analizar el periodo
+// Analizar el periodo o la etiqueta seleccionada
 $mes = null;
 $anio = null;
 $trimestre = null;
+$etiquetaFiltro = null;
 
 $mesesES = ['Ene'=>1, 'Feb'=>2, 'Mar'=>3, 'Abr'=>4, 'May'=>5, 'Jun'=>6, 'Jul'=>7, 'Ago'=>8, 'Sep'=>9, 'Oct'=>10, 'Nov'=>11, 'Dic'=>12];
 
@@ -33,10 +34,13 @@ if (preg_match('/^([A-Z][a-z]{2}) (\d{2})$/', $periodo, $matches)) {
 } elseif (preg_match('/^(\d{4})$/', $periodo, $matches)) {
     // Es un año (Ej: "2026")
     $anio = (int)$matches[1];
+} else {
+    // Es una etiqueta textual de categoría, ámbito o curso (Ej: "Instalaciones Militares")
+    $etiquetaFiltro = trim($periodo);
 }
 
-if (!$anio) {
-    echo json_encode(['status' => 'error', 'message' => 'Formato de periodo no reconocido']);
+if (!$anio && !$etiquetaFiltro) {
+    echo json_encode(['status' => 'error', 'message' => 'Formato de periodo o etiqueta no reconocido']);
     exit;
 }
 
@@ -179,12 +183,205 @@ try {
             }
             break;
             
-        case 'Promedio de participantes por formación':
+        case '% ambito de formacion mas solicitado por mes':
         case '% ámbito de formación más solicitado por mes':
+        case 'Ámbito de formación más solicitado':
+        case 'Ámbito de formación más solicitado por mes':
+            if ($etiquetaFiltro) {
+                // El usuario hizo clic en la barra del ámbito específico (Ej: "Instalaciones Militares")
+                $sql = "SELECT c.id_curso, c.nombre_curso, c.num_inscritos, c.max_participantes, am.nombre_ambito, ec.nombre_estatusCurso
+                        FROM tb_curso c
+                        LEFT JOIN tb_ambito am ON c.id_ambito = am.id_ambito
+                        LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
+                        WHERE c.id_curso != 1 AND (am.nombre_ambito LIKE :etiqueta OR c.nombre_curso LIKE :etiqueta)
+                        ORDER BY c.num_inscritos DESC LIMIT 50";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':etiqueta' => '%' . $etiquetaFiltro . '%']);
+                $cursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (count($cursos) > 0) {
+                    $html .= '<div class="card border-0 bg-light p-2 mb-2"><strong class="text-primary" style="font-size:0.82rem;"><i class="fas fa-building me-1"></i> Formaciones en el ámbito: <u>'.htmlspecialchars($etiquetaFiltro).'</u> (Haz clic para ver detalle):</strong></div>';
+                    $html .= '<div class="table-responsive mb-2" style="max-height: 250px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
+                    $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">#</th><th class="py-2">Formación</th><th class="text-center py-2">Inscritos</th><th class="text-center py-2">Estatus</th></tr></thead><tbody>';
+                    $rank = 1;
+                    foreach ($cursos as $c) {
+                        $idCurso = (int)$c['id_curso'];
+                        $est = htmlspecialchars($c['nombre_estatusCurso'] ?? '—');
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle del curso'>
+                                    <td class='align-middle fw-bold text-muted'>{$rank}.</td>
+                                    <td class='align-middle text-truncate' style='max-width: 180px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
+                                    <td class='text-center align-middle fw-bold'>{$c['num_inscritos']}</td>
+                                    <td class='text-center align-middle'><span class='badge bg-info text-dark'>{$est}</span></td>
+                                  </tr>";
+                        $rank++;
+                    }
+                    $html .= '</tbody></table></div>';
+                } else {
+                    $html = '<div class="alert alert-info text-center py-2 mt-3" style="font-size: 0.85rem;"><i class="fas fa-info-circle me-2"></i>No se encontraron formaciones asociadas al ámbito '.htmlspecialchars($etiquetaFiltro).'.</div>';
+                }
+            } elseif ($mes) {
+                // El usuario consultó por mes
+                $sql = "SELECT c.id_curso, c.nombre_curso, c.num_inscritos, am.nombre_ambito
+                        FROM tb_curso c
+                        LEFT JOIN tb_ambito am ON c.id_ambito = am.id_ambito
+                        WHERE c.id_curso != 1 AND MONTH(c.fecha_inicio) = :mes AND YEAR(c.fecha_inicio) = :anio
+                        ORDER BY c.num_inscritos DESC LIMIT 50";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':mes' => $mes, ':anio' => $anio]);
+                $cursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (count($cursos) > 0) {
+                    $html .= '<div class="card border-0 bg-light p-2 mb-2"><strong class="text-primary" style="font-size:0.82rem;"><i class="fas fa-layer-group me-1"></i> Formaciones por Ámbito del Mes (Haz clic para ver detalle):</strong></div>';
+                    $html .= '<div class="table-responsive mb-2" style="max-height: 250px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
+                    $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">Formación</th><th class="py-2">Ámbito</th><th class="text-center py-2">Inscritos</th></tr></thead><tbody>';
+                    foreach ($cursos as $c) {
+                        $idCurso = (int)$c['id_curso'];
+                        $amb = htmlspecialchars($c['nombre_ambito'] ?? '—');
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle del curso'>
+                                    <td class='align-middle text-truncate' style='max-width: 170px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
+                                    <td class='align-middle text-muted' style='font-size:0.75rem;'>{$amb}</td>
+                                    <td class='text-center align-middle fw-bold'>{$c['num_inscritos']}</td>
+                                  </tr>";
+                    }
+                    $html .= '</tbody></table></div>';
+                } else {
+                    $html = '<div class="alert alert-info text-center py-2 mt-3" style="font-size: 0.85rem;"><i class="fas fa-info-circle me-2"></i>No hay formaciones registradas para este mes.</div>';
+                }
+            }
+        case '% cantidad de Formaciones por ambito mensual':
+        case '% cantidad de Formaciones por ámbito mensual':
+        case '% cantidad de Formaciones por ambito':
+        case '% cantidad de Formaciones por ámbito':
+        case 'Cantidad de formaciones por ámbito mensual':
+        case 'Cursos (Nro absoluto)':
+            if ($mes) {
+                $sql = "SELECT c.id_curso, c.nombre_curso, c.num_inscritos, c.max_participantes, am.nombre_ambito, ec.nombre_estatusCurso
+                        FROM tb_curso c
+                        LEFT JOIN tb_ambito am ON c.id_ambito = am.id_ambito
+                        LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
+                        WHERE c.id_curso != 1 AND MONTH(c.fecha_inicio) = :mes AND YEAR(c.fecha_inicio) = :anio
+                        ORDER BY am.nombre_ambito ASC, c.num_inscritos DESC";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':mes' => $mes, ':anio' => $anio]);
+                $cursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (count($cursos) > 0) {
+                    $html .= '<div class="card border-0 bg-light p-2 mb-2"><strong class="text-primary" style="font-size:0.82rem;"><i class="fas fa-layer-group me-1"></i> Formaciones por Ámbito del Mes (Haz clic para ver detalle):</strong></div>';
+                    $html .= '<div class="table-responsive mb-2" style="max-height: 260px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
+                    $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">#</th><th class="py-2">Formación</th><th class="py-2">Ámbito</th><th class="text-center py-2">Inscritos</th><th class="text-center py-2">Estatus</th></tr></thead><tbody>';
+                    $rank = 1;
+                    foreach ($cursos as $c) {
+                        $idCurso = (int)$c['id_curso'];
+                        $amb = htmlspecialchars($c['nombre_ambito'] ?? '—');
+                        $est = htmlspecialchars($c['nombre_estatusCurso'] ?? '—');
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle del curso'>
+                                    <td class='align-middle fw-bold text-muted'>{$rank}.</td>
+                                    <td class='align-middle text-truncate' style='max-width: 160px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
+                                    <td class='align-middle text-muted' style='font-size:0.75rem;'><span class='badge bg-light text-dark border'>{$amb}</span></td>
+                                    <td class='text-center align-middle fw-bold'>{$c['num_inscritos']}</td>
+                                    <td class='text-center align-middle'><span class='badge bg-info text-dark' style='font-size:0.7rem;'>{$est}</span></td>
+                                  </tr>";
+                        $rank++;
+                    }
+                    $html .= '</tbody></table></div>';
+                } else {
+                    $html = '<div class="alert alert-info text-center py-2 mt-3" style="font-size: 0.85rem;"><i class="fas fa-info-circle me-2"></i>No hay formaciones registradas en este mes.</div>';
+                }
+            } elseif ($trimestre) {
+                $mesInicio = ($trimestre - 1) * 3 + 1;
+                $mesFin = $trimestre * 3;
+                $sql = "SELECT c.id_curso, c.nombre_curso, c.num_inscritos, am.nombre_ambito, ec.nombre_estatusCurso
+                        FROM tb_curso c
+                        LEFT JOIN tb_ambito am ON c.id_ambito = am.id_ambito
+                        LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
+                        WHERE c.id_curso != 1 AND MONTH(c.fecha_inicio) BETWEEN :m1 AND :m2 AND YEAR(c.fecha_inicio) = :anio
+                        ORDER BY am.nombre_ambito ASC, c.num_inscritos DESC";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':m1' => $mesInicio, ':m2' => $mesFin, ':anio' => $anio]);
+                $cursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (count($cursos) > 0) {
+                    $html .= '<div class="card border-0 bg-light p-2 mb-2"><strong class="text-primary" style="font-size:0.82rem;"><i class="fas fa-layer-group me-1"></i> Formaciones por Ámbito del Trimestre (Haz clic para ver detalle):</strong></div>';
+                    $html .= '<div class="table-responsive mb-2" style="max-height: 260px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
+                    $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">#</th><th class="py-2">Formación</th><th class="py-2">Ámbito</th><th class="text-center py-2">Inscritos</th><th class="text-center py-2">Estatus</th></tr></thead><tbody>';
+                    $rank = 1;
+                    foreach ($cursos as $c) {
+                        $idCurso = (int)$c['id_curso'];
+                        $amb = htmlspecialchars($c['nombre_ambito'] ?? '—');
+                        $est = htmlspecialchars($c['nombre_estatusCurso'] ?? '—');
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle del curso'>
+                                    <td class='align-middle fw-bold text-muted'>{$rank}.</td>
+                                    <td class='align-middle text-truncate' style='max-width: 160px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
+                                    <td class='align-middle text-muted' style='font-size:0.75rem;'><span class='badge bg-light text-dark border'>{$amb}</span></td>
+                                    <td class='text-center align-middle fw-bold'>{$c['num_inscritos']}</td>
+                                    <td class='text-center align-middle'><span class='badge bg-info text-dark' style='font-size:0.7rem;'>{$est}</span></td>
+                                  </tr>";
+                        $rank++;
+                    }
+                    $html .= '</tbody></table></div>';
+                } else {
+                    $html = '<div class="alert alert-info text-center py-2 mt-3" style="font-size: 0.85rem;"><i class="fas fa-info-circle me-2"></i>No hay formaciones registradas en este trimestre.</div>';
+                }
+            }
+            break;
+
+        case '% formacion es mas solicitada por mes':
+        case '% formación es más solicitada por mes':
+        case 'Formación más solicitada por mes':
+            if ($mes) {
+                // Obtener total de inscritos en el mes
+                $stmtTot = $conn->prepare("SELECT SUM(num_inscritos) AS tot FROM tb_curso WHERE id_curso != 1 AND MONTH(fecha_inicio) = :mes AND YEAR(fecha_inicio) = :anio");
+                $stmtTot->execute([':mes' => $mes, ':anio' => $anio]);
+                $totInscritos = (int)($stmtTot->fetchColumn() ?: 0);
+
+                // Obtener Top 5 cursos del mes
+                $sql = "SELECT id_curso, nombre_curso, num_inscritos 
+                        FROM tb_curso 
+                        WHERE id_curso != 1 AND MONTH(fecha_inicio) = :mes AND YEAR(fecha_inicio) = :anio
+                        ORDER BY num_inscritos DESC LIMIT 5";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':mes' => $mes, ':anio' => $anio]);
+                $cursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (count($cursos) > 0) {
+                    $html .= '<div class="card border-0 bg-light p-2 mb-2"><strong class="text-primary" style="font-size:0.82rem;"><i class="fas fa-trophy me-1"></i> Top 5 Formaciones del Mes (Haz clic para ver detalle):</strong></div>';
+                    $html .= '<div class="table-responsive mb-2" style="max-height: 250px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
+                    $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">#</th><th class="py-2">Formación</th><th class="text-center py-2">Inscritos</th><th class="text-end py-2">Participación</th></tr></thead><tbody>';
+                    $rank = 1;
+                    foreach ($cursos as $c) {
+                        $insc = (int)$c['num_inscritos'];
+                        $pct = $totInscritos > 0 ? round(($insc / $totInscritos) * 100, 1) : 0;
+                        $idCurso = (int)$c['id_curso'];
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle de ".htmlspecialchars($c['nombre_curso'], ENT_QUOTES)."'>
+                                    <td class='align-middle fw-bold text-muted'>{$rank}.</td>
+                                    <td class='align-middle text-truncate' style='max-width: 170px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
+                                    <td class='text-center align-middle fw-bold'>{$insc}</td>
+                                    <td class='text-end align-middle'><span class='badge bg-primary'>{$pct}%</span></td>
+                                  </tr>";
+                        $rank++;
+                    }
+                    $html .= '</tbody></table></div>';
+                } else {
+                    $html = '<div class="alert alert-info text-center py-2 mt-3" style="font-size: 0.85rem;"><i class="fas fa-info-circle me-2"></i>No hay registros de formaciones para este periodo.</div>';
+                }
+            }
+            break;
+
+        case 'Promedio de participantes por formación':
         case 'Índice de asignación efectiva':
             // Para mantener la consistencia con métricas de cursos mensuales
             if ($mes) {
-                $sql = "SELECT nombre_curso, num_inscritos 
+                $sql = "SELECT id_curso, nombre_curso, num_inscritos 
                         FROM tb_curso 
                         WHERE id_curso != 1 AND MONTH(fecha_inicio) = :mes AND YEAR(fecha_inicio) = :anio
                         ORDER BY num_inscritos DESC LIMIT 50";
@@ -196,8 +393,11 @@ try {
                     $html .= '<div class="table-responsive mt-3 mb-2" style="max-height: 250px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
                     $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">Formación</th><th class="text-center py-2">Inscritos</th></tr></thead><tbody>';
                     foreach ($cursos as $c) {
-                        $html .= "<tr>
-                                    <td class='align-middle text-truncate' style='max-width: 170px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">".htmlspecialchars($c['nombre_curso'])."</td>
+                        $idCurso = (int)$c['id_curso'];
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle de ".htmlspecialchars($c['nombre_curso'], ENT_QUOTES)."'>
+                                    <td class='align-middle text-truncate' style='max-width: 170px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
                                     <td class='text-center align-middle fw-bold'>{$c['num_inscritos']}</td>
                                   </tr>";
                     }
@@ -209,7 +409,42 @@ try {
             break;
 
         default:
-            $html = '<div class="alert alert-secondary text-center py-2 mt-3 mb-0" style="font-size: 0.8rem;"><i class="fas fa-code me-2"></i>Desglose tabular no habilitado para este indicador.</div>';
+            if ($etiquetaFiltro) {
+                // Si viene una etiqueta textual y no cayó en casos anteriores, buscar por coincidencia en cursos/ámbitos
+                $sql = "SELECT c.id_curso, c.nombre_curso, c.num_inscritos, am.nombre_ambito, ec.nombre_estatusCurso
+                        FROM tb_curso c
+                        LEFT JOIN tb_ambito am ON c.id_ambito = am.id_ambito
+                        LEFT JOIN tb_estatuscurso ec ON c.id_estatusCurso = ec.id_estatusCurso
+                        WHERE c.id_curso != 1 AND (c.nombre_curso LIKE :etiqueta OR am.nombre_ambito LIKE :etiqueta)
+                        ORDER BY c.num_inscritos DESC LIMIT 50";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':etiqueta' => '%' . $etiquetaFiltro . '%']);
+                $cursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (count($cursos) > 0) {
+                    $html .= '<div class="card border-0 bg-light p-2 mb-2"><strong class="text-primary" style="font-size:0.82rem;"><i class="fas fa-search me-1"></i> Formaciones asociadas a: <u>'.htmlspecialchars($etiquetaFiltro).'</u> (Haz clic para ver detalle):</strong></div>';
+                    $html .= '<div class="table-responsive mb-2" style="max-height: 250px;"><table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">';
+                    $html .= '<thead class="table-light" style="position: sticky; top: 0; z-index: 1;"><tr><th class="py-2">#</th><th class="py-2">Formación</th><th class="text-center py-2">Inscritos</th><th class="text-center py-2">Estatus</th></tr></thead><tbody>';
+                    $rank = 1;
+                    foreach ($cursos as $c) {
+                        $idCurso = (int)$c['id_curso'];
+                        $est = htmlspecialchars($c['nombre_estatusCurso'] ?? '—');
+                        $html .= "<tr class='view-curso align-middle' data-id='{$idCurso}' data-bs-toggle='modal' data-bs-target='#modal-viewCurso' style='cursor: pointer;' title='Haz clic para ver el detalle del curso'>
+                                    <td class='align-middle fw-bold text-muted'>{$rank}.</td>
+                                    <td class='align-middle text-truncate' style='max-width: 180px;' title=\"".htmlspecialchars($c['nombre_curso'])."\">
+                                        <a href='javascript:void(0)' class='text-primary text-decoration-none fw-bold me-1'><i class='fas fa-external-link-alt me-1' style='font-size: 0.72rem;'></i>".htmlspecialchars($c['nombre_curso'])."</a>
+                                    </td>
+                                    <td class='text-center align-middle fw-bold'>{$c['num_inscritos']}</td>
+                                    <td class='text-center align-middle'><span class='badge bg-info text-dark'>{$est}</span></td>
+                                  </tr>";
+                        $rank++;
+                    }
+                    $html .= '</tbody></table></div>';
+                }
+            }
+            if (empty($html)) {
+                $html = '<div class="alert alert-secondary text-center py-2 mt-3 mb-0" style="font-size: 0.8rem;"><i class="fas fa-code me-2"></i>Desglose tabular no disponible para esta selección.</div>';
+            }
             break;
     }
     

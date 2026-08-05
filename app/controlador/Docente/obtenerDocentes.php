@@ -16,6 +16,7 @@ try {
     $sexo = isset($_GET['sexo']) && $_GET['sexo'] !== '' ? $_GET['sexo'] : null;
     $edad = isset($_GET['edad']) && $_GET['edad'] !== '' ? intval($_GET['edad']) : null;
     $estado = isset($_GET['estado']) && $_GET['estado'] !== '' ? $_GET['estado'] : null;
+    $nacionalidad = isset($_GET['nacionalidad']) && $_GET['nacionalidad'] !== '' ? strtoupper($_GET['nacionalidad']) : null;
     $search = isset($_GET['search']) && trim($_GET['search']) !== '' ? trim($_GET['search']) : null;
     $sort_field = isset($_GET['sort_field']) ? $_GET['sort_field'] : 'id_docente';
     $sort_direction = isset($_GET['sort_direction']) ? strtoupper($_GET['sort_direction']) : 'DESC';
@@ -36,6 +37,7 @@ try {
     $sql = "SELECT 
                 d.id_docente,
                 d.cedula,
+                d.nacionalidad,
                 d.primer_nombre,
                 d.segundo_nombre,
                 d.primer_apellido,
@@ -68,6 +70,11 @@ try {
     if ($estado !== null) {
         $conditions[] = "d.estado_docente = :estado";
         $params[':estado'] = $estado;
+    }
+    
+    if ($nacionalidad !== null) {
+        $conditions[] = "d.nacionalidad = :nacionalidad";
+        $params[':nacionalidad'] = $nacionalidad;
     }
     
     // Aplicar búsqueda si se proporciona

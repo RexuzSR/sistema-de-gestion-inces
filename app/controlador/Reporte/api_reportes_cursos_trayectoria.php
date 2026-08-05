@@ -30,6 +30,7 @@ function getTrayectoriaCursos(PDO $conn): array {
     $stmt = $conn->query("
         SELECT 
             MIN(c.id_curso) as id_curso,
+            GROUP_CONCAT(DISTINCT c.id_curso SEPARATOR ',') as todos_id_curso,
             c.nombre_curso,
             GROUP_CONCAT(c.preimpreso SEPARATOR ', ') as preimpresos,
             COUNT(*) as total_reinicios,
@@ -92,7 +93,7 @@ function getDetalleCursoTrayectoria(PDO $conn, string $nombreCurso): array {
         LEFT JOIN tb_areaformativa af ON af.id_areaFormativa = c.id_areaFormativa
         LEFT JOIN tb_sectoreconomico se ON se.id_sectoreconomico = c.id_sectoreconomico
         LEFT JOIN tb_subtipo st ON st.id_subtipo = c.id_subtipo
-        WHERE c.nombre_curso = :nombre_curso AND c.id_curso != 1
+        WHERE TRIM(c.nombre_curso) = :nombre_curso AND c.id_curso != 1
         ORDER BY c.fecha_inicio ASC
     ");
     $stmt->execute([':nombre_curso' => $nombreCurso]);

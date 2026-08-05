@@ -248,17 +248,21 @@ async function cargarTrayectoriaParticipantes() {
                             </label>
                             <div style="display:flex;border:1px solid #dee2e6;border-radius:.375rem;
                                         overflow:hidden;background:#fff;">
-                                <input type="number" id="trayFiltroEdadMin"
-                                       min="0" max="120" placeholder="Desde"
-                                       style="flex:1;min-width:0;border:none;outline:none;
-                                              padding:.25rem .5rem;font-size:.875rem;
-                                              background:transparent;">
+                                <select class="form-select form-select-sm" id="trayFiltroEdadMin"
+                                        style="flex:1;min-width:0;border:none;outline:none;
+                                               padding:.25rem .25rem;font-size:.85rem;
+                                               background:transparent;box-shadow:none;cursor:pointer;">
+                                    <option value="">Desde</option>
+                                    ${Array.from({length: 61}, (_, i) => 15 + i).map(e => `<option value="${e}">${e} años</option>`).join('')}
+                                </select>
                                 <div style="width:1px;background:#dee2e6;flex-shrink:0;"></div>
-                                <input type="number" id="trayFiltroEdadMax"
-                                       min="0" max="120" placeholder="Hasta"
-                                       style="flex:1;min-width:0;border:none;outline:none;
-                                              padding:.25rem .5rem;font-size:.875rem;
-                                              background:transparent;">
+                                <select class="form-select form-select-sm" id="trayFiltroEdadMax"
+                                        style="flex:1;min-width:0;border:none;outline:none;
+                                               padding:.25rem .25rem;font-size:.85rem;
+                                               background:transparent;box-shadow:none;cursor:pointer;">
+                                    <option value="">Hasta</option>
+                                    ${Array.from({length: 61}, (_, i) => 15 + i).map(e => `<option value="${e}">${e} años</option>`).join('')}
+                                </select>
                             </div>
                         </div>
 
@@ -348,9 +352,29 @@ async function cargarTrayectoriaParticipantes() {
         // Poblar selects dinámicos con valores reales
         trayPoblarSelectAnios(trayExtraerAnios(trayDatosTabla));
         trayPoblarSelectEstados(trayExtraerEstados(trayDatosTabla));
+        trayPoblarSelectEdades(trayExtraerRangoEdad(trayDatosTabla));
 
         trayRenderKPI(kpiData);
         trayRenderTabla();
+
+        // Autoselección si viene redirigido con ?id=... o ?cedula=...
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetId = urlParams.get('id') || urlParams.get('cedula');
+        if (targetId) {
+            const pEncontrado = trayDatosTabla.find(p => 
+                String(p.id_participante) === String(targetId) || 
+                String(p.cedula) === String(targetId)
+            );
+            if (pEncontrado) {
+                trayBusqueda = String(pEncontrado.cedula);
+                const sInput = document.getElementById('traySearchInput');
+                if (sInput) sInput.value = trayBusqueda;
+                trayParticipanteAct = String(pEncontrado.cedula);
+                trayPaginaActual = 1;
+                trayRenderTabla();
+                trayAbrirDetalle(pEncontrado.cedula);
+            }
+        }
 
     } catch (err) {
         trayMostrarError(document.getElementById('trayKpiCards'),     String(err));
@@ -359,6 +383,23 @@ async function cargarTrayectoriaParticipantes() {
 }
 
 // ── Poblar selects dinámicos ───────────────────────────────────────
+
+function trayExtraerRangoEdad(datos) {
+    let min = 15;
+    let max = 75;
+    const edadesValidas = [];
+    datos.forEach(p => {
+        const e = parseInt(p.edad);
+        if (!isNaN(e) && e > 0 && e < 120) {
+            edadesValidas.push(e);
+        }
+    });
+    if (edadesValidas.length > 0) {
+        min = Math.min(...edadesValidas);
+        max = Math.max(...edadesValidas);
+    }
+    return { min, max };
+}
 
 function trayPoblarSelectAnios(anios) {
     const sel = document.getElementById('trayFiltroAnio');
@@ -380,6 +421,37 @@ function trayPoblarSelectEstados(estados) {
         opt.textContent = e;
         sel.appendChild(opt);
     });
+}
+
+function trayPoblarSelectEdades(rango) {
+    const selMin = document.getElementById('trayFiltroEdadMin');
+    const selMax = document.getElementById('trayFiltroEdadMax');
+    if (!selMin || !selMax) return;
+
+    const valMinAct = selMin.value;
+    const valMaxAct = selMax.value;
+
+    selMin.innerHTML = '<option value="">Desde</option>';
+    selMax.innerHTML = '<option value="">Hasta</option>';
+
+    for (let i = rango.min; i <= rango.max; i++) {
+        const optMin = document.createElement('option');
+        optMin.value = i;
+        optMin.textContent = `${i} años`;
+        selMin.appendChild(optMin);
+
+        const optMax = document.createElement('option');
+        optMax.value = i;
+        optMax.textContent = `${i} años`;
+        selMax.appendChild(optMax);
+    }
+
+    if (valMinAct && selMin.querySelector(`option[value="${valMinAct}"]`)) {
+        selMin.value = valMinAct;
+    }
+    if (valMaxAct && selMax.querySelector(`option[value="${valMaxAct}"]`)) {
+        selMax.value = valMaxAct;
+    }
 }
 
 // ── KPI Cards ──────────────────────────────────────────────────────
@@ -526,15 +598,11 @@ function trayInicializarFiltros() {
     bind('trayFiltroEstado',  'estado');
 
     ['trayFiltroEdadMin', 'trayFiltroEdadMax'].forEach(id => {
-        let t = null;
-        document.getElementById(id)?.addEventListener('input', e => {
-            clearTimeout(t);
-            t = setTimeout(() => {
-                trayFiltros[id === 'trayFiltroEdadMin' ? 'edadMin' : 'edadMax'] = e.target.value.trim();
-                trayPaginaActual = 1;
-                trayActualizarChipsFiltros();
-                trayRenderTabla();
-            }, 350);
+        document.getElementById(id)?.addEventListener('change', e => {
+            trayFiltros[id === 'trayFiltroEdadMin' ? 'edadMin' : 'edadMax'] = e.target.value.trim();
+            trayPaginaActual = 1;
+            trayActualizarChipsFiltros();
+            trayRenderTabla();
         });
     });
 
@@ -676,16 +744,29 @@ function trayDatosFiltrados() {
     }
 
     if (trayBusqueda.trim()) {
-        const q = trayBusqueda.toLowerCase();
-        datos = datos.filter(p =>
-            String(p.cedula      ?? '').toLowerCase().includes(q) ||
-            (p.primer_nombre     ?? '').toLowerCase().includes(q) ||
-            (p.primer_apellido   ?? '').toLowerCase().includes(q) ||
-            (p.correo            ?? '').toLowerCase().includes(q) ||
-            String(p.telefono    ?? '').toLowerCase().includes(q) ||
-            (p.estado            ?? '').toLowerCase().includes(q) ||
-            (p.grado_institucion ?? '').toLowerCase().includes(q)
-        );
+        const queryClean = trayBusqueda.trim().toLowerCase();
+        const terms = queryClean.split(/\s+/).filter(Boolean);
+
+        datos = datos.filter(p => {
+            const primerNombre    = (p.primer_nombre    ?? '').toLowerCase();
+            const segundoNombre   = (p.segundo_nombre   ?? '').toLowerCase();
+            const primerApellido  = (p.primer_apellido  ?? '').toLowerCase();
+            const segundoApellido = (p.segundo_apellido ?? '').toLowerCase();
+            const cedula          = String(p.cedula     ?? '').toLowerCase();
+            const idParticipante  = String(p.id_participante ?? '').toLowerCase();
+            const correo          = (p.correo           ?? '').toLowerCase();
+            const telefono        = String(p.telefono   ?? '').toLowerCase();
+            const estado          = (p.estado           ?? '').toLowerCase();
+            const gradoInst       = (p.grado_institucion?? '').toLowerCase();
+            const cursosAprob     = (p.cursos_aprobados ?? '').toLowerCase();
+
+            const nombreCompleto = [primerNombre, segundoNombre, primerApellido, segundoApellido].filter(Boolean).join(' ');
+            const nombreInverso  = [primerApellido, segundoApellido, primerNombre, segundoNombre].filter(Boolean).join(' ');
+
+            const searchBlob = `${idParticipante} ${cedula} ${nombreCompleto} ${nombreInverso} ${correo} ${telefono} ${estado} ${gradoInst} ${cursosAprob}`;
+
+            return terms.every(term => searchBlob.includes(term));
+        });
     }
 
     if (trayOrdenCol) {
@@ -754,11 +835,12 @@ function trayRenderTabla() {
                No se encontraron participantes
            </td></tr>`
         : pagina.map(p => {
-            const activo = trayParticipanteAct === String(p.cedula);
+            const activo = trayParticipanteAct === String(p.cedula) || trayParticipanteAct === String(p.id_participante);
             if (conAprobadoActivo) {
                 const cursosStr = p.cursos_aprobados || '—';
                 return `<tr class="tray-fila${activo?' table-active':''}"
                             data-cedula="${p.cedula}"
+                            data-id="${p.id_participante ?? p.cedula}"
                             style="cursor:pointer;transition:background .12s;">
                     <td><strong style="font-family:var(--rp-mono);font-size:.85rem;">
                         ${p.cedula ?? '—'}
@@ -778,6 +860,7 @@ function trayRenderTabla() {
             } else {
                 return `<tr class="tray-fila${activo?' table-active':''}"
                             data-cedula="${p.cedula}"
+                            data-id="${p.id_participante ?? p.cedula}"
                             style="cursor:pointer;transition:background .12s;">
                     <td><strong style="font-family:var(--rp-mono);font-size:.85rem;">
                         ${p.cedula ?? '—'}
@@ -870,8 +953,8 @@ function trayRenderTabla() {
     });
     wrapper.querySelectorAll('.tray-fila').forEach(fila => {
         fila.addEventListener('click', () => {
-            const cedula = fila.dataset.cedula;
-            if (trayParticipanteAct === cedula) {
+            const cedula = fila.dataset.cedula || fila.dataset.id;
+            if (trayParticipanteAct === cedula || trayParticipanteAct === fila.dataset.id) {
                 trayParticipanteAct = null;
                 trayRenderTabla();
                 trayOcultarDetalle();
@@ -961,7 +1044,7 @@ function trayRenderDetalle(panel, d) {
                Sin cursos registrados
            </td></tr>`
         : cursos.map(c => `
-            <tr class="tray-curso-fila" data-id-curso="${c.id_curso ?? ''}"
+            <tr class="tray-curso-fila" data-id-curso="${c.id_curso ?? ''}" data-nombre-curso="${encodeURIComponent(c.nombre_curso ?? '')}"
                 style="cursor:pointer;transition:background .12s;"
                 title="Abrir en módulo Cursos (nueva pestaña)">
                 <td style="font-weight:600;font-size:.83rem;">${c.nombre_curso ?? '—'}</td>
@@ -1127,7 +1210,7 @@ function trayRenderDetalle(panel, d) {
         fila.addEventListener('mouseenter', () => { fila.style.background = '#e7f0ff'; });
         fila.addEventListener('mouseleave', () => { fila.style.background = ''; });
         fila.addEventListener('click', () => {
-            const idCurso = fila.dataset.idCurso;
+            const idCurso = fila.dataset.idCurso || decodeURIComponent(fila.dataset.nombreCurso || '');
             if (!idCurso) return;
             fila.style.background = '#bfdbfe';
             setTimeout(() => {
@@ -1306,12 +1389,12 @@ function trayRenderGantt(cursos) {
             const x1 = msToX(trayToMs(c.fecha_inicio));
             const x2 = msToX(trayToMs(c.fecha_fin));
             const y  = PAD_TOP + ROW_PAD + i * (BAR_H + ROW_PAD);
-            if (mx >= x1 && mx <= x2 && my >= y && my <= y + BAR_H) {
+            if ((mx >= 0 && mx <= Math.max(x2, AXIS_LEFT)) && my >= y && my <= y + BAR_H) {
                 found = true;
                 tip.style.display = 'block';
                 tip.style.left    = (e.clientX + 14) + 'px';
                 tip.style.top     = (e.clientY - 10) + 'px';
-                tip.innerHTML = `<strong>${c.nombre_curso}</strong><br>
+                tip.innerHTML = `<strong>${c.nombre_curso}</strong> <span style="font-size:10px;color:#94a3b8;">(Clic para abrir)</span><br>
                     Inicio: ${trayFecha(c.fecha_inicio)}<br>
                     Fin: ${trayFecha(c.fecha_fin)}<br>
                     Turno: ${c.turno ?? '—'}<br>
@@ -1322,6 +1405,22 @@ function trayRenderGantt(cursos) {
         if (!found) { tip.style.display = 'none'; canvas.style.cursor = 'default'; }
     };
     canvas.onmouseleave = () => { tip.style.display = 'none'; canvas.style.cursor = 'default'; };
+
+    canvas.onclick = e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        validos.forEach((c, i) => {
+            const x1 = msToX(trayToMs(c.fecha_inicio));
+            const x2 = msToX(trayToMs(c.fecha_fin));
+            const y  = PAD_TOP + ROW_PAD + i * (BAR_H + ROW_PAD);
+            if ((mx >= 0 && mx <= Math.max(x2, AXIS_LEFT)) && my >= y && my <= y + BAR_H) {
+                const target = c.id_curso || c.nombre_curso;
+                if (target) {
+                    window.open(`cursos.php?buscar=${encodeURIComponent(target)}`, '_blank');
+                }
+            }
+        });
+    };
 }
 
 // ── Cerrar detalle ─────────────────────────────────────────────────
@@ -1358,8 +1457,15 @@ function trayInicializarBusqueda() {
 window.trayExportarPdf = function() {
     const cedula = trayParticipanteAct || '';
     
+    // Si hay un participante seleccionado, generar su historial PDF individual
+    if (cedula) {
+        window.open(`../controlador/fpdf/HistorialParticipante.php?id=${encodeURIComponent(cedula)}`, '_blank');
+        return;
+    }
+
+    // Si no hay participante seleccionado, generar reporte general filtrado
     let ganttImage = '';
-    if (cedula && document.getElementById('trayGanttCanvas')) {
+    if (document.getElementById('trayGanttCanvas')) {
         ganttImage = document.getElementById('trayGanttCanvas').toDataURL('image/png');
     }
 
@@ -1372,7 +1478,7 @@ window.trayExportarPdf = function() {
         estado: trayFiltros.estado || '',
         edadMin: trayFiltros.edadMin || '',
         edadMax: trayFiltros.edadMax || '',
-        cedula: cedula,
+        cedula: '',
         gantt_image: ganttImage
     };
 

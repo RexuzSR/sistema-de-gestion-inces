@@ -398,7 +398,7 @@ public function eliminar($id) {
 
     public function obtenerParticipantes() {
         try {
-            $sql = "SELECT id_participante, CONCAT(primer_nombre, IFNULL(CONCAT(' ', segundo_nombre), '')) AS nombre, CONCAT(primer_apellido, IFNULL(CONCAT(' ', segundo_apellido), '')) AS apellido, cedula, edad, correo, (SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = tb_participante.id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1) AS telefono, DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro, grado_institucion, genero, estado FROM tb_participante";
+            $sql = "SELECT id_participante, nacionalidad, CONCAT(primer_nombre, IFNULL(CONCAT(' ', segundo_nombre), '')) AS nombre, CONCAT(primer_apellido, IFNULL(CONCAT(' ', segundo_apellido), '')) AS apellido, cedula, edad, correo, (SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = tb_participante.id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1) AS telefono, DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro, grado_institucion, genero, estado FROM tb_participante";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -544,13 +544,19 @@ public function eliminar($id) {
 
         public function filtrarParticipantes($filtros) {
             try {
-                $sql = "SELECT id_participante, CONCAT(primer_nombre, IFNULL(CONCAT(' ', segundo_nombre), '')) AS nombre, CONCAT(primer_apellido, IFNULL(CONCAT(' ', segundo_apellido), '')) AS apellido, cedula, edad, correo, (SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = tb_participante.id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1) AS telefono, DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro, grado_institucion, genero, estado FROM tb_participante WHERE 1 = 1";
+                $sql = "SELECT id_participante, nacionalidad, CONCAT(primer_nombre, IFNULL(CONCAT(' ', segundo_nombre), '')) AS nombre, CONCAT(primer_apellido, IFNULL(CONCAT(' ', segundo_apellido), '')) AS apellido, cedula, edad, correo, (SELECT numero_de_telefono FROM tb_telefono WHERE id_participante = tb_participante.id_participante AND tipo_de_telefono = 'Móvil' LIMIT 1) AS telefono, DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro, grado_institucion, genero, estado FROM tb_participante WHERE 1 = 1";
                 $params = [];
     
                 // Filtro Sexo
                 if (!empty($filtros['sexo']) && in_array($filtros['sexo'], ['Masculino', 'Femenino'])) {
                     $sql .= " AND genero = :sexo";
                     $params[':sexo'] = $filtros['sexo'];
+                }
+
+                // Filtro Nacionalidad
+                if (!empty($filtros['nacionalidad']) && in_array(strtoupper($filtros['nacionalidad']), ['V', 'E'])) {
+                    $sql .= " AND nacionalidad = :nacionalidad";
+                    $params[':nacionalidad'] = strtoupper($filtros['nacionalidad']);
                 }
     
                 // Filtro Edad
