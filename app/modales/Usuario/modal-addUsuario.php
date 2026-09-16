@@ -514,6 +514,44 @@
                             </div>
                         </div>
 
+                        <!-- Campo de Contraseña Maestra -->
+                        <div class="col-12">
+                            <div class="info-card-light mb-3" style="
+                                background: linear-gradient(135deg, #fef3c7, #fffbeb);
+                                border: 1.5px solid #f59e0b;
+                                border-radius: 20px;
+                                padding: 20px;
+                                transition: all 0.3s ease;
+                                position: relative;
+                                overflow: hidden;
+                            ">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span style="font-size: 1.3rem;">🔒</span>
+                                    <h6 style="color: #92400e; font-weight: 700; margin: 0; letter-spacing: 0.5px;">
+                                        CONTRASEÑA MAESTRA
+                                    </h6>
+                                </div>
+                                <p style="color: #a16207; font-size: 0.8rem; margin-bottom: 12px;">
+                                    El sistema está protegido. Ingrese la contraseña maestra para autorizar esta operación.
+                                </p>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="master_password_add" 
+                                       name="master_password" 
+                                       placeholder="Contraseña maestra"
+                                       required
+                                       autocomplete="off"
+                                       style="
+                                           border: 1.5px solid #d97706;
+                                           border-radius: 12px;
+                                           padding: 10px 14px;
+                                           font-size: 0.9rem;
+                                           background: #ffffff;
+                                           transition: all 0.3s ease;
+                                       ">
+                            </div>
+                        </div>
+
                         <!-- Botón de registro -->
                         <div class="col-12 text-center mt-4">
                             <button type="submit" class="btn futuristic-button-primary-light" id="actualizar-tabla" style="

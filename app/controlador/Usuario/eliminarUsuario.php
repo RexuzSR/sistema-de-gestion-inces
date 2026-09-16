@@ -1,7 +1,9 @@
 <?php
 // llamado al archivo managerUsuario.php 
 require_once 'managerUsuario.php';
+require_once '../../modelo/conexion.php';
 require_once '../../modelo/HistorialUtil.php';
+require_once 'master_password.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', 1);
@@ -10,7 +12,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+header('Content-Type: application/json');
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
+
+    // ==================== PROTECCIÓN: CONTRASEÑA MAESTRA ====================
+    if (!validarAccesoMaestro($_POST['master_password'] ?? null)) {
+        exit;
+    }
+    // ========================================================================
+
     $idParticipante = $_POST['id'];
 
     try {
@@ -27,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
 
         // Instanciar la clase y llamar al método eliminar
         $usuarioMgr = new usuario();
+        
+        // Desbloquear TRIGGER MySQL en la misma conexión que usará el manager
+        desbloquearTriggerMySQL($usuarioMgr->getConexion());
         
         // Obtener datos antes de borrar
         $userDataJson = $usuarioMgr->obtenerUsuarioPorId($idParticipante);

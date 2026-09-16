@@ -1,13 +1,26 @@
 <?php
 require_once 'managerUsuario.php';
+require_once '../../modelo/conexion.php';
 require_once '../../modelo/HistorialUtil.php';
+require_once 'master_password.php';
+
 header('Content-Type: application/json');
 
 session_name('SISTEMA_CONTROL_INCES');
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+    // ==================== PROTECCIÓN: CONTRASEÑA MAESTRA ====================
+    if (!validarAccesoMaestro($_POST['master_password'] ?? null)) {
+        exit;
+    }
+    // ========================================================================
+
     $usuario = new Usuario();
+    
+    // Desbloquear TRIGGER MySQL en la misma conexión que usará el manager
+    desbloquearTriggerMySQL($usuario->getConexion());
     
     // Obtener el ID del usuario actual de la sesión
     $currentLoggedId = isset($_SESSION['id_usuario']) ? intval($_SESSION['id_usuario']) : 0;

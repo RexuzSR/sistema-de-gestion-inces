@@ -10,6 +10,14 @@ class Usuario {
         $this->conn = $conexion->getConexion();
     }
 
+    /**
+     * Obtiene la conexión PDO interna del manager.
+     * Necesaria para desbloquear triggers en la misma conexión.
+     */
+    public function getConexion() {
+        return $this->conn;
+    }
+
 
 // Método para iniciar sesión
 public function iniciarSesion($nombre_usuario, $contraseña) {

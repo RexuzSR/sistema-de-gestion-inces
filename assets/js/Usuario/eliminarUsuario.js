@@ -75,19 +75,34 @@ $(document).ready(function () {
     $(document).on('click', '.button.delete', function () {
         const idParticipante = $(this).data('id');
         $('#modal-deleteUsuario').data('id', idParticipante);
+        // Limpiar el campo de contraseña maestra cada vez que se abre el modal
+        $('#master_password_delete').val('');
     });
 
     $(document).on('click', '.delete-modal', function () {
         const idParticipante = $('#modal-deleteUsuario').data('id');
+        const masterPassword = $('#master_password_delete').val();
+
+        // Validar que se ingresó la contraseña maestra
+        if (!masterPassword || masterPassword.trim() === '') {
+            toastr.warning("🔒 Debe ingresar la contraseña maestra para eliminar.");
+            $('#master_password_delete').focus();
+            return;
+        }
+
         if (idParticipante) {
             $.ajax({
                 url: '../../app/controlador/Usuario/eliminarUsuario.php',
                 type: 'POST',
                 dataType: 'json',
-                data: { id: idParticipante },
+                data: { 
+                    id: idParticipante,
+                    master_password: masterPassword
+                },
                 success: function (data) {
                     if (data.success) {
                         $('#modal-deleteUsuario').modal('hide');
+                        $('#master_password_delete').val('');
                         toastr.error("¡El Usuario se eliminó correctamente!");
                         cargarTabla();
                     } else {

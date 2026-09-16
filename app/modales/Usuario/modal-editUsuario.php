@@ -520,6 +520,38 @@
             <input type="hidden" name="imagen_actual" id="imagen_actual-Edit">
             <input type="hidden" id="idUsuario" name="id_usuario">
             <input type="hidden" id="current-user-id" value="<?php echo $_SESSION['id_usuario'] ?? ''; ?>">
+
+            <!-- Campo de Contraseña Maestra -->
+            <div class="mt-4" style="
+                background: linear-gradient(135deg, #fef3c7, #fffbeb);
+                border: 1.5px solid #f59e0b;
+                border-radius: 16px;
+                padding: 16px;
+            ">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span style="font-size: 1.1rem;">🔒</span>
+                    <label for="master_password_edit" style="color: #92400e; font-weight: 700; margin: 0; font-size: 0.85rem; letter-spacing: 0.5px;">
+                        CONTRASEÑA MAESTRA
+                    </label>
+                </div>
+                <input type="password" 
+                       class="form-control form-control-sm" 
+                       id="master_password_edit" 
+                       name="master_password" 
+                       placeholder="Ingrese la contraseña maestra para guardar cambios"
+                       required
+                       autocomplete="off"
+                       style="
+                           border: 1.5px solid #d97706;
+                           border-radius: 10px;
+                           padding: 8px 12px;
+                           font-size: 0.85rem;
+                           background: #ffffff;
+                       ">
+                <p style="color: #a16207; font-size: 0.75rem; margin: 6px 0 0 0;">
+                    Se requiere contraseña maestra para editar usuarios.
+                </p>
+            </div>
                    
             <!-- Botones de navegación futuristas -->
             <div class="d-flex justify-content-between align-items-center mt-5">

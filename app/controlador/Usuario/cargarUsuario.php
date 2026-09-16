@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once '../../modelo/conexion.php';
 require_once '../../modelo/HistorialUtil.php';
 require_once 'managerUsuario.php';
+require_once 'master_password.php';
 
 header('Content-Type: application/json');
 
@@ -17,11 +18,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// ==================== PROTECCIÓN: CONTRASEÑA MAESTRA ====================
+if (!validarAccesoMaestro($_POST['master_password'] ?? null)) {
+    exit;
+}
+// ========================================================================
+
 // Combinar datos de POST y FILES
 $data = array_merge($_POST, $_FILES);
 
 try {
     $usuario = new Usuario();
+    
+    // Desbloquear TRIGGER MySQL en la misma conexión que usará el manager
+    desbloquearTriggerMySQL($usuario->getConexion());
+
     $response = $usuario->registrarUsuario($data);
     
     if ($response['success'] && isset($_SESSION['id_usuario'])) {

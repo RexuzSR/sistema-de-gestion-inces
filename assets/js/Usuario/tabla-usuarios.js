@@ -244,13 +244,22 @@ $(document).ready(function () {
             $('.error-feedback').hide();
             clearTimeout(timeoutUsername);
             clearTimeout(timeoutCorreo);
+            $('#master_password_add').val(''); // Limpiar contraseña maestra
         });
 
         // Envío del formulario
         $form.on('submit', function (e) {
             e.preventDefault();
 
-            $form.find('input, select').trigger('input').trigger('change');
+            $form.find('input:not(#master_password_add), select').trigger('input').trigger('change');
+
+            // Validar contraseña maestra
+            const masterPwd = $('#master_password_add').val();
+            if (!masterPwd || masterPwd.trim() === '') {
+                toastr.warning("🔒 Debe ingresar la contraseña maestra para registrar.");
+                $('#master_password_add').focus();
+                return;
+            }
 
             if ($form.find('.is-invalid').length === 0) {
                 const formData = new FormData(this);

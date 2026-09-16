@@ -118,6 +118,7 @@ $(document).ready(function () {
             editingUserId = null;
             clearTimeout(timeoutUsuario); // Limpiar el timeout
             clearTimeout(timeoutCorreo);  // Limpiar el timeout
+            $('#master_password_edit').val(''); // Limpiar contraseña maestra
         });
 
     // ==================== CARGA DE DATOS AL EDITAR ====================
@@ -196,7 +197,18 @@ $(document).ready(function () {
         if (wasRolDisabled) $rolField.prop('disabled', false);
         if (wasEstadoDisabled) $estadoField.prop('disabled', false);
 
-        $form.find('input, select').trigger('input').trigger('change');
+        $form.find('input:not(#master_password_edit), select').trigger('input').trigger('change');
+
+        // Validar contraseña maestra
+        const masterPwd = $('#master_password_edit').val();
+        if (!masterPwd || masterPwd.trim() === '') {
+            toastr.warning("🔒 Debe ingresar la contraseña maestra para editar.");
+            $('#master_password_edit').focus();
+            // Restaurar disabled
+            if (wasRolDisabled) $rolField.prop('disabled', true);
+            if (wasEstadoDisabled) $estadoField.prop('disabled', true);
+            return;
+        }
 
         if ($form.find('.is-invalid').length > 0) {
             toastr.warning("Complete correctamente los campos marcados");
